@@ -23,6 +23,17 @@ services:
     depends_on:
       - app
 
+  vite:
+    build:
+      context: ./docker/php
+    container_name: gup-vite
+    working_dir: /var/www/html
+    command: npm run dev -- --host 0.0.0.0
+    volumes:
+      - ./:/var/www/html
+    ports:
+      - "5173:5173"
+
   db:
     image: mysql:8
     container_name: gup-mysql
