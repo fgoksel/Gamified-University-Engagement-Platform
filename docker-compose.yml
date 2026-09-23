@@ -1,0 +1,62 @@
+services:
+  app:
+    build:
+      context: ./docker/php
+    container_name: gup-app
+    volumes:
+      - ./:/var/www/html
+    depends_on:
+      - db
+    environment:
+      - DB_HOST=db
+      - REDIS_HOST=redis
+      - MAIL_HOST=mailpit
+
+  webserver:
+    image: nginx:alpine
+    container_name: gup-nginx
+    ports:
+      - "8081:80"
+    volumes:
+      - ./:/var/www/html
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - app
+
+  vite:
+    build:
+      context: ./docker/php
+    container_name: gup-vite
+    working_dir: /var/www/html
+    command: npm run dev -- --host 0.0.0.0
+    volumes:
+      - ./:/var/www/html
+    ports:
+      - "5173:5173"
+
+  db:
+    image: mysql:8
+    container_name: gup-mysql
+    environment:
+      MYSQL_DATABASE: gup
+      MYSQL_ROOT_PASSWORD: secret
+      MYSQL_USER: gup_user
+      MYSQL_PASSWORD: secret
+    ports:
+      - "3307:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+
+  redis:
+    image: redis:alpine
+    container_name: gup-redis
+
+  mailpit:
+    image: axllent/mailpit
+    container_name: gup-mailpit
+    ports:
+      - "8025:8025"  # web UI to view "sent" emails
+      - "1025:1025"  # SMTP port your app sends to
+
+volumes:
+  db_data:
