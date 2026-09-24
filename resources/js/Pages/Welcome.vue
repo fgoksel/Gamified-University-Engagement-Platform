@@ -1,11 +1,7 @@
-<script setup></script>
-
 <template>
-    <div style="padding: 40px; font-family: sans-serif">
-        <h1>🎉 Inertia + Vue 3 is working!</h1>
-        <p>
-            This page was rendered by a Vue component through Laravel and
-            Inertia.
-        </p>
-    </div>
+    <main class="flex min-h-screen items-center justify-center p-10">
+        <h1 class="text-2xl font-semibold">
+            Gamified University Engagement Platform
+        </h1>
+    </main>
 </template>

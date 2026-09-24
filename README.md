@@ -1,58 +1,65 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Gamified University Engagement Platform
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Laravel 13 + Inertia 3 + Vue 3 + Tailwind CSS 4, running in Docker.
 
-## About Laravel
+## Requirements
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (includes Docker Compose)
+- Git
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+You don't need PHP, Composer or Node installed on your machine. Everything runs inside the containers.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## First-time setup
 
-## Learning Laravel
-
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+Run these from the project folder:
 
 ```bash
-composer require laravel/boost --dev
+# 1. Create your local environment file
+cp .env.example .env
 
-php artisan boost:install
+# 2. Build the images and start all containers
+docker compose up -d --build
+
+# 3. Install PHP dependencies
+docker compose exec app composer install
+
+# 4. Generate the application key
+docker compose exec app php artisan key:generate
+
+# 5. Create the database tables
+docker compose exec app php artisan migrate
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+The `vite` container runs `npm install` on startup, so JavaScript dependencies install automatically.
+The first start can take a minute or two.
 
-## Contributing
+On Windows PowerShell, use `copy .env.example .env` for step 1.
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## Everyday use
 
-## Code of Conduct
+| What | Command |
+| --- | --- |
+| Start everything | `docker compose up -d` |
+| Stop everything | `docker compose down` |
+| Run migrations | `docker compose exec app php artisan migrate` |
+| Run tests | `docker compose exec app php artisan test` |
+| Any artisan command | `docker compose exec app php artisan <command>` |
+| Follow Vite logs | `docker compose logs -f vite` |
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## Services
 
-## Security Vulnerabilities
+| Service | URL / port | Notes |
+| --- | --- | --- |
+| App (nginx) | http://localhost:8081 | The site |
+| Vite dev server | http://localhost:5173 | Hot reload for Vue / CSS |
+| Mailpit | http://localhost:8025 | Catches all outgoing email |
+| MySQL | `localhost:3307` | Database `gup`, user `gup_user`, password `secret` |
+| Redis | internal only | Host `redis` inside the Docker network |
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+The passwords above are for local development only. Never reuse them on a server.
 
-## License
+## Troubleshooting
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+- **Page shows a Vite manifest error:** the `vite` container isn't running. Check it with `docker compose logs vite`.
+- **Migrations fail with "connection refused":** MySQL is still starting. Wait a few seconds and try again.
+- **Changed the Dockerfile:** rebuild with `docker compose up -d --build`.

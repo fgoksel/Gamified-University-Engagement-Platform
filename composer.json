@@ -1,9 +1,9 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "laravel/laravel",
+    "name": "fgoksel/gamified-university-engagement-platform",
     "type": "project",
-    "description": "The skeleton application for the Laravel framework.",
-    "keywords": ["laravel", "framework"],
+    "description": "Gamified University Engagement Platform built with Laravel, Inertia and Vue.",
+    "keywords": ["laravel", "inertia", "vue", "gamification", "university"],
     "license": "MIT",
     "require": {
         "php": "^8.3",
@@ -14,7 +14,6 @@
     "require-dev": {
         "fakerphp/faker": "^1.23",
         "laravel/pail": "^1.2.5",
-        "laravel/pao": "^1.0.6",
         "laravel/pint": "^1.27",
         "mockery/mockery": "^1.6",
         "nunomaduro/collision": "^8.6",
