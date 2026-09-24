@@ -8,6 +8,7 @@ on:
 
 jobs:
   code-style:
+    name: Code style (Pint, ESLint, Prettier)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -16,9 +17,10 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: "8.3"
+          tools: composer:v2
 
       - name: Install Composer dependencies
-        run: composer install --prefer-dist --no-progress
+        run: composer install --prefer-dist --no-progress --no-interaction
 
       - name: Run Pint
         run: ./vendor/bin/pint --test
@@ -26,10 +28,66 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "26"
+          cache: npm
 
       - name: Install npm dependencies
         run: npm ci
 
       - name: Run ESLint
-        run: npx eslint resources/js
+        run: npm run lint
+
+      - name: Check Prettier formatting
+        run: npm run format:check
+
+  tests:
+    name: Tests and MySQL migrations
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_DATABASE: gup
+          MYSQL_USER: gup_user
+          MYSQL_PASSWORD: secret
+          MYSQL_ROOT_PASSWORD: secret
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -uroot -psecret"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: pdo_mysql, pdo_sqlite, mbstring, bcmath, intl, gd, zip
+          tools: composer:v2
+
+      - name: Install Composer dependencies
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Run migrations on MySQL (fresh, rollback, re-run)
+        env:
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: gup
+          DB_USERNAME: gup_user
+          DB_PASSWORD: secret
+        run: |
+          php artisan migrate --force
+          php artisan migrate:rollback --force
+          php artisan migrate --force
+
+      - name: Run tests
+        run: php artisan test

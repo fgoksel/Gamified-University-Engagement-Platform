@@ -2,8 +2,8 @@ FROM php:8.3-fpm
 
 # System packages Laravel/Composer/Node need
 RUN apt-get update && apt-get install -y \
-    git curl unzip libzip-dev libpng-dev libonig-dev \
-    && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip
+    git curl unzip libzip-dev libpng-dev libonig-dev libicu-dev \
+    && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip intl
 
 # phpredis extension (REDIS_CLIENT=phpredis in .env)
 RUN pecl install redis && docker-php-ext-enable redis
