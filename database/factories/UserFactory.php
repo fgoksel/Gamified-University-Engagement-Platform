@@ -30,7 +30,20 @@ class UserFactory extends Factory
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
+            'status' => 'active',
+            'must_change_password' => false,
         ];
+    }
+
+    /**
+     * Indicate that the user was invited and has not activated the account yet.
+     */
+    public function invited(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => 'invited',
+            'must_change_password' => true,
+        ]);
     }
 
     /**
