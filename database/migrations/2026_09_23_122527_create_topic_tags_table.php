@@ -12,6 +12,8 @@ return new class extends Migration
             $table->id();
             $table->string('name')->unique();
             $table->enum('category', ['academic', 'scientific', 'sports', 'community']);
+            $table->text('description')->nullable();
+            // Deactivated tags stay on historical events but can't be picked for new ones.
             $table->boolean('is_active')->default(true);
             $table->timestamps();
         });

@@ -10,11 +10,11 @@ return new class extends Migration
     {
         Schema::create('subject_areas', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('faculty_id')->constrained()->cascadeOnDelete();
             $table->string('title');
-            $table->string('code', 20)->unique();
+            $table->string('code', 50)->unique();
             $table->text('description')->nullable();
-            $table->enum('category', ['academic', 'scientific', 'sports', 'community'])->default('academic');
+            $table->enum('category', ['academic', 'scientific', 'sports', 'community']);
+            $table->foreignId('faculty_id')->nullable()->constrained()->nullOnDelete();
             $table->boolean('is_active')->default(true);
             $table->timestamps();
         });

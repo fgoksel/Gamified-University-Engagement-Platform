@@ -10,10 +10,11 @@ return new class extends Migration
     {
         Schema::create('semesters', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->date('start_date');
-            $table->date('end_date');
-            $table->enum('status', ['active', 'archived'])->default('active');
+            $table->string('name', 100);
+            $table->date('starts_at');
+            $table->date('ends_at');
+            // Only one semester may be active at a time (enforced in application logic).
+            $table->enum('status', ['active', 'archived'])->default('active')->index();
             $table->timestamps();
         });
     }
