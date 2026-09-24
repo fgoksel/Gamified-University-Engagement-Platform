@@ -31,11 +31,12 @@ services:
       context: ./docker/php
     container_name: gup-vite
     working_dir: /var/www/html
-    # Install inside the container so Linux builds of native tools are used,
-    # whatever OS the project folder was first installed on.
+    # Install inside the container so Linux builds of native tools are used.
+    # node_modules lives in its own volume so it never mixes with a host install.
     command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
     volumes:
       - ./:/var/www/html
+      - node_modules:/var/www/html/node_modules
     ports:
       - "5173:5173"
 
@@ -71,3 +72,4 @@ services:
 
 volumes:
   db_data:
+  node_modules:
