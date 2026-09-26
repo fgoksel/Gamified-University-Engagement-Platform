@@ -51,6 +51,19 @@
     --danger-soft: #e3e8f5;
     --info-fg: #1864c2; /* brand-700 */
     --info-soft: #e0efff; /* brand-100 */
+        /* Categories: light (calm) */
+    --cat-academic: #8573b8;
+    --cat-academic-fg: #5f4f96;
+    --cat-academic-soft: #f1eff8;
+    --cat-scientific: #5f9278;
+    --cat-scientific-fg: #3f6b55;
+    --cat-scientific-soft: #ebf3ee;
+    --cat-sports: #c07a4f;
+    --cat-sports-fg: #8d5230;
+    --cat-sports-soft: #f8efe8;
+    --cat-community: #b86b8a;
+    --cat-community-fg: #8e4764;
+    --cat-community-soft: #f7ecf1;
 }
 
 /* ── Page colours: dark theme ──────────────────────── */
@@ -80,6 +93,19 @@
     --danger-soft: #172445;
     --info-fg: #6fb2fb; /* brand-400 */
     --info-soft: #12284a;
+        /* Categories: dark (calm) */
+    --cat-academic: #9d8fd0;
+    --cat-academic-fg: #c9c0e8;
+    --cat-academic-soft: #25213a;
+    --cat-scientific: #7fb096;
+    --cat-scientific-fg: #b3d6c3;
+    --cat-scientific-soft: #1a2b23;
+    --cat-sports: #d49a74;
+    --cat-sports-fg: #e8c3a8;
+    --cat-sports-soft: #33251c;
+    --cat-community: #cc8aa5;
+    --cat-community-fg: #e6bccd;
+    --cat-community-soft: #33202a;
 }
 
 /* ── Turn them into Tailwind classes ───────────────── */
@@ -105,7 +131,23 @@
     --color-danger-soft: var(--danger-soft);
     --color-info-fg: var(--info-fg);
     --color-info-soft: var(--info-soft);
+
+    --color-cat-academic: var(--cat-academic);
+    --color-cat-academic-fg: var(--cat-academic-fg);
+    --color-cat-academic-soft: var(--cat-academic-soft);
+    --color-cat-scientific: var(--cat-scientific);
+    --color-cat-scientific-fg: var(--cat-scientific-fg);
+    --color-cat-scientific-soft: var(--cat-scientific-soft);
+    --color-cat-sports: var(--cat-sports);
+    --color-cat-sports-fg: var(--cat-sports-fg);
+    --color-cat-sports-soft: var(--cat-sports-soft);
+    --color-cat-community: var(--cat-community);
+    --color-cat-community-fg: var(--cat-community-fg);
+    --color-cat-community-soft: var(--cat-community-soft);
+
 }
+
+
 
 /* ── Default page colours ──────────────────────────── */
 @layer base {
