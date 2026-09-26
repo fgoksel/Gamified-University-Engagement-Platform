@@ -1,9 +1,167 @@
-@import 'tailwindcss';
+@import "tailwindcss";
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+    /* ── Fonts ─────────────────────────────────────────── */
+    --font-sans:
+        "Instrument Sans", ui-sans-serif, system-ui, sans-serif,
+        "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol",
+        "Noto Color Emoji";
+
+    /* ── Brand: university blue ────────────────────────── */
+    --color-brand-50: #f0f7ff;
+    --color-brand-100: #e0efff;
+    --color-brand-200: #c7e2ff;
+    --color-brand-300: #a1cefe;
+    --color-brand-400: #6fb2fb;
+    --color-brand-500: #4596f5;
+    --color-brand-600: #1a73db; /* main brand colour: buttons, links */
+    --color-brand-700: #1864c2; /* hover on buttons */
+    --color-brand-800: #18529c;
+    --color-brand-900: #19467d;
+    --color-brand-950: #132c4f;
+    /* ── Shape ─────────────────────────────────────────── */
+    --radius-control: 0.5rem; /* 8px: buttons, inputs */
+    --radius-card: 0.75rem; /* 12px: cards, panels, modals */
+
+    /* ── Elevation (soft, navy-tinted to match the blue) ── */
+    --shadow-card:
+        0 1px 2px rgb(15 27 45 / 0.05), 0 1px 3px rgb(15 27 45 / 0.07);
+    --shadow-popover:
+        0 4px 6px rgb(15 27 45 / 0.06), 0 12px 24px rgb(15 27 45 / 0.12);
+}
+
+/* ── Dark mode: controlled by a "dark" class, not the OS setting ── */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ── Page colours: light theme (default) ───────────── */
+:root {
+    color-scheme: light;
+
+    --canvas: #f5f8fc;
+    --surface: #ffffff;
+    --surface-muted: #eef3f9;
+    --line: #dde4ee;
+    --fg: #0f1b2d;
+    --fg-muted: #52617a;
+
+    --primary: #1a73db; /* brand-600 */
+    --primary-hover: #1864c2; /* brand-700 */
+    --on-primary: #ffffff;
+    --link: #1864c2; /* brand-700 */
+    --ring: #4596f5; /* brand-500 */
+    /* Status: light (all-blue version) */
+    --success: #0e6f8a;
+    --success-fg: #0e6f8a;
+    --success-soft: #e0f4f8;
+    --warning-fg: #4338ca;
+    --warning-soft: #eceafd;
+    --danger: #1e3a8a;
+    --danger-fg: #1e3a8a;
+    --danger-soft: #e3e8f5;
+    --info-fg: #1864c2; /* brand-700 */
+    --info-soft: #e0efff; /* brand-100 */
+    /* Categories: light (calm) */
+    --cat-academic: #8573b8;
+    --cat-academic-fg: #5f4f96;
+    --cat-academic-soft: #f1eff8;
+    --cat-scientific: #5f9278;
+    --cat-scientific-fg: #3f6b55;
+    --cat-scientific-soft: #ebf3ee;
+    --cat-sports: #c07a4f;
+    --cat-sports-fg: #8d5230;
+    --cat-sports-soft: #f8efe8;
+    --cat-community: #b86b8a;
+    --cat-community-fg: #8e4764;
+    --cat-community-soft: #f7ecf1;
+}
+
+/* ── Page colours: dark theme ──────────────────────── */
+.dark {
+    color-scheme: dark;
+
+    --canvas: #0b1220;
+    --surface: #111a2b;
+    --surface-muted: #18233a;
+    --line: #243149;
+    --fg: #e6edf7;
+    --fg-muted: #9aa8bf;
+
+    --primary: #1a73db; /* brand-600 */
+    --primary-hover: #4596f5; /* brand-500 */
+    --on-primary: #ffffff;
+    --link: #6fb2fb; /* brand-400 */
+    --ring: #6fb2fb; /* brand-400 */
+    /* Status: dark (all-blue version) */
+    --success: #0e6f8a;
+    --success-fg: #5fd0e6;
+    --success-soft: #0c2a33;
+    --warning-fg: #a5b4fc;
+    --warning-soft: #1f1d4a;
+    --danger: #1e3a8a;
+    --danger-fg: #93b4f5;
+    --danger-soft: #172445;
+    --info-fg: #6fb2fb; /* brand-400 */
+    --info-soft: #12284a;
+    /* Categories: dark (calm) */
+    --cat-academic: #9d8fd0;
+    --cat-academic-fg: #c9c0e8;
+    --cat-academic-soft: #25213a;
+    --cat-scientific: #7fb096;
+    --cat-scientific-fg: #b3d6c3;
+    --cat-scientific-soft: #1a2b23;
+    --cat-sports: #d49a74;
+    --cat-sports-fg: #e8c3a8;
+    --cat-sports-soft: #33251c;
+    --cat-community: #cc8aa5;
+    --cat-community-fg: #e6bccd;
+    --cat-community-soft: #33202a;
+}
+
+/* ── Turn them into Tailwind classes ───────────────── */
+@theme inline {
+    --color-canvas: var(--canvas);
+    --color-surface: var(--surface);
+    --color-surface-muted: var(--surface-muted);
+    --color-line: var(--line);
+    --color-fg: var(--fg);
+    --color-fg-muted: var(--fg-muted);
+    --color-primary: var(--primary);
+    --color-primary-hover: var(--primary-hover);
+    --color-on-primary: var(--on-primary);
+    --color-link: var(--link);
+    --color-ring: var(--ring);
+    --color-success: var(--success);
+    --color-success-fg: var(--success-fg);
+    --color-success-soft: var(--success-soft);
+    --color-warning-fg: var(--warning-fg);
+    --color-warning-soft: var(--warning-soft);
+    --color-danger: var(--danger);
+    --color-danger-fg: var(--danger-fg);
+    --color-danger-soft: var(--danger-soft);
+    --color-info-fg: var(--info-fg);
+    --color-info-soft: var(--info-soft);
+
+    --color-cat-academic: var(--cat-academic);
+    --color-cat-academic-fg: var(--cat-academic-fg);
+    --color-cat-academic-soft: var(--cat-academic-soft);
+    --color-cat-scientific: var(--cat-scientific);
+    --color-cat-scientific-fg: var(--cat-scientific-fg);
+    --color-cat-scientific-soft: var(--cat-scientific-soft);
+    --color-cat-sports: var(--cat-sports);
+    --color-cat-sports-fg: var(--cat-sports-fg);
+    --color-cat-sports-soft: var(--cat-sports-soft);
+    --color-cat-community: var(--cat-community);
+    --color-cat-community-fg: var(--cat-community-fg);
+    --color-cat-community-soft: var(--cat-community-soft);
+}
+
+/* ── Default page colours ──────────────────────────── */
+@layer base {
+    body {
+        background-color: var(--color-canvas);
+        color: var(--color-fg);
+    }
 }
