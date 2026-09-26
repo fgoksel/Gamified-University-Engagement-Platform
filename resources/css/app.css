@@ -40,6 +40,17 @@
     --on-primary: #ffffff;
     --link: #1864c2; /* brand-700 */
     --ring: #4596f5; /* brand-500 */
+           /* Status: light (all-blue version) */
+    --success: #0e6f8a;
+    --success-fg: #0e6f8a;
+    --success-soft: #e0f4f8;
+    --warning-fg: #4338ca;
+    --warning-soft: #eceafd;
+    --danger: #1e3a8a;
+    --danger-fg: #1e3a8a;
+    --danger-soft: #e3e8f5;
+    --info-fg: #1864c2; /* brand-700 */
+    --info-soft: #e0efff; /* brand-100 */
 }
 
 /* ── Page colours: dark theme ──────────────────────── */
@@ -58,6 +69,17 @@
     --on-primary: #ffffff;
     --link: #6fb2fb; /* brand-400 */
     --ring: #6fb2fb; /* brand-400 */
+            /* Status: dark (all-blue version) */
+    --success: #0e6f8a;
+    --success-fg: #5fd0e6;
+    --success-soft: #0c2a33;
+    --warning-fg: #a5b4fc;
+    --warning-soft: #1f1d4a;
+    --danger: #1e3a8a;
+    --danger-fg: #93b4f5;
+    --danger-soft: #172445;
+    --info-fg: #6fb2fb; /* brand-400 */
+    --info-soft: #12284a;
 }
 
 /* ── Turn them into Tailwind classes ───────────────── */
@@ -73,6 +95,16 @@
     --color-on-primary: var(--on-primary);
     --color-link: var(--link);
     --color-ring: var(--ring);
+        --color-success: var(--success);
+    --color-success-fg: var(--success-fg);
+    --color-success-soft: var(--success-soft);
+    --color-warning-fg: var(--warning-fg);
+    --color-warning-soft: var(--warning-soft);
+    --color-danger: var(--danger);
+    --color-danger-fg: var(--danger-fg);
+    --color-danger-soft: var(--danger-soft);
+    --color-info-fg: var(--info-fg);
+    --color-info-soft: var(--info-soft);
 }
 
 /* ── Default page colours ──────────────────────────── */
