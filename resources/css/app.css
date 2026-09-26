@@ -1,14 +1,16 @@
-@import 'tailwindcss';
+@import "tailwindcss";
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 
 @theme {
     /* ── Fonts ─────────────────────────────────────────── */
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-sans:
+        "Instrument Sans", ui-sans-serif, system-ui, sans-serif,
+        "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol",
+        "Noto Color Emoji";
 
-        /* ── Brand: university blue ────────────────────────── */
+    /* ── Brand: university blue ────────────────────────── */
     --color-brand-50: #f0f7ff;
     --color-brand-100: #e0efff;
     --color-brand-200: #c7e2ff;
@@ -25,8 +27,10 @@
     --radius-card: 0.75rem; /* 12px: cards, panels, modals */
 
     /* ── Elevation (soft, navy-tinted to match the blue) ── */
-    --shadow-card: 0 1px 2px rgb(15 27 45 / 0.05), 0 1px 3px rgb(15 27 45 / 0.07);
-    --shadow-popover: 0 4px 6px rgb(15 27 45 / 0.06), 0 12px 24px rgb(15 27 45 / 0.12);
+    --shadow-card:
+        0 1px 2px rgb(15 27 45 / 0.05), 0 1px 3px rgb(15 27 45 / 0.07);
+    --shadow-popover:
+        0 4px 6px rgb(15 27 45 / 0.06), 0 12px 24px rgb(15 27 45 / 0.12);
 }
 
 /* ── Dark mode: controlled by a "dark" class, not the OS setting ── */
@@ -48,7 +52,7 @@
     --on-primary: #ffffff;
     --link: #1864c2; /* brand-700 */
     --ring: #4596f5; /* brand-500 */
-           /* Status: light (all-blue version) */
+    /* Status: light (all-blue version) */
     --success: #0e6f8a;
     --success-fg: #0e6f8a;
     --success-soft: #e0f4f8;
@@ -59,7 +63,7 @@
     --danger-soft: #e3e8f5;
     --info-fg: #1864c2; /* brand-700 */
     --info-soft: #e0efff; /* brand-100 */
-        /* Categories: light (calm) */
+    /* Categories: light (calm) */
     --cat-academic: #8573b8;
     --cat-academic-fg: #5f4f96;
     --cat-academic-soft: #f1eff8;
@@ -90,7 +94,7 @@
     --on-primary: #ffffff;
     --link: #6fb2fb; /* brand-400 */
     --ring: #6fb2fb; /* brand-400 */
-            /* Status: dark (all-blue version) */
+    /* Status: dark (all-blue version) */
     --success: #0e6f8a;
     --success-fg: #5fd0e6;
     --success-soft: #0c2a33;
@@ -101,7 +105,7 @@
     --danger-soft: #172445;
     --info-fg: #6fb2fb; /* brand-400 */
     --info-soft: #12284a;
-        /* Categories: dark (calm) */
+    /* Categories: dark (calm) */
     --cat-academic: #9d8fd0;
     --cat-academic-fg: #c9c0e8;
     --cat-academic-soft: #25213a;
@@ -129,7 +133,7 @@
     --color-on-primary: var(--on-primary);
     --color-link: var(--link);
     --color-ring: var(--ring);
-        --color-success: var(--success);
+    --color-success: var(--success);
     --color-success-fg: var(--success-fg);
     --color-success-soft: var(--success-soft);
     --color-warning-fg: var(--warning-fg);
@@ -152,10 +156,7 @@
     --color-cat-community: var(--cat-community);
     --color-cat-community-fg: var(--cat-community-fg);
     --color-cat-community-soft: var(--cat-community-soft);
-
 }
-
-
 
 /* ── Default page colours ──────────────────────────── */
 @layer base {
