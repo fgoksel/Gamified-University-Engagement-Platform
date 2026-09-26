@@ -14,6 +14,16 @@ class OrganizerManagementTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        config()->set('inertia.pages.paths', [
+            resource_path('js/Pages'),
+            resource_path('js/pages'),
+        ]);
+    }
+
     public function test_admin_can_view_organizer_management_index_with_faculties(): void
     {
         $faculty = Faculty::create([
