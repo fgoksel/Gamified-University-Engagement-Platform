@@ -21,3 +21,64 @@
     --color-brand-900: #19467d;
     --color-brand-950: #132c4f;
 }
+/* ── Dark mode: controlled by a "dark" class, not the OS setting ── */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ── Page colours: light theme (default) ───────────── */
+:root {
+    color-scheme: light;
+
+    --canvas: #f5f8fc;
+    --surface: #ffffff;
+    --surface-muted: #eef3f9;
+    --line: #dde4ee;
+    --fg: #0f1b2d;
+    --fg-muted: #52617a;
+
+    --primary: #1a73db; /* brand-600 */
+    --primary-hover: #1864c2; /* brand-700 */
+    --on-primary: #ffffff;
+    --link: #1864c2; /* brand-700 */
+    --ring: #4596f5; /* brand-500 */
+}
+
+/* ── Page colours: dark theme ──────────────────────── */
+.dark {
+    color-scheme: dark;
+
+    --canvas: #0b1220;
+    --surface: #111a2b;
+    --surface-muted: #18233a;
+    --line: #243149;
+    --fg: #e6edf7;
+    --fg-muted: #9aa8bf;
+
+    --primary: #1a73db; /* brand-600 */
+    --primary-hover: #4596f5; /* brand-500 */
+    --on-primary: #ffffff;
+    --link: #6fb2fb; /* brand-400 */
+    --ring: #6fb2fb; /* brand-400 */
+}
+
+/* ── Turn them into Tailwind classes ───────────────── */
+@theme inline {
+    --color-canvas: var(--canvas);
+    --color-surface: var(--surface);
+    --color-surface-muted: var(--surface-muted);
+    --color-line: var(--line);
+    --color-fg: var(--fg);
+    --color-fg-muted: var(--fg-muted);
+    --color-primary: var(--primary);
+    --color-primary-hover: var(--primary-hover);
+    --color-on-primary: var(--on-primary);
+    --color-link: var(--link);
+    --color-ring: var(--ring);
+}
+
+/* ── Default page colours ──────────────────────────── */
+@layer base {
+    body {
+        background-color: var(--color-canvas);
+        color: var(--color-fg);
+    }
+}
