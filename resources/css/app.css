@@ -4,6 +4,20 @@
 @source '../../storage/framework/views/*.php';
 
 @theme {
+    /* ── Fonts ─────────────────────────────────────────── */
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
+
+        /* ── Brand: university blue ────────────────────────── */
+    --color-brand-50: #f0f7ff;
+    --color-brand-100: #e0efff;
+    --color-brand-200: #c7e2ff;
+    --color-brand-300: #a1cefe;
+    --color-brand-400: #6fb2fb;
+    --color-brand-500: #4596f5;
+    --color-brand-600: #1a73db; /* main brand colour: buttons, links */
+    --color-brand-700: #1864c2; /* hover on buttons */
+    --color-brand-800: #18529c;
+    --color-brand-900: #19467d;
+    --color-brand-950: #132c4f;
 }
