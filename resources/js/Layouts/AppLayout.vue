@@ -1,20 +1,40 @@
 <script setup>
-import { Link } from "@inertiajs/vue3";
+import { onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { Link, usePage } from "@inertiajs/vue3";
+import { Menu, QrCode, X } from "@lucide/vue";
 import AppLogo from "../Components/AppLogo.vue";
-import MainNav from "../Components/MainNav.vue";
-import UserMenu from "../Components/UserMenu.vue";
-import SubjectAreaPanel from "../Components/SubjectAreaPanel.vue";
-import DevRoleSwitch from "../Components/DevRoleSwitch.vue";
-import { useRole } from "../composables/useRole.js";
+import SidebarContent from "../Components/SidebarContent.vue";
 
 defineProps({
     title: { type: String, default: "" },
 });
 
-const { isTeacher } = useRole();
+const page = usePage();
+const mobileMenuOpen = ref(false);
 
-// true while running "npm run dev"; false in the real (production) build
-const isDev = import.meta.env.DEV;
+function closeMobileMenu() {
+    mobileMenuOpen.value = false;
+}
+
+// Close the mobile menu after moving to another page
+watch(() => page.url, closeMobileMenu);
+
+// Stop the page behind the open menu from scrolling
+watch(mobileMenuOpen, (open) => {
+    document.body.classList.toggle("overflow-hidden", open);
+});
+
+function onKeydown(event) {
+    if (event.key === "Escape") {
+        closeMobileMenu();
+    }
+}
+
+onMounted(() => document.addEventListener("keydown", onKeydown));
+onBeforeUnmount(() => {
+    document.removeEventListener("keydown", onKeydown);
+    document.body.classList.remove("overflow-hidden");
+});
 </script>
 
 <template>
@@ -28,31 +48,58 @@ const isDev = import.meta.env.DEV;
                     <AppLogo />
                 </Link>
             </div>
-
-            <nav class="flex-1 overflow-y-auto px-3 py-4">
-                <MainNav />
-                <SubjectAreaPanel v-if="isTeacher" />
-            </nav>
-
-            <div class="border-t border-line p-3">
-                <DevRoleSwitch v-if="isDev" class="mb-3" />
-                <UserMenu />
-            </div>
+            <SidebarContent />
         </aside>
 
         <!-- Top bar: mobile only (below lg) -->
         <header
-            class="sticky top-0 z-30 flex h-16 items-center border-b border-line bg-surface px-4 lg:hidden"
+            class="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-line bg-surface px-4 lg:hidden"
         >
             <Link href="/" aria-label="Go to leaderboard">
                 <AppLogo />
             </Link>
-            <!-- Step 9: mobile menu button goes here -->
+            <button
+                type="button"
+                class="rounded-control p-2 text-fg hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-ring"
+                aria-label="Open menu"
+                :aria-expanded="mobileMenuOpen"
+                @click="mobileMenuOpen = true"
+            >
+                <Menu class="size-6" :stroke-width="1.75" />
+            </button>
         </header>
+
+        <!-- Mobile menu: slides in from the left -->
+        <div v-if="mobileMenuOpen" class="fixed inset-0 z-40 lg:hidden">
+            <div
+                class="absolute inset-0 bg-fg/40"
+                aria-hidden="true"
+                @click="closeMobileMenu"
+            ></div>
+            <aside
+                class="relative flex h-full w-72 max-w-[85%] flex-col bg-surface shadow-popover"
+                aria-label="Menu"
+            >
+                <div class="flex h-16 items-center justify-between px-4">
+                    <AppLogo />
+                    <button
+                        type="button"
+                        class="rounded-control p-2 text-fg hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-ring"
+                        aria-label="Close menu"
+                        @click="closeMobileMenu"
+                    >
+                        <X class="size-6" :stroke-width="1.75" />
+                    </button>
+                </div>
+                <SidebarContent />
+            </aside>
+        </div>
 
         <!-- Page content -->
         <div class="lg:pl-64">
-            <main class="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
+            <main
+                class="mx-auto w-full max-w-6xl px-4 pt-6 pb-28 sm:px-6 lg:px-8 lg:pb-6"
+            >
                 <h1
                     v-if="title"
                     class="mb-6 text-2xl font-semibold tracking-tight"
@@ -63,5 +110,14 @@ const isDev = import.meta.env.DEV;
                 <slot />
             </main>
         </div>
+
+        <!-- QR shortcut: always within thumb reach on phones -->
+        <Link
+            href="/scan"
+            class="fixed right-5 bottom-5 z-30 flex size-16 items-center justify-center rounded-full bg-fg text-canvas shadow-popover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring lg:hidden"
+            aria-label="Scan QR code"
+        >
+            <QrCode class="size-7" :stroke-width="1.75" />
+        </Link>
     </div>
 </template>

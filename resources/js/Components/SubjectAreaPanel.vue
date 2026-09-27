@@ -1,11 +1,12 @@
 <script setup>
-import { ref } from "vue";
+import { useId } from "vue";
 import { FolderTree, Search } from "@lucide/vue";
+import { useSubjectAreaFilter } from "../composables/useSubjectAreaFilter.js";
 
-// Because AppLayout stays on screen between pages, these values are kept
-// while the teacher navigates (UC-1.2: filters persist across pages).
-const scope = ref("mine");
-const search = ref("");
+const { scope, search } = useSubjectAreaFilter();
+
+// Unique id, because the panel can appear twice (desktop and mobile menu)
+const headingId = useId();
 
 const scopes = [
     { value: "mine", label: "My areas" },
@@ -16,10 +17,10 @@ const scopes = [
 <template>
     <section
         class="mt-6 border-t border-line pt-4"
-        aria-labelledby="subject-areas-heading"
+        :aria-labelledby="headingId"
     >
         <h2
-            id="subject-areas-heading"
+            :id="headingId"
             class="flex items-center gap-3 px-3 py-2 text-xs font-medium tracking-wide text-fg-muted uppercase"
         >
             <FolderTree class="size-5 shrink-0" :stroke-width="1.75" />
