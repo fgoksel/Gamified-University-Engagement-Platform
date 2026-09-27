@@ -3,10 +3,17 @@
     "name": "fgoksel/gamified-university-engagement-platform",
     "type": "project",
     "description": "Gamified University Engagement Platform built with Laravel, Inertia and Vue.",
-    "keywords": ["laravel", "inertia", "vue", "gamification", "university"],
+    "keywords": [
+        "laravel",
+        "inertia",
+        "vue",
+        "gamification",
+        "university"
+    ],
     "license": "MIT",
     "require": {
         "php": "^8.3",
+        "filament/filament": "^5.0",
         "inertiajs/inertia-laravel": "^3.3",
         "laravel/framework": "^13.17",
         "laravel/tinker": "^3.0"
@@ -50,7 +57,8 @@
         ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
-            "@php artisan package:discover --ansi"
+            "@php artisan package:discover --ansi",
+            "@php artisan filament:upgrade"
         ],
         "post-update-cmd": [
             "@php artisan vendor:publish --tag=laravel-assets --ansi --force"
