@@ -1,0 +1,277 @@
+<?php
+
+namespace Tests\Feature\Admin;
+
+use App\Filament\Pages\StudentManagement;
+use App\Models\Faculty;
+use App\Models\User;
+use App\Notifications\StudentInvitationNotification;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
+use Livewire\Livewire;
+use Tests\TestCase;
+
+class StudentManagementTest extends TestCase
+{
+    use RefreshDatabase;
+
+    public function test_admin_can_view_student_management_page_and_table(): void
+    {
+        $admin = User::create([
+            'name' => 'System Admin',
+            'email' => 'admin@campusengage.hu',
+            'password' => 'secret_hash',
+            'status' => 'active',
+        ]);
+
+        $faculty = Faculty::create([
+            'name' => 'Faculty of Engineering and Information Technology',
+            'code' => 'MIK',
+        ]);
+
+        $student = User::create([
+            'name' => 'Existing Student',
+            'email' => 'student.existing@mik.pte.hu',
+            'neptun_code' => 'EXM123',
+            'major' => 'Computer Science BSc',
+            'year_of_study' => 2,
+            'password' => 'secret_hash',
+            'status' => 'invited',
+            'faculty_id' => $faculty->id,
+        ]);
+
+        $this->actingAs($admin)
+            ->get('/admin/students')
+            ->assertOk();
+
+        Livewire::actingAs($admin)
+            ->test(StudentManagement::class)
+            ->assertCanSeeTableRecords([$student])
+            ->assertSeeHtml('Existing Student')
+            ->assertSeeHtml('EXM123')
+            ->assertSeeHtml('student.existing@mik.pte.hu')
+            ->assertSeeHtml('Computer Science BSc')
+            ->assertSeeHtml('Faculty of Engineering and Information Technology');
+    }
+
+    public function test_admin_can_invite_new_student_individually_per_uc_3_2_1(): void
+    {
+        Notification::fake();
+
+        $admin = User::create([
+            'name' => 'System Admin',
+            'email' => 'admin@campusengage.hu',
+            'password' => 'secret_hash',
+            'status' => 'active',
+        ]);
+
+        $faculty = Faculty::create([
+            'name' => 'Faculty of Sciences',
+            'code' => 'TTK',
+        ]);
+
+        Livewire::actingAs($admin)
+            ->test(StudentManagement::class)
+            ->callAction('invite', [
+                'name' => 'Kovács János',
+                'email' => 'kovacs.janos@student.pte.hu',
+                'neptun_code' => 'kov123',
+                'major' => 'Computer Science BSc',
+                'year_of_study' => 2,
+                'faculty_id' => $faculty->id,
+            ])
+            ->assertHasNoActionErrors();
+
+        $this->assertDatabaseHas('users', [
+            'name' => 'Kovács János',
+            'email' => 'kovacs.janos@student.pte.hu',
+            'neptun_code' => 'KOV123',
+            'major' => 'Computer Science BSc',
+            'year_of_study' => 2,
+            'status' => 'invited',
+            'must_change_password' => 1,
+            'faculty_id' => $faculty->id,
+        ]);
+
+        $user = User::where('email', 'kovacs.janos@student.pte.hu')->firstOrFail();
+        $this->assertNotNull($user->activation_token);
+        $this->assertSame(64, strlen($user->activation_token));
+        $this->assertTrue($user->hasValidActivationToken());
+
+        // Verify token expiration is within 24 hours per UC-3.2.1
+        $this->assertTrue($user->activation_token_expires_at->gt(now()->addHours(23)));
+        $this->assertTrue($user->activation_token_expires_at->lte(now()->addHours(25)));
+
+        Notification::assertSentTo(
+            $user,
+            StudentInvitationNotification::class,
+            function (StudentInvitationNotification $notification) use ($user) {
+                return $notification->activationToken === $user->activation_token
+                    && $notification->expiresInHours === 24;
+            }
+        );
+    }
+
+    public function test_student_invitation_requires_mandatory_fields(): void
+    {
+        $admin = User::create([
+            'name' => 'System Admin',
+            'email' => 'admin@campusengage.hu',
+            'password' => 'secret_hash',
+            'status' => 'active',
+        ]);
+
+        Livewire::actingAs($admin)
+            ->test(StudentManagement::class)
+            ->callAction('invite', [
+                'name' => '',
+                'email' => 'invalid-email',
+                'neptun_code' => '',
+                'major' => '',
+                'year_of_study' => null,
+                'faculty_id' => null,
+            ])
+            ->assertHasActionErrors([
+                'name' => 'required',
+                'email' => 'email',
+                'neptun_code' => 'required',
+                'major' => 'required',
+                'year_of_study' => 'required',
+            ]);
+    }
+
+    public function test_student_invitation_rejects_duplicate_email_with_spec_message(): void
+    {
+        $admin = User::create([
+            'name' => 'System Admin',
+            'email' => 'admin@campusengage.hu',
+            'password' => 'secret_hash',
+            'status' => 'active',
+        ]);
+
+        User::create([
+            'name' => 'Existing Student',
+            'email' => 'already.registered@student.pte.hu',
+            'neptun_code' => 'OLD001',
+            'password' => 'secret_hash',
+            'status' => 'active',
+        ]);
+
+        Livewire::actingAs($admin)
+            ->test(StudentManagement::class)
+            ->callAction('invite', [
+                'name' => 'Duplicate Email Attempt',
+                'email' => 'already.registered@student.pte.hu',
+                'neptun_code' => 'NEW002',
+                'major' => 'Biology BSc',
+                'year_of_study' => 1,
+                'faculty_id' => null,
+            ])
+            ->assertHasActionErrors([
+                'email' => 'This email address is already registered in the system.',
+            ]);
+    }
+
+    public function test_student_invitation_rejects_duplicate_neptun_code_with_spec_message(): void
+    {
+        $admin = User::create([
+            'name' => 'System Admin',
+            'email' => 'admin@campusengage.hu',
+            'password' => 'secret_hash',
+            'status' => 'active',
+        ]);
+
+        User::create([
+            'name' => 'Existing Student',
+            'email' => 'student1@student.pte.hu',
+            'neptun_code' => 'DUP123',
+            'password' => 'secret_hash',
+            'status' => 'active',
+        ]);
+
+        Livewire::actingAs($admin)
+            ->test(StudentManagement::class)
+            ->callAction('invite', [
+                'name' => 'Duplicate Neptun Attempt',
+                'email' => 'student2@student.pte.hu',
+                'neptun_code' => 'DUP123',
+                'major' => 'Physics BSc',
+                'year_of_study' => 3,
+                'faculty_id' => null,
+            ])
+            ->assertHasActionErrors([
+                'neptun_code' => 'This Neptun code is already registered in the system.',
+            ]);
+    }
+
+    public function test_student_invitation_validates_neptun_code_format(): void
+    {
+        $admin = User::create([
+            'name' => 'System Admin',
+            'email' => 'admin@campusengage.hu',
+            'password' => 'secret_hash',
+            'status' => 'active',
+        ]);
+
+        Livewire::actingAs($admin)
+            ->test(StudentManagement::class)
+            ->callAction('invite', [
+                'name' => 'Invalid Neptun Format',
+                'email' => 'student@student.pte.hu',
+                'neptun_code' => 'INVALID!',
+                'major' => 'Math BSc',
+                'year_of_study' => 1,
+                'faculty_id' => null,
+            ])
+            ->assertHasActionErrors(['neptun_code']);
+    }
+
+    public function test_student_invitation_can_be_sent_without_faculty(): void
+    {
+        Notification::fake();
+
+        $admin = User::create([
+            'name' => 'System Admin',
+            'email' => 'admin@campusengage.hu',
+            'password' => 'secret_hash',
+            'status' => 'active',
+        ]);
+
+        Livewire::actingAs($admin)
+            ->test(StudentManagement::class)
+            ->callAction('invite', [
+                'name' => 'Faculty-less Student',
+                'email' => 'nofaculty.student@pte.hu',
+                'neptun_code' => 'NOF123',
+                'major' => 'General Studies',
+                'year_of_study' => 1,
+                'faculty_id' => null,
+            ])
+            ->assertHasNoActionErrors();
+
+        $this->assertDatabaseHas('users', [
+            'email' => 'nofaculty.student@pte.hu',
+            'neptun_code' => 'NOF123',
+            'faculty_id' => null,
+            'status' => 'invited',
+        ]);
+    }
+
+    public function test_student_invitation_notification_renders_proper_mail_content(): void
+    {
+        $user = new User([
+            'name' => 'Nagy Anna',
+            'email' => 'nagy.anna@student.pte.hu',
+            'neptun_code' => 'NAGY01',
+        ]);
+
+        $notification = new StudentInvitationNotification('test-token-student-123', 24);
+        $mail = $notification->toMail($user);
+
+        $this->assertSame('Student Invitation to Gamified University Engagement Platform', $mail->subject);
+        $this->assertStringContainsString('Nagy Anna', $mail->greeting);
+        $this->assertStringContainsString('NAGY01', $mail->render());
+        $this->assertStringContainsString('/auth/activate/test-token-student-123', $mail->actionUrl);
+        $this->assertStringContainsString('24 hours', $mail->render());
+    }
+}
