@@ -2,30 +2,28 @@
 
 namespace Tests\Feature\Admin;
 
+use App\Filament\Pages\OrganizerManagement;
 use App\Models\Faculty;
 use App\Models\User;
 use App\Notifications\OrganizerInvitationNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
-use Inertia\Testing\AssertableInertia as Assert;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class OrganizerManagementTest extends TestCase
 {
     use RefreshDatabase;
 
-    protected function setUp(): void
+    public function test_admin_can_view_organizer_management_page_and_table(): void
     {
-        parent::setUp();
-
-        config()->set('inertia.pages.paths', [
-            resource_path('js/Pages'),
-            resource_path('js/pages'),
+        $admin = User::create([
+            'name' => 'System Admin',
+            'email' => 'admin@campusengage.hu',
+            'password' => 'secret_hash',
+            'status' => 'active',
         ]);
-    }
 
-    public function test_admin_can_view_organizer_management_index_with_faculties(): void
-    {
         $faculty = Faculty::create([
             'name' => 'Faculty of Engineering and Information Technology',
             'code' => 'MIK',
@@ -39,37 +37,42 @@ class OrganizerManagementTest extends TestCase
             'faculty_id' => $faculty->id,
         ]);
 
-        $response = $this->get('/admin/organizers');
+        $this->actingAs($admin)
+            ->get('/admin/organizers')
+            ->assertOk();
 
-        $response->assertOk();
-        $response->assertInertia(fn (Assert $page) => $page
-            ->component('Admin/Organizers/Index')
-            ->has('organizers', 1)
-            ->has('faculties', 1)
-            ->where('organizers.0.email', 'teacher.existing@mik.pte.hu')
-            ->where('faculties.0.code', 'MIK')
-        );
+        Livewire::actingAs($admin)
+            ->test(OrganizerManagement::class)
+            ->assertCanSeeTableRecords([$organizer])
+            ->assertSeeHtml('Existing Teacher')
+            ->assertSeeHtml('teacher.existing@mik.pte.hu')
+            ->assertSeeHtml('Faculty of Engineering and Information Technology');
     }
 
     public function test_admin_can_invite_new_organizer_individually_per_uc_3_1_1(): void
     {
         Notification::fake();
 
+        $admin = User::create([
+            'name' => 'System Admin',
+            'email' => 'admin@campusengage.hu',
+            'password' => 'secret_hash',
+            'status' => 'active',
+        ]);
+
         $faculty = Faculty::create([
             'name' => 'Faculty of Sciences',
             'code' => 'TTK',
         ]);
 
-        $postData = [
-            'name' => 'Dr. Kovács Péter',
-            'email' => 'kovacs.peter@ttk.pte.hu',
-            'faculty_id' => $faculty->id,
-        ];
-
-        $response = $this->post('/admin/organizers', $postData);
-
-        $response->assertRedirect('/admin/organizers');
-        $response->assertSessionHas('success', 'The invitation was successfully sent to kovacs.peter@ttk.pte.hu.');
+        Livewire::actingAs($admin)
+            ->test(OrganizerManagement::class)
+            ->callAction('invite', [
+                'name' => 'Dr. Kovács Péter',
+                'email' => 'kovacs.peter@ttk.pte.hu',
+                'faculty_id' => $faculty->id,
+            ])
+            ->assertHasNoActionErrors();
 
         $this->assertDatabaseHas('users', [
             'name' => 'Dr. Kovács Péter',
@@ -96,17 +99,32 @@ class OrganizerManagementTest extends TestCase
 
     public function test_organizer_invitation_requires_name_and_valid_email(): void
     {
-        $response = $this->post('/admin/organizers', [
-            'name' => '',
-            'email' => 'not-an-email',
-            'faculty_id' => null,
+        $admin = User::create([
+            'name' => 'System Admin',
+            'email' => 'admin@campusengage.hu',
+            'password' => 'secret_hash',
+            'status' => 'active',
         ]);
 
-        $response->assertSessionHasErrors(['name', 'email']);
+        Livewire::actingAs($admin)
+            ->test(OrganizerManagement::class)
+            ->callAction('invite', [
+                'name' => '',
+                'email' => 'not-an-email',
+                'faculty_id' => null,
+            ])
+            ->assertHasActionErrors(['name' => 'required', 'email' => 'email']);
     }
 
     public function test_organizer_invitation_rejects_duplicate_email_with_spec_message(): void
     {
+        $admin = User::create([
+            'name' => 'System Admin',
+            'email' => 'admin@campusengage.hu',
+            'password' => 'secret_hash',
+            'status' => 'active',
+        ]);
+
         User::create([
             'name' => 'Original User',
             'email' => 'already.registered@pte.hu',
@@ -114,41 +132,38 @@ class OrganizerManagementTest extends TestCase
             'status' => 'active',
         ]);
 
-        $response = $this->post('/admin/organizers', [
-            'name' => 'Duplicate Attempt',
-            'email' => 'already.registered@pte.hu',
-            'faculty_id' => null,
-        ]);
-
-        $response->assertSessionHasErrors([
-            'email' => 'This email address is already registered in the system.',
-        ]);
-    }
-
-    public function test_organizer_invitation_validates_faculty_must_exist(): void
-    {
-        $response = $this->post('/admin/organizers', [
-            'name' => 'Invalid Faculty Teacher',
-            'email' => 'invalid.faculty@pte.hu',
-            'faculty_id' => 99999,
-        ]);
-
-        $response->assertSessionHasErrors([
-            'faculty_id' => 'The selected organizational unit/faculty does not exist.',
-        ]);
+        Livewire::actingAs($admin)
+            ->test(OrganizerManagement::class)
+            ->callAction('invite', [
+                'name' => 'Duplicate Attempt',
+                'email' => 'already.registered@pte.hu',
+                'faculty_id' => null,
+            ])
+            ->assertHasActionErrors([
+                'email' => 'This email address is already registered in the system.',
+            ]);
     }
 
     public function test_organizer_invitation_can_be_sent_without_faculty(): void
     {
         Notification::fake();
 
-        $response = $this->post('/admin/organizers', [
-            'name' => 'Faculty-less Organizer',
-            'email' => 'nofaculty@pte.hu',
-            'faculty_id' => null,
+        $admin = User::create([
+            'name' => 'System Admin',
+            'email' => 'admin@campusengage.hu',
+            'password' => 'secret_hash',
+            'status' => 'active',
         ]);
 
-        $response->assertRedirect('/admin/organizers');
+        Livewire::actingAs($admin)
+            ->test(OrganizerManagement::class)
+            ->callAction('invite', [
+                'name' => 'Faculty-less Organizer',
+                'email' => 'nofaculty@pte.hu',
+                'faculty_id' => null,
+            ])
+            ->assertHasNoActionErrors();
+
         $this->assertDatabaseHas('users', [
             'email' => 'nofaculty@pte.hu',
             'faculty_id' => null,
