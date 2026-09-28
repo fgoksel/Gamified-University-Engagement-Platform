@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Enums\UserRole;
 use App\Models\Faculty;
 use App\Models\User;
 use App\Notifications\OrganizerInvitationNotification;
@@ -124,9 +125,7 @@ class OrganizerManagement extends Page implements HasTable
                             'activation_token_expires_at' => now()->addHours(48),
                         ]);
 
-                        if (method_exists($user, 'assignRole')) {
-                            $user->assignRole('organizer');
-                        }
+                        $user->assignRole(UserRole::Teacher);
 
                         $user->notify(new OrganizerInvitationNotification($token, 48));
 
