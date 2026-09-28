@@ -123,4 +123,21 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Initial System Administrator
+    |--------------------------------------------------------------------------
+    |
+    | Login created by AdminUserSeeder (Technical Specification 6.4). The
+    | password is temporary: the admin must change it at first login.
+    | Always set ADMIN_PASSWORD on a real server.
+    |
+    */
+
+    'admin' => [
+        'name' => env('ADMIN_NAME', 'System Administrator'),
+        'email' => env('ADMIN_EMAIL', 'admin@example.com'),
+        'password' => env('ADMIN_PASSWORD'),
+    ],
+
 ];
