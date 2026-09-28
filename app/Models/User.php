@@ -9,6 +9,7 @@ use Filament\Panel;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -24,6 +25,8 @@ use Illuminate\Notifications\Notifiable;
     'year_of_study',
     'appearance',
     'faculty_id',
+    'activation_token',
+    'activation_token_expires_at',
 ])]
 #[Hidden(['password', 'remember_token', 'activation_token'])]
 class User extends Authenticatable implements FilamentUser
@@ -40,7 +43,7 @@ class User extends Authenticatable implements FilamentUser
      */
     public function canAccessPanel(Panel $panel): bool
     {
-        return app()->environment('local');
+        return app()->environment('local', 'testing');
     }
 
     /**
@@ -57,5 +60,31 @@ class User extends Authenticatable implements FilamentUser
             'year_of_study' => 'integer',
             'activation_token_expires_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Get the faculty the user belongs to.
+     */
+    public function faculty(): BelongsTo
+    {
+        return $this->belongsTo(Faculty::class);
+    }
+
+    /**
+     * Check if user account is in invited status.
+     */
+    public function isInvited(): bool
+    {
+        return $this->status === 'invited';
+    }
+
+    /**
+     * Check if the activation token is present and not expired.
+     */
+    public function hasValidActivationToken(): bool
+    {
+        return ! empty($this->activation_token)
+            && $this->activation_token_expires_at !== null
+            && $this->activation_token_expires_at->isFuture();
     }
 }
