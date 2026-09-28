@@ -39,7 +39,7 @@ class OrganizerManagement extends Page implements HasTable
     public function table(Table $table): Table
     {
         return $table
-            ->query(User::query()->latest())
+            ->query(User::query()->whereNull('neptun_code')->latest())
             ->columns([
                 TextColumn::make('name')
                     ->label('Name')
