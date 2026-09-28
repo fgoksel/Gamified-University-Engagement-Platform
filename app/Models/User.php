@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Enums\UserRole;
 use Database\Factories\UserFactory;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
@@ -12,6 +13,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Spatie\Permission\Traits\HasRoles;
 
 #[Fillable([
     'name',
@@ -32,18 +34,17 @@ use Illuminate\Notifications\Notifiable;
 class User extends Authenticatable implements FilamentUser
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, HasRoles, Notifiable;
 
     /**
      * Decide who may open the Filament admin panel (/admin).
      *
-     * TEMPORARY (Task 37): there is no role column yet, so access is only
-     * allowed on local development machines. In production nobody can enter.
-     * Replace this with a real "is admin" check in the user roles task.
+     * Only active administrators may enter. Invited (not yet activated) and
+     * inactive (banned) admin accounts are refused too.
      */
     public function canAccessPanel(Panel $panel): bool
     {
-        return app()->environment('local', 'testing');
+        return $this->status === 'active' && $this->hasRole(UserRole::Admin);
     }
 
     /**

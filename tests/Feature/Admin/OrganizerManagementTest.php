@@ -2,10 +2,12 @@
 
 namespace Tests\Feature\Admin;
 
+use App\Enums\UserRole;
 use App\Filament\Pages\OrganizerManagement;
 use App\Models\Faculty;
 use App\Models\User;
 use App\Notifications\OrganizerInvitationNotification;
+use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Livewire\Livewire;
@@ -15,6 +17,13 @@ class OrganizerManagementTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->seed(RolePermissionSeeder::class);
+    }
+
     public function test_admin_can_view_organizer_management_page_and_table(): void
     {
         $admin = User::create([
@@ -23,6 +32,7 @@ class OrganizerManagementTest extends TestCase
             'password' => 'secret_hash',
             'status' => 'active',
         ]);
+        $admin->assignRole(UserRole::Admin);
 
         $faculty = Faculty::create([
             'name' => 'Faculty of Engineering and Information Technology',
@@ -71,6 +81,8 @@ class OrganizerManagementTest extends TestCase
             'status' => 'active',
         ]);
 
+        $admin->assignRole(UserRole::Admin);
+
         $faculty = Faculty::create([
             'name' => 'Faculty of Sciences',
             'code' => 'TTK',
@@ -97,6 +109,7 @@ class OrganizerManagementTest extends TestCase
         $this->assertNotNull($user->activation_token);
         $this->assertSame(64, strlen($user->activation_token));
         $this->assertTrue($user->hasValidActivationToken());
+        $this->assertTrue($user->hasRole(UserRole::Teacher));
 
         Notification::assertSentTo(
             $user,
@@ -116,6 +129,7 @@ class OrganizerManagementTest extends TestCase
             'password' => 'secret_hash',
             'status' => 'active',
         ]);
+        $admin->assignRole(UserRole::Admin);
 
         Livewire::actingAs($admin)
             ->test(OrganizerManagement::class)
@@ -135,6 +149,7 @@ class OrganizerManagementTest extends TestCase
             'password' => 'secret_hash',
             'status' => 'active',
         ]);
+        $admin->assignRole(UserRole::Admin);
 
         User::create([
             'name' => 'Original User',
@@ -165,6 +180,8 @@ class OrganizerManagementTest extends TestCase
             'password' => 'secret_hash',
             'status' => 'active',
         ]);
+
+        $admin->assignRole(UserRole::Admin);
 
         Livewire::actingAs($admin)
             ->test(OrganizerManagement::class)
