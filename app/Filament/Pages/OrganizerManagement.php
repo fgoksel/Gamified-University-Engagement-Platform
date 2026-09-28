@@ -40,7 +40,7 @@ class OrganizerManagement extends Page implements HasTable
     public function table(Table $table): Table
     {
         return $table
-            ->query(User::query()->whereNull('neptun_code')->latest())
+            ->query(User::role(UserRole::Teacher)->latest())
             ->columns([
                 TextColumn::make('name')
                     ->label('Name')
@@ -122,12 +122,12 @@ class OrganizerManagement extends Page implements HasTable
                             'status' => 'invited',
                             'must_change_password' => true,
                             'activation_token' => $token,
-                            'activation_token_expires_at' => now()->addHours(48),
+                            'activation_token_expires_at' => now()->addHours(24),
                         ]);
 
                         $user->assignRole(UserRole::Teacher);
 
-                        $user->notify(new OrganizerInvitationNotification($token, 48));
+                        $user->notify(new OrganizerInvitationNotification($token, 24));
 
                         Notification::make()
                             ->title('Invitation Sent')
