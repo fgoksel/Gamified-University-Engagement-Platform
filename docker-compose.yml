@@ -15,6 +15,28 @@ services:
       - REDIS_HOST=redis
       - MAIL_HOST=mailpit
 
+  # Runs queued jobs, e.g. invitation emails (Technical Specification 5.2.4, 7.3.2).
+  # Failed jobs are retried 3 times with growing waits (8.4), then go to failed_jobs.
+  queue:
+    build:
+      context: ./docker/php
+    container_name: gup-queue
+    command: php artisan queue:work --tries=3 --backoff=10,60,300
+    restart: unless-stopped
+    volumes:
+      - ./:/var/www/html
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      mailpit:
+        condition: service_started
+    environment:
+      - DB_HOST=db
+      - REDIS_HOST=redis
+      - MAIL_HOST=mailpit
+
   webserver:
     image: nginx:alpine
     container_name: gup-nginx
