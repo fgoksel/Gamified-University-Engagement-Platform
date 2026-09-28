@@ -37,6 +37,15 @@ class OrganizerManagementTest extends TestCase
             'faculty_id' => $faculty->id,
         ]);
 
+        $student = User::create([
+            'name' => 'Existing Student',
+            'email' => 'student.existing@mik.pte.hu',
+            'neptun_code' => 'STU123',
+            'password' => 'secret_hash',
+            'status' => 'active',
+            'faculty_id' => $faculty->id,
+        ]);
+
         $this->actingAs($admin)
             ->get('/admin/organizers')
             ->assertOk();
@@ -44,9 +53,11 @@ class OrganizerManagementTest extends TestCase
         Livewire::actingAs($admin)
             ->test(OrganizerManagement::class)
             ->assertCanSeeTableRecords([$organizer])
+            ->assertCanNotSeeTableRecords([$student])
             ->assertSeeHtml('Existing Teacher')
             ->assertSeeHtml('teacher.existing@mik.pte.hu')
-            ->assertSeeHtml('Faculty of Engineering and Information Technology');
+            ->assertSeeHtml('Faculty of Engineering and Information Technology')
+            ->assertDontSeeHtml('student.existing@mik.pte.hu');
     }
 
     public function test_admin_can_invite_new_organizer_individually_per_uc_3_1_1(): void
