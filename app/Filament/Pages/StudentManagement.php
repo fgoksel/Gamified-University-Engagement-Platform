@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Enums\UserRole;
 use App\Models\Faculty;
 use App\Models\User;
 use App\Notifications\StudentInvitationNotification;
@@ -168,9 +169,7 @@ class StudentManagement extends Page implements HasTable
                             'activation_token_expires_at' => now()->addHours(24),
                         ]);
 
-                        if (method_exists($user, 'assignRole')) {
-                            $user->assignRole('student');
-                        }
+                        $user->assignRole(UserRole::Student);
 
                         $user->notify(new StudentInvitationNotification($token, 24));
 

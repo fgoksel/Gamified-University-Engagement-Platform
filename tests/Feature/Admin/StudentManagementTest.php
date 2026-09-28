@@ -2,10 +2,12 @@
 
 namespace Tests\Feature\Admin;
 
+use App\Enums\UserRole;
 use App\Filament\Pages\StudentManagement;
 use App\Models\Faculty;
 use App\Models\User;
 use App\Notifications\StudentInvitationNotification;
+use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Livewire\Livewire;
@@ -15,6 +17,13 @@ class StudentManagementTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->seed(RolePermissionSeeder::class);
+    }
+
     public function test_admin_can_view_student_management_page_and_table(): void
     {
         $admin = User::create([
@@ -23,6 +32,7 @@ class StudentManagementTest extends TestCase
             'password' => 'secret_hash',
             'status' => 'active',
         ]);
+        $admin->assignRole(UserRole::Admin);
 
         $faculty = Faculty::create([
             'name' => 'Faculty of Engineering and Information Technology',
@@ -64,6 +74,7 @@ class StudentManagementTest extends TestCase
             'password' => 'secret_hash',
             'status' => 'active',
         ]);
+        $admin->assignRole(UserRole::Admin);
 
         $faculty = Faculty::create([
             'name' => 'Faculty of Sciences',
@@ -97,6 +108,7 @@ class StudentManagementTest extends TestCase
         $this->assertNotNull($user->activation_token);
         $this->assertSame(64, strlen($user->activation_token));
         $this->assertTrue($user->hasValidActivationToken());
+        $this->assertTrue($user->hasRole(UserRole::Student));
 
         // Verify token expiration is within 24 hours per UC-3.2.1
         $this->assertTrue($user->activation_token_expires_at->gt(now()->addHours(23)));
@@ -120,6 +132,7 @@ class StudentManagementTest extends TestCase
             'password' => 'secret_hash',
             'status' => 'active',
         ]);
+        $admin->assignRole(UserRole::Admin);
 
         Livewire::actingAs($admin)
             ->test(StudentManagement::class)
@@ -148,6 +161,7 @@ class StudentManagementTest extends TestCase
             'password' => 'secret_hash',
             'status' => 'active',
         ]);
+        $admin->assignRole(UserRole::Admin);
 
         User::create([
             'name' => 'Existing Student',
@@ -180,6 +194,7 @@ class StudentManagementTest extends TestCase
             'password' => 'secret_hash',
             'status' => 'active',
         ]);
+        $admin->assignRole(UserRole::Admin);
 
         User::create([
             'name' => 'Existing Student',
@@ -212,6 +227,7 @@ class StudentManagementTest extends TestCase
             'password' => 'secret_hash',
             'status' => 'active',
         ]);
+        $admin->assignRole(UserRole::Admin);
 
         Livewire::actingAs($admin)
             ->test(StudentManagement::class)
@@ -236,6 +252,7 @@ class StudentManagementTest extends TestCase
             'password' => 'secret_hash',
             'status' => 'active',
         ]);
+        $admin->assignRole(UserRole::Admin);
 
         Livewire::actingAs($admin)
             ->test(StudentManagement::class)
