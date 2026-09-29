@@ -9,6 +9,7 @@ use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
+use Inertia\Testing\AssertableInertia as Assert;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -140,5 +141,20 @@ class RolePermissionTest extends TestCase
 
         $this->actingAs($admin)->get('/_test/admin-only')->assertOk();
         $this->actingAs($teacher)->get('/_test/admin-only')->assertForbidden();
+    }
+
+    public function test_frontend_receives_the_logged_in_users_role(): void
+    {
+        $teacher = User::factory()->create(['name' => 'Dr. Kiss Anna'])->assignRole(UserRole::Teacher);
+
+        $this->actingAs($teacher)->get('/')->assertInertia(fn (Assert $page) => $page
+            ->where('auth.user.name', 'Dr. Kiss Anna')
+            ->where('auth.user.role', 'teacher')
+            ->missing('auth.user.password'));
+    }
+
+    public function test_frontend_receives_no_user_for_guests(): void
+    {
+        $this->get('/')->assertInertia(fn (Assert $page) => $page->where('auth.user', null));
     }
 }

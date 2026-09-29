@@ -49,6 +49,7 @@ class StudentManagementTest extends TestCase
             'status' => 'invited',
             'faculty_id' => $faculty->id,
         ]);
+        $student->assignRole(UserRole::Student);
 
         $this->actingAs($admin)
             ->get('/admin/students')
@@ -57,6 +58,7 @@ class StudentManagementTest extends TestCase
         Livewire::actingAs($admin)
             ->test(StudentManagement::class)
             ->assertCanSeeTableRecords([$student])
+            ->assertCanNotSeeTableRecords([$admin])
             ->assertSeeHtml('Existing Student')
             ->assertSeeHtml('EXM123')
             ->assertSeeHtml('student.existing@mik.pte.hu')
