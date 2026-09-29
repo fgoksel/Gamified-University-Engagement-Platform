@@ -16,7 +16,7 @@ class OrganizerInvitationNotification extends Notification implements ShouldQueu
      */
     public function __construct(
         public readonly string $activationToken,
-        public readonly int $expiresInHours = 48
+        public readonly int $expiresInHours = 24
     ) {}
 
     /**

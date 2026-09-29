@@ -46,6 +46,7 @@ class OrganizerManagementTest extends TestCase
             'status' => 'invited',
             'faculty_id' => $faculty->id,
         ]);
+        $organizer->assignRole(UserRole::Teacher);
 
         $student = User::create([
             'name' => 'Existing Student',
@@ -63,11 +64,12 @@ class OrganizerManagementTest extends TestCase
         Livewire::actingAs($admin)
             ->test(OrganizerManagement::class)
             ->assertCanSeeTableRecords([$organizer])
-            ->assertCanNotSeeTableRecords([$student])
+            ->assertCanNotSeeTableRecords([$student, $admin])
             ->assertSeeHtml('Existing Teacher')
             ->assertSeeHtml('teacher.existing@mik.pte.hu')
             ->assertSeeHtml('Faculty of Engineering and Information Technology')
-            ->assertDontSeeHtml('student.existing@mik.pte.hu');
+            ->assertDontSeeHtml('student.existing@mik.pte.hu')
+            ->assertDontSeeHtml('admin@campusengage.hu');
     }
 
     public function test_admin_can_invite_new_organizer_individually_per_uc_3_1_1(): void
@@ -116,7 +118,7 @@ class OrganizerManagementTest extends TestCase
             OrganizerInvitationNotification::class,
             function (OrganizerInvitationNotification $notification) use ($user) {
                 return $notification->activationToken === $user->activation_token
-                    && $notification->expiresInHours === 48;
+                    && $notification->expiresInHours === 24;
             }
         );
     }
@@ -206,11 +208,47 @@ class OrganizerManagementTest extends TestCase
             'email' => 'teszt.elek@pte.hu',
         ]);
 
-        $notification = new OrganizerInvitationNotification('test-token-123', 48);
+        $notification = new OrganizerInvitationNotification('test-token-123', 24);
         $mail = $notification->toMail($user);
 
         $this->assertSame('Invitation to Gamified University Engagement Platform', $mail->subject);
         $this->assertStringContainsString('Dr. Teszt Elek', $mail->greeting);
         $this->assertStringContainsString('/auth/activate/test-token-123', $mail->actionUrl);
+        $this->assertStringContainsString('within 24 hours', implode(' ', $mail->introLines));
+    }
+
+    public function test_administrators_and_observers_are_not_displayed_in_organizers_table(): void
+    {
+        $admin = User::create([
+            'name' => 'System Admin',
+            'email' => 'admin@campusengage.hu',
+            'password' => 'secret_hash',
+            'status' => 'active',
+        ]);
+        $admin->assignRole(UserRole::Admin);
+
+        $observer = User::create([
+            'name' => 'Public Observer',
+            'email' => 'observer@campusengage.hu',
+            'password' => 'secret_hash',
+            'status' => 'active',
+        ]);
+        $observer->assignRole(UserRole::Observer);
+
+        $teacher = User::create([
+            'name' => 'Valid Teacher',
+            'email' => 'teacher@campusengage.hu',
+            'password' => 'secret_hash',
+            'status' => 'active',
+        ]);
+        $teacher->assignRole(UserRole::Teacher);
+
+        Livewire::actingAs($admin)
+            ->test(OrganizerManagement::class)
+            ->assertCanSeeTableRecords([$teacher])
+            ->assertCanNotSeeTableRecords([$admin, $observer])
+            ->assertSeeHtml('Valid Teacher')
+            ->assertDontSeeHtml('admin@campusengage.hu')
+            ->assertDontSeeHtml('observer@campusengage.hu');
     }
 }
