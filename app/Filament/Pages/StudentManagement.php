@@ -40,7 +40,7 @@ class StudentManagement extends Page implements HasTable
     public function table(Table $table): Table
     {
         return $table
-            ->query(User::query()->whereNotNull('neptun_code')->latest())
+            ->query(User::role(UserRole::Student)->latest())
             ->columns([
                 TextColumn::make('name')
                     ->label('Name')

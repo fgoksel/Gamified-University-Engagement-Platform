@@ -37,7 +37,16 @@ class HandleInertiaRequests extends Middleware
     {
         return [
             ...parent::share($request),
-            //
+            // The logged-in user and their role, used by the layouts to show the
+            // right menu (e.g. the Subject Area panel is for teachers only).
+            'auth' => [
+                'user' => fn () => $request->user() ? [
+                    'id' => $request->user()->id,
+                    'name' => $request->user()->name,
+                    'email' => $request->user()->email,
+                    'role' => $request->user()->getRoleNames()->first(),
+                ] : null,
+            ],
         ];
     }
 }
