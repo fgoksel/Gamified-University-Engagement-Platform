@@ -6,6 +6,7 @@ use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 
 class AppServiceProvider extends ServiceProvider
@@ -38,7 +39,9 @@ class AppServiceProvider extends ServiceProvider
      */
     protected function configureRateLimiting(): void
     {
-        RateLimiter::for('login', fn (Request $request) => Limit::perMinute(5)->by($request->ip()));
+        // Keyed by email + IP, so students sharing campus Wi-Fi don't lock each other out.
+        RateLimiter::for('login', fn (Request $request) => Limit::perMinute(5)
+            ->by(Str::lower((string) $request->input('email')).'|'.$request->ip()));
 
         RateLimiter::for('qr-redeem', fn (Request $request) => Limit::perMinute(60)->by($request->ip()));
     }

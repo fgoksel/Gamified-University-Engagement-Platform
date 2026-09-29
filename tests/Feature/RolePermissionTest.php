@@ -155,6 +155,6 @@ class RolePermissionTest extends TestCase
 
     public function test_frontend_receives_no_user_for_guests(): void
     {
-        $this->get('/')->assertInertia(fn (Assert $page) => $page->where('auth.user', null));
+        $this->get('/login')->assertInertia(fn (Assert $page) => $page->where('auth.user', null));
     }
 }
