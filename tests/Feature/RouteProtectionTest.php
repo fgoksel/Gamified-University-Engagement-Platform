@@ -21,7 +21,7 @@ class RouteProtectionTest extends TestCase
      *
      * @var array<string, string>
      */
-        private const PUBLIC_ROUTES = [
+    private const PUBLIC_ROUTES = [
         '/' => 'Leaderboard home; placeholder page until the leaderboard requires a login (Task #54)',
         'up' => 'Laravel health check',
         'admin/login' => 'Admin panel login page (Filament)',
