@@ -21,12 +21,14 @@ class RouteProtectionTest extends TestCase
      *
      * @var array<string, string>
      */
-    private const PUBLIC_ROUTES = [
+        private const PUBLIC_ROUTES = [
         '/' => 'Leaderboard home; placeholder page until the leaderboard requires a login (Task #54)',
         'up' => 'Laravel health check',
         'admin/login' => 'Admin panel login page (Filament)',
         'login' => 'Login page (UC-1.1, UC-2.1, Tasks #14 and #15)',
+        'forgot-password' => 'Forgot password form and reset email request (UC-1.1, UC-2.1)',
         'auth/activate/{token}' => 'Account activation link from the invitation email (UC-1.1, UC-2.1)',
+        'auth/set-password' => 'Set a password from the activation or reset link (UC-1.1, UC-2.1)',
         'leaderboard/public' => 'Observer leaderboard without login (UC-4.1, Technical Specification 7.2)',
     ];
 
