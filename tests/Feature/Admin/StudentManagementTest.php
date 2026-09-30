@@ -371,4 +371,57 @@ class StudentManagementTest extends TestCase
             ->test(StudentManagement::class)
             ->assertTableActionHidden('reactivate', $student);
     }
+
+    public function test_admin_cannot_deactivate_their_own_account_if_they_appear_in_student_list(): void
+    {
+        $admin = $this->makeAdmin();
+        $admin->update(['neptun_code' => 'ADM999']);
+
+        Livewire::actingAs($admin)
+            ->test(StudentManagement::class)
+            ->assertTableActionDisabled('deactivate', $admin);
+    }
+
+    // ─── UC-3.2.2: Resend Invitation ──────────────────────────────────────────
+
+    public function test_admin_can_resend_invitation_to_invited_student_per_uc_3_2_2(): void
+    {
+        Notification::fake();
+
+        $admin = $this->makeAdmin();
+        $student = $this->makeStudent('invited', 'INV003');
+        $oldToken = $student->activation_token;
+
+        Livewire::actingAs($admin)
+            ->test(StudentManagement::class)
+            ->callTableAction('resend_invitation', $student)
+            ->assertHasNoTableActionErrors();
+
+        $fresh = $student->fresh();
+        $this->assertNotNull($fresh->activation_token);
+        $this->assertNotSame($oldToken, $fresh->activation_token);
+        $this->assertSame(64, strlen($fresh->activation_token));
+        $this->assertTrue($fresh->activation_token_expires_at->isFuture());
+
+        Notification::assertSentTo(
+            $fresh,
+            StudentInvitationNotification::class,
+            function (StudentInvitationNotification $notification) use ($fresh) {
+                return $notification->activationToken === $fresh->activation_token
+                    && $notification->expiresInHours === 24;
+            }
+        );
+    }
+
+    public function test_resend_invitation_action_is_hidden_for_active_and_inactive_students(): void
+    {
+        $admin = $this->makeAdmin();
+        $activeStudent = $this->makeStudent('active', 'ACT003');
+        $inactiveStudent = $this->makeStudent('inactive', 'INA003');
+
+        Livewire::actingAs($admin)
+            ->test(StudentManagement::class)
+            ->assertTableActionHidden('resend_invitation', $activeStudent)
+            ->assertTableActionHidden('resend_invitation', $inactiveStudent);
+    }
 }

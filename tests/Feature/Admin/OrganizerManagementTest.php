@@ -39,11 +39,14 @@ class OrganizerManagementTest extends TestCase
         return $admin;
     }
 
-    private function makeOrganizer(string $status = 'active', ?int $facultyId = null): User
+    private function makeOrganizer(string $status = 'active', ?int $facultyId = null, ?string $email = null): User
     {
+        static $counter = 1;
+        $email = $email ?? 'organizer.'.($counter++).'@pte.hu';
+
         $organizer = User::create([
             'name' => 'Test Organizer',
-            'email' => 'organizer@pte.hu',
+            'email' => $email,
             'password' => 'secret_hash',
             'status' => $status,
             'faculty_id' => $facultyId,
@@ -350,5 +353,48 @@ class OrganizerManagementTest extends TestCase
         Livewire::actingAs($admin)
             ->test(OrganizerManagement::class)
             ->assertTableActionDisabled('deactivate', $admin);
+    }
+
+    // ─── UC-3.1.2: Resend Invitation ──────────────────────────────────────────
+
+    public function test_admin_can_resend_invitation_to_invited_organizer_per_uc_3_1_2(): void
+    {
+        Notification::fake();
+
+        $admin = $this->makeAdmin();
+        $organizer = $this->makeOrganizer('invited');
+        $oldToken = $organizer->activation_token;
+
+        Livewire::actingAs($admin)
+            ->test(OrganizerManagement::class)
+            ->callTableAction('resend_invitation', $organizer)
+            ->assertHasNoTableActionErrors();
+
+        $fresh = $organizer->fresh();
+        $this->assertNotNull($fresh->activation_token);
+        $this->assertNotSame($oldToken, $fresh->activation_token);
+        $this->assertSame(64, strlen($fresh->activation_token));
+        $this->assertTrue($fresh->activation_token_expires_at->isFuture());
+
+        Notification::assertSentTo(
+            $fresh,
+            OrganizerInvitationNotification::class,
+            function (OrganizerInvitationNotification $notification) use ($fresh) {
+                return $notification->activationToken === $fresh->activation_token
+                    && $notification->expiresInHours === 24;
+            }
+        );
+    }
+
+    public function test_resend_invitation_action_is_hidden_for_active_and_inactive_organizers(): void
+    {
+        $admin = $this->makeAdmin();
+        $activeOrganizer = $this->makeOrganizer('active');
+        $inactiveOrganizer = $this->makeOrganizer('inactive');
+
+        Livewire::actingAs($admin)
+            ->test(OrganizerManagement::class)
+            ->assertTableActionHidden('resend_invitation', $activeOrganizer)
+            ->assertTableActionHidden('resend_invitation', $inactiveOrganizer);
     }
 }

@@ -22,7 +22,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 /**
- * Student Management — UC-3.2.1 (invite) and UC-3.2.2 (listing + deactivation).
+ * Student Management — UC-3.2.1 (invite) and UC-3.2.2 (listing + deactivation + resend invitation).
  *
  * Students are identified by a non-null neptun_code and carry UserRole::Student.
  */
@@ -93,6 +93,33 @@ class StudentManagement extends Page implements HasTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->actions([
+                // UC-3.2.2: Resend activation email for invited student.
+                Action::make('resend_invitation')
+                    ->label('Resend Invite')
+                    ->icon(Heroicon::OutlinedEnvelope)
+                    ->color('info')
+                    ->requiresConfirmation()
+                    ->modalHeading('Resend Invitation')
+                    ->modalDescription(fn (User $record): string => "Generate a new activation link and resend the invitation email to {$record->email}?")
+                    ->modalSubmitActionLabel('Yes, Resend')
+                    ->visible(fn (User $record): bool => $record->status === 'invited')
+                    ->action(function (User $record): void {
+                        $token = Str::random(64);
+
+                        $record->update([
+                            'activation_token' => $token,
+                            'activation_token_expires_at' => now()->addHours(24),
+                        ]);
+
+                        $record->notify(new StudentInvitationNotification($token, 24));
+
+                        Notification::make()
+                            ->title('Invitation Resent')
+                            ->success()
+                            ->body('Activation link successfully resent.')
+                            ->send();
+                    }),
+
                 // UC-3.2.2: Deactivate an active or invited student.
                 // Nulling the token prevents a pending invite link from still working
                 // after the account has been deactivated.
@@ -105,6 +132,10 @@ class StudentManagement extends Page implements HasTable
                     ->modalDescription(fn (User $record): string => "Are you sure you want to deactivate {$record->name} ({$record->neptun_code})? They will no longer be able to log in.")
                     ->modalSubmitActionLabel('Yes, Deactivate')
                     ->visible(fn (User $record): bool => $record->status !== 'inactive')
+                    ->disabled(fn (User $record): bool => $record->id === auth()->id())
+                    ->tooltip(fn (User $record): ?string => $record->id === auth()->id()
+                        ? 'You cannot deactivate your own account.'
+                        : null)
                     ->action(function (User $record): void {
                         $record->update([
                             'status' => 'inactive',

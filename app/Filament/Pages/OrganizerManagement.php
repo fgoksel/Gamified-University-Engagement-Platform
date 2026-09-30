@@ -22,7 +22,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 /**
- * Organizer Management — UC-3.1.1 (invite) and UC-3.1.2 (listing + deactivation).
+ * Organizer Management — UC-3.1.1 (invite) and UC-3.1.2 (listing + deactivation + resend invitation).
  *
  * "Organizer" is the UI term for the 'teacher' role (Technical Specification 6.4).
  * The UserRole::Teacher enum case is the canonical Spatie role name in the database.
@@ -85,6 +85,33 @@ class OrganizerManagement extends Page implements HasTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->actions([
+                // UC-3.1.2: Resend activation email for invited organizer.
+                Action::make('resend_invitation')
+                    ->label('Resend Invite')
+                    ->icon(Heroicon::OutlinedEnvelope)
+                    ->color('info')
+                    ->requiresConfirmation()
+                    ->modalHeading('Resend Invitation')
+                    ->modalDescription(fn (User $record): string => "Generate a new activation link and resend the invitation email to {$record->email}?")
+                    ->modalSubmitActionLabel('Yes, Resend')
+                    ->visible(fn (User $record): bool => $record->status === 'invited')
+                    ->action(function (User $record): void {
+                        $token = Str::random(64);
+
+                        $record->update([
+                            'activation_token' => $token,
+                            'activation_token_expires_at' => now()->addHours(24),
+                        ]);
+
+                        $record->notify(new OrganizerInvitationNotification($token, 24));
+
+                        Notification::make()
+                            ->title('Invitation Resent')
+                            ->success()
+                            ->body('The activation link has been successfully resent.')
+                            ->send();
+                    }),
+
                 // UC-3.1.2: Deactivate an active or invited organizer.
                 // Nulling the token prevents a pending invite link from still working
                 // after the account has been deactivated.
