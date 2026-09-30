@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\UserRole;
+use App\Http\Controllers\AppearanceController;
 use App\Http\Controllers\Auth\ChangePasswordController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
@@ -33,6 +34,9 @@ Route::middleware('auth')->group(function () {
     Route::put('/password/change', [ChangePasswordController::class, 'update'])->name('password.change.update');
 
     Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
+
+    // Light / dark theme from the user menu
+    Route::put('/appearance', [AppearanceController::class, 'update'])->name('appearance.update');
 
     // Everything below needs a permanent password first.
     Route::middleware('password.changed')->group(function () {
