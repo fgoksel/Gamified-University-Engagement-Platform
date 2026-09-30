@@ -331,4 +331,24 @@ class OrganizerManagementTest extends TestCase
             ->test(OrganizerManagement::class)
             ->assertTableActionHidden('reactivate', $organizer);
     }
+
+    /**
+     * UC-3.1.2 exception: "The System Administrator cannot deactivate themselves
+     * (if they also appear in the list)."
+     *
+     * A user who holds BOTH admin and teacher roles appears in the organizer table
+     * (queried by teacher role). The deactivate button must be disabled for their
+     * own row so they cannot lock themselves out.
+     */
+    public function test_admin_cannot_deactivate_their_own_account_if_they_appear_in_organizer_list(): void
+    {
+        // Give the admin the teacher role as well — this is the scenario the spec
+        // describes: an admin who is also a teacher/organizer appears in the list.
+        $admin = $this->makeAdmin();
+        $admin->assignRole(UserRole::Teacher);
+
+        Livewire::actingAs($admin)
+            ->test(OrganizerManagement::class)
+            ->assertTableActionDisabled('deactivate', $admin);
+    }
 }

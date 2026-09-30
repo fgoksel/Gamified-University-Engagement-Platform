@@ -27,10 +27,10 @@ use Illuminate\Support\Str;
  * "Organizer" is the UI term for the 'teacher' role (Technical Specification 6.4).
  * The UserRole::Teacher enum case is the canonical Spatie role name in the database.
  *
- * Note: Admin self-lock prevention is scoped to Task #32, which builds on this
- * deactivation logic. An admin account (role='admin') cannot appear in this table
- * anyway — only Teacher-role accounts are queried — so self-deactivation via this
- * page is structurally impossible without Task #32's cross-page guard.
+ * UC-3.1.2 exception: an admin who also holds the teacher role will appear in this
+ * table. In that case the deactivate button is disabled to prevent self-lock-out,
+ * per the spec: "The System Administrator cannot deactivate themselves (if they
+ * also appear in the list)."
  */
 class OrganizerManagement extends Page implements HasTable
 {
@@ -88,6 +88,8 @@ class OrganizerManagement extends Page implements HasTable
                 // UC-3.1.2: Deactivate an active or invited organizer.
                 // Nulling the token prevents a pending invite link from still working
                 // after the account has been deactivated.
+                // Disabled for the logged-in admin's own row (UC-3.1.2 exception:
+                // "cannot deactivate themselves if they also appear in the list").
                 Action::make('deactivate')
                     ->label('Deactivate')
                     ->icon(Heroicon::OutlinedNoSymbol)
@@ -97,6 +99,10 @@ class OrganizerManagement extends Page implements HasTable
                     ->modalDescription(fn (User $record): string => "Are you sure you want to deactivate {$record->name}? They will no longer be able to log in.")
                     ->modalSubmitActionLabel('Yes, Deactivate')
                     ->visible(fn (User $record): bool => $record->status !== 'inactive')
+                    ->disabled(fn (User $record): bool => $record->id === auth()->id())
+                    ->tooltip(fn (User $record): ?string => $record->id === auth()->id()
+                        ? 'You cannot deactivate your own account.'
+                        : null)
                     ->action(function (User $record): void {
                         $record->update([
                             'status' => 'inactive',
