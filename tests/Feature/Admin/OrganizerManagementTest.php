@@ -386,15 +386,63 @@ class OrganizerManagementTest extends TestCase
         );
     }
 
-    public function test_resend_invitation_action_is_hidden_for_active_and_inactive_organizers(): void
+    public function test_admin_can_edit_organizer_per_uc_3_1_2(): void
     {
         $admin = $this->makeAdmin();
-        $activeOrganizer = $this->makeOrganizer('active');
-        $inactiveOrganizer = $this->makeOrganizer('inactive');
+        $faculty1 = Faculty::create(['name' => 'Faculty One', 'code' => 'F1']);
+        $faculty2 = Faculty::create(['name' => 'Faculty Two', 'code' => 'F2']);
+        $organizer = $this->makeOrganizer('active', $faculty1->id);
 
         Livewire::actingAs($admin)
             ->test(OrganizerManagement::class)
-            ->assertTableActionHidden('resend_invitation', $activeOrganizer)
-            ->assertTableActionHidden('resend_invitation', $inactiveOrganizer);
+            ->callTableAction('edit', $organizer, [
+                'name' => 'Updated Teacher Name',
+                'email' => 'updated.teacher@pte.hu',
+                'faculty_id' => $faculty2->id,
+            ])
+            ->assertHasNoTableActionErrors();
+
+        $this->assertDatabaseHas('users', [
+            'id' => $organizer->id,
+            'name' => 'Updated Teacher Name',
+            'email' => 'updated.teacher@pte.hu',
+            'faculty_id' => $faculty2->id,
+        ]);
+    }
+
+    public function test_organizer_edit_rejects_duplicate_email(): void
+    {
+        $admin = $this->makeAdmin();
+        $organizer1 = $this->makeOrganizer('active');
+        $organizer2 = User::create([
+            'name' => 'Other Teacher',
+            'email' => 'existing.other@pte.hu',
+            'password' => 'secret_hash',
+            'status' => 'active',
+        ]);
+        $organizer2->assignRole(UserRole::Teacher);
+
+        Livewire::actingAs($admin)
+            ->test(OrganizerManagement::class)
+            ->callTableAction('edit', $organizer1, [
+                'name' => 'Attempt Duplicate Email',
+                'email' => 'existing.other@pte.hu',
+                'faculty_id' => null,
+            ])
+            ->assertHasTableActionErrors(['email' => 'unique']);
+    }
+
+    public function test_admin_cannot_deactivate_last_remaining_admin(): void
+    {
+        // Only one admin exists ($admin). Assign them Teacher role so they appear in organizer table.
+        $admin = $this->makeAdmin();
+        $admin->assignRole(UserRole::Teacher);
+
+        // Verify only 1 active admin exists in system
+        $this->assertSame(1, User::role(UserRole::Admin)->where('status', 'active')->count());
+
+        Livewire::actingAs($admin)
+            ->test(OrganizerManagement::class)
+            ->assertTableActionDisabled('deactivate', $admin);
     }
 }

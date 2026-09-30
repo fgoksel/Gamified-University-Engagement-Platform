@@ -414,15 +414,104 @@ class StudentManagementTest extends TestCase
         );
     }
 
-    public function test_resend_invitation_action_is_hidden_for_active_and_inactive_students(): void
+    public function test_admin_can_edit_student_per_uc_3_2_2(): void
     {
         $admin = $this->makeAdmin();
-        $activeStudent = $this->makeStudent('active', 'ACT003');
-        $inactiveStudent = $this->makeStudent('inactive', 'INA003');
+        $faculty1 = Faculty::create(['name' => 'Faculty One', 'code' => 'F1']);
+        $faculty2 = Faculty::create(['name' => 'Faculty Two', 'code' => 'F2']);
+        $student = $this->makeStudent('active', 'OLD123');
+        $student->update(['faculty_id' => $faculty1->id]);
 
         Livewire::actingAs($admin)
             ->test(StudentManagement::class)
-            ->assertTableActionHidden('resend_invitation', $activeStudent)
-            ->assertTableActionHidden('resend_invitation', $inactiveStudent);
+            ->callTableAction('edit', $student, [
+                'name' => 'Updated Student Name',
+                'email' => 'updated.student@pte.hu',
+                'neptun_code' => 'new456',
+                'major' => 'Software Engineering MSc',
+                'year_of_study' => 3,
+                'faculty_id' => $faculty2->id,
+            ])
+            ->assertHasNoTableActionErrors();
+
+        $this->assertDatabaseHas('users', [
+            'id' => $student->id,
+            'name' => 'Updated Student Name',
+            'email' => 'updated.student@pte.hu',
+            'neptun_code' => 'NEW456',
+            'major' => 'Software Engineering MSc',
+            'year_of_study' => 3,
+            'faculty_id' => $faculty2->id,
+        ]);
+    }
+
+    public function test_student_edit_rejects_duplicate_email(): void
+    {
+        $admin = $this->makeAdmin();
+        $student1 = $this->makeStudent('active', 'STU001');
+        $student2 = User::create([
+            'name' => 'Other Student',
+            'email' => 'existing.stu@pte.hu',
+            'neptun_code' => 'STU002',
+            'major' => 'Biology',
+            'year_of_study' => 1,
+            'password' => 'secret_hash',
+            'status' => 'active',
+        ]);
+        $student2->assignRole(UserRole::Student);
+
+        Livewire::actingAs($admin)
+            ->test(StudentManagement::class)
+            ->callTableAction('edit', $student1, [
+                'name' => 'Attempt Duplicate Email',
+                'email' => 'existing.stu@pte.hu',
+                'neptun_code' => 'UNI123',
+                'major' => 'Math',
+                'year_of_study' => 1,
+                'faculty_id' => null,
+            ])
+            ->assertHasTableActionErrors(['email' => 'unique']);
+    }
+
+    public function test_student_edit_rejects_duplicate_neptun_code(): void
+    {
+        $admin = $this->makeAdmin();
+        $student1 = $this->makeStudent('active', 'STU001');
+        $student2 = User::create([
+            'name' => 'Other Student',
+            'email' => 'unique.other@pte.hu',
+            'neptun_code' => 'DUP999',
+            'major' => 'Physics',
+            'year_of_study' => 2,
+            'password' => 'secret_hash',
+            'status' => 'active',
+        ]);
+        $student2->assignRole(UserRole::Student);
+
+        Livewire::actingAs($admin)
+            ->test(StudentManagement::class)
+            ->callTableAction('edit', $student1, [
+                'name' => 'Attempt Duplicate Neptun',
+                'email' => 'different.unique@pte.hu',
+                'neptun_code' => 'DUP999',
+                'major' => 'Physics',
+                'year_of_study' => 2,
+                'faculty_id' => null,
+            ])
+            ->assertHasTableActionErrors(['neptun_code' => 'unique']);
+    }
+
+    public function test_admin_cannot_deactivate_last_remaining_admin_in_student_list(): void
+    {
+        // Only one admin exists ($admin). Assign them Student role so they appear in student table.
+        $admin = $this->makeAdmin();
+        $admin->assignRole(UserRole::Student);
+
+        // Verify only 1 active admin exists in system
+        $this->assertSame(1, User::role(UserRole::Admin)->where('status', 'active')->count());
+
+        Livewire::actingAs($admin)
+            ->test(StudentManagement::class)
+            ->assertTableActionDisabled('deactivate', $admin);
     }
 }

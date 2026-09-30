@@ -85,6 +85,58 @@ class OrganizerManagement extends Page implements HasTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->actions([
+                // UC-3.1.2: Edit organizer details (pencil icon).
+                Action::make('edit')
+                    ->label('Edit')
+                    ->icon(Heroicon::OutlinedPencilSquare)
+                    ->modalHeading('Edit Organizer')
+                    ->modalSubmitActionLabel('Save Changes')
+                    ->fillForm(fn (User $record): array => [
+                        'name' => $record->name,
+                        'email' => $record->email,
+                        'faculty_id' => $record->faculty_id,
+                    ])
+                    ->form([
+                        TextInput::make('name')
+                            ->label('Full Name')
+                            ->required()
+                            ->maxLength(255),
+
+                        TextInput::make('email')
+                            ->label('Institutional Email')
+                            ->email()
+                            ->required()
+                            ->maxLength(255)
+                            ->unique(
+                                table: User::class,
+                                column: 'email',
+                                ignoreRecord: true,
+                            )
+                            ->validationMessages([
+                                'unique' => 'This email address is already registered in the system.',
+                            ]),
+
+                        Select::make('faculty_id')
+                            ->label('Organizational Unit / Faculty')
+                            ->options(fn (): array => Faculty::query()->pluck('name', 'id')->all())
+                            ->searchable()
+                            ->nullable()
+                            ->exists(table: Faculty::class, column: 'id'),
+                    ])
+                    ->action(function (User $record, array $data): void {
+                        $record->update([
+                            'name' => $data['name'],
+                            'email' => $data['email'],
+                            'faculty_id' => $data['faculty_id'] ?? null,
+                        ]);
+
+                        Notification::make()
+                            ->title('Organizer Updated')
+                            ->success()
+                            ->body("{$record->name}'s details have been successfully updated.")
+                            ->send();
+                    }),
+
                 // UC-3.1.2: Resend activation email for invited organizer.
                 Action::make('resend_invitation')
                     ->label('Resend Invite')
@@ -115,22 +167,49 @@ class OrganizerManagement extends Page implements HasTable
                 // UC-3.1.2: Deactivate an active or invited organizer.
                 // Nulling the token prevents a pending invite link from still working
                 // after the account has been deactivated.
-                // Disabled for the logged-in admin's own row (UC-3.1.2 exception:
-                // "cannot deactivate themselves if they also appear in the list").
+                // Disabled for the logged-in admin's own row or the last remaining admin (UC-3.1.2 & Task #32).
                 Action::make('deactivate')
                     ->label('Deactivate')
                     ->icon(Heroicon::OutlinedNoSymbol)
                     ->color('danger')
                     ->requiresConfirmation()
                     ->modalHeading('Deactivate Organizer')
-                    ->modalDescription(fn (User $record): string => "Are you sure you want to deactivate {$record->name}? They will no longer be able to log in.")
+                    ->modalDescription(fn (User $record): string => "Are you sure you want to deactivate {$record->name}? The Organizer will not be able to log in, but their previous events will remain.")
                     ->modalSubmitActionLabel('Yes, Deactivate')
                     ->visible(fn (User $record): bool => $record->status !== 'inactive')
-                    ->disabled(fn (User $record): bool => $record->id === auth()->id())
-                    ->tooltip(fn (User $record): ?string => $record->id === auth()->id()
-                        ? 'You cannot deactivate your own account.'
-                        : null)
+                    ->disabled(fn (User $record): bool => $record->id === auth()->id()
+                        || ($record->hasRole(UserRole::Admin) && User::role(UserRole::Admin)->where('status', 'active')->count() <= 1))
+                    ->tooltip(function (User $record): ?string {
+                        if ($record->id === auth()->id()) {
+                            return 'You cannot deactivate your own account.';
+                        }
+                        if ($record->hasRole(UserRole::Admin) && User::role(UserRole::Admin)->where('status', 'active')->count() <= 1) {
+                            return 'Cannot deactivate the last remaining Administrator.';
+                        }
+
+                        return null;
+                    })
                     ->action(function (User $record): void {
+                        if ($record->id === auth()->id()) {
+                            Notification::make()
+                                ->title('Action Not Allowed')
+                                ->danger()
+                                ->body('You cannot deactivate your own account.')
+                                ->send();
+
+                            return;
+                        }
+
+                        if ($record->hasRole(UserRole::Admin) && User::role(UserRole::Admin)->where('status', 'active')->count() <= 1) {
+                            Notification::make()
+                                ->title('Action Not Allowed')
+                                ->danger()
+                                ->body('Cannot deactivate the last remaining Administrator.')
+                                ->send();
+
+                            return;
+                        }
+
                         $record->update([
                             'status' => 'inactive',
                             // Revoke any pending activation link (UC-3.1.2).

@@ -93,6 +93,92 @@ class StudentManagement extends Page implements HasTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->actions([
+                // UC-3.2.2: Edit student details (pencil icon).
+                Action::make('edit')
+                    ->label('Edit')
+                    ->icon(Heroicon::OutlinedPencilSquare)
+                    ->modalHeading('Edit Student')
+                    ->modalSubmitActionLabel('Save Changes')
+                    ->fillForm(fn (User $record): array => [
+                        'name' => $record->name,
+                        'email' => $record->email,
+                        'neptun_code' => $record->neptun_code,
+                        'major' => $record->major,
+                        'year_of_study' => $record->year_of_study,
+                        'faculty_id' => $record->faculty_id,
+                    ])
+                    ->form([
+                        TextInput::make('name')
+                            ->label('Full Name')
+                            ->required()
+                            ->maxLength(255),
+
+                        TextInput::make('email')
+                            ->label('Institutional Email')
+                            ->email()
+                            ->required()
+                            ->maxLength(255)
+                            ->unique(
+                                table: User::class,
+                                column: 'email',
+                                ignoreRecord: true,
+                            )
+                            ->validationMessages([
+                                'unique' => 'This email address is already registered in the system.',
+                                'email' => 'Invalid email address format.',
+                            ]),
+
+                        TextInput::make('neptun_code')
+                            ->label('Neptun Code')
+                            ->required()
+                            ->length(6)
+                            ->regex('/^[A-Za-z0-9]{6}$/')
+                            ->unique(
+                                table: User::class,
+                                column: 'neptun_code',
+                                ignoreRecord: true,
+                            )
+                            ->validationMessages([
+                                'unique' => 'This Neptun code is already registered in the system.',
+                                'regex' => 'The Neptun code must be exactly 6 alphanumeric characters.',
+                            ]),
+
+                        TextInput::make('major')
+                            ->label('Major / Programme')
+                            ->required()
+                            ->maxLength(255),
+
+                        TextInput::make('year_of_study')
+                            ->label('Year of Study')
+                            ->numeric()
+                            ->required()
+                            ->minValue(1)
+                            ->maxValue(6),
+
+                        Select::make('faculty_id')
+                            ->label('Organizational Unit / Faculty')
+                            ->options(fn (): array => Faculty::query()->pluck('name', 'id')->all())
+                            ->searchable()
+                            ->nullable()
+                            ->exists(table: Faculty::class, column: 'id'),
+                    ])
+                    ->action(function (User $record, array $data): void {
+                        $record->update([
+                            'name' => $data['name'],
+                            'email' => $data['email'],
+                            'neptun_code' => strtoupper($data['neptun_code']),
+                            'major' => $data['major'],
+                            'year_of_study' => (int) $data['year_of_study'],
+                            'faculty_id' => $data['faculty_id'] ?? null,
+                        ]);
+
+                        Notification::make()
+                            ->title('Student Updated')
+                            ->success()
+                            ->body("{$record->name}'s details have been successfully updated.")
+                            ->send();
+                    }),
+
                 // UC-3.2.2: Resend activation email for invited student.
                 Action::make('resend_invitation')
                     ->label('Resend Invite')
@@ -123,20 +209,49 @@ class StudentManagement extends Page implements HasTable
                 // UC-3.2.2: Deactivate an active or invited student.
                 // Nulling the token prevents a pending invite link from still working
                 // after the account has been deactivated.
+                // Disabled for the logged-in admin's own row or the last remaining admin (UC-3.2.2 & Task #32).
                 Action::make('deactivate')
                     ->label('Deactivate')
                     ->icon(Heroicon::OutlinedNoSymbol)
                     ->color('danger')
                     ->requiresConfirmation()
                     ->modalHeading('Deactivate Student')
-                    ->modalDescription(fn (User $record): string => "Are you sure you want to deactivate {$record->name} ({$record->neptun_code})? They will no longer be able to log in.")
+                    ->modalDescription(fn (User $record): string => "Are you sure you want to deactivate {$record->name}?")
                     ->modalSubmitActionLabel('Yes, Deactivate')
                     ->visible(fn (User $record): bool => $record->status !== 'inactive')
-                    ->disabled(fn (User $record): bool => $record->id === auth()->id())
-                    ->tooltip(fn (User $record): ?string => $record->id === auth()->id()
-                        ? 'You cannot deactivate your own account.'
-                        : null)
+                    ->disabled(fn (User $record): bool => $record->id === auth()->id()
+                        || ($record->hasRole(UserRole::Admin) && User::role(UserRole::Admin)->where('status', 'active')->count() <= 1))
+                    ->tooltip(function (User $record): ?string {
+                        if ($record->id === auth()->id()) {
+                            return 'You cannot deactivate your own account.';
+                        }
+                        if ($record->hasRole(UserRole::Admin) && User::role(UserRole::Admin)->where('status', 'active')->count() <= 1) {
+                            return 'Cannot deactivate the last remaining Administrator.';
+                        }
+
+                        return null;
+                    })
                     ->action(function (User $record): void {
+                        if ($record->id === auth()->id()) {
+                            Notification::make()
+                                ->title('Action Not Allowed')
+                                ->danger()
+                                ->body('You cannot deactivate your own account.')
+                                ->send();
+
+                            return;
+                        }
+
+                        if ($record->hasRole(UserRole::Admin) && User::role(UserRole::Admin)->where('status', 'active')->count() <= 1) {
+                            Notification::make()
+                                ->title('Action Not Allowed')
+                                ->danger()
+                                ->body('Cannot deactivate the last remaining Administrator.')
+                                ->send();
+
+                            return;
+                        }
+
                         $record->update([
                             'status' => 'inactive',
                             // Revoke any pending activation link (UC-3.2.2).
@@ -147,7 +262,7 @@ class StudentManagement extends Page implements HasTable
                         Notification::make()
                             ->title('Student Deactivated')
                             ->warning()
-                            ->body("{$record->name} ({$record->neptun_code}) has been deactivated and can no longer log in.")
+                            ->body("{$record->name} has been deactivated and can no longer log in.")
                             ->send();
                     }),
 
