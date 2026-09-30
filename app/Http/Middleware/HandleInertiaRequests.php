@@ -47,6 +47,12 @@ class HandleInertiaRequests extends Middleware
                     'role' => $request->user()->getRoleNames()->first(),
                 ] : null,
             ],
+            // One-time messages set with redirect(...)->with('error', '...'),
+            // for example "You do not have permission to view this page."
+            'flash' => [
+                'error' => fn () => $request->session()->get('error'),
+                'success' => fn () => $request->session()->get('success'),
+            ],
         ];
     }
 }
