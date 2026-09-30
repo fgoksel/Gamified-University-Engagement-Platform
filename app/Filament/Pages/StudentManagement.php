@@ -87,10 +87,9 @@ class StudentManagement extends Page implements HasTable
                     }),
 
                 TextColumn::make('created_at')
-                    ->label('Created At')
+                    ->label('Registration Date')
                     ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->sortable(),
             ])
             ->actions([
                 // UC-3.2.2: Edit student details (pencil icon).
@@ -206,10 +205,10 @@ class StudentManagement extends Page implements HasTable
                             ->send();
                     }),
 
-                // UC-3.2.2: Deactivate an active or invited student.
+                // UC-3.2.2: Deactivate an active student.
                 // Nulling the token prevents a pending invite link from still working
                 // after the account has been deactivated.
-                // Disabled for the logged-in admin's own row or the last remaining admin (UC-3.2.2 & Task #32).
+                // Guarded by AdminPolicy (Technical Specification Table 25, Task #32).
                 Action::make('deactivate')
                     ->label('Deactivate')
                     ->icon(Heroicon::OutlinedNoSymbol)
@@ -218,9 +217,8 @@ class StudentManagement extends Page implements HasTable
                     ->modalHeading('Deactivate Student')
                     ->modalDescription(fn (User $record): string => "Are you sure you want to deactivate {$record->name}?")
                     ->modalSubmitActionLabel('Yes, Deactivate')
-                    ->visible(fn (User $record): bool => $record->status !== 'inactive')
-                    ->disabled(fn (User $record): bool => $record->id === auth()->id()
-                        || ($record->hasRole(UserRole::Admin) && User::role(UserRole::Admin)->where('status', 'active')->count() <= 1))
+                    ->visible(fn (User $record): bool => $record->status === 'active')
+                    ->disabled(fn (User $record): bool => ! auth()->user()?->can('deactivate', $record))
                     ->tooltip(function (User $record): ?string {
                         if ($record->id === auth()->id()) {
                             return 'You cannot deactivate your own account.';
@@ -232,21 +230,13 @@ class StudentManagement extends Page implements HasTable
                         return null;
                     })
                     ->action(function (User $record): void {
-                        if ($record->id === auth()->id()) {
+                        if (! auth()->user()?->can('deactivate', $record)) {
                             Notification::make()
                                 ->title('Action Not Allowed')
                                 ->danger()
-                                ->body('You cannot deactivate your own account.')
-                                ->send();
-
-                            return;
-                        }
-
-                        if ($record->hasRole(UserRole::Admin) && User::role(UserRole::Admin)->where('status', 'active')->count() <= 1) {
-                            Notification::make()
-                                ->title('Action Not Allowed')
-                                ->danger()
-                                ->body('Cannot deactivate the last remaining Administrator.')
+                                ->body($record->id === auth()->id()
+                                    ? 'You cannot deactivate your own account.'
+                                    : 'Cannot deactivate the last remaining Administrator.')
                                 ->send();
 
                             return;
@@ -266,24 +256,45 @@ class StudentManagement extends Page implements HasTable
                             ->send();
                     }),
 
-                // UC-3.2.2: Reactivate a previously deactivated student.
-                Action::make('reactivate')
-                    ->label('Reactivate')
+                // UC-3.2.2: Activate a previously deactivated student (green checkmark).
+                // If the user never activated (email_verified_at is null), put them back to invited and send a fresh link.
+                Action::make('activate')
+                    ->label('Activate')
                     ->icon(Heroicon::OutlinedCheckCircle)
                     ->color('success')
                     ->requiresConfirmation()
-                    ->modalHeading('Reactivate Student')
-                    ->modalDescription(fn (User $record): string => "Reactivate {$record->name} ({$record->neptun_code})? They will be able to log in again with their existing password.")
-                    ->modalSubmitActionLabel('Yes, Reactivate')
+                    ->modalHeading('Activate Student')
+                    ->modalDescription(fn (User $record): string => $record->email_verified_at === null
+                        ? "Activate {$record->name} ({$record->neptun_code})? Since this account has not activated yet, their status will become Invited and a fresh activation email will be sent."
+                        : "Activate {$record->name} ({$record->neptun_code})? They will be able to log in again with their existing password.")
+                    ->modalSubmitActionLabel('Yes, Activate')
                     ->visible(fn (User $record): bool => $record->status === 'inactive')
                     ->action(function (User $record): void {
-                        $record->update(['status' => 'active']);
+                        if ($record->email_verified_at === null) {
+                            $token = Str::random(64);
 
-                        Notification::make()
-                            ->title('Student Reactivated')
-                            ->success()
-                            ->body("{$record->name} ({$record->neptun_code}) has been reactivated and can log in again.")
-                            ->send();
+                            $record->update([
+                                'status' => 'invited',
+                                'activation_token' => $token,
+                                'activation_token_expires_at' => now()->addHours(24),
+                            ]);
+
+                            $record->notify(new StudentInvitationNotification($token, 24));
+
+                            Notification::make()
+                                ->title('Student Activated')
+                                ->success()
+                                ->body("{$record->name} has not activated yet. Their status was set to Invited and a new activation link has been sent.")
+                                ->send();
+                        } else {
+                            $record->update(['status' => 'active']);
+
+                            Notification::make()
+                                ->title('Student Activated')
+                                ->success()
+                                ->body("{$record->name} ({$record->neptun_code}) has been activated and can log in again.")
+                                ->send();
+                        }
                     }),
             ]);
     }

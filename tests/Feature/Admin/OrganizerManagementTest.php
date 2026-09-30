@@ -39,7 +39,7 @@ class OrganizerManagementTest extends TestCase
         return $admin;
     }
 
-    private function makeOrganizer(string $status = 'active', ?int $facultyId = null, ?string $email = null): User
+    private function makeOrganizer(string $status = 'active', ?int $facultyId = null, ?string $email = null, bool $verified = true): User
     {
         static $counter = 1;
         $email = $email ?? 'organizer.'.($counter++).'@pte.hu';
@@ -50,6 +50,7 @@ class OrganizerManagementTest extends TestCase
             'password' => 'secret_hash',
             'status' => $status,
             'faculty_id' => $facultyId,
+            'email_verified_at' => $verified && $status !== 'invited' ? now() : null,
             'activation_token' => $status === 'invited' ? str_repeat('a', 64) : null,
             'activation_token_expires_at' => $status === 'invited' ? now()->addHours(24) : null,
         ]);
@@ -270,23 +271,14 @@ class OrganizerManagementTest extends TestCase
         ]);
     }
 
-    public function test_admin_can_deactivate_invited_organizer_and_revokes_token(): void
+    public function test_deactivate_action_is_hidden_for_invited_organizer(): void
     {
         $admin = $this->makeAdmin();
         $organizer = $this->makeOrganizer('invited');
 
-        // Confirm token exists before deactivation.
-        $this->assertNotNull($organizer->fresh()->activation_token);
-
         Livewire::actingAs($admin)
             ->test(OrganizerManagement::class)
-            ->callTableAction('deactivate', $organizer)
-            ->assertHasNoTableActionErrors();
-
-        $fresh = $organizer->fresh();
-        $this->assertSame('inactive', $fresh->status);
-        $this->assertNull($fresh->activation_token);
-        $this->assertNull($fresh->activation_token_expires_at);
+            ->assertTableActionHidden('deactivate', $organizer);
     }
 
     public function test_deactivate_action_is_hidden_for_already_inactive_organizer(): void
@@ -299,14 +291,14 @@ class OrganizerManagementTest extends TestCase
             ->assertTableActionHidden('deactivate', $organizer);
     }
 
-    public function test_admin_can_reactivate_inactive_organizer_per_uc_3_1_2(): void
+    public function test_admin_can_activate_previously_verified_inactive_organizer_per_uc_3_1_2(): void
     {
         $admin = $this->makeAdmin();
-        $organizer = $this->makeOrganizer('inactive');
+        $organizer = $this->makeOrganizer('inactive', verified: true);
 
         Livewire::actingAs($admin)
             ->test(OrganizerManagement::class)
-            ->callTableAction('reactivate', $organizer)
+            ->callTableAction('activate', $organizer)
             ->assertHasNoTableActionErrors();
 
         $this->assertDatabaseHas('users', [
@@ -315,24 +307,52 @@ class OrganizerManagementTest extends TestCase
         ]);
     }
 
-    public function test_reactivate_action_is_hidden_for_active_organizer(): void
+    public function test_admin_activating_never_activated_organizer_resets_to_invited_and_resends_token(): void
+    {
+        Notification::fake();
+
+        $admin = $this->makeAdmin();
+        $organizer = $this->makeOrganizer('inactive', verified: false);
+
+        Livewire::actingAs($admin)
+            ->test(OrganizerManagement::class)
+            ->callTableAction('activate', $organizer)
+            ->assertHasNoTableActionErrors();
+
+        $fresh = $organizer->fresh();
+        $this->assertSame('invited', $fresh->status);
+        $this->assertNotNull($fresh->activation_token);
+        $this->assertSame(64, strlen($fresh->activation_token));
+        $this->assertTrue($fresh->activation_token_expires_at->isFuture());
+
+        Notification::assertSentTo(
+            $fresh,
+            OrganizerInvitationNotification::class,
+            function (OrganizerInvitationNotification $notification) use ($fresh) {
+                return $notification->activationToken === $fresh->activation_token
+                    && $notification->expiresInHours === 24;
+            }
+        );
+    }
+
+    public function test_activate_action_is_hidden_for_active_organizer(): void
     {
         $admin = $this->makeAdmin();
         $organizer = $this->makeOrganizer('active');
 
         Livewire::actingAs($admin)
             ->test(OrganizerManagement::class)
-            ->assertTableActionHidden('reactivate', $organizer);
+            ->assertTableActionHidden('activate', $organizer);
     }
 
-    public function test_reactivate_action_is_hidden_for_invited_organizer(): void
+    public function test_activate_action_is_hidden_for_invited_organizer(): void
     {
         $admin = $this->makeAdmin();
         $organizer = $this->makeOrganizer('invited');
 
         Livewire::actingAs($admin)
             ->test(OrganizerManagement::class)
-            ->assertTableActionHidden('reactivate', $organizer);
+            ->assertTableActionHidden('activate', $organizer);
     }
 
     /**

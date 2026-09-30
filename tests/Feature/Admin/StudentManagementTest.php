@@ -39,7 +39,7 @@ class StudentManagementTest extends TestCase
         return $admin;
     }
 
-    private function makeStudent(string $status = 'active', string $neptunCode = 'STU001'): User
+    private function makeStudent(string $status = 'active', string $neptunCode = 'STU001', bool $verified = true): User
     {
         $student = User::create([
             'name' => 'Test Student',
@@ -49,6 +49,7 @@ class StudentManagementTest extends TestCase
             'year_of_study' => 2,
             'password' => 'secret_hash',
             'status' => $status,
+            'email_verified_at' => $verified && $status !== 'invited' ? now() : null,
             'activation_token' => $status === 'invited' ? str_repeat('b', 64) : null,
             'activation_token_expires_at' => $status === 'invited' ? now()->addHours(24) : null,
         ]);
@@ -307,23 +308,14 @@ class StudentManagementTest extends TestCase
         ]);
     }
 
-    public function test_admin_can_deactivate_invited_student_and_revokes_token(): void
+    public function test_deactivate_action_is_hidden_for_invited_student(): void
     {
         $admin = $this->makeAdmin();
         $student = $this->makeStudent('invited', 'INV001');
 
-        // Confirm token exists before deactivation.
-        $this->assertNotNull($student->fresh()->activation_token);
-
         Livewire::actingAs($admin)
             ->test(StudentManagement::class)
-            ->callTableAction('deactivate', $student)
-            ->assertHasNoTableActionErrors();
-
-        $fresh = $student->fresh();
-        $this->assertSame('inactive', $fresh->status);
-        $this->assertNull($fresh->activation_token);
-        $this->assertNull($fresh->activation_token_expires_at);
+            ->assertTableActionHidden('deactivate', $student);
     }
 
     public function test_deactivate_action_is_hidden_for_already_inactive_student(): void
@@ -336,14 +328,14 @@ class StudentManagementTest extends TestCase
             ->assertTableActionHidden('deactivate', $student);
     }
 
-    public function test_admin_can_reactivate_inactive_student_per_uc_3_2_2(): void
+    public function test_admin_can_activate_previously_verified_inactive_student_per_uc_3_2_2(): void
     {
         $admin = $this->makeAdmin();
-        $student = $this->makeStudent('inactive', 'INA002');
+        $student = $this->makeStudent('inactive', 'INA002', verified: true);
 
         Livewire::actingAs($admin)
             ->test(StudentManagement::class)
-            ->callTableAction('reactivate', $student)
+            ->callTableAction('activate', $student)
             ->assertHasNoTableActionErrors();
 
         $this->assertDatabaseHas('users', [
@@ -352,24 +344,52 @@ class StudentManagementTest extends TestCase
         ]);
     }
 
-    public function test_reactivate_action_is_hidden_for_active_student(): void
+    public function test_admin_activating_never_activated_student_resets_to_invited_and_resends_token(): void
+    {
+        Notification::fake();
+
+        $admin = $this->makeAdmin();
+        $student = $this->makeStudent('inactive', 'INA003', verified: false);
+
+        Livewire::actingAs($admin)
+            ->test(StudentManagement::class)
+            ->callTableAction('activate', $student)
+            ->assertHasNoTableActionErrors();
+
+        $fresh = $student->fresh();
+        $this->assertSame('invited', $fresh->status);
+        $this->assertNotNull($fresh->activation_token);
+        $this->assertSame(64, strlen($fresh->activation_token));
+        $this->assertTrue($fresh->activation_token_expires_at->isFuture());
+
+        Notification::assertSentTo(
+            $fresh,
+            StudentInvitationNotification::class,
+            function (StudentInvitationNotification $notification) use ($fresh) {
+                return $notification->activationToken === $fresh->activation_token
+                    && $notification->expiresInHours === 24;
+            }
+        );
+    }
+
+    public function test_activate_action_is_hidden_for_active_student(): void
     {
         $admin = $this->makeAdmin();
         $student = $this->makeStudent('active', 'ACT002');
 
         Livewire::actingAs($admin)
             ->test(StudentManagement::class)
-            ->assertTableActionHidden('reactivate', $student);
+            ->assertTableActionHidden('activate', $student);
     }
 
-    public function test_reactivate_action_is_hidden_for_invited_student(): void
+    public function test_activate_action_is_hidden_for_invited_student(): void
     {
         $admin = $this->makeAdmin();
         $student = $this->makeStudent('invited', 'INV002');
 
         Livewire::actingAs($admin)
             ->test(StudentManagement::class)
-            ->assertTableActionHidden('reactivate', $student);
+            ->assertTableActionHidden('activate', $student);
     }
 
     public function test_admin_cannot_deactivate_their_own_account_if_they_appear_in_student_list(): void
