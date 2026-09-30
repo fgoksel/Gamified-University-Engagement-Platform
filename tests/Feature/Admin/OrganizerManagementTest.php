@@ -445,4 +445,16 @@ class OrganizerManagementTest extends TestCase
             ->test(OrganizerManagement::class)
             ->assertTableActionDisabled('deactivate', $admin);
     }
+
+    public function test_deactivate_action_aborts_if_called_on_own_admin_account(): void
+    {
+        $admin = $this->makeAdmin();
+        $admin->assignRole(UserRole::Teacher);
+
+        Livewire::actingAs($admin)
+            ->test(OrganizerManagement::class)
+            ->callTableAction('deactivate', $admin);
+
+        $this->assertSame('active', $admin->fresh()->status);
+    }
 }

@@ -514,4 +514,16 @@ class StudentManagementTest extends TestCase
             ->test(StudentManagement::class)
             ->assertTableActionDisabled('deactivate', $admin);
     }
+
+    public function test_deactivate_action_aborts_if_called_on_own_admin_account_in_student_list(): void
+    {
+        $admin = $this->makeAdmin();
+        $admin->assignRole(UserRole::Student);
+
+        Livewire::actingAs($admin)
+            ->test(StudentManagement::class)
+            ->callTableAction('deactivate', $admin);
+
+        $this->assertSame('active', $admin->fresh()->status);
+    }
 }
