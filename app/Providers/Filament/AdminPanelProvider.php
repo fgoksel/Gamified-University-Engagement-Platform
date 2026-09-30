@@ -2,6 +2,8 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Pages\Auth\EditProfile;
+use App\Http\Middleware\EnsureAdminPasswordIsChanged;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -27,6 +29,10 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
+            // Task #17: "Forgot password" on the admin login page, and the
+            // admin's own profile page (change own password, UC-3.0).
+            ->passwordReset()
+            ->profile(EditProfile::class, isSimple: false)
             ->brandName('Campus Engage')
             ->font('Instrument Sans')
             ->colors([
@@ -55,6 +61,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
+                EnsureAdminPasswordIsChanged::class,
             ]);
     }
 }
