@@ -21,6 +21,17 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
+/**
+ * Organizer Management — UC-3.1.1 (invite) and UC-3.1.2 (listing + deactivation).
+ *
+ * "Organizer" is the UI term for the 'teacher' role (Technical Specification 6.4).
+ * The UserRole::Teacher enum case is the canonical Spatie role name in the database.
+ *
+ * Note: Admin self-lock prevention is scoped to Task #32, which builds on this
+ * deactivation logic. An admin account (role='admin') cannot appear in this table
+ * anyway — only Teacher-role accounts are queried — so self-deactivation via this
+ * page is structurally impossible without Task #32's cross-page guard.
+ */
 class OrganizerManagement extends Page implements HasTable
 {
     use InteractsWithTable;
@@ -72,6 +83,54 @@ class OrganizerManagement extends Page implements HasTable
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
+            ])
+            ->actions([
+                // UC-3.1.2: Deactivate an active or invited organizer.
+                // Nulling the token prevents a pending invite link from still working
+                // after the account has been deactivated.
+                Action::make('deactivate')
+                    ->label('Deactivate')
+                    ->icon(Heroicon::OutlinedNoSymbol)
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->modalHeading('Deactivate Organizer')
+                    ->modalDescription(fn (User $record): string => "Are you sure you want to deactivate {$record->name}? They will no longer be able to log in.")
+                    ->modalSubmitActionLabel('Yes, Deactivate')
+                    ->visible(fn (User $record): bool => $record->status !== 'inactive')
+                    ->action(function (User $record): void {
+                        $record->update([
+                            'status' => 'inactive',
+                            // Revoke any pending activation link (UC-3.1.2).
+                            'activation_token' => null,
+                            'activation_token_expires_at' => null,
+                        ]);
+
+                        Notification::make()
+                            ->title('Organizer Deactivated')
+                            ->warning()
+                            ->body("{$record->name} has been deactivated and can no longer log in.")
+                            ->send();
+                    }),
+
+                // UC-3.1.2: Reactivate a previously deactivated organizer.
+                Action::make('reactivate')
+                    ->label('Reactivate')
+                    ->icon(Heroicon::OutlinedCheckCircle)
+                    ->color('success')
+                    ->requiresConfirmation()
+                    ->modalHeading('Reactivate Organizer')
+                    ->modalDescription(fn (User $record): string => "Reactivate {$record->name}? They will be able to log in again with their existing password.")
+                    ->modalSubmitActionLabel('Yes, Reactivate')
+                    ->visible(fn (User $record): bool => $record->status === 'inactive')
+                    ->action(function (User $record): void {
+                        $record->update(['status' => 'active']);
+
+                        Notification::make()
+                            ->title('Organizer Reactivated')
+                            ->success()
+                            ->body("{$record->name} has been reactivated and can log in again.")
+                            ->send();
+                    }),
             ]);
     }
 

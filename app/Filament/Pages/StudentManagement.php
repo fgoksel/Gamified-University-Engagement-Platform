@@ -21,6 +21,11 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
+/**
+ * Student Management — UC-3.2.1 (invite) and UC-3.2.2 (listing + deactivation).
+ *
+ * Students are identified by a non-null neptun_code and carry UserRole::Student.
+ */
 class StudentManagement extends Page implements HasTable
 {
     use InteractsWithTable;
@@ -86,6 +91,54 @@ class StudentManagement extends Page implements HasTable
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
+            ])
+            ->actions([
+                // UC-3.2.2: Deactivate an active or invited student.
+                // Nulling the token prevents a pending invite link from still working
+                // after the account has been deactivated.
+                Action::make('deactivate')
+                    ->label('Deactivate')
+                    ->icon(Heroicon::OutlinedNoSymbol)
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->modalHeading('Deactivate Student')
+                    ->modalDescription(fn (User $record): string => "Are you sure you want to deactivate {$record->name} ({$record->neptun_code})? They will no longer be able to log in.")
+                    ->modalSubmitActionLabel('Yes, Deactivate')
+                    ->visible(fn (User $record): bool => $record->status !== 'inactive')
+                    ->action(function (User $record): void {
+                        $record->update([
+                            'status' => 'inactive',
+                            // Revoke any pending activation link (UC-3.2.2).
+                            'activation_token' => null,
+                            'activation_token_expires_at' => null,
+                        ]);
+
+                        Notification::make()
+                            ->title('Student Deactivated')
+                            ->warning()
+                            ->body("{$record->name} ({$record->neptun_code}) has been deactivated and can no longer log in.")
+                            ->send();
+                    }),
+
+                // UC-3.2.2: Reactivate a previously deactivated student.
+                Action::make('reactivate')
+                    ->label('Reactivate')
+                    ->icon(Heroicon::OutlinedCheckCircle)
+                    ->color('success')
+                    ->requiresConfirmation()
+                    ->modalHeading('Reactivate Student')
+                    ->modalDescription(fn (User $record): string => "Reactivate {$record->name} ({$record->neptun_code})? They will be able to log in again with their existing password.")
+                    ->modalSubmitActionLabel('Yes, Reactivate')
+                    ->visible(fn (User $record): bool => $record->status === 'inactive')
+                    ->action(function (User $record): void {
+                        $record->update(['status' => 'active']);
+
+                        Notification::make()
+                            ->title('Student Reactivated')
+                            ->success()
+                            ->body("{$record->name} ({$record->neptun_code}) has been reactivated and can log in again.")
+                            ->send();
+                    }),
             ]);
     }
 

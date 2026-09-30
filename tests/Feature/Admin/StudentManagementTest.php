@@ -24,7 +24,9 @@ class StudentManagementTest extends TestCase
         $this->seed(RolePermissionSeeder::class);
     }
 
-    public function test_admin_can_view_student_management_page_and_table(): void
+    // ─── Helpers ─────────────────────────────────────────────────────────────
+
+    private function makeAdmin(): User
     {
         $admin = User::create([
             'name' => 'System Admin',
@@ -33,6 +35,33 @@ class StudentManagementTest extends TestCase
             'status' => 'active',
         ]);
         $admin->assignRole(UserRole::Admin);
+
+        return $admin;
+    }
+
+    private function makeStudent(string $status = 'active', string $neptunCode = 'STU001'): User
+    {
+        $student = User::create([
+            'name' => 'Test Student',
+            'email' => "student.{$neptunCode}@student.pte.hu",
+            'neptun_code' => $neptunCode,
+            'major' => 'Computer Science BSc',
+            'year_of_study' => 2,
+            'password' => 'secret_hash',
+            'status' => $status,
+            'activation_token' => $status === 'invited' ? str_repeat('b', 64) : null,
+            'activation_token_expires_at' => $status === 'invited' ? now()->addHours(24) : null,
+        ]);
+        $student->assignRole(UserRole::Student);
+
+        return $student;
+    }
+
+    // ─── UC-3.2.1: Listing ────────────────────────────────────────────────────
+
+    public function test_admin_can_view_student_management_page_and_table(): void
+    {
+        $admin = $this->makeAdmin();
 
         $faculty = Faculty::create([
             'name' => 'Faculty of Engineering and Information Technology',
@@ -70,13 +99,7 @@ class StudentManagementTest extends TestCase
     {
         Notification::fake();
 
-        $admin = User::create([
-            'name' => 'System Admin',
-            'email' => 'admin@campusengage.hu',
-            'password' => 'secret_hash',
-            'status' => 'active',
-        ]);
-        $admin->assignRole(UserRole::Admin);
+        $admin = $this->makeAdmin();
 
         $faculty = Faculty::create([
             'name' => 'Faculty of Sciences',
@@ -128,13 +151,7 @@ class StudentManagementTest extends TestCase
 
     public function test_student_invitation_requires_mandatory_fields(): void
     {
-        $admin = User::create([
-            'name' => 'System Admin',
-            'email' => 'admin@campusengage.hu',
-            'password' => 'secret_hash',
-            'status' => 'active',
-        ]);
-        $admin->assignRole(UserRole::Admin);
+        $admin = $this->makeAdmin();
 
         Livewire::actingAs($admin)
             ->test(StudentManagement::class)
@@ -157,13 +174,7 @@ class StudentManagementTest extends TestCase
 
     public function test_student_invitation_rejects_duplicate_email_with_spec_message(): void
     {
-        $admin = User::create([
-            'name' => 'System Admin',
-            'email' => 'admin@campusengage.hu',
-            'password' => 'secret_hash',
-            'status' => 'active',
-        ]);
-        $admin->assignRole(UserRole::Admin);
+        $admin = $this->makeAdmin();
 
         User::create([
             'name' => 'Existing Student',
@@ -190,13 +201,7 @@ class StudentManagementTest extends TestCase
 
     public function test_student_invitation_rejects_duplicate_neptun_code_with_spec_message(): void
     {
-        $admin = User::create([
-            'name' => 'System Admin',
-            'email' => 'admin@campusengage.hu',
-            'password' => 'secret_hash',
-            'status' => 'active',
-        ]);
-        $admin->assignRole(UserRole::Admin);
+        $admin = $this->makeAdmin();
 
         User::create([
             'name' => 'Existing Student',
@@ -223,13 +228,7 @@ class StudentManagementTest extends TestCase
 
     public function test_student_invitation_validates_neptun_code_format(): void
     {
-        $admin = User::create([
-            'name' => 'System Admin',
-            'email' => 'admin@campusengage.hu',
-            'password' => 'secret_hash',
-            'status' => 'active',
-        ]);
-        $admin->assignRole(UserRole::Admin);
+        $admin = $this->makeAdmin();
 
         Livewire::actingAs($admin)
             ->test(StudentManagement::class)
@@ -248,13 +247,7 @@ class StudentManagementTest extends TestCase
     {
         Notification::fake();
 
-        $admin = User::create([
-            'name' => 'System Admin',
-            'email' => 'admin@campusengage.hu',
-            'password' => 'secret_hash',
-            'status' => 'active',
-        ]);
-        $admin->assignRole(UserRole::Admin);
+        $admin = $this->makeAdmin();
 
         Livewire::actingAs($admin)
             ->test(StudentManagement::class)
@@ -292,5 +285,90 @@ class StudentManagementTest extends TestCase
         $this->assertStringContainsString('NAGY01', $mail->render());
         $this->assertStringContainsString('/auth/activate/test-token-student-123', $mail->actionUrl);
         $this->assertStringContainsString('24 hours', $mail->render());
+    }
+
+    // ─── UC-3.2.2: Deactivation ───────────────────────────────────────────────
+
+    public function test_admin_can_deactivate_active_student_per_uc_3_2_2(): void
+    {
+        $admin = $this->makeAdmin();
+        $student = $this->makeStudent('active', 'ACT001');
+
+        Livewire::actingAs($admin)
+            ->test(StudentManagement::class)
+            ->callTableAction('deactivate', $student)
+            ->assertHasNoTableActionErrors();
+
+        $this->assertDatabaseHas('users', [
+            'id' => $student->id,
+            'status' => 'inactive',
+            'activation_token' => null,
+            'activation_token_expires_at' => null,
+        ]);
+    }
+
+    public function test_admin_can_deactivate_invited_student_and_revokes_token(): void
+    {
+        $admin = $this->makeAdmin();
+        $student = $this->makeStudent('invited', 'INV001');
+
+        // Confirm token exists before deactivation.
+        $this->assertNotNull($student->fresh()->activation_token);
+
+        Livewire::actingAs($admin)
+            ->test(StudentManagement::class)
+            ->callTableAction('deactivate', $student)
+            ->assertHasNoTableActionErrors();
+
+        $fresh = $student->fresh();
+        $this->assertSame('inactive', $fresh->status);
+        $this->assertNull($fresh->activation_token);
+        $this->assertNull($fresh->activation_token_expires_at);
+    }
+
+    public function test_deactivate_action_is_hidden_for_already_inactive_student(): void
+    {
+        $admin = $this->makeAdmin();
+        $student = $this->makeStudent('inactive', 'INA001');
+
+        Livewire::actingAs($admin)
+            ->test(StudentManagement::class)
+            ->assertTableActionHidden('deactivate', $student);
+    }
+
+    public function test_admin_can_reactivate_inactive_student_per_uc_3_2_2(): void
+    {
+        $admin = $this->makeAdmin();
+        $student = $this->makeStudent('inactive', 'INA002');
+
+        Livewire::actingAs($admin)
+            ->test(StudentManagement::class)
+            ->callTableAction('reactivate', $student)
+            ->assertHasNoTableActionErrors();
+
+        $this->assertDatabaseHas('users', [
+            'id' => $student->id,
+            'status' => 'active',
+        ]);
+    }
+
+    public function test_reactivate_action_is_hidden_for_active_student(): void
+    {
+        $admin = $this->makeAdmin();
+        $student = $this->makeStudent('active', 'ACT002');
+
+        Livewire::actingAs($admin)
+            ->test(StudentManagement::class)
+            ->assertTableActionHidden('reactivate', $student);
+    }
+
+    public function test_reactivate_action_is_hidden_for_invited_student(): void
+    {
+        $admin = $this->makeAdmin();
+        $student = $this->makeStudent('invited', 'INV002');
+
+        Livewire::actingAs($admin)
+            ->test(StudentManagement::class)
+            ->assertTableActionHidden('reactivate', $student);
     }
 }

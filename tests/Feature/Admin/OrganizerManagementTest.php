@@ -24,7 +24,9 @@ class OrganizerManagementTest extends TestCase
         $this->seed(RolePermissionSeeder::class);
     }
 
-    public function test_admin_can_view_organizer_management_page_and_table(): void
+    // ─── Helpers ─────────────────────────────────────────────────────────────
+
+    private function makeAdmin(): User
     {
         $admin = User::create([
             'name' => 'System Admin',
@@ -33,6 +35,31 @@ class OrganizerManagementTest extends TestCase
             'status' => 'active',
         ]);
         $admin->assignRole(UserRole::Admin);
+
+        return $admin;
+    }
+
+    private function makeOrganizer(string $status = 'active', ?int $facultyId = null): User
+    {
+        $organizer = User::create([
+            'name' => 'Test Organizer',
+            'email' => 'organizer@pte.hu',
+            'password' => 'secret_hash',
+            'status' => $status,
+            'faculty_id' => $facultyId,
+            'activation_token' => $status === 'invited' ? str_repeat('a', 64) : null,
+            'activation_token_expires_at' => $status === 'invited' ? now()->addHours(24) : null,
+        ]);
+        $organizer->assignRole(UserRole::Teacher);
+
+        return $organizer;
+    }
+
+    // ─── UC-3.1.1: Listing ────────────────────────────────────────────────────
+
+    public function test_admin_can_view_organizer_management_page_and_table(): void
+    {
+        $admin = $this->makeAdmin();
 
         $faculty = Faculty::create([
             'name' => 'Faculty of Engineering and Information Technology',
@@ -76,14 +103,7 @@ class OrganizerManagementTest extends TestCase
     {
         Notification::fake();
 
-        $admin = User::create([
-            'name' => 'System Admin',
-            'email' => 'admin@campusengage.hu',
-            'password' => 'secret_hash',
-            'status' => 'active',
-        ]);
-
-        $admin->assignRole(UserRole::Admin);
+        $admin = $this->makeAdmin();
 
         $faculty = Faculty::create([
             'name' => 'Faculty of Sciences',
@@ -125,13 +145,7 @@ class OrganizerManagementTest extends TestCase
 
     public function test_organizer_invitation_requires_name_and_valid_email(): void
     {
-        $admin = User::create([
-            'name' => 'System Admin',
-            'email' => 'admin@campusengage.hu',
-            'password' => 'secret_hash',
-            'status' => 'active',
-        ]);
-        $admin->assignRole(UserRole::Admin);
+        $admin = $this->makeAdmin();
 
         Livewire::actingAs($admin)
             ->test(OrganizerManagement::class)
@@ -145,13 +159,7 @@ class OrganizerManagementTest extends TestCase
 
     public function test_organizer_invitation_rejects_duplicate_email_with_spec_message(): void
     {
-        $admin = User::create([
-            'name' => 'System Admin',
-            'email' => 'admin@campusengage.hu',
-            'password' => 'secret_hash',
-            'status' => 'active',
-        ]);
-        $admin->assignRole(UserRole::Admin);
+        $admin = $this->makeAdmin();
 
         User::create([
             'name' => 'Original User',
@@ -176,14 +184,7 @@ class OrganizerManagementTest extends TestCase
     {
         Notification::fake();
 
-        $admin = User::create([
-            'name' => 'System Admin',
-            'email' => 'admin@campusengage.hu',
-            'password' => 'secret_hash',
-            'status' => 'active',
-        ]);
-
-        $admin->assignRole(UserRole::Admin);
+        $admin = $this->makeAdmin();
 
         Livewire::actingAs($admin)
             ->test(OrganizerManagement::class)
@@ -219,13 +220,7 @@ class OrganizerManagementTest extends TestCase
 
     public function test_administrators_and_observers_are_not_displayed_in_organizers_table(): void
     {
-        $admin = User::create([
-            'name' => 'System Admin',
-            'email' => 'admin@campusengage.hu',
-            'password' => 'secret_hash',
-            'status' => 'active',
-        ]);
-        $admin->assignRole(UserRole::Admin);
+        $admin = $this->makeAdmin();
 
         $observer = User::create([
             'name' => 'Public Observer',
@@ -250,5 +245,90 @@ class OrganizerManagementTest extends TestCase
             ->assertSeeHtml('Valid Teacher')
             ->assertDontSeeHtml('admin@campusengage.hu')
             ->assertDontSeeHtml('observer@campusengage.hu');
+    }
+
+    // ─── UC-3.1.2: Deactivation ───────────────────────────────────────────────
+
+    public function test_admin_can_deactivate_active_organizer_per_uc_3_1_2(): void
+    {
+        $admin = $this->makeAdmin();
+        $organizer = $this->makeOrganizer('active');
+
+        Livewire::actingAs($admin)
+            ->test(OrganizerManagement::class)
+            ->callTableAction('deactivate', $organizer)
+            ->assertHasNoTableActionErrors();
+
+        $this->assertDatabaseHas('users', [
+            'id' => $organizer->id,
+            'status' => 'inactive',
+            'activation_token' => null,
+            'activation_token_expires_at' => null,
+        ]);
+    }
+
+    public function test_admin_can_deactivate_invited_organizer_and_revokes_token(): void
+    {
+        $admin = $this->makeAdmin();
+        $organizer = $this->makeOrganizer('invited');
+
+        // Confirm token exists before deactivation.
+        $this->assertNotNull($organizer->fresh()->activation_token);
+
+        Livewire::actingAs($admin)
+            ->test(OrganizerManagement::class)
+            ->callTableAction('deactivate', $organizer)
+            ->assertHasNoTableActionErrors();
+
+        $fresh = $organizer->fresh();
+        $this->assertSame('inactive', $fresh->status);
+        $this->assertNull($fresh->activation_token);
+        $this->assertNull($fresh->activation_token_expires_at);
+    }
+
+    public function test_deactivate_action_is_hidden_for_already_inactive_organizer(): void
+    {
+        $admin = $this->makeAdmin();
+        $organizer = $this->makeOrganizer('inactive');
+
+        Livewire::actingAs($admin)
+            ->test(OrganizerManagement::class)
+            ->assertTableActionHidden('deactivate', $organizer);
+    }
+
+    public function test_admin_can_reactivate_inactive_organizer_per_uc_3_1_2(): void
+    {
+        $admin = $this->makeAdmin();
+        $organizer = $this->makeOrganizer('inactive');
+
+        Livewire::actingAs($admin)
+            ->test(OrganizerManagement::class)
+            ->callTableAction('reactivate', $organizer)
+            ->assertHasNoTableActionErrors();
+
+        $this->assertDatabaseHas('users', [
+            'id' => $organizer->id,
+            'status' => 'active',
+        ]);
+    }
+
+    public function test_reactivate_action_is_hidden_for_active_organizer(): void
+    {
+        $admin = $this->makeAdmin();
+        $organizer = $this->makeOrganizer('active');
+
+        Livewire::actingAs($admin)
+            ->test(OrganizerManagement::class)
+            ->assertTableActionHidden('reactivate', $organizer);
+    }
+
+    public function test_reactivate_action_is_hidden_for_invited_organizer(): void
+    {
+        $admin = $this->makeAdmin();
+        $organizer = $this->makeOrganizer('invited');
+
+        Livewire::actingAs($admin)
+            ->test(OrganizerManagement::class)
+            ->assertTableActionHidden('reactivate', $organizer);
     }
 }
