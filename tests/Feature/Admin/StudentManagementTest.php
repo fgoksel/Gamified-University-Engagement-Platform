@@ -376,6 +376,7 @@ class StudentManagementTest extends TestCase
     {
         $admin = $this->makeAdmin();
         $admin->update(['neptun_code' => 'ADM999']);
+        $admin->assignRole(UserRole::Student);
 
         Livewire::actingAs($admin)
             ->test(StudentManagement::class)
