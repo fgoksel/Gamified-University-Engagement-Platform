@@ -3,6 +3,7 @@ import { onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { Link, usePage } from "@inertiajs/vue3";
 import { Menu, QrCode, X } from "@lucide/vue";
 import AppLogo from "../Components/AppLogo.vue";
+import FlashToast from "../Components/FlashToast.vue";
 import SidebarContent from "../Components/SidebarContent.vue";
 
 defineProps({
@@ -110,6 +111,9 @@ onBeforeUnmount(() => {
                 <slot />
             </main>
         </div>
+
+        <!-- Pop-up for success messages -->
+        <FlashToast />
 
         <!-- QR shortcut: always within thumb reach on phones -->
         <Link

@@ -2,6 +2,7 @@ import { createApp, h } from "vue";
 import { createInertiaApp } from "@inertiajs/vue3";
 import { initTheme } from "./composables/useTheme.js";
 import AppLayout from "./Layouts/AppLayout.vue";
+import AuthLayout from "./Layouts/AuthLayout.vue";
 import GuestLayout from "./Layouts/GuestLayout.vue";
 
 initTheme();
@@ -12,8 +13,13 @@ createInertiaApp({
         return pages[`./Pages/${name}.vue`];
     },
     // Every page gets a layout automatically:
-    // pages in Pages/Public/ use GuestLayout, all others use AppLayout.
-    layout: (name) => (name.startsWith("Public/") ? GuestLayout : AppLayout),
+    // Pages/Public/ use GuestLayout, Pages/Auth/ (login, passwords) use
+    // AuthLayout, all others use AppLayout.
+    layout: (name) => {
+        if (name.startsWith("Public/")) return GuestLayout;
+        if (name.startsWith("Auth/")) return AuthLayout;
+        return AppLayout;
+    },
     setup({ el, App, props, plugin }) {
         createApp({ render: () => h(App, props) })
             .use(plugin)
