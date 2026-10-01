@@ -29,10 +29,13 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
+            ->login()
             // Task #17: "Forgot password" on the admin login page, and the
             // admin's own profile page (change own password, UC-3.0).
             ->passwordReset()
             ->profile(EditProfile::class, isSimple: false)
+            // Admin panel messages for finished / failed CSV imports (Task #30).
+            ->databaseNotifications()
             ->brandName('Campus Engage')
             ->font('Instrument Sans')
             ->colors([
