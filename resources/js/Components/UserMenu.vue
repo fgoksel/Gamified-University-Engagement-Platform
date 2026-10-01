@@ -2,10 +2,13 @@
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { Link, usePage } from "@inertiajs/vue3";
 import { ChevronUp, LogOut, Moon, Settings, Sun } from "@lucide/vue";
-import { useTheme } from "../composables/useTheme.js";
+import { storeToRefs } from "pinia";
+import { useThemeStore } from "../stores/theme.js";
 
 const page = usePage();
-const { theme, toggleTheme } = useTheme();
+const themeStore = useThemeStore();
+const { theme } = storeToRefs(themeStore);
+const { toggleTheme } = themeStore;
 
 // No login yet: show a placeholder until the backend shares auth.user.
 const user = computed(
