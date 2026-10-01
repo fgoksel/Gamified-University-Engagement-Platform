@@ -33,6 +33,7 @@ class AdminPanelProvider extends PanelProvider
             // admin's own profile page (change own password, UC-3.0).
             ->passwordReset()
             ->profile(EditProfile::class, isSimple: false)
+            ->databaseNotifications()
             ->brandName('Campus Engage')
             ->font('Instrument Sans')
             ->colors([

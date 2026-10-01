@@ -1,0 +1,388 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Enums\UserRole;
+use App\Jobs\ImportCourseEnrollmentsJob;
+use App\Jobs\ImportOrganizersJob;
+use App\Jobs\ImportStudentsJob;
+use App\Models\Faculty;
+use App\Models\Semester;
+use App\Models\User;
+use App\Notifications\OrganizerInvitationNotification;
+use App\Notifications\StudentInvitationNotification;
+use Database\Seeders\RolePermissionSeeder;
+use Filament\Notifications\DatabaseNotification;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
+use RuntimeException;
+use Tests\TestCase;
+
+/**
+ * Checks the background CSV import jobs (Task #30, Technical Specification 5.6, 7.3.1, 8.1, 8.4).
+ */
+class CsvImportJobsTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private User $admin;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->seed(RolePermissionSeeder::class);
+        Storage::fake('local');
+        Notification::fake();
+
+        $this->admin = User::factory()->create()->assignRole(UserRole::Admin);
+
+        $this->createCourseTablesIfMissing();
+    }
+
+    // ---- Queue behaviour ---------------------------------------------------
+
+    public function test_the_jobs_run_in_the_background_with_three_tries_and_growing_waits(): void
+    {
+        Queue::fake();
+
+        ImportOrganizersJob::dispatch('imports/a.csv', $this->admin->id);
+        ImportStudentsJob::dispatch('imports/b.csv', $this->admin->id);
+        ImportCourseEnrollmentsJob::dispatch('imports/c.csv', $this->admin->id);
+
+        Queue::assertPushed(ImportOrganizersJob::class);
+        Queue::assertPushed(ImportStudentsJob::class);
+        Queue::assertPushed(ImportCourseEnrollmentsJob::class);
+
+        $job = new ImportOrganizersJob('imports/a.csv', $this->admin->id);
+        $this->assertSame(3, $job->tries);
+        $this->assertSame([10, 60, 300], $job->backoff());
+    }
+
+    public function test_a_job_that_keeps_failing_tells_the_administrator_and_removes_the_file(): void
+    {
+        $path = $this->csv("Full Name,Email\nAnna Kiss,anna@example.com\n");
+
+        (new ImportOrganizersJob($path, $this->admin->id))->failed(new RuntimeException('database is gone'));
+
+        $this->assertSame('Organizer import failed', $this->adminMessage()['title']);
+        Storage::disk('local')->assertMissing($path);
+    }
+
+    // ---- Organizers (UC-3.1.1) --------------------------------------------
+
+    public function test_organizers_are_created_as_invited_teachers_and_get_an_activation_email(): void
+    {
+        $faculty = Faculty::create(['name' => 'Faculty of Law', 'code' => 'LAW']);
+
+        $path = $this->csv("Full Name,Email,Faculty\nAnna Kiss,Anna@Example.com,LAW\nBela Nagy,bela@example.com,Faculty of Law\nCili Toth,cili@example.com,\n");
+
+        (new ImportOrganizersJob($path, $this->admin->id))->handle();
+
+        $anna = User::where('email', 'anna@example.com')->firstOrFail();
+        $this->assertSame('invited', $anna->status);
+        $this->assertTrue($anna->must_change_password);
+        $this->assertTrue($anna->hasRole(UserRole::Teacher));
+        $this->assertSame($faculty->id, $anna->faculty_id);
+        $this->assertNotEmpty($anna->activation_token);
+        $this->assertTrue($anna->activation_token_expires_at->between(now()->addHours(23), now()->addHours(24)->addMinute()));
+        $this->assertSame($faculty->id, User::where('email', 'bela@example.com')->value('faculty_id'));
+        $this->assertNull(User::where('email', 'cili@example.com')->value('faculty_id'));
+
+        Notification::assertSentTo($anna, OrganizerInvitationNotification::class);
+        $this->assertSame('Successfully imported 3 organizers.', $this->adminMessage()['body']);
+        Storage::disk('local')->assertMissing($path);
+    }
+
+    public function test_organizer_rows_that_cannot_be_imported_are_skipped_and_reported(): void
+    {
+        User::factory()->create(['email' => 'taken@example.com']);
+
+        $path = $this->csv("Full Name,Email,Faculty\nAnna Kiss,anna@example.com,\nBela Nagy,taken@example.com,\nCili Toth,not-an-email,\n,empty@example.com,\nDora Szabo,dora@example.com,Atlantis\n");
+
+        (new ImportOrganizersJob($path, $this->admin->id))->handle();
+
+        $body = $this->adminMessage()['body'];
+
+        $this->assertStringContainsString('Successfully imported 2 organizers.', $body);
+        $this->assertStringContainsString('3 row(s) were skipped.', $body);
+        $this->assertStringContainsString('Row 3 skipped: This email address is already registered in the system.', $body);
+        $this->assertStringContainsString('Row 4 skipped: Invalid email address format.', $body);
+        $this->assertStringContainsString('Row 5 skipped: The full name is missing.', $body);
+        $this->assertStringContainsString('Faculty "Atlantis" was not found', $body);
+        $this->assertSame(2, User::role(UserRole::Teacher)->count());
+    }
+
+    public function test_importing_the_same_organizer_file_twice_creates_nothing_new(): void
+    {
+        $content = "Full Name,Email\nAnna Kiss,anna@example.com\nBela Nagy,bela@example.com\n";
+
+        (new ImportOrganizersJob($this->csv($content), $this->admin->id))->handle();
+        (new ImportOrganizersJob($this->csv($content), $this->admin->id))->handle();
+
+        $this->assertSame(2, User::role(UserRole::Teacher)->count());
+        $this->assertStringContainsString('Successfully imported 0 organizers.', $this->adminMessage()['body']);
+    }
+
+    public function test_semicolon_delimited_files_with_a_byte_order_mark_are_accepted(): void
+    {
+        $path = $this->csv("\xEF\xBB\xBFFull Name;Email;Faculty\nAnna Kiss;anna@example.com;\n");
+
+        (new ImportOrganizersJob($path, $this->admin->id))->handle();
+
+        $this->assertTrue(User::where('email', 'anna@example.com')->exists());
+    }
+
+    public function test_a_file_with_the_wrong_columns_is_refused_before_any_row_is_imported(): void
+    {
+        $path = $this->csv("Name,Mail\nAnna Kiss,anna@example.com\n");
+
+        (new ImportOrganizersJob($path, $this->admin->id))->handle();
+
+        $this->assertSame(0, User::role(UserRole::Teacher)->count());
+        $message = $this->adminMessage();
+        $this->assertSame('Organizer import failed', $message['title']);
+        $this->assertStringContainsString('Incorrect file structure', $message['body']);
+        $this->assertStringContainsString('Full Name, Email', $message['body']);
+        Storage::disk('local')->assertMissing($path);
+    }
+
+    public function test_a_thousand_organizers_are_imported_in_one_job(): void
+    {
+        $rows = "Full Name,Email\n";
+        for ($i = 1; $i <= 1000; $i++) {
+            $rows .= "Organizer {$i},organizer{$i}@example.com\n";
+        }
+
+        (new ImportOrganizersJob($this->csv($rows), $this->admin->id))->handle();
+
+        $this->assertSame(1000, User::role(UserRole::Teacher)->count());
+        $this->assertSame('Successfully imported 1,000 organizers.', $this->adminMessage()['body']);
+    }
+
+    // ---- Students (UC-3.2.1) ----------------------------------------------
+
+    public function test_students_are_created_as_invited_students_with_their_data(): void
+    {
+        $path = $this->csv("Full Name,Email,Neptun Code,Major,Year of Study\nAnna Kiss,anna@example.com,abc123,Computer Science,2\nBela Nagy,bela@example.com,DEF456,,\n");
+
+        (new ImportStudentsJob($path, $this->admin->id))->handle();
+
+        $anna = User::where('neptun_code', 'ABC123')->firstOrFail();
+        $this->assertSame('invited', $anna->status);
+        $this->assertTrue($anna->hasRole(UserRole::Student));
+        $this->assertSame('Computer Science', $anna->major);
+        $this->assertSame(2, $anna->year_of_study);
+        $this->assertNotEmpty($anna->activation_token);
+
+        $bela = User::where('neptun_code', 'DEF456')->firstOrFail();
+        $this->assertNull($bela->major);
+        $this->assertNull($bela->year_of_study);
+
+        Notification::assertSentTo($anna, StudentInvitationNotification::class);
+        $this->assertSame('Successfully imported 2 students.', $this->adminMessage()['body']);
+    }
+
+    public function test_student_rows_that_cannot_be_imported_are_skipped_with_the_specified_messages(): void
+    {
+        User::factory()->create(['neptun_code' => 'TAKEN1']);
+        User::factory()->create(['email' => 'taken@example.com']);
+
+        $path = $this->csv(implode("\n", [
+            'Full Name,Email,Neptun Code,Major,Year of Study',
+            'Anna Kiss,anna@example.com,ABC123,Law,1',
+            'Bela Nagy,bela@example.com,TAKEN1,Law,1',
+            'Cili Toth,taken@example.com,CILI01,Law,1',
+            'Dora Szabo,not-an-email,DORA01,Law,1',
+            'Edit Varga,edit@example.com,SHORT,Law,1',
+            'Feri Kovacs,feri@example.com,FERI01,Law,9',
+        ])."\n");
+
+        (new ImportStudentsJob($path, $this->admin->id))->handle();
+
+        $body = $this->adminMessage()['body'];
+
+        $this->assertStringContainsString('Successfully imported 1 students.', $body);
+        $this->assertStringContainsString('Row 3 skipped: Neptun Code TAKEN1 is already registered.', $body);
+        $this->assertStringContainsString('Row 4 skipped: This email address is already registered in the system.', $body);
+        $this->assertStringContainsString('Row 5 skipped: Invalid email address format.', $body);
+        $this->assertStringContainsString('Row 6 skipped: The Neptun code must be exactly 6 alphanumeric characters.', $body);
+        $this->assertStringContainsString('Row 7 skipped: The year of study must be a number from 1 to 6.', $body);
+    }
+
+    public function test_importing_the_same_student_file_twice_creates_nothing_new(): void
+    {
+        $content = "Full Name,Email,Neptun Code\nAnna Kiss,anna@example.com,ABC123\n";
+
+        (new ImportStudentsJob($this->csv($content), $this->admin->id))->handle();
+        (new ImportStudentsJob($this->csv($content), $this->admin->id))->handle();
+
+        $this->assertSame(1, User::role(UserRole::Student)->count());
+    }
+
+    public function test_a_student_file_without_a_neptun_column_is_refused(): void
+    {
+        $path = $this->csv("Full Name,Email\nAnna Kiss,anna@example.com\n");
+
+        (new ImportStudentsJob($path, $this->admin->id))->handle();
+
+        $this->assertSame(0, User::role(UserRole::Student)->count());
+        $this->assertStringContainsString('Full Name, Email, Neptun Code', $this->adminMessage()['body']);
+    }
+
+    // ---- Course enrolments (UC-3.2.3) --------------------------------------
+
+    public function test_courses_are_created_and_students_are_linked_for_the_active_semester(): void
+    {
+        $semester = $this->activeSemester();
+        $anna = $this->student('ABC123');
+        $bela = $this->student('DEF456');
+
+        $path = $this->csv("Neptun Code,Course Code,Course Name\nABC123,BMEINFO101,Programming 1\nDEF456,BMEINFO101,Programming 1\nABC123,BMEINFO102,Databases\n");
+
+        (new ImportCourseEnrollmentsJob($path, $this->admin->id))->handle();
+
+        $this->assertSame(2, DB::table('courses')->count());
+        $this->assertSame(3, DB::table('student_course_enrollments')->where('semester_id', $semester->id)->count());
+        $this->assertSame(2, DB::table('student_course_enrollments')->where('student_id', $anna->id)->count());
+        $this->assertSame(1, DB::table('student_course_enrollments')->where('student_id', $bela->id)->count());
+        $this->assertSame('Successfully processed: 2 new courses, 3 student-course registrations.', $this->adminMessage()['body']);
+    }
+
+    public function test_unknown_neptun_codes_are_skipped_and_counted(): void
+    {
+        $this->activeSemester();
+        $this->student('ABC123');
+
+        $path = $this->csv("Neptun Code,Course Code,Course Name\nABC123,BMEINFO101,Programming 1\nZZZ999,BMEINFO101,Programming 1\nYYY888,BMEINFO101,Programming 1\n");
+
+        (new ImportCourseEnrollmentsJob($path, $this->admin->id))->handle();
+
+        $this->assertSame(1, DB::table('student_course_enrollments')->count());
+        $this->assertSame(
+            'Successfully processed: 1 new courses, 1 student-course registrations. Skipped 2 rows due to unregistered Neptun codes.',
+            $this->adminMessage()['body'],
+        );
+    }
+
+    public function test_only_students_are_linked_to_courses(): void
+    {
+        $this->activeSemester();
+        User::factory()->create(['neptun_code' => 'TEACH1'])->assignRole(UserRole::Teacher);
+
+        $path = $this->csv("Neptun Code,Course Code,Course Name\nTEACH1,BMEINFO101,Programming 1\n");
+
+        (new ImportCourseEnrollmentsJob($path, $this->admin->id))->handle();
+
+        $this->assertSame(0, DB::table('student_course_enrollments')->count());
+    }
+
+    public function test_importing_the_same_enrolment_file_twice_creates_no_duplicates(): void
+    {
+        $this->activeSemester();
+        $this->student('ABC123');
+        $content = "Neptun Code,Course Code,Course Name\nABC123,BMEINFO101,Programming 1\n";
+
+        (new ImportCourseEnrollmentsJob($this->csv($content), $this->admin->id))->handle();
+        (new ImportCourseEnrollmentsJob($this->csv($content), $this->admin->id))->handle();
+
+        $this->assertSame(1, DB::table('courses')->count());
+        $this->assertSame(1, DB::table('student_course_enrollments')->count());
+        $this->assertStringContainsString('0 new courses, 0 student-course registrations', $this->adminMessage()['body']);
+    }
+
+    public function test_previous_semester_data_is_deleted_only_when_the_box_is_checked(): void
+    {
+        $old = Semester::create(['name' => '2025/2026 Spring', 'starts_at' => '2026-02-01', 'ends_at' => '2026-06-30', 'status' => 'archived']);
+        $current = $this->activeSemester();
+        $anna = $this->student('ABC123');
+        $courseId = DB::table('courses')->insertGetId(['code' => 'OLD100', 'name' => 'Old course', 'created_at' => now(), 'updated_at' => now()]);
+        DB::table('student_course_enrollments')->insert(['student_id' => $anna->id, 'course_id' => $courseId, 'semester_id' => $old->id, 'created_at' => now(), 'updated_at' => now()]);
+
+        $content = "Neptun Code,Course Code,Course Name\nABC123,BMEINFO101,Programming 1\n";
+
+        (new ImportCourseEnrollmentsJob($this->csv($content), $this->admin->id, deletePreviousSemesterData: false))->handle();
+        $this->assertSame(1, DB::table('student_course_enrollments')->where('semester_id', $old->id)->count());
+
+        (new ImportCourseEnrollmentsJob($this->csv($content), $this->admin->id, deletePreviousSemesterData: true))->handle();
+        $this->assertSame(0, DB::table('student_course_enrollments')->where('semester_id', $old->id)->count());
+        $this->assertSame(1, DB::table('student_course_enrollments')->where('semester_id', $current->id)->count());
+    }
+
+    public function test_without_an_active_semester_nothing_is_imported_and_the_administrator_is_told(): void
+    {
+        $this->student('ABC123');
+
+        $path = $this->csv("Neptun Code,Course Code,Course Name\nABC123,BMEINFO101,Programming 1\n");
+
+        (new ImportCourseEnrollmentsJob($path, $this->admin->id))->handle();
+
+        $this->assertSame(0, DB::table('student_course_enrollments')->count());
+        $this->assertStringContainsString('no active semester', $this->adminMessage()['body']);
+    }
+
+    // ---- Helpers -----------------------------------------------------------
+
+    private function csv(string $content): string
+    {
+        $path = 'imports/'.uniqid('', true).'.csv';
+        Storage::disk('local')->put($path, $content);
+
+        return $path;
+    }
+
+    /**
+     * The newest message the administrator received in the admin panel.
+     *
+     * @return array<string, mixed>
+     */
+    private function adminMessage(): array
+    {
+        $sent = Notification::sent($this->admin, DatabaseNotification::class);
+
+        $this->assertNotEmpty($sent, 'The administrator got no message.');
+
+        return $sent->last()->toDatabase($this->admin)['data'] ?? $sent->last()->toDatabase($this->admin);
+    }
+
+    private function activeSemester(): Semester
+    {
+        return Semester::create(['name' => '2026/2027 Fall', 'starts_at' => '2026-09-07', 'ends_at' => '2027-01-31', 'status' => 'active']);
+    }
+
+    private function student(string $neptun): User
+    {
+        return User::factory()->create(['neptun_code' => $neptun])->assignRole(UserRole::Student);
+    }
+
+    /**
+     * The courses tables belong to the migration tasks #6 and #8. They are created here
+     * in the shape of Technical Specification 6.2.12 and 6.2.13 until those tasks are merged.
+     */
+    private function createCourseTablesIfMissing(): void
+    {
+        if (! Schema::hasTable('courses')) {
+            Schema::create('courses', function ($table) {
+                $table->id();
+                $table->string('code', 50)->unique();
+                $table->string('name');
+                $table->timestamps();
+            });
+        }
+
+        if (! Schema::hasTable('student_course_enrollments')) {
+            Schema::create('student_course_enrollments', function ($table) {
+                $table->id();
+                $table->foreignId('student_id')->constrained('users')->cascadeOnDelete();
+                $table->foreignId('course_id')->constrained('courses')->cascadeOnDelete();
+                $table->foreignId('semester_id')->constrained('semesters')->cascadeOnDelete();
+                $table->timestamps();
+                $table->unique(['student_id', 'course_id', 'semester_id']);
+            });
+        }
+    }
+}
