@@ -33,6 +33,7 @@ class AdminPanelProvider extends PanelProvider
             // admin's own profile page (change own password, UC-3.0).
             ->passwordReset()
             ->profile(EditProfile::class, isSimple: false)
+            // Admin panel messages for finished / failed CSV imports (Task #30).
             ->databaseNotifications()
             ->brandName('Campus Engage')
             ->font('Instrument Sans')
