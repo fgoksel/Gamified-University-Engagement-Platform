@@ -2,8 +2,11 @@
 
 namespace App\Providers;
 
+use App\Models\User;
+use App\Policies\AdminPolicy;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
@@ -27,6 +30,9 @@ class AppServiceProvider extends ServiceProvider
         // Every new password must be at least 8 characters (Technical Specification 8.2).
         // Use it in validation as: 'password' => ['required', Password::defaults()]
         Password::defaults(fn () => Password::min(8));
+
+        // Admin self-lock prevention policy (Technical Specification Table 25, Task #32).
+        Gate::policy(User::class, AdminPolicy::class);
 
         $this->configureRateLimiting();
     }
