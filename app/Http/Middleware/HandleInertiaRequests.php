@@ -45,6 +45,7 @@ class HandleInertiaRequests extends Middleware
                     'name' => $request->user()->name,
                     'email' => $request->user()->email,
                     'role' => $request->user()->getRoleNames()->first(),
+                    'appearance' => $request->user()->appearance,
                 ] : null,
             ],
             // One-time messages set with redirect(...)->with('success' | 'error', '...'),
