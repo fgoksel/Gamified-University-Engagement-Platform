@@ -1,6 +1,5 @@
 <?php
 
-use App\Enums\UserRole;
 use App\Http\Controllers\Admin\ImportController;
 use App\Http\Controllers\Admin\TopicTagRequestController;
 use App\Http\Controllers\AppearanceController;
@@ -8,9 +7,11 @@ use App\Http\Controllers\Auth\ChangePasswordController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\SetPasswordController;
-use Illuminate\Http\Request;
+use App\Http\Controllers\EventController;
+use App\Http\Controllers\LeaderboardController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ScanController;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 
 /*
 | Login, activation and passwords (Tasks #14 and #15: UC-1.1, UC-2.1)
@@ -42,14 +43,26 @@ Route::middleware('auth')->group(function () {
 
     // Everything below needs a permanent password first.
     Route::middleware('password.changed')->group(function () {
-        // Home page. The Leaderboard will replace Welcome in a later task.
-        Route::get('/', function (Request $request) {
-            if ($request->user()->hasRole(UserRole::Admin)) {
-                return redirect('/admin');
-            }
+        // Home page = Leaderboard (UC-1.2, UC-2.2). No role check here on purpose:
+        // refused visits are redirected to "/", so it must open for every user.
+        Route::get('/', [LeaderboardController::class, 'index'])->name('home');
 
-            return Inertia::render('Welcome');
-        })->name('home');
+        // Main menu of teachers and students (AppLayout sidebar)
+        Route::middleware('role:teacher|student')->group(function () {
+            Route::get('/events', [EventController::class, 'index'])
+                ->middleware('permission:events.view')
+                ->name('events.index');
+
+            // Teacher: events I organize (UC-1.3). Student: events I applied to (UC-2.3).
+            Route::get('/my-events', [EventController::class, 'mine'])->name('events.mine');
+
+            // Students redeem attendance QR codes (UC-2.3)
+            Route::get('/scan', [ScanController::class, 'show'])
+                ->middleware('permission:qr_codes.redeem')
+                ->name('scan');
+
+            Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+        });
     });
 });
 

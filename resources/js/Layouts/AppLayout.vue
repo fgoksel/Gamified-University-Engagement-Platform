@@ -5,12 +5,14 @@ import { Menu, QrCode, X } from "@lucide/vue";
 import AppLogo from "../Components/AppLogo.vue";
 import FlashToast from "../Components/FlashToast.vue";
 import SidebarContent from "../Components/SidebarContent.vue";
+import { useRole } from "../composables/useRole.js";
 
 defineProps({
     title: { type: String, default: "" },
 });
 
 const page = usePage();
+const { isStudent } = useRole();
 const mobileMenuOpen = ref(false);
 
 function closeMobileMenu() {
@@ -115,8 +117,9 @@ onBeforeUnmount(() => {
         <!-- Pop-up for success messages -->
         <FlashToast />
 
-        <!-- QR shortcut: always within thumb reach on phones -->
+        <!-- QR shortcut for students: always within thumb reach on phones -->
         <Link
+            v-if="isStudent"
             href="/scan"
             class="fixed right-5 bottom-5 z-30 flex size-16 items-center justify-center rounded-full bg-fg text-canvas shadow-popover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring lg:hidden"
             aria-label="Scan QR code"
