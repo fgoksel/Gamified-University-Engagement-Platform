@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 use Tests\TestCase;
 
 /**
@@ -73,27 +75,56 @@ class NginxSecurityTest extends TestCase
         $this->assertStringContainsString('/docker/nginx/certs/', file_get_contents(base_path('.gitignore')));
     }
 
-    public function test_session_cookies_are_secure_and_http_only_in_production(): void
+    // These two tests change environment variables, so they run in their own PHP process.
+    #[DataProvider('secureCookieSettings')]
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
+    public function test_session_cookie_is_secure_in_production_unless_told_otherwise(?string $setting, bool $expected): void
     {
-        $original = getenv('APP_ENV');
-        putenv('APP_ENV=production');
-        $_ENV['APP_ENV'] = $_SERVER['APP_ENV'] = 'production';
+        $session = $this->sessionConfig('production', $setting);
 
-        try {
-            $session = require config_path('session.php');
-        } finally {
-            $original === false ? putenv('APP_ENV') : putenv("APP_ENV={$original}");
-            $_ENV['APP_ENV'] = $_SERVER['APP_ENV'] = $original === false ? 'testing' : $original;
-        }
-
-        $this->assertTrue($session['secure']);
+        $this->assertSame($expected, $session['secure']);
         $this->assertTrue($session['http_only']);
         $this->assertSame('lax', $session['same_site']);
     }
 
-    public function test_session_cookies_stay_usable_on_plain_http_when_developing(): void
+    public static function secureCookieSettings(): array
     {
-        $this->assertNotTrue(config('session.secure'));
+        return [
+            'not set' => [null, true],
+            'empty, as copied from .env.example' => ['', true],
+            'forced on' => ['true', true],
+            'forced off' => ['false', false],
+        ];
+    }
+
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
+    public function test_session_cookie_is_not_secure_by_default_while_developing(): void
+    {
+        $this->assertFalse($this->sessionConfig('local', '')['secure']);
+        $this->assertFalse($this->sessionConfig('local', null)['secure']);
+    }
+
+    /**
+     * Loads config/session.php as if the app ran with the given environment.
+     * Only call this from a test that runs in a separate process.
+     *
+     * @return array<string, mixed>
+     */
+    private function sessionConfig(string $appEnv, ?string $secureCookie): array
+    {
+        foreach (['APP_ENV' => $appEnv, 'SESSION_SECURE_COOKIE' => $secureCookie] as $name => $value) {
+            if ($value === null) {
+                putenv($name);
+                unset($_ENV[$name], $_SERVER[$name]);
+            } else {
+                putenv("{$name}={$value}");
+                $_ENV[$name] = $_SERVER[$name] = $value;
+            }
+        }
+
+        return require config_path('session.php');
     }
 
     private function nginx(string $file): string

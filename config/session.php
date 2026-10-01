@@ -169,7 +169,12 @@ return [
     |
     */
 
-    'secure' => env('SESSION_SECURE_COOKIE', env('APP_ENV') === 'production'),
+    'secure' => match (env('SESSION_SECURE_COOKIE')) {
+        true, '1' => true,
+        false, '0' => false,
+        // Not set, or left empty as in .env.example: Secure in production.
+        default => env('APP_ENV') === 'production',
+    },
 
     /*
     |--------------------------------------------------------------------------
