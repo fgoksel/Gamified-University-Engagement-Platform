@@ -1,13 +1,20 @@
 <script setup>
-import { UserRound } from "@lucide/vue";
-import EmptyState from "../../Components/EmptyState.vue";
+import AppearanceSection from "../../Components/Profile/AppearanceSection.vue";
+import PasswordSection from "../../Components/Profile/PasswordSection.vue";
+import ProfileDataSection from "../../Components/Profile/ProfileDataSection.vue";
 
-// Profile Settings. The forms are added in the Profile Settings task.
+// Profile Settings of teachers and students
 defineOptions({ layout: { title: "Profile settings" } });
+
+defineProps({
+    profile: { type: Object, required: true },
+});
 </script>
 
 <template>
-    <EmptyState :icon="UserRound" title="Profile settings">
-        Your profile data, password and appearance settings will be here.
-    </EmptyState>
+    <div class="space-y-6">
+        <ProfileDataSection :profile="profile" />
+        <PasswordSection />
+        <AppearanceSection />
+    </div>
 </template>

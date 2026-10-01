@@ -3,9 +3,8 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ChangePasswordRequest;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
-use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -26,17 +25,8 @@ class ChangePasswordController extends Controller
     /**
      * Save the new password.
      */
-    public function update(Request $request): RedirectResponse
+    public function update(ChangePasswordRequest $request): RedirectResponse
     {
-        $request->validate([
-            'current_password' => ['required', 'current_password'],
-            'password' => ['required', 'confirmed', 'different:current_password', Password::defaults()],
-        ], [
-            'current_password.current_password' => 'The old password is incorrect.',
-            'password.confirmed' => 'The two passwords do not match.',
-            'password.different' => 'The new password cannot be the same as the old one.',
-        ]);
-
         $request->user()->forceFill([
             'password' => $request->input('password'),
             'must_change_password' => false,

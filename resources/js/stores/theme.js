@@ -45,8 +45,9 @@ export const useThemeStore = defineStore("theme", () => {
         setTheme(user?.appearance ?? readSaved());
     }
 
-    function toggleTheme() {
-        setTheme(theme.value === "dark" ? "light" : "dark");
+    // Change the theme and, when logged in, save it to the account
+    function chooseTheme(value) {
+        setTheme(value);
 
         if (loggedIn) {
             router.put(
@@ -57,5 +58,9 @@ export const useThemeStore = defineStore("theme", () => {
         }
     }
 
-    return { theme, sync, toggleTheme };
+    function toggleTheme() {
+        chooseTheme(theme.value === "dark" ? "light" : "dark");
+    }
+
+    return { theme, sync, chooseTheme, toggleTheme };
 });
