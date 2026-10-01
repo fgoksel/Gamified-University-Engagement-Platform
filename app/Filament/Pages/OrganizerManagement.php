@@ -19,8 +19,20 @@ use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
+/**
+ * Organizer Management — UC-3.1.1 (invite) and UC-3.1.2 (listing + deactivation + resend invitation).
+ *
+ * "Organizer" is the UI term for the 'teacher' role (Technical Specification 6.4).
+ * The UserRole::Teacher enum case is the canonical Spatie role name in the database.
+ *
+ * UC-3.1.2 exception: an admin who also holds the teacher role will appear in this
+ * table. In that case the deactivate button is disabled to prevent self-lock-out,
+ * per the spec: "The System Administrator cannot deactivate themselves (if they
+ * also appear in the list)."
+ */
 class OrganizerManagement extends Page implements HasTable
 {
     use InteractsWithTable;
@@ -68,10 +80,186 @@ class OrganizerManagement extends Page implements HasTable
                     }),
 
                 TextColumn::make('created_at')
-                    ->label('Created At')
+                    ->label('Registration Date')
                     ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->sortable(),
+            ])
+            ->actions([
+                // UC-3.1.2: Edit organizer details (pencil icon).
+                Action::make('edit')
+                    ->label('Edit')
+                    ->icon(Heroicon::OutlinedPencilSquare)
+                    ->modalHeading('Edit Organizer')
+                    ->modalSubmitActionLabel('Save Changes')
+                    ->fillForm(fn (User $record): array => [
+                        'name' => $record->name,
+                        'email' => $record->email,
+                        'faculty_id' => $record->faculty_id,
+                    ])
+                    ->form([
+                        TextInput::make('name')
+                            ->label('Full Name')
+                            ->required()
+                            ->maxLength(255),
+
+                        TextInput::make('email')
+                            ->label('Institutional Email')
+                            ->email()
+                            ->required()
+                            ->maxLength(255)
+                            ->unique(
+                                table: User::class,
+                                column: 'email',
+                                ignoreRecord: true,
+                            )
+                            ->validationMessages([
+                                'unique' => 'This email address is already registered in the system.',
+                            ]),
+
+                        Select::make('faculty_id')
+                            ->label('Organizational Unit / Faculty')
+                            ->options(fn (): array => Faculty::query()->pluck('name', 'id')->all())
+                            ->searchable()
+                            ->nullable()
+                            ->exists(table: Faculty::class, column: 'id'),
+                    ])
+                    ->action(function (User $record, array $data): void {
+                        $record->update([
+                            'name' => $data['name'],
+                            'email' => $data['email'],
+                            'faculty_id' => $data['faculty_id'] ?? null,
+                        ]);
+
+                        Notification::make()
+                            ->title('Organizer Updated')
+                            ->success()
+                            ->body("{$record->name}'s details have been successfully updated.")
+                            ->send();
+                    }),
+
+                // UC-3.1.2: Resend activation email for invited organizer.
+                Action::make('resend_invitation')
+                    ->label('Resend Invite')
+                    ->icon(Heroicon::OutlinedEnvelope)
+                    ->color('info')
+                    ->requiresConfirmation()
+                    ->modalHeading('Resend Invitation')
+                    ->modalDescription(fn (User $record): string => "Generate a new activation link and resend the invitation email to {$record->email}?")
+                    ->modalSubmitActionLabel('Yes, Resend')
+                    ->visible(fn (User $record): bool => $record->status === 'invited')
+                    ->action(function (User $record): void {
+                        $token = Str::random(64);
+
+                        $record->update([
+                            'activation_token' => $token,
+                            'activation_token_expires_at' => now()->addHours(24),
+                        ]);
+
+                        $record->notify(new OrganizerInvitationNotification($token, 24));
+
+                        Notification::make()
+                            ->title('Invitation Resent')
+                            ->success()
+                            ->body('The activation link has been successfully resent.')
+                            ->send();
+                    }),
+
+                // UC-3.1.2: Deactivate an active organizer.
+                // Nulling the token prevents a pending invite link from still working
+                // after the account has been deactivated.
+                // Guarded by AdminPolicy (Technical Specification Table 25, Task #32).
+                Action::make('deactivate')
+                    ->label('Deactivate')
+                    ->icon(Heroicon::OutlinedNoSymbol)
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->modalHeading('Deactivate Organizer')
+                    ->modalDescription(fn (User $record): string => "Are you sure you want to deactivate {$record->name}? The Organizer will not be able to log in, but their previous events will remain.")
+                    ->modalSubmitActionLabel('Yes, Deactivate')
+                    ->visible(fn (User $record): bool => $record->status === 'active')
+                    ->disabled(fn (User $record): bool => ! auth()->user()?->can('deactivate', $record))
+                    ->tooltip(function (User $record): ?string {
+                        if ($record->id === auth()->id()) {
+                            return 'You cannot deactivate your own account.';
+                        }
+                        if ($record->hasRole(UserRole::Admin) && User::role(UserRole::Admin)->where('status', 'active')->count() <= 1) {
+                            return 'Cannot deactivate the last remaining Administrator.';
+                        }
+
+                        return null;
+                    })
+                    ->action(function (User $record): void {
+                        if (! auth()->user()?->can('deactivate', $record)) {
+                            Notification::make()
+                                ->title('Action Not Allowed')
+                                ->danger()
+                                ->body($record->id === auth()->id()
+                                    ? 'You cannot deactivate your own account.'
+                                    : 'Cannot deactivate the last remaining Administrator.')
+                                ->send();
+
+                            return;
+                        }
+
+                        $record->update([
+                            'status' => 'inactive',
+                            // Revoke any pending activation link (UC-3.1.2).
+                            'activation_token' => null,
+                            'activation_token_expires_at' => null,
+                        ]);
+
+                        // Revoke any active sessions immediately (UC-3.1.2).
+                        if (Schema::hasTable('sessions')) {
+                            DB::table('sessions')->where('user_id', $record->id)->delete();
+                        }
+
+                        Notification::make()
+                            ->title('Organizer Deactivated')
+                            ->warning()
+                            ->body("{$record->name} has been deactivated and can no longer log in.")
+                            ->send();
+                    }),
+
+                // UC-3.1.2: Activate a previously deactivated organizer (green checkmark).
+                // If the user never activated (email_verified_at is null), put them back to invited and send a fresh link.
+                Action::make('activate')
+                    ->label('Activate')
+                    ->icon(Heroicon::OutlinedCheckCircle)
+                    ->color('success')
+                    ->requiresConfirmation()
+                    ->modalHeading('Activate Organizer')
+                    ->modalDescription(fn (User $record): string => ($record->email_verified_at === null || $record->must_change_password)
+                        ? "Activate {$record->name}? Since this account has not activated yet, their status will become Invited and a fresh activation email will be sent."
+                        : "Activate {$record->name}? They will be able to log in again with their existing password.")
+                    ->modalSubmitActionLabel('Yes, Activate')
+                    ->visible(fn (User $record): bool => $record->status === 'inactive')
+                    ->action(function (User $record): void {
+                        if ($record->email_verified_at === null || $record->must_change_password) {
+                            $token = Str::random(64);
+
+                            $record->update([
+                                'status' => 'invited',
+                                'activation_token' => $token,
+                                'activation_token_expires_at' => now()->addHours(24),
+                            ]);
+
+                            $record->notify(new OrganizerInvitationNotification($token, 24));
+
+                            Notification::make()
+                                ->title('Organizer Activated')
+                                ->success()
+                                ->body("{$record->name} has not activated yet. Their status was set to Invited and a new activation link has been sent.")
+                                ->send();
+                        } else {
+                            $record->update(['status' => 'active']);
+
+                            Notification::make()
+                                ->title('Organizer Activated')
+                                ->success()
+                                ->body("{$record->name} has been activated and can log in again.")
+                                ->send();
+                        }
+                    }),
             ]);
     }
 

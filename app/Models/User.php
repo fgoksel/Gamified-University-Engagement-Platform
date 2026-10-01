@@ -27,6 +27,7 @@ use Spatie\Permission\Traits\HasRoles;
     'year_of_study',
     'appearance',
     'faculty_id',
+    'email_verified_at',
     'activation_token',
     'activation_token_expires_at',
 ])]
