@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\UserRole;
+use App\Http\Controllers\Admin\TopicTagRequestController;
 use App\Http\Controllers\AppearanceController;
 use App\Http\Controllers\Auth\ChangePasswordController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
@@ -49,4 +50,12 @@ Route::middleware('auth')->group(function () {
             return Inertia::render('Welcome');
         })->name('home');
     });
+});
+
+// Admin API endpoints specified in Technical Specification Table 22
+Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::post('/topic-tag-requests/{id}/approve', [TopicTagRequestController::class, 'approve'])
+        ->name('topic-tag-requests.approve');
+    Route::post('/topic-tag-requests/{id}/reject', [TopicTagRequestController::class, 'reject'])
+        ->name('topic-tag-requests.reject');
 });

@@ -3,8 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Enums\TaxonomyCategory;
-use App\Models\Faculty;
-use App\Models\SubjectArea;
+use App\Models\TopicTag;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
@@ -20,36 +19,32 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 
 /**
- * Subject Areas Management — UC-3.4 (Announcing new subject areas, maintaining existing ones).
+ * Global Topic Tag Taxonomy Management — UC-3.4.
+ * Faculty-independent tags categorized under the four category trees.
  */
-class SubjectAreas extends Page implements HasTable
+class TopicTags extends Page implements HasTable
 {
     use InteractsWithTable;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleGroup;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedTag;
 
-    protected static ?string $navigationLabel = 'Subject Areas';
+    protected static ?string $navigationLabel = 'Topic Tags';
 
-    protected static ?string $title = 'Subject Areas & Taxonomy';
+    protected static ?string $title = 'Topic Tag Taxonomy';
 
-    protected static ?string $slug = 'subject-areas';
+    protected static ?string $slug = 'topic-tags';
 
-    protected static ?int $navigationSort = 3;
+    protected static ?int $navigationSort = 4;
 
-    protected string $view = 'filament.pages.subject-areas';
+    protected string $view = 'filament.pages.topic-tags';
 
     public function table(Table $table): Table
     {
         return $table
-            ->query(SubjectArea::query()->with('faculty')->latest())
+            ->query(TopicTag::query()->latest())
             ->columns([
-                TextColumn::make('title')
-                    ->label('Title')
-                    ->searchable()
-                    ->sortable(),
-
-                TextColumn::make('code')
-                    ->label('Code')
+                TextColumn::make('name')
+                    ->label('Name')
                     ->searchable()
                     ->sortable(),
 
@@ -66,11 +61,11 @@ class SubjectAreas extends Page implements HasTable
                     })
                     ->sortable(),
 
-                TextColumn::make('faculty.name')
-                    ->label('Faculty')
-                    ->placeholder('— (University-wide)')
-                    ->searchable()
-                    ->sortable(),
+                TextColumn::make('description')
+                    ->label('Description')
+                    ->limit(60)
+                    ->placeholder('—')
+                    ->searchable(),
 
                 TextColumn::make('is_active')
                     ->label('Status')
@@ -89,10 +84,6 @@ class SubjectAreas extends Page implements HasTable
                     ->label('Category')
                     ->options(TaxonomyCategory::options()),
 
-                SelectFilter::make('faculty_id')
-                    ->label('Faculty')
-                    ->options(fn (): array => Faculty::query()->pluck('name', 'id')->all()),
-
                 SelectFilter::make('is_active')
                     ->label('Status')
                     ->options([
@@ -105,32 +96,25 @@ class SubjectAreas extends Page implements HasTable
                 Action::make('edit')
                     ->label('Edit')
                     ->icon(Heroicon::OutlinedPencilSquare)
-                    ->modalHeading('Edit Subject Area')
+                    ->modalHeading('Edit Topic Tag')
                     ->modalSubmitActionLabel('Save Changes')
-                    ->fillForm(fn (SubjectArea $record): array => [
-                        'title' => $record->title,
-                        'code' => $record->code,
+                    ->fillForm(fn (TopicTag $record): array => [
+                        'name' => $record->name,
                         'category' => $record->category,
-                        'faculty_id' => $record->faculty_id,
                         'description' => $record->description,
                     ])
                     ->form([
-                        TextInput::make('title')
-                            ->label('Title')
+                        TextInput::make('name')
+                            ->label('Name')
                             ->required()
-                            ->maxLength(255),
-
-                        TextInput::make('code')
-                            ->label('Code')
-                            ->required()
-                            ->maxLength(50)
+                            ->maxLength(255)
                             ->unique(
-                                table: SubjectArea::class,
-                                column: 'code',
+                                table: TopicTag::class,
+                                column: 'name',
                                 ignoreRecord: true,
                             )
                             ->validationMessages([
-                                'unique' => 'A subject area with this code already exists.',
+                                'unique' => 'A topic tag with this name already exists.',
                             ]),
 
                         Select::make('category')
@@ -138,31 +122,22 @@ class SubjectAreas extends Page implements HasTable
                             ->options(TaxonomyCategory::options())
                             ->required(),
 
-                        Select::make('faculty_id')
-                            ->label('Assigned Faculty / Department')
-                            ->options(fn (): array => Faculty::query()->pluck('name', 'id')->all())
-                            ->searchable()
-                            ->nullable()
-                            ->exists(table: Faculty::class, column: 'id'),
-
                         Textarea::make('description')
                             ->label('Description')
                             ->rows(3)
                             ->nullable(),
                     ])
-                    ->action(function (SubjectArea $record, array $data): void {
+                    ->action(function (TopicTag $record, array $data): void {
                         $record->update([
-                            'title' => $data['title'],
-                            'code' => strtoupper($data['code']),
+                            'name' => $data['name'],
                             'category' => $data['category'],
-                            'faculty_id' => $data['faculty_id'] ?? null,
                             'description' => $data['description'] ?? null,
                         ]);
 
                         Notification::make()
-                            ->title('Subject Area Updated')
+                            ->title('Topic Tag Updated')
                             ->success()
-                            ->body("{$record->title} details have been successfully updated.")
+                            ->body("Topic tag {$record->name} details have been successfully updated.")
                             ->send();
                     }),
 
@@ -172,17 +147,17 @@ class SubjectAreas extends Page implements HasTable
                     ->icon(Heroicon::OutlinedLockClosed)
                     ->color('danger')
                     ->requiresConfirmation()
-                    ->modalHeading('Deactivate Subject Area')
-                    ->modalDescription(fn (SubjectArea $record): string => "Are you sure you want to deactivate {$record->title}? It will be archived and retired courses will no longer be active.")
+                    ->modalHeading('Deactivate Topic Tag')
+                    ->modalDescription(fn (TopicTag $record): string => "Are you sure you want to deactivate {$record->name}? Deactivated tags stay on historical events but cannot be picked for new ones.")
                     ->modalSubmitActionLabel('Yes, Deactivate')
-                    ->visible(fn (SubjectArea $record): bool => (bool) $record->is_active)
-                    ->action(function (SubjectArea $record): void {
+                    ->visible(fn (TopicTag $record): bool => (bool) $record->is_active)
+                    ->action(function (TopicTag $record): void {
                         $record->update(['is_active' => false]);
 
                         Notification::make()
-                            ->title('Subject Area Deactivated')
+                            ->title('Topic Tag Deactivated')
                             ->warning()
-                            ->body("{$record->title} has been archived.")
+                            ->body("Topic tag {$record->name} has been deactivated.")
                             ->send();
                     }),
 
@@ -192,17 +167,17 @@ class SubjectAreas extends Page implements HasTable
                     ->icon(Heroicon::OutlinedCheckCircle)
                     ->color('success')
                     ->requiresConfirmation()
-                    ->modalHeading('Activate Subject Area')
-                    ->modalDescription(fn (SubjectArea $record): string => "Activate {$record->title}? It will become available again in course and event selections.")
+                    ->modalHeading('Activate Topic Tag')
+                    ->modalDescription(fn (TopicTag $record): string => "Activate {$record->name}? It will become available again for selection in new events.")
                     ->modalSubmitActionLabel('Yes, Activate')
-                    ->visible(fn (SubjectArea $record): bool => ! (bool) $record->is_active)
-                    ->action(function (SubjectArea $record): void {
+                    ->visible(fn (TopicTag $record): bool => ! (bool) $record->is_active)
+                    ->action(function (TopicTag $record): void {
                         $record->update(['is_active' => true]);
 
                         Notification::make()
-                            ->title('Subject Area Activated')
+                            ->title('Topic Tag Activated')
                             ->success()
-                            ->body("{$record->title} has been activated.")
+                            ->body("Topic tag {$record->name} has been activated.")
                             ->send();
                     }),
             ]);
@@ -211,29 +186,24 @@ class SubjectAreas extends Page implements HasTable
     protected function getHeaderActions(): array
     {
         return [
-            // Add New Subject Area button and modal per UC-3.4
+            // Add New Topic Tag button and modal per UC-3.4
             Action::make('create')
-                ->label('Add New Subject Area')
+                ->label('Add New Topic Tag')
                 ->icon(Heroicon::OutlinedPlus)
-                ->modalHeading('Add New Subject Area')
-                ->modalDescription('Create a university subject area under one of the four category trees.')
-                ->modalSubmitActionLabel('Save Subject Area')
+                ->modalHeading('Add New Topic Tag')
+                ->modalDescription('Add a global topic tag to the university engagement taxonomy.')
+                ->modalSubmitActionLabel('Save Topic Tag')
                 ->form([
-                    TextInput::make('title')
-                        ->label('Title')
+                    TextInput::make('name')
+                        ->label('Name')
                         ->required()
-                        ->maxLength(255),
-
-                    TextInput::make('code')
-                        ->label('Code')
-                        ->required()
-                        ->maxLength(50)
+                        ->maxLength(255)
                         ->unique(
-                            table: SubjectArea::class,
-                            column: 'code',
+                            table: TopicTag::class,
+                            column: 'name',
                         )
                         ->validationMessages([
-                            'unique' => 'A subject area with this code already exists.',
+                            'unique' => 'A topic tag with this name already exists.',
                         ]),
 
                     Select::make('category')
@@ -241,32 +211,23 @@ class SubjectAreas extends Page implements HasTable
                         ->options(TaxonomyCategory::options())
                         ->required(),
 
-                    Select::make('faculty_id')
-                        ->label('Assigned Faculty / Department')
-                        ->options(fn (): array => Faculty::query()->pluck('name', 'id')->all())
-                        ->searchable()
-                        ->nullable()
-                        ->exists(table: Faculty::class, column: 'id'),
-
                     Textarea::make('description')
                         ->label('Description')
                         ->rows(3)
                         ->nullable(),
                 ])
                 ->action(function (array $data): void {
-                    $record = SubjectArea::create([
-                        'title' => $data['title'],
-                        'code' => strtoupper($data['code']),
+                    $record = TopicTag::create([
+                        'name' => $data['name'],
                         'category' => $data['category'],
-                        'faculty_id' => $data['faculty_id'] ?? null,
                         'description' => $data['description'] ?? null,
                         'is_active' => true,
                     ]);
 
                     Notification::make()
-                        ->title('Subject Area Created')
+                        ->title('Topic Tag Created')
                         ->success()
-                        ->body("Subject area {$record->title} ({$record->code}) has been created successfully.")
+                        ->body("Topic tag {$record->name} has been created successfully.")
                         ->send();
                 }),
         ];

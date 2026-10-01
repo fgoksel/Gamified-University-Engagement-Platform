@@ -25,6 +25,8 @@ class RouteProtectionTest extends TestCase
         '/' => 'Leaderboard home; placeholder page until the leaderboard requires a login (Task #54)',
         'up' => 'Laravel health check',
         'admin/login' => 'Admin panel login page (Filament)',
+        'admin/password-reset/request' => 'Admin password reset request page (Filament, Task #17)',
+        'admin/password-reset/reset' => 'Admin password reset form (Filament, Task #17)',
         'login' => 'Login page (UC-1.1, UC-2.1, Tasks #14 and #15)',
         'forgot-password' => 'Forgot password form and reset email request (UC-1.1, UC-2.1)',
         'auth/activate/{token}' => 'Account activation link from the invitation email (UC-1.1, UC-2.1)',
