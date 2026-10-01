@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Enums\UserRole;
 use App\Support\SubjectAreaTree;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -48,6 +49,10 @@ class HandleInertiaRequests extends Middleware
                     'email' => $request->user()->email,
                     'role' => $request->user()->getRoleNames()->first(),
                     'appearance' => $request->user()->appearance,
+                    // Profile photo URL, or null to show initials
+                    'avatar' => $request->user()->avatar
+                        ? Storage::disk('public')->url($request->user()->avatar)
+                        : null,
                 ] : null,
             ],
             // Subject Area panel in the sidebar: teachers only (UC-1.2)
