@@ -1,0 +1,13 @@
+# Production web server with HTTPS (Technical Specification 5.2.1, 8.2).
+# Start it on top of the normal file:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d webserver
+services:
+  webserver:
+    ports: !override
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./:/var/www/html
+      - ./docker/nginx/production.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./docker/nginx/security-headers.conf:/etc/nginx/security-headers.conf:ro
+      - ./docker/nginx/certs:/etc/nginx/certs:ro
