@@ -14,7 +14,7 @@ class EventModeration extends Page
 
     protected static ?string $title = 'Event moderation';
 
-    protected static ?int $navigationSort = 3;
+    protected static ?int $navigationSort = 7;
 
     protected string $view = 'filament.pages.coming-soon';
 

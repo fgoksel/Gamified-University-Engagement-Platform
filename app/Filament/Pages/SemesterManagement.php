@@ -14,7 +14,7 @@ class SemesterManagement extends Page
 
     protected static ?string $title = 'Semester management';
 
-    protected static ?int $navigationSort = 5;
+    protected static ?int $navigationSort = 6;
 
     protected string $view = 'filament.pages.coming-soon';
 
