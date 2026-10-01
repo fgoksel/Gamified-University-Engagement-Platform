@@ -2,10 +2,14 @@
 
 namespace App\Providers;
 
+use App\Models\User;
+use App\Policies\AdminPolicy;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 
 class AppServiceProvider extends ServiceProvider
@@ -27,6 +31,9 @@ class AppServiceProvider extends ServiceProvider
         // Use it in validation as: 'password' => ['required', Password::defaults()]
         Password::defaults(fn () => Password::min(8));
 
+        // Admin self-lock prevention policy (Technical Specification Table 25, Task #32).
+        Gate::policy(User::class, AdminPolicy::class);
+
         $this->configureRateLimiting();
     }
 
@@ -38,7 +45,9 @@ class AppServiceProvider extends ServiceProvider
      */
     protected function configureRateLimiting(): void
     {
-        RateLimiter::for('login', fn (Request $request) => Limit::perMinute(5)->by($request->ip()));
+        // Keyed by email + IP, so students sharing campus Wi-Fi don't lock each other out.
+        RateLimiter::for('login', fn (Request $request) => Limit::perMinute(5)
+            ->by(Str::lower((string) $request->input('email')).'|'.$request->ip()));
 
         RateLimiter::for('qr-redeem', fn (Request $request) => Limit::perMinute(60)->by($request->ip()));
     }

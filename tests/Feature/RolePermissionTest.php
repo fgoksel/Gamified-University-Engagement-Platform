@@ -124,7 +124,7 @@ class RolePermissionTest extends TestCase
     {
         $student = User::factory()->create()->assignRole(UserRole::Student);
 
-        $this->actingAs($student)->get('/admin')->assertForbidden();
+        $this->actingAs($student)->get('/admin')->assertRedirect('/');
     }
 
     public function test_guest_is_sent_to_the_admin_login_page(): void
@@ -140,7 +140,8 @@ class RolePermissionTest extends TestCase
         $teacher = User::factory()->create()->assignRole(UserRole::Teacher);
 
         $this->actingAs($admin)->get('/_test/admin-only')->assertOk();
-        $this->actingAs($teacher)->get('/_test/admin-only')->assertForbidden();
+        $this->actingAs($teacher)->get('/_test/admin-only')->assertRedirect('/');
+        $this->actingAs($teacher)->getJson('/_test/admin-only')->assertForbidden();
     }
 
     public function test_frontend_receives_the_logged_in_users_role(): void
@@ -155,6 +156,6 @@ class RolePermissionTest extends TestCase
 
     public function test_frontend_receives_no_user_for_guests(): void
     {
-        $this->get('/')->assertInertia(fn (Assert $page) => $page->where('auth.user', null));
+        $this->get('/login')->assertInertia(fn (Assert $page) => $page->where('auth.user', null));
     }
 }
