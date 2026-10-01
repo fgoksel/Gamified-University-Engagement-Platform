@@ -61,6 +61,26 @@ On Windows PowerShell, use `copy .env.example .env` for step 1.
 
 The passwords above are for local development only. Never reuse them on a server.
 
+## Production: HTTPS and security headers
+
+Locally the site runs on plain HTTP (http://localhost:8081). In production Nginx ends the TLS connection
+(Technical Specification 5.2.1, 8.2):
+
+- every request on port 80 is redirected to HTTPS (301)
+- `Strict-Transport-Security` (HSTS), `X-Frame-Options` and `X-Content-Type-Options` are sent with every response
+  (the last two also locally)
+- only TLS 1.2 and 1.3 are allowed
+- with `APP_ENV=production` the session cookie is `Secure`; set `APP_URL` to the `https://` address
+
+```bash
+# 1. Put the certificate chain and private key here (the folder is ignored by git)
+#    docker/nginx/certs/fullchain.pem
+#    docker/nginx/certs/privkey.pem
+
+# 2. Start the web server with the production file on top of the normal one
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d webserver
+```
+
 ## Troubleshooting
 
 - **Page shows a Vite manifest error:** the `vite` container isn't running. Check it with `docker compose logs vite`.

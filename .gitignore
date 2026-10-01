@@ -26,3 +26,6 @@ _ide_helper.php
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# TLS certificate and private key for production (never commit these)
+/docker/nginx/certs/
