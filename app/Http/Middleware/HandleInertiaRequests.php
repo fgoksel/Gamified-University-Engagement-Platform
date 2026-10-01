@@ -2,6 +2,8 @@
 
 namespace App\Http\Middleware;
 
+use App\Enums\UserRole;
+use App\Support\SubjectAreaTree;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -48,6 +50,10 @@ class HandleInertiaRequests extends Middleware
                     'appearance' => $request->user()->appearance,
                 ] : null,
             ],
+            // Subject Area panel in the sidebar: teachers only (UC-1.2)
+            'subjectAreaTree' => fn () => $request->user()?->hasRole(UserRole::Teacher)
+                ? SubjectAreaTree::for($request->user())
+                : null,
             // One-time messages set with redirect(...)->with('success' | 'error', '...'),
             // e.g. "Your password has been changed." or
             // "You do not have permission to view this page."
