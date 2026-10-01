@@ -131,15 +131,24 @@ const noFaculty = computed(
             />
         </label>
 
-        <!-- Current filter -->
+        <!-- Current filter. Always shown with a fixed height, so the tree
+             below does not jump when an area is picked. -->
         <div
-            v-if="selectedArea"
-            class="mt-3 flex items-center gap-2 rounded-control bg-info-soft py-1.5 pr-1 pl-3 text-xs text-info-fg"
+            class="mt-3 flex h-9 items-center gap-2 rounded-control pr-1 pl-3 text-xs"
+            :class="
+                selectedArea
+                    ? 'bg-info-soft text-info-fg'
+                    : 'bg-surface-muted text-fg-muted'
+            "
         >
             <span class="min-w-0 flex-1 truncate">
-                Filtering by <strong>{{ selectedArea.title }}</strong>
+                <template v-if="selectedArea">
+                    Filtering by <strong>{{ selectedArea.title }}</strong>
+                </template>
+                <template v-else>No subject area selected</template>
             </span>
             <button
+                v-if="selectedArea"
                 type="button"
                 class="rounded-control p-1 hover:bg-surface focus-visible:outline-2 focus-visible:outline-ring"
                 aria-label="Clear subject area filter"
@@ -166,8 +175,9 @@ const noFaculty = computed(
                         :stroke-width="1.75"
                     />
                     <span class="min-w-0 flex-1 truncate">
+                        <!-- {{ " " }} keeps a space between code and name -->
                         <span v-if="group.code" class="font-medium">
-                            {{ group.code }}
+                            {{ group.code }}{{ " " }}
                         </span>
                         <span
                             :class="
