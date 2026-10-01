@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Notifications\OrganizerInvitationNotification;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -51,6 +52,7 @@ class OrganizerManagementTest extends TestCase
             'status' => $status,
             'faculty_id' => $facultyId,
             'email_verified_at' => $verified && $status !== 'invited' ? now() : null,
+            'must_change_password' => ! ($verified && $status !== 'invited'),
             'activation_token' => $status === 'invited' ? str_repeat('a', 64) : null,
             'activation_token_expires_at' => $status === 'invited' ? now()->addHours(24) : null,
         ]);
@@ -476,5 +478,30 @@ class OrganizerManagementTest extends TestCase
             ->callTableAction('deactivate', $admin);
 
         $this->assertSame('active', $admin->fresh()->status);
+    }
+
+    public function test_deactivate_organizer_revokes_active_sessions(): void
+    {
+        $admin = $this->makeAdmin();
+        $organizer = $this->makeOrganizer('active');
+
+        // Simulate an active session for the organizer
+        DB::table('sessions')->insert([
+            'id' => 'test-session-id-organizer',
+            'user_id' => $organizer->id,
+            'ip_address' => '127.0.0.1',
+            'user_agent' => 'PHPUnit',
+            'payload' => serialize(['user' => $organizer->id]),
+            'last_activity' => time(),
+        ]);
+
+        $this->assertDatabaseHas('sessions', ['user_id' => $organizer->id]);
+
+        Livewire::actingAs($admin)
+            ->test(OrganizerManagement::class)
+            ->callTableAction('deactivate', $organizer)
+            ->assertHasNoTableActionErrors();
+
+        $this->assertDatabaseMissing('sessions', ['user_id' => $organizer->id]);
     }
 }

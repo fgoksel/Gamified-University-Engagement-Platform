@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Notifications\StudentInvitationNotification;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -50,6 +51,7 @@ class StudentManagementTest extends TestCase
             'password' => 'secret_hash',
             'status' => $status,
             'email_verified_at' => $verified && $status !== 'invited' ? now() : null,
+            'must_change_password' => ! ($verified && $status !== 'invited'),
             'activation_token' => $status === 'invited' ? str_repeat('b', 64) : null,
             'activation_token_expires_at' => $status === 'invited' ? now()->addHours(24) : null,
         ]);
@@ -545,5 +547,30 @@ class StudentManagementTest extends TestCase
             ->callTableAction('deactivate', $admin);
 
         $this->assertSame('active', $admin->fresh()->status);
+    }
+
+    public function test_deactivate_student_revokes_active_sessions(): void
+    {
+        $admin = $this->makeAdmin();
+        $student = $this->makeStudent('active', 'SES001');
+
+        // Simulate an active session for the student
+        DB::table('sessions')->insert([
+            'id' => 'test-session-id-student',
+            'user_id' => $student->id,
+            'ip_address' => '127.0.0.1',
+            'user_agent' => 'PHPUnit',
+            'payload' => serialize(['user' => $student->id]),
+            'last_activity' => time(),
+        ]);
+
+        $this->assertDatabaseHas('sessions', ['user_id' => $student->id]);
+
+        Livewire::actingAs($admin)
+            ->test(StudentManagement::class)
+            ->callTableAction('deactivate', $student)
+            ->assertHasNoTableActionErrors();
+
+        $this->assertDatabaseMissing('sessions', ['user_id' => $student->id]);
     }
 }

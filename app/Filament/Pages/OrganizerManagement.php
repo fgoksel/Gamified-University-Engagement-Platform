@@ -19,6 +19,7 @@ use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 /**
@@ -207,6 +208,11 @@ class OrganizerManagement extends Page implements HasTable
                             'activation_token_expires_at' => null,
                         ]);
 
+                        // Revoke any active sessions immediately (UC-3.1.2).
+                        if (Schema::hasTable('sessions')) {
+                            DB::table('sessions')->where('user_id', $record->id)->delete();
+                        }
+
                         Notification::make()
                             ->title('Organizer Deactivated')
                             ->warning()
@@ -222,13 +228,13 @@ class OrganizerManagement extends Page implements HasTable
                     ->color('success')
                     ->requiresConfirmation()
                     ->modalHeading('Activate Organizer')
-                    ->modalDescription(fn (User $record): string => $record->email_verified_at === null
+                    ->modalDescription(fn (User $record): string => ($record->email_verified_at === null || $record->must_change_password)
                         ? "Activate {$record->name}? Since this account has not activated yet, their status will become Invited and a fresh activation email will be sent."
                         : "Activate {$record->name}? They will be able to log in again with their existing password.")
                     ->modalSubmitActionLabel('Yes, Activate')
                     ->visible(fn (User $record): bool => $record->status === 'inactive')
                     ->action(function (User $record): void {
-                        if ($record->email_verified_at === null) {
+                        if ($record->email_verified_at === null || $record->must_change_password) {
                             $token = Str::random(64);
 
                             $record->update([
