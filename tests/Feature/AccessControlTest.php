@@ -125,7 +125,7 @@ class AccessControlTest extends TestCase
 
         $this->actingAs($student)->followingRedirects()->get('/admin')
             ->assertInertia(fn (Assert $page) => $page
-                ->component('Welcome')
+                ->component('Leaderboard/Index')
                 ->where('flash.error', self::MESSAGE));
     }
 
