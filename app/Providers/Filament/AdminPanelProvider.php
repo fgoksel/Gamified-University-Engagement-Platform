@@ -29,7 +29,6 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
-            ->login()
             // Task #17: "Forgot password" on the admin login page, and the
             // admin's own profile page (change own password, UC-3.0).
             ->passwordReset()

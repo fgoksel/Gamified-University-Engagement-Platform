@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\UserRole;
+use App\Http\Controllers\Admin\ImportController;
 use App\Http\Controllers\AppearanceController;
 use App\Http\Controllers\Auth\ChangePasswordController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
@@ -49,4 +50,16 @@ Route::middleware('auth')->group(function () {
             return Inertia::render('Welcome');
         })->name('home');
     });
+});
+
+// Admin CSV Import endpoints specified in Technical Specification Table 22
+Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::post('/import/organizers', [ImportController::class, 'organizers'])
+        ->name('import.organizers');
+    Route::post('/import/students', [ImportController::class, 'students'])
+        ->name('import.students');
+    Route::get('/sample-csv/organizers', [ImportController::class, 'sampleOrganizersCsv'])
+        ->name('sample-csv.organizers');
+    Route::get('/sample-csv/students', [ImportController::class, 'sampleStudentsCsv'])
+        ->name('sample-csv.students');
 });

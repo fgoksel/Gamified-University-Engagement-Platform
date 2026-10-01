@@ -3,11 +3,13 @@
 namespace App\Filament\Pages;
 
 use App\Enums\UserRole;
+use App\Jobs\ImportStudentsJob;
 use App\Models\Faculty;
 use App\Models\User;
 use App\Notifications\StudentInvitationNotification;
 use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
@@ -20,6 +22,7 @@ use Filament\Tables\Table;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 
 /**
@@ -395,6 +398,42 @@ class StudentManagement extends Page implements HasTable
                             ->body("Invitation successfully sent to {$user->email}.")
                             ->send();
                     });
+                }),
+
+            // UC-3.2.1: Bulk CSV import for students (Task #27)
+            Action::make('import')
+                ->label('Import Students (CSV)')
+                ->icon(Heroicon::OutlinedArrowUpTray)
+                ->modalHeading('Bulk Import Students (CSV)')
+                ->modalDescription('Upload a Neptun CSV file (max 10 MB) containing student accounts (Full Name, Email, Neptun Code, optional Major, and optional Year of Study).')
+                ->modalSubmitActionLabel('Execute Import')
+                ->form([
+                    FileUpload::make('file')
+                        ->label('CSV File')
+                        ->disk('local')
+                        ->directory('imports')
+                        ->acceptedFileTypes([
+                            'text/csv',
+                            'text/plain',
+                            'application/csv',
+                            'text/comma-separated-values',
+                            'text/x-csv',
+                            'application/vnd.ms-excel',
+                        ])
+                        ->maxFiles(1)
+                        ->maxSize(10240) // 10MB per Technical Spec 7.3.1
+                        ->required()
+                        ->helperText(new HtmlString('<a href="/admin/sample-csv/students" class="text-primary-600 underline font-medium" download>Download sample CSV template</a>')),
+                ])
+                ->action(function (array $data): void {
+                    $path = $data['file'];
+                    ImportStudentsJob::dispatch($path, auth()->id());
+
+                    Notification::make()
+                        ->title('Student Import Queued')
+                        ->success()
+                        ->body('The CSV file was uploaded and background import has been queued. You will receive a panel notification when the import finishes.')
+                        ->send();
                 }),
         ];
     }
