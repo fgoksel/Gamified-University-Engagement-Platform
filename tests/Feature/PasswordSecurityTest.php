@@ -55,6 +55,9 @@ class PasswordSecurityTest extends TestCase
 
         $this->post('/_test/login')->assertTooManyRequests();
 
+        // Another account on the same IP (shared campus Wi-Fi) is not blocked.
+        $this->post('/_test/login', ['email' => 'other@pte.hu'])->assertOk();
+
         // Another IP address is not blocked.
         $this->withServerVariables(['REMOTE_ADDR' => '10.0.0.2'])->post('/_test/login')->assertOk();
     }
