@@ -3,6 +3,7 @@
 namespace Tests\Feature\Auth;
 
 use App\Enums\UserRole;
+use App\Http\Middleware\HandleInertiaRequests;
 use App\Models\User;
 use Database\Seeders\DevUserSeeder;
 use Database\Seeders\RolePermissionSeeder;
@@ -102,6 +103,27 @@ class LoginTest extends TestCase
             ->assertRedirect('/admin');
 
         $this->get('/')->assertRedirect('/admin');
+    }
+
+    public function test_administrators_leave_the_vue_app_with_a_full_page_visit(): void
+    {
+        $admin = User::factory()->create(['password' => 'correct-password'])->assignRole(UserRole::Admin);
+
+        // The login form is sent by Inertia. A plain redirect would open the
+        // admin panel inside Inertia's error dialog, so a 409 tells the
+        // browser to load /admin as a normal page instead.
+        $this->withHeader('X-Inertia', 'true')
+            ->post('/login', ['email' => $admin->email, 'password' => 'correct-password'])
+            ->assertStatus(409)
+            ->assertHeader('X-Inertia-Location', '/admin');
+
+        // Inertia GET visits also carry the asset version; without it the
+        // middleware asks for a reload of "/" before the controller runs.
+        $this->withHeader('X-Inertia', 'true')
+            ->withHeader('X-Inertia-Version', (string) app(HandleInertiaRequests::class)->version(request()))
+            ->get('/')
+            ->assertStatus(409)
+            ->assertHeader('X-Inertia-Location', '/admin');
     }
 
     public function test_logged_in_users_do_not_see_the_login_page(): void

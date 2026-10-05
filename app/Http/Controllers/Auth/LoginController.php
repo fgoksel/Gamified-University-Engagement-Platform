@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\Response as HttpResponse;
 
 /**
  * Login and logout for teachers and students (UC-1.1 B, UC-2.1).
@@ -31,7 +32,7 @@ class LoginController extends Controller
      * and deactivated accounts are refused. Every failure shows the same
      * message, so nobody can find out which email addresses exist.
      */
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request): HttpResponse
     {
         $credentials = $request->validate([
             'email' => ['required', 'email'],
@@ -50,7 +51,7 @@ class LoginController extends Controller
 
         // Administrators work in the Filament admin panel.
         if ($user->hasRole(UserRole::Admin)) {
-            return redirect('/admin');
+            return Inertia::location('/admin');
         }
 
         // First login with a temporary password (UC-2.1 A).
