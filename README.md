@@ -87,3 +87,4 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d webserver
 - **Migrations fail with "connection refused":** MySQL is still starting. Wait a few seconds and try again.
 - **Changed the Dockerfile:** rebuild with `docker compose up -d --build`.
 - **Emails don't arrive in Mailpit:** check the worker with `docker compose logs queue`. After pulling new PHP code, restart it with `docker compose restart queue`, because the worker keeps the old code in memory.
+- **Emails end up in `storage/logs/laravel.log` instead of Mailpit:** if `.env` has `MAIL_MAILER=log` or `MAIL_PORT=2525`, copy the `MAIL_` block from `.env.example` and run `docker compose restart app queue`.
