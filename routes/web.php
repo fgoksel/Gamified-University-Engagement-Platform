@@ -28,11 +28,14 @@ Route::middleware('guest')->group(function () {
     Route::post('/forgot-password', [ForgotPasswordController::class, 'store'])
         ->middleware('throttle:login')
         ->name('password.email');
-
-    // The invitation emails (Tasks #23 and #26) and the reset email link here.
-    Route::get('/auth/activate/{token}', [SetPasswordController::class, 'create'])->name('password.setup');
-    Route::post('/auth/set-password', [SetPasswordController::class, 'store'])->name('password.setup.store');
 });
+
+// The invitation emails (Tasks #23 and #26) and the reset email link here.
+// Not "guest" only: the link must work even when someone else is logged in
+// in the same browser (e.g. the admin who imported the students). The
+// controller logs that person out first.
+Route::get('/auth/activate/{token}', [SetPasswordController::class, 'create'])->name('password.setup');
+Route::post('/auth/set-password', [SetPasswordController::class, 'store'])->name('password.setup.store');
 
 Route::middleware('auth')->group(function () {
     Route::get('/password/change', [ChangePasswordController::class, 'edit'])->name('password.change');
