@@ -11,6 +11,8 @@ use App\Http\Controllers\EventController;
 use App\Http\Controllers\LeaderboardController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ScanController;
+use App\Http\Controllers\TreeUnitController;
+use App\Http\Controllers\UnitMembershipController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -66,6 +68,18 @@ Route::middleware('auth')->group(function () {
             Route::post('/profile/avatar', [ProfileController::class, 'updateAvatar'])->name('profile.avatar.update');
             Route::delete('/profile/avatar', [ProfileController::class, 'destroyAvatar'])->name('profile.avatar.destroy');
             Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password.update');
+        });
+
+        // "My subjects": deans, teachers and co-teachers manage their branch of
+        // the subject tree. TreeService and the tree policies check every action.
+        Route::middleware('role:teacher')->prefix('my-subjects')->name('tree.')->group(function () {
+            Route::get('/', [TreeUnitController::class, 'index'])->name('index');
+            Route::get('/{unit}', [TreeUnitController::class, 'show'])->whereNumber('unit')->name('show');
+            Route::post('/{unit}/subtopics', [TreeUnitController::class, 'storeSubtopic'])->whereNumber('unit')->name('subtopics.store');
+            Route::get('/{unit}/candidates', [UnitMembershipController::class, 'candidates'])->whereNumber('unit')->name('candidates');
+            Route::post('/{unit}/members', [UnitMembershipController::class, 'store'])->whereNumber('unit')->name('members.store');
+            Route::put('/members/{membership}/permissions', [UnitMembershipController::class, 'updatePermissions'])->name('members.permissions');
+            Route::post('/members/{membership}/end', [UnitMembershipController::class, 'end'])->name('members.end');
         });
     });
 });

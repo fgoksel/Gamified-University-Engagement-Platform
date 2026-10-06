@@ -1,4 +1,4 @@
-import { CalendarDays, QrCode, Trophy, UserRound } from "@lucide/vue";
+import { CalendarDays, Network, QrCode, Trophy, UserRound } from "@lucide/vue";
 
 // Main menu of AppLayout, per role. One place to add or rename menu items.
 // An item with "children" is a group heading with links under it.
@@ -17,6 +17,8 @@ export const navigation = {
                 { label: "Organized by me", href: "/my-events" },
             ],
         },
+        // Deans, teachers and co-teachers manage their subjects here
+        { label: "My subjects", href: "/my-subjects", icon: Network },
         profile,
     ],
     student: [
