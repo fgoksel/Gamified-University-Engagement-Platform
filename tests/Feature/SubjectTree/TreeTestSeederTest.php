@@ -2,12 +2,20 @@
 
 namespace Tests\Feature\SubjectTree;
 
+use App\Enums\TreeRole;
+use App\Enums\TreeUnitKind;
 use App\Enums\UserRole;
+use App\Jobs\ImportCourseEnrollmentsJob;
 use App\Models\Semester;
+use App\Models\TreeUnit;
+use App\Models\UnitMembership;
 use App\Models\User;
+use Database\Seeders\RolePermissionSeeder;
 use Database\Seeders\TreeTestSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 /**
@@ -60,7 +68,7 @@ class TreeTestSeederTest extends TestCase
         $this->assertSame('Renamed Dean', $dean->name);
         $this->assertTrue($dean->must_change_password);
         $this->assertEquals($existing->fresh()->updated_at, $existing->updated_at);
-        $this->assertSame(10, User::count());
+        $this->assertSame(10, User::count() - User::role(UserRole::Admin)->count());
     }
 
     public function test_a_neptun_code_owned_by_someone_else_is_left_alone(): void
@@ -72,6 +80,43 @@ class TreeTestSeederTest extends TestCase
         $this->assertNull(User::where('email', 'abc001@test.local')->first());
         $this->assertSame('real.student@example.com', User::where('neptun_code', 'ABC001')->sole()->email);
         $this->assertSame($owner->id, User::where('neptun_code', 'ABC001')->sole()->id);
+    }
+
+    public function test_it_builds_the_test_tree_with_the_courses_of_the_test_file(): void
+    {
+        $this->admin();
+
+        $this->seed(TreeTestSeeder::class);
+        $this->seed(TreeTestSeeder::class);
+
+        $root = TreeUnit::where('kind', TreeUnitKind::Root)->sole();
+        $this->assertSame('Faculty of Informatics', $root->title);
+        $this->assertSame('dean@test.local', $root->memberships()->where('role', TreeRole::Dean)->sole()->user->email);
+        $this->assertEqualsCanonicalizing(
+            ['IT-DB101', 'IT-PR101', 'IT-NW101'],
+            $root->children()->with('course')->get()->pluck('course.code')->all(),
+        );
+    }
+
+    public function test_the_test_file_imports_into_the_test_tree(): void
+    {
+        Storage::fake('local');
+        Notification::fake();
+        $admin = $this->admin();
+        $this->seed(TreeTestSeeder::class);
+        Storage::disk('local')->put('imports/test.csv', file_get_contents(database_path('seeders/data/enrolments-test.csv')));
+
+        (new ImportCourseEnrollmentsJob('imports/test.csv', $admin->id))->handle();
+
+        $this->assertSame(6, UnitMembership::where('role', TreeRole::Student)->count());
+        $this->assertSame(3, TreeUnit::whereHas('course', fn ($query) => $query->where('code', 'IT-DB101'))->sole()->memberships()->count());
+    }
+
+    private function admin(): User
+    {
+        $this->seed(RolePermissionSeeder::class);
+
+        return User::factory()->create()->assignRole(UserRole::Admin);
     }
 
     private function assertUsableAccount(User $user, UserRole $role): void
