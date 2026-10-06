@@ -1,13 +1,13 @@
 <?php
 
-namespace Tests\Feature\SubjectTree;
+namespace Tests\Feature\FacultyTree;
 
 use App\Enums\TreeRole;
 
 /**
  * Rule 1: a person sees their own unit and everything below it, never above.
  */
-class SeeBelowNotAboveTest extends SubjectTreeTestCase
+class SeeBelowNotAboveTest extends FacultyTreeTestCase
 {
     public function test_people_see_their_own_unit_and_everything_below_it(): void
     {

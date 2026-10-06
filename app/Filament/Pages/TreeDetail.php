@@ -11,7 +11,7 @@ use Filament\Support\Icons\Heroicon;
 use Livewire\Attributes\Url;
 
 /**
- * One whole tree for the admin: the dean, every subject and subtopic, and
+ * One whole tree for the admin: the dean, every course and subtopic, and
  * the people active on each unit. Opened from the Trees list.
  */
 class TreeDetail extends Page
@@ -46,7 +46,7 @@ class TreeDetail extends Page
                 ->color('gray')
                 ->url(Trees::getUrl()),
 
-            Trees::addSubjectAction(fn (): TreeUnit => $this->root),
+            Trees::addCourseAction(fn (): TreeUnit => $this->root),
         ];
     }
 

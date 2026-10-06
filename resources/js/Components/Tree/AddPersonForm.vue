@@ -49,7 +49,7 @@ async function search() {
 
     try {
         const response = await fetch(
-            `/my-subjects/${props.unitId}/candidates?${params}`,
+            `/my-courses/${props.unitId}/candidates?${params}`,
             { headers: { Accept: "application/json" } },
         );
         if (!response.ok) throw new Error();
@@ -68,7 +68,7 @@ function add(person) {
     form.user_id = person.id;
     form.role = role.value;
     form.permissions = isTutor.value ? form.permissions : [];
-    form.post(`/my-subjects/${props.unitId}/members`, {
+    form.post(`/my-courses/${props.unitId}/members`, {
         preserveScroll: true,
         onSuccess: () => {
             query.value = "";

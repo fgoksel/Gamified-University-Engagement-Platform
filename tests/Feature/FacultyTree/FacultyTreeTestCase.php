@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Feature\SubjectTree;
+namespace Tests\Feature\FacultyTree;
 
 use App\Enums\TreeRole;
 use App\Enums\UserRole;
@@ -18,14 +18,14 @@ use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
 /**
- * Builds the same small tree for every subject tree test:
+ * Builds the same small tree for every faculty tree test:
  *
  *   Faculty of Informatics (root, dean)
- *   ├─ Database (subject, teacher)
+ *   ├─ Database (course, teacher)
  *   │  └─ SQL (subtopic)
- *   └─ Networks (subject, nobody yet)
+ *   └─ Networks (course, nobody yet)
  */
-abstract class SubjectTreeTestCase extends TestCase
+abstract class FacultyTreeTestCase extends TestCase
 {
     use RefreshDatabase;
 
@@ -57,8 +57,8 @@ abstract class SubjectTreeTestCase extends TestCase
         $this->teacher = $this->teacherAccount();
 
         $this->root = $this->tree->createTree($this->admin, 'Faculty of Informatics', $this->dean);
-        $this->database = $this->tree->addSubject($this->admin, $this->root, Course::factory()->create(['name' => 'Database']));
-        $this->networks = $this->tree->addSubject($this->admin, $this->root, Course::factory()->create(['name' => 'Networks']));
+        $this->database = $this->tree->addCourse($this->admin, $this->root, Course::factory()->create(['name' => 'Database']));
+        $this->networks = $this->tree->addCourse($this->admin, $this->root, Course::factory()->create(['name' => 'Networks']));
         $this->tree->addMember($this->dean, $this->database, $this->teacher, TreeRole::Teacher);
         $this->sql = $this->tree->addSubtopic($this->teacher, $this->database, 'SQL');
     }

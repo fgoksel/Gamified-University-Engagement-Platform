@@ -1,16 +1,16 @@
 <?php
 
-namespace Tests\Feature\SubjectTree;
+namespace Tests\Feature\FacultyTree;
 
 use App\Enums\TreeRole;
 
 /**
- * Rule 6: the same person can hold different roles in different subjects,
- * and a dean can also teach a subject in their own tree.
+ * Rule 6: the same person can hold different roles in different courses,
+ * and a dean can also teach a course in their own tree.
  */
-class DifferentRolesInDifferentSubjectsTest extends SubjectTreeTestCase
+class DifferentRolesInDifferentCoursesTest extends FacultyTreeTestCase
 {
-    public function test_a_student_can_tutor_one_subject_and_study_another(): void
+    public function test_a_student_can_tutor_one_course_and_study_another(): void
     {
         $networksTeacher = $this->add($this->dean, $this->networks, TreeRole::Teacher)->user;
         $anna = $this->add($this->teacher, $this->database, TreeRole::Tutor)->user;
@@ -23,7 +23,7 @@ class DifferentRolesInDifferentSubjectsTest extends SubjectTreeTestCase
         );
     }
 
-    public function test_a_dean_can_also_teach_a_subject_in_their_own_tree(): void
+    public function test_a_dean_can_also_teach_a_course_in_their_own_tree(): void
     {
         $this->add($this->dean, $this->networks, TreeRole::Teacher, $this->dean);
 

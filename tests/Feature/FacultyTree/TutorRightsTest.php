@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Feature\SubjectTree;
+namespace Tests\Feature\FacultyTree;
 
 use App\Enums\TreeRole;
 use App\Enums\TutorPermission;
@@ -9,7 +9,7 @@ use App\Enums\TutorPermission;
  * Rule 7: a teacher or co-teacher sets each tutor's rights, and they apply
  * at the tutor's unit and below.
  */
-class TutorRightsTest extends SubjectTreeTestCase
+class TutorRightsTest extends FacultyTreeTestCase
 {
     public function test_a_tutors_rights_apply_at_their_unit_and_below(): void
     {

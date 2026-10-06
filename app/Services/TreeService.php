@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 
 /**
- * The only place that writes to the subject tree.
+ * The only place that writes to the faculty tree.
  *
  * Every method first asks the policies whether $actor may do it (and throws
  * AuthorizationException if not), then checks the data rules (and throws
@@ -48,23 +48,23 @@ class TreeService
     }
 
     /**
-     * The admin adds a Neptun course to a dean's tree as a subject.
+     * The admin adds a Neptun course to a dean's tree as a course.
      *
      * @throws AuthorizationException|ValidationException
      */
-    public function addSubject(User $admin, TreeUnit $root, Course $course, ?SubjectArea $subjectArea = null): TreeUnit
+    public function addCourse(User $admin, TreeUnit $root, Course $course, ?SubjectArea $subjectArea = null): TreeUnit
     {
-        Gate::forUser($admin)->authorize('addSubject', $root);
+        Gate::forUser($admin)->authorize('addCourse', $root);
 
         if (TreeUnit::where('course_id', $course->id)->exists()) {
             throw ValidationException::withMessages([
-                'course_id' => 'This course is already a subject in a tree.',
+                'course_id' => 'This course is already a course in a tree.',
             ]);
         }
 
         return TreeUnit::create([
             'parent_id' => $root->id,
-            'kind' => TreeUnitKind::Subject,
+            'kind' => TreeUnitKind::Course,
             'title' => $course->name,
             'course_id' => $course->id,
             'subject_area_id' => $subjectArea?->id,
@@ -73,7 +73,7 @@ class TreeService
     }
 
     /**
-     * A teacher or co-teacher adds a subtopic below a subject or subtopic.
+     * A teacher or co-teacher adds a subtopic below a course or subtopic.
      *
      * @throws AuthorizationException
      */
@@ -93,7 +93,7 @@ class TreeService
      * Give $user the role $role on $unit.
      *
      * Students added here are marked manual (rule 9); the Neptun import
-     * adds students separately. Making a student of the subject a tutor
+     * adds students separately. Making a student of the course a tutor
      * ends their student role first (rule 5).
      *
      * @param  list<TutorPermission|string>  $permissions  Tutors only.
@@ -122,7 +122,7 @@ class TreeService
             if ($role === TreeRole::Dean) {
                 $this->ensureNoDean($unit);
             } else {
-                $this->makeRoomInSubject($unit, $user, $role);
+                $this->makeRoomInCourse($unit, $user, $role);
             }
 
             return UnitMembership::create([
@@ -139,22 +139,22 @@ class TreeService
     }
 
     /**
-     * The Neptun enrolment import adds a student to a subject (build step 4).
+     * The Neptun enrolment import adds a student to a course (build step 4).
      * Runs in a queued job started by the admin, so there is no policy check.
      *
      * Returns "added", "already" when the student already studies the
-     * subject, or "staff" when they hold another role in it (rule 5). Nothing
+     * course, or "staff" when they hold another role in it (rule 5). Nothing
      * is ever ended or deleted here.
      *
      * @return 'added'|'already'|'staff'
      */
-    public function importStudent(TreeUnit $subject, User $student, Semester $semester, ?User $admin = null): string
+    public function importStudent(TreeUnit $courseUnit, User $student, Semester $semester, ?User $admin = null): string
     {
-        return DB::transaction(function () use ($subject, $student, $semester, $admin) {
+        return DB::transaction(function () use ($courseUnit, $student, $semester, $admin) {
             $roles = UnitMembership::query()
                 ->active()
                 ->where('user_id', $student->id)
-                ->whereIn('unit_id', TreeUnit::within($subject)->select('id'))
+                ->whereIn('unit_id', TreeUnit::within($courseUnit)->select('id'))
                 ->lockForUpdate()
                 ->pluck('role');
 
@@ -163,7 +163,7 @@ class TreeService
             }
 
             UnitMembership::create([
-                'unit_id' => $subject->id,
+                'unit_id' => $courseUnit->id,
                 'user_id' => $student->id,
                 'role' => TreeRole::Student,
                 'added_by_id' => $admin?->id,
@@ -259,18 +259,18 @@ class TreeService
     }
 
     /**
-     * Rule 5: one active role per person in one subject's whole subtree.
-     * The only exception: a student of the subject can become its tutor,
+     * Rule 5: one active role per person in one course's whole subtree.
+     * The only exception: a student of the course can become its tutor,
      * which ends the student role.
      */
-    private function makeRoomInSubject(TreeUnit $unit, User $user, TreeRole $role): void
+    private function makeRoomInCourse(TreeUnit $unit, User $user, TreeRole $role): void
     {
-        $subject = $unit->subjectUnit();
+        $courseUnit = $unit->courseUnit();
 
         $existing = UnitMembership::query()
             ->active()
             ->where('user_id', $user->id)
-            ->whereIn('unit_id', TreeUnit::within($subject)->select('id'))
+            ->whereIn('unit_id', TreeUnit::within($courseUnit)->select('id'))
             ->lockForUpdate()
             ->get();
 
@@ -283,13 +283,13 @@ class TreeService
 
         if (! $studentBecomesTutor) {
             throw ValidationException::withMessages([
-                'user_id' => 'This person already has a role in this subject.',
+                'user_id' => 'This person already has a role in this course.',
             ]);
         }
 
         $existing->each->update([
             'ended_at' => now(),
-            'ended_reason' => 'Became a tutor in this subject.',
+            'ended_reason' => 'Became a tutor in this course.',
         ]);
     }
 

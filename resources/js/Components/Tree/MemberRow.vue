@@ -18,7 +18,7 @@ const rights = useForm({ permissions: [...props.member.permissions] });
 const end = useForm({ ended_reason: "" });
 
 function saveRights() {
-    rights.put(`/my-subjects/members/${props.member.id}/permissions`, {
+    rights.put(`/my-courses/members/${props.member.id}/permissions`, {
         preserveScroll: true,
         // The saved rights are the new starting point of the form
         onSuccess: () => rights.defaults(),
@@ -26,7 +26,7 @@ function saveRights() {
 }
 
 function submitEnd() {
-    end.post(`/my-subjects/members/${props.member.id}/end`, {
+    end.post(`/my-courses/members/${props.member.id}/end`, {
         preserveScroll: true,
     });
 }

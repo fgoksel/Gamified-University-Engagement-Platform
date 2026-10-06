@@ -3,7 +3,7 @@
         <x-slot name="heading">Tree</x-slot>
 
         <x-slot name="description">
-            Subjects are Neptun courses. Teachers are added by the dean, and everyone below by the teachers.
+            Teachers are added to the courses by the dean, and everyone below by the teachers.
         </x-slot>
 
         @include('filament.pages.partials.tree-unit', ['unit' => $root, 'children' => $children, 'members' => $members])

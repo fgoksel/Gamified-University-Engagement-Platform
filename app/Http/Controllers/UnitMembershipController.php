@@ -16,13 +16,13 @@ use Illuminate\Validation\Rule;
 
 /**
  * Adding people to a unit, setting tutor rights and ending roles from the
- * "My subjects" screen (build step 3). TreeService checks every rule.
+ * "My courses" screen (build step 3). TreeService checks every rule.
  */
 class UnitMembershipController extends Controller
 {
     /**
      * People who could be added to $unit as the given role: accounts of the
-     * right type, matching the search, with no active role in the subject.
+     * right type, matching the search, with no active role in the course.
      */
     public function candidates(Request $request, TreeUnit $unit): JsonResponse
     {
@@ -34,7 +34,7 @@ class UnitMembershipController extends Controller
         $role = TreeRole::from($data['role']);
         Gate::authorize('add', [UnitMembership::class, $unit, $role]);
 
-        $subject = $unit->subjectUnit() ?? $unit;
+        $courseUnit = $unit->courseUnit() ?? $unit;
         $search = '%'.$data['q'].'%';
 
         $users = User::role($role->accountType())
@@ -45,8 +45,8 @@ class UnitMembershipController extends Controller
                 ->orWhere('neptun_code', 'like', $search))
             ->whereDoesntHave('memberships', fn ($query) => $query
                 ->active()
-                ->whereIn('unit_id', TreeUnit::within($subject)->select('id'))
-                // A student of the subject may still become its tutor (rule 5).
+                ->whereIn('unit_id', TreeUnit::within($courseUnit)->select('id'))
+                // A student of the course may still become its tutor (rule 5).
                 ->when($role === TreeRole::Tutor, fn ($query) => $query->where('role', '!=', TreeRole::Student)))
             ->orderBy('name')
             ->limit(10)

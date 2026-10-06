@@ -254,13 +254,13 @@ class CsvImportJobsTest extends TestCase
         $this->assertStringContainsString('Full Name, Email, Neptun Code', $this->adminMessage()['body']);
     }
 
-    // ---- Course enrolments (UC-3.2.3, subject tree build step 4) ---------
+    // ---- Course enrolments (UC-3.2.3, faculty tree build step 4) ---------
 
-    public function test_students_are_added_to_the_subjects_of_their_courses_for_the_active_semester(): void
+    public function test_students_are_added_to_the_courses_of_their_courses_for_the_active_semester(): void
     {
         $semester = $this->activeSemester();
-        $programming = $this->subject('BMEINFO101', 'Programming 1');
-        $databases = $this->subject('BMEINFO102', 'Databases');
+        $programming = $this->course('BMEINFO101', 'Programming 1');
+        $databases = $this->course('BMEINFO102', 'Databases');
         $anna = $this->student('ABC123');
         $bela = $this->student('DEF456');
 
@@ -291,7 +291,7 @@ class CsvImportJobsTest extends TestCase
         $this->assertSame(2, Course::count());
         $this->assertSame(0, UnitMembership::count());
         $this->assertSame(
-            'Successfully processed: 2 new courses, 0 student-course registrations. Skipped 2 rows because the course is not in a subject tree yet (NEW100, NEW200). Add the course to a tree and import the file again.',
+            'Successfully processed: 2 new courses, 0 student-course registrations. Skipped 2 rows because the course is not in a faculty tree yet (NEW100, NEW200). Add the course to a tree and import the file again.',
             $this->adminMessage()['body'],
         );
     }
@@ -299,7 +299,7 @@ class CsvImportJobsTest extends TestCase
     public function test_unknown_neptun_codes_are_skipped_and_counted(): void
     {
         $this->activeSemester();
-        $this->subject('BMEINFO101', 'Programming 1');
+        $this->course('BMEINFO101', 'Programming 1');
         $this->student('ABC123');
 
         $path = $this->csv("Neptun Code,Course Code,Course Name\nABC123,BMEINFO101,Programming 1\nZZZ999,BMEINFO101,Programming 1\nYYY888,BMEINFO101,Programming 1\n");
@@ -316,7 +316,7 @@ class CsvImportJobsTest extends TestCase
     public function test_only_students_are_linked_to_courses(): void
     {
         $this->activeSemester();
-        $this->subject('BMEINFO101', 'Programming 1');
+        $this->course('BMEINFO101', 'Programming 1');
         User::factory()->create(['neptun_code' => 'TEACH1'])->assignRole(UserRole::Teacher);
 
         $path = $this->csv("Neptun Code,Course Code,Course Name\nTEACH1,BMEINFO101,Programming 1\n");
@@ -329,7 +329,7 @@ class CsvImportJobsTest extends TestCase
     public function test_importing_the_same_enrolment_file_twice_creates_no_duplicates(): void
     {
         $this->activeSemester();
-        $this->subject('BMEINFO101', 'Programming 1');
+        $this->course('BMEINFO101', 'Programming 1');
         $this->student('ABC123');
         $content = "Neptun Code,Course Code,Course Name\nABC123,BMEINFO101,Programming 1\n";
 
@@ -341,38 +341,38 @@ class CsvImportJobsTest extends TestCase
         $this->assertStringContainsString('0 new courses, 0 student-course registrations', $this->adminMessage()['body']);
     }
 
-    public function test_a_tutor_of_the_subject_is_not_added_as_its_student(): void
+    public function test_a_tutor_of_the_course_is_not_added_as_its_student(): void
     {
         $this->activeSemester();
-        $subject = $this->subject('BMEINFO101', 'Programming 1');
+        $courseUnit = $this->course('BMEINFO101', 'Programming 1');
         $anna = $this->student('ABC123');
         $teacher = User::factory()->create()->assignRole(UserRole::Teacher);
         $tree = app(TreeService::class);
-        $tree->addMember($this->dean(), $subject, $teacher, TreeRole::Teacher);
-        $tree->addMember($teacher, $subject, $anna, TreeRole::Tutor);
+        $tree->addMember($this->dean(), $courseUnit, $teacher, TreeRole::Teacher);
+        $tree->addMember($teacher, $courseUnit, $anna, TreeRole::Tutor);
 
         $path = $this->csv("Neptun Code,Course Code,Course Name\nABC123,BMEINFO101,Programming 1\n");
 
         (new ImportCourseEnrollmentsJob($path, $this->admin->id))->handle();
 
         $this->assertSame([TreeRole::Tutor], $anna->memberships()->active()->pluck('role')->all());
-        $this->assertStringContainsString('Skipped 1 rows because the student is a tutor in that subject.', $this->adminMessage()['body']);
+        $this->assertStringContainsString('Skipped 1 rows because the student is a tutor in that course.', $this->adminMessage()['body']);
     }
 
     public function test_an_import_never_ends_or_deletes_existing_roles(): void
     {
         $old = Semester::create(['name' => '2025/2026 Spring', 'starts_at' => '2026-02-01', 'ends_at' => '2026-06-30', 'status' => 'archived']);
         $this->activeSemester();
-        $subject = $this->subject('OLD100', 'Old course');
-        $this->subject('BMEINFO101', 'Programming 1');
+        $courseUnit = $this->course('OLD100', 'Old course');
+        $this->course('BMEINFO101', 'Programming 1');
         $anna = $this->student('ABC123');
-        app(TreeService::class)->importStudent($subject, $anna, $old, $this->admin);
+        app(TreeService::class)->importStudent($courseUnit, $anna, $old, $this->admin);
 
         $path = $this->csv("Neptun Code,Course Code,Course Name\nABC123,BMEINFO101,Programming 1\n");
 
         (new ImportCourseEnrollmentsJob($path, $this->admin->id))->handle();
 
-        $oldRecord = $anna->memberships()->where('unit_id', $subject->id)->sole();
+        $oldRecord = $anna->memberships()->where('unit_id', $courseUnit->id)->sole();
         $this->assertTrue($oldRecord->isActive());
         $this->assertSame($old->id, $oldRecord->semester_id);
         $this->assertSame(2, $anna->memberships()->active()->count());
@@ -380,7 +380,7 @@ class CsvImportJobsTest extends TestCase
 
     public function test_without_an_active_semester_nothing_is_imported_and_the_administrator_is_told(): void
     {
-        $this->subject('BMEINFO101', 'Programming 1');
+        $this->course('BMEINFO101', 'Programming 1');
         $this->student('ABC123');
 
         $path = $this->csv("Neptun Code,Course Code,Course Name\nABC123,BMEINFO101,Programming 1\n");
@@ -440,10 +440,10 @@ class CsvImportJobsTest extends TestCase
     }
 
     /**
-     * A subject in the test tree for the given Neptun course.
+     * A course in the test tree for the given Neptun course.
      */
-    private function subject(string $code, string $name): TreeUnit
+    private function course(string $code, string $name): TreeUnit
     {
-        return app(TreeService::class)->addSubject($this->admin, $this->tree(), Course::create(['code' => $code, 'name' => $name]));
+        return app(TreeService::class)->addCourse($this->admin, $this->tree(), Course::create(['code' => $code, 'name' => $name]));
     }
 }

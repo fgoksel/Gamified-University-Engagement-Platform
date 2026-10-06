@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Feature\SubjectTree;
+namespace Tests\Feature\FacultyTree;
 
 use App\Enums\TreeRole;
 use App\Models\Semester;
@@ -8,7 +8,7 @@ use App\Models\Semester;
 /**
  * Rule 9: students added by hand are marked manual so the admin can review them.
  */
-class ManualStudentsTest extends SubjectTreeTestCase
+class ManualStudentsTest extends FacultyTreeTestCase
 {
     public function test_a_student_added_by_hand_is_marked_manual(): void
     {

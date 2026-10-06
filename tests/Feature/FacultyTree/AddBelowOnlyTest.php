@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Feature\SubjectTree;
+namespace Tests\Feature\FacultyTree;
 
 use App\Enums\TreeRole;
 
@@ -8,7 +8,7 @@ use App\Enums\TreeRole;
  * Rule 2: people add only lower roles, only inside their own branch, and
  * nobody changes their own role.
  */
-class AddBelowOnlyTest extends SubjectTreeTestCase
+class AddBelowOnlyTest extends FacultyTreeTestCase
 {
     public function test_nobody_adds_a_role_at_or_above_their_own_level(): void
     {

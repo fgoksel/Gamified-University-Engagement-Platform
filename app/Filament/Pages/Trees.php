@@ -31,8 +31,8 @@ use Illuminate\Support\HtmlString;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Subject tree, admin side (build step 2): the admin creates one tree per
- * dean, appoints the dean and adds Neptun courses as subjects. Everything
+ * Faculty tree, admin side (build step 2): the admin creates one tree per
+ * dean, appoints the dean and adds Neptun courses as courses. Everything
  * is written through TreeService, so the tree rules apply here too.
  */
 class Trees extends Page implements HasTable
@@ -43,7 +43,7 @@ class Trees extends Page implements HasTable
 
     protected static ?string $navigationLabel = 'Trees';
 
-    protected static ?string $title = 'Subject trees';
+    protected static ?string $title = 'Faculty trees';
 
     protected static ?string $slug = 'trees';
 
@@ -79,7 +79,7 @@ class Trees extends Page implements HasTable
                     )),
 
                 TextColumn::make('children_count')
-                    ->label('Subjects')
+                    ->label('Courses')
                     ->sortable(),
 
                 TextColumn::make('created_at')
@@ -93,7 +93,7 @@ class Trees extends Page implements HasTable
                     ->icon(Heroicon::OutlinedEye)
                     ->url(fn (TreeUnit $record): string => TreeDetail::getUrl(['tree' => $record->id])),
 
-                static::addSubjectAction(fn (TreeUnit $record): TreeUnit => $record),
+                static::addCourseAction(fn (TreeUnit $record): TreeUnit => $record),
 
                 Action::make('appointDean')
                     ->label('Appoint dean')
@@ -121,7 +121,7 @@ class Trees extends Page implements HasTable
                 ->icon(Heroicon::OutlinedArrowUpTray)
                 ->color('gray')
                 ->modalHeading('Import course enrolments (CSV)')
-                ->modalDescription('Upload the Neptun enrolment file (max 10 MB) with the columns Neptun Code, Course Code and Course Name. Students are added to the subjects of the active semester. Courses that are not in a tree yet are skipped and listed in the result.')
+                ->modalDescription('Upload the Neptun enrolment file (max 10 MB) with the columns Neptun Code, Course Code and Course Name. Students are added to the courses of the active semester. Courses that are not in a tree yet are skipped and listed in the result.')
                 ->modalSubmitActionLabel('Execute Import')
                 ->form([
                     FileUpload::make('file')
@@ -155,7 +155,7 @@ class Trees extends Page implements HasTable
                 ->label('New tree')
                 ->icon(Heroicon::OutlinedPlus)
                 ->modalHeading('New tree')
-                ->modalDescription('Each dean has one tree. Subjects are added to it afterwards.')
+                ->modalDescription('Each dean has one tree. Courses are added to it afterwards.')
                 ->modalSubmitActionLabel('Create tree')
                 ->form([
                     TextInput::make('title')
@@ -181,24 +181,24 @@ class Trees extends Page implements HasTable
     }
 
     /**
-     * "Add subject": pick a Neptun course that is in no tree yet, or create
+     * "Add course": pick a Neptun course that is in no tree yet, or create
      * one. Also used on the tree page.
      *
-     * @param  Closure(mixed): TreeUnit  $root  Resolves the tree the subject goes into.
+     * @param  Closure(mixed): TreeUnit  $root  Resolves the tree the course goes into.
      */
-    public static function addSubjectAction(Closure $root): Action
+    public static function addCourseAction(Closure $root): Action
     {
-        return Action::make('addSubject')
-            ->label('Add subject')
+        return Action::make('addCourse')
+            ->label('Add course')
             ->icon(Heroicon::OutlinedPlusCircle)
-            ->modalHeading('Add subject')
-            ->modalDescription('A subject is a Neptun course. Each course can be in one tree only.')
-            ->modalSubmitActionLabel('Add subject')
+            ->modalHeading('Add course')
+            ->modalDescription('Pick a Neptun course. Each course can be in one tree only.')
+            ->modalSubmitActionLabel('Add course')
             ->form([
                 Select::make('course_id')
                     ->label('Neptun course')
                     ->options(fn (): array => Course::query()
-                        ->whereDoesntHave('subjectUnit')
+                        ->whereDoesntHave('courseUnit')
                         ->orderBy('code')
                         ->get()
                         ->mapWithKeys(fn (Course $course): array => [$course->id => "{$course->code} · {$course->name}"])
@@ -231,7 +231,7 @@ class Trees extends Page implements HasTable
             ])
             ->action(function (array $data, mixed $record = null) use ($root): void {
                 static::attempt(function () use ($data, $record, $root) {
-                    $subject = app(TreeService::class)->addSubject(
+                    $courseUnit = app(TreeService::class)->addCourse(
                         static::admin(),
                         $root($record),
                         Course::findOrFail($data['course_id']),
@@ -239,9 +239,9 @@ class Trees extends Page implements HasTable
                     );
 
                     Notification::make()
-                        ->title('Subject added')
+                        ->title('Course added')
                         ->success()
-                        ->body("{$subject->title} has been added.")
+                        ->body("{$courseUnit->title} has been added.")
                         ->send();
                 });
             });

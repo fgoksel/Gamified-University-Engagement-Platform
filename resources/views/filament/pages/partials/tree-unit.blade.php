@@ -4,14 +4,14 @@
     $students = $people->get('student', collect());
     $kindLabel = match ($unit->kind) {
         \App\Enums\TreeUnitKind::Root => 'Dean',
-        \App\Enums\TreeUnitKind::Subject => 'Subject',
+        \App\Enums\TreeUnitKind::Course => 'Course',
         \App\Enums\TreeUnitKind::Subtopic => 'Subtopic',
     };
 @endphp
 
 <div style="margin-top: 0.75rem">
     <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem">
-        <x-filament::badge :color="$unit->kind === \App\Enums\TreeUnitKind::Subject ? 'primary' : 'gray'">
+        <x-filament::badge :color="$unit->kind === \App\Enums\TreeUnitKind::Course ? 'primary' : 'gray'">
             {{ $kindLabel }}
         </x-filament::badge>
 
@@ -43,7 +43,7 @@
             </li>
         @endif
 
-        @if ($unit->kind === \App\Enums\TreeUnitKind::Subject && $people->isEmpty())
+        @if ($unit->kind === \App\Enums\TreeUnitKind::Course && $people->isEmpty())
             <li style="opacity: 0.7">No teacher yet</li>
         @endif
     </ul>

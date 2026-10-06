@@ -74,7 +74,7 @@ class User extends Authenticatable implements FilamentUser
     }
 
     /**
-     * The user's roles in the subject tree, active and ended.
+     * The user's roles in the faculty tree, active and ended.
      */
     public function memberships(): HasMany
     {

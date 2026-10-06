@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
- * A Neptun course. In the role tree it is a subject (TreeUnit of kind "subject").
+ * A Neptun course. In the role tree it is a TreeUnit of kind "course".
  */
 class Course extends Model
 {
@@ -21,9 +21,9 @@ class Course extends Model
     ];
 
     /**
-     * The subject unit this course is in, if the admin has added it to a tree.
+     * The tree unit of this course, if the course is in a tree.
      */
-    public function subjectUnit(): HasOne
+    public function courseUnit(): HasOne
     {
         return $this->hasOne(TreeUnit::class);
     }

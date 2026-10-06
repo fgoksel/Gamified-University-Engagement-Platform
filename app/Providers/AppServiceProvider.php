@@ -38,7 +38,7 @@ class AppServiceProvider extends ServiceProvider
         // Admin self-lock prevention policy (Technical Specification Table 25, Task #32).
         Gate::policy(User::class, AdminPolicy::class);
 
-        // Subject tree and roles: who may see and change units and memberships.
+        // Faculty tree and roles: who may see and change units and memberships.
         Gate::policy(TreeUnit::class, TreeUnitPolicy::class);
         Gate::policy(UnitMembership::class, UnitMembershipPolicy::class);
 

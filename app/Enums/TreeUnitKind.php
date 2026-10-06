@@ -11,8 +11,8 @@ enum TreeUnitKind: string
     case Root = 'root';
 
     /** A Neptun course. */
-    case Subject = 'subject';
+    case Course = 'course';
 
-    /** A part of a subject, e.g. "SQL" in "Database". Subtopics can contain subtopics. */
+    /** A part of a course, e.g. "SQL" in "Database". Subtopics can contain subtopics. */
     case Subtopic = 'subtopic';
 }

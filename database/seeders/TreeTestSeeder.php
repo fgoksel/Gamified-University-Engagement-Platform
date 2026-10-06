@@ -14,7 +14,7 @@ use Illuminate\Validation\ValidationException;
 use RuntimeException;
 
 /**
- * Accounts for trying out the subject tree on your own computer.
+ * Accounts for trying out the faculty tree on your own computer.
  *
  * Not part of DatabaseSeeder. Run it by hand:
  *     php artisan db:seed --class=TreeTestSeeder
@@ -25,8 +25,8 @@ use RuntimeException;
  * Neptun code is already taken is skipped.
  *
  * Then builds the "Faculty of Informatics" tree with dean@test.local as dean
- * and the courses of data/enrolments-test.csv as subjects, unless they are
- * there already. Teachers and students are added by hand on "My subjects",
+ * and the courses of data/enrolments-test.csv as courses, unless they are
+ * there already. Teachers and students are added by hand on "My courses",
  * and students also by importing data/enrolments-test.csv in the admin panel
  * (Trees > Import enrolments).
  */
@@ -87,7 +87,7 @@ class TreeTestSeeder extends Seeder
     }
 
     /**
-     * The test tree and its subjects, created through TreeService so the
+     * The test tree and its courses, created through TreeService so the
      * tree rules apply. Nothing that already exists is changed.
      */
     private function buildTree(): void
@@ -110,8 +110,8 @@ class TreeTestSeeder extends Seeder
             foreach (self::COURSES as $code => $name) {
                 $course = Course::firstOrCreate(['code' => $code], ['name' => $name]);
 
-                if ($course->subjectUnit()->doesntExist()) {
-                    $tree->addSubject($admin, $root, $course);
+                if ($course->courseUnit()->doesntExist()) {
+                    $tree->addCourse($admin, $root, $course);
                 }
             }
         } catch (ValidationException $e) {

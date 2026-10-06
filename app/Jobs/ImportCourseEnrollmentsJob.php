@@ -17,11 +17,11 @@ use InvalidArgumentException;
  *
  * Columns: Neptun Code, Course Code, Course Name (all required).
  * Missing courses are created. Every student is found by Neptun code and
- * added as a student on the course's subject in the subject tree, for the
+ * added as a student on the course's course in the faculty tree, for the
  * semester (default: the active semester). Rows are skipped and counted when
  * the Neptun code is unknown, the course is not in a tree yet, or the student
- * is a tutor in that subject. A repeated import adds nothing twice, and
- * nothing is ever deleted (subject tree, build step 4).
+ * is a tutor in that course. A repeated import adds nothing twice, and
+ * nothing is ever deleted (faculty tree, build step 4).
  */
 class ImportCourseEnrollmentsJob extends ImportCsvJob
 {
@@ -48,8 +48,8 @@ class ImportCourseEnrollmentsJob extends ImportCsvJob
     /** @var array<string, int> course code => course id */
     private array $courses = [];
 
-    /** @var array<int, TreeUnit|null> course id => subject unit */
-    private array $subjects = [];
+    /** @var array<int, TreeUnit|null> course id => course unit */
+    private array $courseUnits = [];
 
     /**
      * @param  int|null  $semesterId  Semester of the enrolments; the active semester when null.
@@ -81,7 +81,7 @@ class ImportCourseEnrollmentsJob extends ImportCsvJob
     protected function prepare(): void
     {
         $this->newCourses = $this->registrations = $this->unregistered = $this->tutors = $this->notInTreeRows = 0;
-        $this->students = $this->courses = $this->subjects = $this->notInTree = [];
+        $this->students = $this->courses = $this->courseUnits = $this->notInTree = [];
 
         $this->semester = $this->semesterId !== null
             ? Semester::find($this->semesterId)
@@ -114,16 +114,16 @@ class ImportCourseEnrollmentsJob extends ImportCsvJob
             return;
         }
 
-        $subject = $this->subject($this->courseId($courseCode, $courseName));
+        $courseUnit = $this->course($this->courseId($courseCode, $courseName));
 
-        if ($subject === null) {
+        if ($courseUnit === null) {
             $this->notInTree[$courseCode] = true;
             $this->notInTreeRows++;
 
             return;
         }
 
-        match (app(TreeService::class)->importStudent($subject, $student, $this->semester, $this->admin)) {
+        match (app(TreeService::class)->importStudent($courseUnit, $student, $this->semester, $this->admin)) {
             'added' => $this->registrations++,
             'staff' => $this->tutors++,
             'already' => null,
@@ -140,11 +140,11 @@ class ImportCourseEnrollmentsJob extends ImportCsvJob
 
         if ($this->notInTreeRows > 0) {
             $codes = implode(', ', array_keys($this->notInTree));
-            $text .= " Skipped {$this->notInTreeRows} rows because the course is not in a subject tree yet ({$codes}). Add the course to a tree and import the file again.";
+            $text .= " Skipped {$this->notInTreeRows} rows because the course is not in a faculty tree yet ({$codes}). Add the course to a tree and import the file again.";
         }
 
         if ($this->tutors > 0) {
-            $text .= " Skipped {$this->tutors} rows because the student is a tutor in that subject.";
+            $text .= " Skipped {$this->tutors} rows because the student is a tutor in that course.";
         }
 
         return $text;
@@ -174,14 +174,14 @@ class ImportCourseEnrollmentsJob extends ImportCsvJob
         return $this->courses[$code];
     }
 
-    private function subject(int $courseId): ?TreeUnit
+    private function course(int $courseId): ?TreeUnit
     {
-        if (! array_key_exists($courseId, $this->subjects)) {
-            $this->subjects[$courseId] = TreeUnit::where('course_id', $courseId)
-                ->where('kind', TreeUnitKind::Subject)
+        if (! array_key_exists($courseId, $this->courseUnits)) {
+            $this->courseUnits[$courseId] = TreeUnit::where('course_id', $courseId)
+                ->where('kind', TreeUnitKind::Course)
                 ->first();
         }
 
-        return $this->subjects[$courseId];
+        return $this->courseUnits[$courseId];
     }
 }

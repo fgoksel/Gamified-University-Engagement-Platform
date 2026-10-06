@@ -3,8 +3,8 @@ import { Link } from "@inertiajs/vue3";
 import { ChevronRight, Network } from "@lucide/vue";
 import EmptyState from "../../Components/EmptyState.vue";
 
-// "My subjects": the units where a dean, teacher or co-teacher works
-defineOptions({ layout: { title: "My subjects" } });
+// "My courses": the units where a dean, teacher or co-teacher works
+defineOptions({ layout: { title: "My courses" } });
 
 defineProps({
     units: { type: Array, required: true },
@@ -15,16 +15,16 @@ defineProps({
     <EmptyState
         v-if="units.length === 0"
         :icon="Network"
-        title="You are not on any subject yet"
+        title="You are not on any course yet"
     >
-        When the dean adds you to a subject, or a teacher brings you in as a
+        When the dean adds you to a course, or a teacher brings you in as a
         co-teacher, it appears here.
     </EmptyState>
 
     <ul v-else class="grid gap-4 md:grid-cols-2">
         <li v-for="unit in units" :key="unit.id">
             <Link
-                :href="`/my-subjects/${unit.id}`"
+                :href="`/my-courses/${unit.id}`"
                 class="flex items-center gap-4 rounded-card border border-line bg-surface p-5 shadow-card hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-ring"
             >
                 <div class="min-w-0 flex-1">

@@ -6,9 +6,9 @@ import MemberRow from "../../Components/Tree/MemberRow.vue";
 import PrimaryButton from "../../Components/PrimaryButton.vue";
 import TextField from "../../Components/TextField.vue";
 
-// One unit of "My subjects": its people, its subtopics, and what the
+// One unit of "My courses": its people, its subtopics, and what the
 // logged-in user may do here (decided by the backend).
-defineOptions({ layout: { title: "My subjects" } });
+defineOptions({ layout: { title: "My courses" } });
 
 const props = defineProps({
     unit: { type: Object, required: true },
@@ -24,7 +24,7 @@ const props = defineProps({
 const subtopic = useForm({ title: "" });
 
 function addSubtopic() {
-    subtopic.post(`/my-subjects/${props.unit.id}/subtopics`, {
+    subtopic.post(`/my-courses/${props.unit.id}/subtopics`, {
         preserveScroll: true,
         onSuccess: () => subtopic.reset(),
     });
@@ -38,10 +38,10 @@ function addSubtopic() {
             <ol class="flex flex-wrap items-center gap-1 text-sm text-fg-muted">
                 <li>
                     <Link
-                        href="/my-subjects"
+                        href="/my-courses"
                         class="hover:text-fg hover:underline"
                     >
-                        My subjects
+                        My courses
                     </Link>
                 </li>
                 <li
@@ -51,7 +51,7 @@ function addSubtopic() {
                 >
                     <ChevronRight class="size-4" :stroke-width="1.75" />
                     <Link
-                        :href="`/my-subjects/${crumb.id}`"
+                        :href="`/my-courses/${crumb.id}`"
                         class="hover:text-fg hover:underline"
                     >
                         {{ crumb.title }}
@@ -135,7 +135,7 @@ function addSubtopic() {
                     class="rounded-card border border-line bg-surface p-5 shadow-card"
                 >
                     <h2 class="text-base font-semibold text-fg">
-                        {{ unit.kind === "root" ? "Subjects" : "Subtopics" }}
+                        {{ unit.kind === "root" ? "Courses" : "Subtopics" }}
                     </h2>
                     <ul
                         v-if="children.length"
@@ -143,7 +143,7 @@ function addSubtopic() {
                     >
                         <li v-for="child in children" :key="child.id">
                             <Link
-                                :href="`/my-subjects/${child.id}`"
+                                :href="`/my-courses/${child.id}`"
                                 class="flex items-center gap-2 py-3 text-sm text-fg hover:underline"
                             >
                                 <span class="flex-1">

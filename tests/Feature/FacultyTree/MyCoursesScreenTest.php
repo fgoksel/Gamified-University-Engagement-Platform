@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Feature\SubjectTree;
+namespace Tests\Feature\FacultyTree;
 
 use App\Enums\TreeRole;
 use App\Enums\TutorPermission;
@@ -8,15 +8,15 @@ use App\Models\UnitMembership;
 use Inertia\Testing\AssertableInertia as Assert;
 
 /**
- * "My subjects" (build step 3): deans, teachers and co-teachers see their
+ * "My courses" (build step 3): deans, teachers and co-teachers see their
  * units, add people, set tutor rights and end roles from the Vue app.
  */
-class MySubjectsScreenTest extends SubjectTreeTestCase
+class MyCoursesScreenTest extends FacultyTreeTestCase
 {
-    public function test_a_teacher_sees_the_subjects_they_are_on(): void
+    public function test_a_teacher_sees_the_courses_they_are_on(): void
     {
         $this->actingAs($this->teacher)
-            ->get('/my-subjects')
+            ->get('/my-courses')
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('Tree/Index')
@@ -29,7 +29,7 @@ class MySubjectsScreenTest extends SubjectTreeTestCase
     public function test_the_dean_sees_their_tree(): void
     {
         $this->actingAs($this->dean)
-            ->get('/my-subjects')
+            ->get('/my-courses')
             ->assertInertia(fn (Assert $page) => $page
                 ->where('units.0.title', 'Faculty of Informatics')
                 ->where('units.0.role', 'Dean'));
@@ -40,7 +40,7 @@ class MySubjectsScreenTest extends SubjectTreeTestCase
         $this->add($this->teacher, $this->database, TreeRole::Student);
 
         $this->actingAs($this->teacher)
-            ->get("/my-subjects/{$this->database->id}")
+            ->get("/my-courses/{$this->database->id}")
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('Tree/Show')
@@ -62,20 +62,20 @@ class MySubjectsScreenTest extends SubjectTreeTestCase
                 ->where('canAddSubtopic', true));
     }
 
-    public function test_the_dean_can_add_only_teachers_on_a_subject(): void
+    public function test_the_dean_can_add_only_teachers_on_a_course(): void
     {
         $this->actingAs($this->dean)
-            ->get("/my-subjects/{$this->networks->id}")
+            ->get("/my-courses/{$this->networks->id}")
             ->assertInertia(fn (Assert $page) => $page
                 ->where('addableRoles', [['value' => 'teacher', 'label' => 'Teacher']])
                 ->where('canAddSubtopic', false)
                 ->has('breadcrumbs', 1));
     }
 
-    public function test_a_teacher_cannot_open_a_subject_outside_their_branch(): void
+    public function test_a_teacher_cannot_open_a_course_outside_their_branch(): void
     {
         $this->actingAs($this->teacher)
-            ->get("/my-subjects/{$this->networks->id}")
+            ->get("/my-courses/{$this->networks->id}")
             ->assertRedirect('/')
             ->assertSessionHas('error');
     }
@@ -90,25 +90,25 @@ class MySubjectsScreenTest extends SubjectTreeTestCase
         $this->teacherAccount()->update(['name' => 'Anna Teacher']);
 
         $this->actingAs($this->teacher)
-            ->getJson("/my-subjects/{$this->database->id}/candidates?role=student&q=anna")
+            ->getJson("/my-courses/{$this->database->id}/candidates?role=student&q=anna")
             ->assertOk()
             ->assertJsonCount(1)
             ->assertJsonPath('0.name', 'Anna Kiss');
 
         $this->actingAs($this->teacher)
-            ->getJson("/my-subjects/{$this->database->id}/candidates?role=student&q=abc1")
+            ->getJson("/my-courses/{$this->database->id}/candidates?role=student&q=abc1")
             ->assertJsonPath('0.neptunCode', 'ABC123');
 
-        // A student of the subject can still be found when making a tutor (rule 5).
+        // A student of the course can still be found when making a tutor (rule 5).
         $this->actingAs($this->teacher)
-            ->getJson("/my-subjects/{$this->database->id}/candidates?role=tutor&q=anna")
+            ->getJson("/my-courses/{$this->database->id}/candidates?role=tutor&q=anna")
             ->assertJsonCount(2);
     }
 
     public function test_the_search_is_refused_for_roles_the_user_cannot_give(): void
     {
         $this->actingAs($this->teacher)
-            ->getJson("/my-subjects/{$this->database->id}/candidates?role=teacher&q=an")
+            ->getJson("/my-courses/{$this->database->id}/candidates?role=teacher&q=an")
             ->assertForbidden();
     }
 
@@ -117,7 +117,7 @@ class MySubjectsScreenTest extends SubjectTreeTestCase
         $student = $this->studentAccount();
 
         $this->actingAs($this->teacher)
-            ->post("/my-subjects/{$this->database->id}/members", ['user_id' => $student->id, 'role' => 'student'])
+            ->post("/my-courses/{$this->database->id}/members", ['user_id' => $student->id, 'role' => 'student'])
             ->assertRedirect()
             ->assertSessionHas('success');
 
@@ -131,7 +131,7 @@ class MySubjectsScreenTest extends SubjectTreeTestCase
         $student = $this->studentAccount();
 
         $this->actingAs($this->teacher)
-            ->post("/my-subjects/{$this->sql->id}/members", [
+            ->post("/my-courses/{$this->sql->id}/members", [
                 'user_id' => $student->id,
                 'role' => 'tutor',
                 'permissions' => ['create_events'],
@@ -145,16 +145,16 @@ class MySubjectsScreenTest extends SubjectTreeTestCase
     public function test_rule_errors_come_back_to_the_form(): void
     {
         $this->actingAs($this->teacher)
-            ->from("/my-subjects/{$this->database->id}")
-            ->post("/my-subjects/{$this->database->id}/members", ['user_id' => $this->teacherAccount()->id, 'role' => 'student'])
-            ->assertRedirect("/my-subjects/{$this->database->id}")
+            ->from("/my-courses/{$this->database->id}")
+            ->post("/my-courses/{$this->database->id}/members", ['user_id' => $this->teacherAccount()->id, 'role' => 'student'])
+            ->assertRedirect("/my-courses/{$this->database->id}")
             ->assertSessionHasErrors('user_id');
     }
 
     public function test_a_teacher_cannot_add_a_role_they_may_not_give(): void
     {
         $this->actingAs($this->teacher)
-            ->post("/my-subjects/{$this->database->id}/members", ['user_id' => $this->teacherAccount()->id, 'role' => 'teacher'])
+            ->post("/my-courses/{$this->database->id}/members", ['user_id' => $this->teacherAccount()->id, 'role' => 'teacher'])
             ->assertRedirect('/')
             ->assertSessionHas('error');
 
@@ -166,13 +166,13 @@ class MySubjectsScreenTest extends SubjectTreeTestCase
         $tutor = $this->add($this->teacher, $this->database, TreeRole::Tutor);
 
         $this->actingAs($this->teacher)
-            ->put("/my-subjects/members/{$tutor->id}/permissions", ['permissions' => ['select_applicants']])
+            ->put("/my-courses/members/{$tutor->id}/permissions", ['permissions' => ['select_applicants']])
             ->assertSessionHas('success');
 
         $this->assertSame(['select_applicants'], $tutor->fresh()->permissions);
 
         $this->actingAs($this->teacher)
-            ->put("/my-subjects/members/{$tutor->id}/permissions", ['permissions' => []]);
+            ->put("/my-courses/members/{$tutor->id}/permissions", ['permissions' => []]);
 
         $this->assertSame([], $tutor->fresh()->permissions);
     }
@@ -182,17 +182,17 @@ class MySubjectsScreenTest extends SubjectTreeTestCase
         $student = $this->add($this->teacher, $this->database, TreeRole::Student);
 
         $this->actingAs($this->teacher)
-            ->post("/my-subjects/members/{$student->id}/end", ['ended_reason' => ''])
+            ->post("/my-courses/members/{$student->id}/end", ['ended_reason' => ''])
             ->assertSessionHasErrors('ended_reason');
 
         $this->actingAs($this->teacher)
-            ->post("/my-subjects/members/{$student->id}/end", ['ended_reason' => 'Left the course'])
+            ->post("/my-courses/members/{$student->id}/end", ['ended_reason' => 'Left the course'])
             ->assertSessionHas('success');
 
         $this->assertSame('Left the course', $student->fresh()->ended_reason);
 
         $this->actingAs($this->teacher)
-            ->get("/my-subjects/{$this->database->id}")
+            ->get("/my-courses/{$this->database->id}")
             ->assertInertia(fn (Assert $page) => $page
                 ->has('members', 1)
                 ->has('history', 1)
@@ -202,16 +202,16 @@ class MySubjectsScreenTest extends SubjectTreeTestCase
     public function test_a_teacher_adds_a_subtopic(): void
     {
         $this->actingAs($this->teacher)
-            ->post("/my-subjects/{$this->sql->id}/subtopics", ['title' => 'Joins'])
+            ->post("/my-courses/{$this->sql->id}/subtopics", ['title' => 'Joins'])
             ->assertSessionHas('success');
 
         $this->assertSame('Joins', $this->sql->children()->sole()->title);
     }
 
-    public function test_students_cannot_open_my_subjects(): void
+    public function test_students_cannot_open_my_courses(): void
     {
         $tutor = $this->add($this->teacher, $this->database, TreeRole::Tutor)->user;
 
-        $this->actingAs($tutor)->get('/my-subjects')->assertRedirect('/');
+        $this->actingAs($tutor)->get('/my-courses')->assertRedirect('/');
     }
 }

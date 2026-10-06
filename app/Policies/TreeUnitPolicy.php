@@ -14,7 +14,7 @@ use App\Models\User;
  * Who may see and change the units of the role tree.
  *
  * The admin is outside the tree: they create each dean's tree, add the
- * subjects and can see every tree. Inside a tree a person's rights come
+ * courses and can see every tree. Inside a tree a person's rights come
  * from the roles they hold on a unit or on any unit above it.
  */
 class TreeUnitPolicy
@@ -37,16 +37,16 @@ class TreeUnitPolicy
     }
 
     /**
-     * Only the admin adds subjects (Neptun courses), directly under a root.
+     * Only the admin adds Neptun courses, directly under a root.
      */
-    public function addSubject(User $user, TreeUnit $root): bool
+    public function addCourse(User $user, TreeUnit $root): bool
     {
         return $root->kind === TreeUnitKind::Root
             && $user->hasRole(UserRole::Admin);
     }
 
     /**
-     * Teachers and co-teachers add subtopics on their subjects and below.
+     * Teachers and co-teachers add subtopics on their courses and below.
      */
     public function addSubtopic(User $user, TreeUnit $parent): bool
     {
@@ -67,7 +67,7 @@ class TreeUnitPolicy
 
     /**
      * For the events step: teachers and co-teachers create events on their
-     * subjects and below; a tutor only where they were given create_events.
+     * courses and below; a tutor only where they were given create_events.
      */
     public function createEvent(User $user, TreeUnit $unit): bool
     {

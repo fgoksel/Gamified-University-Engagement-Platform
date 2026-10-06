@@ -1,15 +1,15 @@
 <?php
 
-namespace Tests\Feature\SubjectTree;
+namespace Tests\Feature\FacultyTree;
 
 use App\Enums\TreeRole;
 
 /**
- * Rule 5: one active role per person inside one subject's whole subtree.
+ * Rule 5: one active role per person inside one course's whole subtree.
  */
-class OneRolePerSubjectTest extends SubjectTreeTestCase
+class OneRolePerCourseTest extends FacultyTreeTestCase
 {
-    public function test_a_tutor_at_a_subtopic_cannot_also_be_a_student_of_the_subject(): void
+    public function test_a_tutor_at_a_subtopic_cannot_also_be_a_student_of_the_course(): void
     {
         $tutor = $this->add($this->teacher, $this->sql, TreeRole::Tutor)->user;
 
@@ -17,7 +17,7 @@ class OneRolePerSubjectTest extends SubjectTreeTestCase
         $this->assertRejected(fn () => $this->add($this->teacher, $this->database, TreeRole::Tutor, $tutor), 'user_id');
     }
 
-    public function test_a_teacher_cannot_hold_a_second_role_in_the_same_subject(): void
+    public function test_a_teacher_cannot_hold_a_second_role_in_the_same_course(): void
     {
         $this->assertRejected(fn () => $this->add($this->dean, $this->database, TreeRole::Teacher, $this->teacher), 'user_id');
     }
@@ -30,7 +30,7 @@ class OneRolePerSubjectTest extends SubjectTreeTestCase
 
         $studentRecord->refresh();
         $this->assertNotNull($studentRecord->ended_at);
-        $this->assertSame('Became a tutor in this subject.', $studentRecord->ended_reason);
+        $this->assertSame('Became a tutor in this course.', $studentRecord->ended_reason);
         $this->assertTrue($tutorRecord->isActive());
     }
 

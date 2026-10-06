@@ -12,7 +12,7 @@ use App\Models\User;
 /**
  * Who may see, add and end the roles people hold in the tree.
  *
- * Data rules (one role per subject, account type, where a role may sit)
+ * Data rules (one role per course, account type, where a role may sit)
  * are checked by TreeService, not here.
  */
 class UnitMembershipPolicy

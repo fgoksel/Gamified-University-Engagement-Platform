@@ -70,9 +70,9 @@ Route::middleware('auth')->group(function () {
             Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password.update');
         });
 
-        // "My subjects": deans, teachers and co-teachers manage their branch of
-        // the subject tree. TreeService and the tree policies check every action.
-        Route::middleware('role:teacher')->prefix('my-subjects')->name('tree.')->group(function () {
+        // "My courses": deans, teachers and co-teachers manage their branch of
+        // the faculty tree. TreeService and the tree policies check every action.
+        Route::middleware('role:teacher')->prefix('my-courses')->name('tree.')->group(function () {
             Route::get('/', [TreeUnitController::class, 'index'])->name('index');
             Route::get('/{unit}', [TreeUnitController::class, 'show'])->whereNumber('unit')->name('show');
             Route::post('/{unit}/subtopics', [TreeUnitController::class, 'storeSubtopic'])->whereNumber('unit')->name('subtopics.store');

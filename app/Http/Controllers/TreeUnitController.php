@@ -16,7 +16,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 
 /**
- * "My subjects" for deans, teachers and co-teachers (build step 3): the
+ * "My courses" for deans, teachers and co-teachers (build step 3): the
  * units they are on, and one unit with its subtopics and people.
  */
 class TreeUnitController extends Controller
@@ -113,7 +113,7 @@ class TreeUnitController extends Controller
             'kind' => $unit->kind->value,
             'kindLabel' => match ($unit->kind) {
                 TreeUnitKind::Root => 'Tree',
-                TreeUnitKind::Subject => 'Subject',
+                TreeUnitKind::Course => 'Course',
                 TreeUnitKind::Subtopic => 'Subtopic',
             },
             'courseCode' => $unit->course?->code,

@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Feature\SubjectTree;
+namespace Tests\Feature\FacultyTree;
 
 use App\Enums\TreeRole;
 use App\Models\TreeUnit;
@@ -9,7 +9,7 @@ use App\Models\TreeUnit;
  * Rule 8: roles are ended, never deleted. Only the admin may delete a unit,
  * and only one that never had anything attached.
  */
-class NeverDeleteTest extends SubjectTreeTestCase
+class NeverDeleteTest extends FacultyTreeTestCase
 {
     public function test_ending_a_role_keeps_the_record_with_a_date_and_a_reason(): void
     {

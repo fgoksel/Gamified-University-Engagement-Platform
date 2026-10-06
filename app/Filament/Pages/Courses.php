@@ -25,7 +25,7 @@ use Illuminate\Support\Facades\Auth;
 /**
  * Every Neptun course, with the tree it is in and its number of students.
  * Courses created by the enrolment import that are in no tree yet can be
- * added to one here (subject tree).
+ * added to one here (faculty tree).
  */
 class Courses extends Page implements HasTable
 {
@@ -48,7 +48,7 @@ class Courses extends Page implements HasTable
         return $table
             ->query(
                 Course::query()
-                    ->with(['subjectUnit' => fn ($query) => $query
+                    ->with(['courseUnit' => fn ($query) => $query
                         ->with('parent')
                         ->withCount(['memberships as students_count' => fn ($membership) => $membership->active()->where('role', TreeRole::Student)])])
                     ->orderBy('code')
@@ -66,14 +66,14 @@ class Courses extends Page implements HasTable
 
                 TextColumn::make('tree')
                     ->label('Tree')
-                    ->state(fn (Course $record): ?string => $record->subjectUnit?->parent?->title)
+                    ->state(fn (Course $record): ?string => $record->courseUnit?->parent?->title)
                     ->placeholder('Not in a tree')
                     ->badge()
-                    ->color(fn (Course $record): string => $record->subjectUnit ? 'primary' : 'warning'),
+                    ->color(fn (Course $record): string => $record->courseUnit ? 'primary' : 'warning'),
 
                 TextColumn::make('students')
                     ->label('Students')
-                    ->state(fn (Course $record): int => $record->subjectUnit?->students_count ?? 0),
+                    ->state(fn (Course $record): int => $record->courseUnit?->students_count ?? 0),
 
                 TextColumn::make('created_at')
                     ->label('Added')
@@ -86,25 +86,25 @@ class Courses extends Page implements HasTable
                     ->trueLabel('In a tree')
                     ->falseLabel('Not in a tree')
                     ->queries(
-                        true: fn (Builder $query) => $query->whereHas('subjectUnit'),
-                        false: fn (Builder $query) => $query->whereDoesntHave('subjectUnit'),
+                        true: fn (Builder $query) => $query->whereHas('courseUnit'),
+                        false: fn (Builder $query) => $query->whereDoesntHave('courseUnit'),
                     ),
             ])
             ->actions([
                 Action::make('viewTree')
                     ->label('View tree')
                     ->icon(Heroicon::OutlinedEye)
-                    ->visible(fn (Course $record): bool => $record->subjectUnit !== null)
-                    ->url(fn (Course $record): ?string => $record->subjectUnit
-                        ? TreeDetail::getUrl(['tree' => $record->subjectUnit->parent_id])
+                    ->visible(fn (Course $record): bool => $record->courseUnit !== null)
+                    ->url(fn (Course $record): ?string => $record->courseUnit
+                        ? TreeDetail::getUrl(['tree' => $record->courseUnit->parent_id])
                         : null),
 
                 Action::make('addToTree')
                     ->label('Add to tree')
                     ->icon(Heroicon::OutlinedPlusCircle)
-                    ->visible(fn (Course $record): bool => $record->subjectUnit === null)
+                    ->visible(fn (Course $record): bool => $record->courseUnit === null)
                     ->modalHeading(fn (Course $record): string => "Add {$record->code} to a tree")
-                    ->modalDescription('The course becomes a subject in the tree. Import the enrolment file again afterwards to add its students.')
+                    ->modalDescription('The course becomes a course in the tree. Import the enrolment file again afterwards to add its students.')
                     ->modalSubmitActionLabel('Add to tree')
                     ->form([
                         Select::make('tree_id')
@@ -121,7 +121,7 @@ class Courses extends Page implements HasTable
                     ])
                     ->action(function (Course $record, array $data): void {
                         Trees::attempt(function () use ($record, $data) {
-                            app(TreeService::class)->addSubject(
+                            app(TreeService::class)->addCourse(
                                 Auth::user(),
                                 TreeUnit::where('kind', TreeUnitKind::Root)->findOrFail($data['tree_id']),
                                 $record,
@@ -131,7 +131,7 @@ class Courses extends Page implements HasTable
                             Notification::make()
                                 ->title('Course added to the tree')
                                 ->success()
-                                ->body("{$record->code} {$record->name} is now a subject.")
+                                ->body("{$record->code} {$record->name} is now a course.")
                                 ->send();
                         });
                     }),

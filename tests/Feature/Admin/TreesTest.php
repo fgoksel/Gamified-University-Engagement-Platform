@@ -21,8 +21,8 @@ use Livewire\Livewire;
 use Tests\TestCase;
 
 /**
- * Subject tree, admin side (build step 2): create a tree with its dean,
- * add Neptun courses as subjects and view a whole tree.
+ * Faculty tree, admin side (build step 2): create a tree with its dean,
+ * add Neptun courses as courses and view a whole tree.
  */
 class TreesTest extends TestCase
 {
@@ -42,11 +42,11 @@ class TreesTest extends TestCase
         $this->tree = app(TreeService::class);
     }
 
-    public function test_the_admin_sees_every_tree_with_its_dean_and_subject_count(): void
+    public function test_the_admin_sees_every_tree_with_its_dean_and_course_count(): void
     {
         $dean = $this->teacher('Dr. Kovács');
         $root = $this->tree->createTree($this->admin, 'Faculty of Informatics', $dean);
-        $this->tree->addSubject($this->admin, $root, Course::factory()->create());
+        $this->tree->addCourse($this->admin, $root, Course::factory()->create());
 
         Livewire::actingAs($this->admin)
             ->test(Trees::class)
@@ -81,20 +81,20 @@ class TreesTest extends TestCase
         $this->assertSame(0, TreeUnit::count());
     }
 
-    public function test_the_admin_adds_a_course_as_a_subject(): void
+    public function test_the_admin_adds_a_course_as_a_course(): void
     {
         $root = $this->tree->createTree($this->admin, 'Faculty of Informatics', $this->teacher());
         $course = Course::factory()->create(['code' => 'BMEVIDB101', 'name' => 'Database']);
 
         Livewire::actingAs($this->admin)
             ->test(Trees::class)
-            ->callTableAction('addSubject', $root, ['course_id' => $course->id])
+            ->callTableAction('addCourse', $root, ['course_id' => $course->id])
             ->assertHasNoTableActionErrors();
 
-        $subject = $root->children()->sole();
-        $this->assertSame(TreeUnitKind::Subject, $subject->kind);
-        $this->assertSame('Database', $subject->title);
-        $this->assertSame($course->id, $subject->course_id);
+        $courseUnit = $root->children()->sole();
+        $this->assertSame(TreeUnitKind::Course, $courseUnit->kind);
+        $this->assertSame('Database', $courseUnit->title);
+        $this->assertSame($course->id, $courseUnit->course_id);
     }
 
     public function test_a_course_already_in_a_tree_cannot_be_added_again(): void
@@ -102,11 +102,11 @@ class TreesTest extends TestCase
         $course = Course::factory()->create();
         $first = $this->tree->createTree($this->admin, 'Faculty of Informatics', $this->teacher());
         $second = $this->tree->createTree($this->admin, 'Faculty of Engineering', $this->teacher());
-        $this->tree->addSubject($this->admin, $first, $course);
+        $this->tree->addCourse($this->admin, $first, $course);
 
         Livewire::actingAs($this->admin)
             ->test(Trees::class)
-            ->callTableAction('addSubject', $second, ['course_id' => $course->id]);
+            ->callTableAction('addCourse', $second, ['course_id' => $course->id]);
 
         $this->assertSame(0, $second->children()->count());
     }
@@ -116,8 +116,8 @@ class TreesTest extends TestCase
         $dean = $this->teacher('Dr. Kovács');
         $teacher = $this->teacher('Dr. Szabó');
         $root = $this->tree->createTree($this->admin, 'Faculty of Informatics', $dean);
-        $database = $this->tree->addSubject($this->admin, $root, Course::factory()->create(['code' => 'BMEVIDB101', 'name' => 'Database']));
-        $this->tree->addSubject($this->admin, $root, Course::factory()->create(['name' => 'Networks']));
+        $database = $this->tree->addCourse($this->admin, $root, Course::factory()->create(['code' => 'BMEVIDB101', 'name' => 'Database']));
+        $this->tree->addCourse($this->admin, $root, Course::factory()->create(['name' => 'Networks']));
         $this->tree->addMember($dean, $database, $teacher, TreeRole::Teacher);
         $this->tree->addSubtopic($teacher, $database, 'SQL');
         $this->tree->addMember($teacher, $database, User::factory()->create()->assignRole(UserRole::Student), TreeRole::Student);

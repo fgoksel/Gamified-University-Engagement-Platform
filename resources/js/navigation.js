@@ -17,8 +17,8 @@ export const navigation = {
                 { label: "Organized by me", href: "/my-events" },
             ],
         },
-        // Deans, teachers and co-teachers manage their subjects here
-        { label: "My subjects", href: "/my-subjects", icon: Network },
+        // Deans, teachers and co-teachers manage their courses here
+        { label: "My courses", href: "/my-courses", icon: Network },
         profile,
     ],
     student: [

@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Feature\SubjectTree;
+namespace Tests\Feature\FacultyTree;
 
 use App\Enums\TreeRole;
 use App\Enums\TreeUnitKind;
@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 /**
- * The test accounts for trying out the subject tree.
+ * The test accounts for trying out the faculty tree.
  */
 class TreeTestSeederTest extends TestCase
 {

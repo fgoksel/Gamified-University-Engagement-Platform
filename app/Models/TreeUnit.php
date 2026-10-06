@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * A unit of the role tree: a dean's root, a subject or a subtopic.
+ * A unit of the role tree: a dean's root, a course or a subtopic.
  *
  * "path" holds the ids from the root down to this unit, e.g. "/1/4/9/".
  * It is filled in automatically when the unit is created. Write to the
@@ -108,12 +108,12 @@ class TreeUnit extends Model
     }
 
     /**
-     * The subject this unit belongs to: itself for a subject, the nearest
-     * subject above it for a subtopic, and null for a root.
+     * The course this unit belongs to: itself for a course, the nearest
+     * course above it for a subtopic, and null for a root.
      */
-    public function subjectUnit(): ?TreeUnit
+    public function courseUnit(): ?TreeUnit
     {
-        if ($this->kind === TreeUnitKind::Subject) {
+        if ($this->kind === TreeUnitKind::Course) {
             return $this;
         }
 
@@ -122,7 +122,7 @@ class TreeUnit extends Model
         }
 
         return self::whereIn('id', $this->pathIds())
-            ->where('kind', TreeUnitKind::Subject)
+            ->where('kind', TreeUnitKind::Course)
             ->first();
     }
 

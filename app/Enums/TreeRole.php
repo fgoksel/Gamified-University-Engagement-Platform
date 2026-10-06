@@ -6,7 +6,7 @@ namespace App\Enums;
  * The roles a person can hold on a tree unit, highest level first.
  *
  * These are separate from UserRole: UserRole is the account type, a TreeRole
- * is the job a person does in one subject.
+ * is the job a person does in one course.
  */
 enum TreeRole: string
 {
@@ -59,8 +59,8 @@ enum TreeRole: string
     {
         return match ($this) {
             self::Dean => [TreeUnitKind::Root],
-            self::Teacher, self::CoTeacher, self::Student => [TreeUnitKind::Subject],
-            self::Tutor => [TreeUnitKind::Subject, TreeUnitKind::Subtopic],
+            self::Teacher, self::CoTeacher, self::Student => [TreeUnitKind::Course],
+            self::Tutor => [TreeUnitKind::Course, TreeUnitKind::Subtopic],
         };
     }
 

@@ -39,10 +39,10 @@ class CoursesTest extends TestCase
     {
         $root = $this->tree->createTree($this->admin, 'Faculty of Informatics', User::factory()->create()->assignRole(UserRole::Teacher));
         $database = Course::create(['code' => 'IT-DB101', 'name' => 'Database']);
-        $subject = $this->tree->addSubject($this->admin, $root, $database);
+        $courseUnit = $this->tree->addCourse($this->admin, $root, $database);
         $semester = Semester::create(['name' => 'Fall', 'starts_at' => '2026-09-01', 'ends_at' => '2027-01-31', 'status' => 'active']);
-        $this->tree->importStudent($subject, User::factory()->create()->assignRole(UserRole::Student), $semester);
-        $this->tree->importStudent($subject, User::factory()->create()->assignRole(UserRole::Student), $semester);
+        $this->tree->importStudent($courseUnit, User::factory()->create()->assignRole(UserRole::Student), $semester);
+        $this->tree->importStudent($courseUnit, User::factory()->create()->assignRole(UserRole::Student), $semester);
         $loose = Course::create(['code' => 'IT-NEW1', 'name' => 'Imported only']);
 
         Livewire::actingAs($this->admin)
@@ -59,7 +59,7 @@ class CoursesTest extends TestCase
     {
         $root = $this->tree->createTree($this->admin, 'Faculty of Informatics', User::factory()->create()->assignRole(UserRole::Teacher));
         $placed = Course::create(['code' => 'IT-DB101', 'name' => 'Database']);
-        $this->tree->addSubject($this->admin, $root, $placed);
+        $this->tree->addCourse($this->admin, $root, $placed);
         $loose = Course::create(['code' => 'IT-NEW1', 'name' => 'Imported only']);
 
         Livewire::actingAs($this->admin)
@@ -80,7 +80,7 @@ class CoursesTest extends TestCase
             ->callTableAction('addToTree', $course, ['tree_id' => $root->id])
             ->assertHasNoTableActionErrors();
 
-        $this->assertSame($root->id, $course->subjectUnit()->sole()->parent_id);
+        $this->assertSame($root->id, $course->courseUnit()->sole()->parent_id);
 
         Livewire::actingAs($this->admin)
             ->test(Courses::class)

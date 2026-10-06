@@ -1,24 +1,24 @@
 <?php
 
-namespace Tests\Feature\SubjectTree;
+namespace Tests\Feature\FacultyTree;
 
 use App\Enums\TreeRole;
 use App\Enums\TreeUnitKind;
 use App\Models\Course;
 
 /**
- * Rule 3: admin -> dean and subjects, dean -> teachers, teacher -> co-teachers,
+ * Rule 3: admin -> dean and courses, dean -> teachers, teacher -> co-teachers,
  * tutors, students and subtopics, co-teacher -> tutors, students and
  * subtopics. Tutors and students add nothing.
  */
-class WhoAddsWhomTest extends SubjectTreeTestCase
+class WhoAddsWhomTest extends FacultyTreeTestCase
 {
-    public function test_the_admin_appoints_the_dean_and_adds_subjects(): void
+    public function test_the_admin_appoints_the_dean_and_adds_courses(): void
     {
         $this->assertSame(TreeUnitKind::Root, $this->root->kind);
         $this->assertTrue($this->root->memberships()->where('user_id', $this->dean->id)->where('role', TreeRole::Dean)->exists());
 
-        $this->assertForbidden(fn () => $this->tree->addSubject($this->dean, $this->root, Course::factory()->create()));
+        $this->assertForbidden(fn () => $this->tree->addCourse($this->dean, $this->root, Course::factory()->create()));
         $this->assertForbidden(fn () => $this->tree->createTree($this->dean, 'Another tree', $this->teacherAccount()));
         $this->assertForbidden(fn () => $this->add($this->admin, $this->database, TreeRole::Teacher));
     }
