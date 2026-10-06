@@ -4,7 +4,9 @@ namespace Tests\Feature\FacultyTree;
 
 use App\Enums\TreeRole;
 use App\Enums\TreeUnitKind;
-use App\Models\Course;
+use App\Models\Faculty;
+use App\Models\UnitMembership;
+use Illuminate\Database\QueryException;
 
 /**
  * Rule 3: admin -> dean and courses, dean -> teachers, teacher -> co-teachers,
@@ -13,13 +15,12 @@ use App\Models\Course;
  */
 class WhoAddsWhomTest extends FacultyTreeTestCase
 {
-    public function test_the_admin_appoints_the_dean_and_adds_courses(): void
+    public function test_the_admin_appoints_the_dean(): void
     {
         $this->assertSame(TreeUnitKind::Root, $this->root->kind);
         $this->assertTrue($this->root->memberships()->where('user_id', $this->dean->id)->where('role', TreeRole::Dean)->exists());
 
-        $this->assertForbidden(fn () => $this->tree->addCourse($this->dean, $this->root, Course::factory()->create()));
-        $this->assertForbidden(fn () => $this->tree->createTree($this->dean, 'Another tree', $this->teacherAccount()));
+        $this->assertForbidden(fn () => $this->tree->createTree($this->dean, Faculty::factory()->create(), $this->teacherAccount()));
         $this->assertForbidden(fn () => $this->add($this->admin, $this->database, TreeRole::Teacher));
     }
 
@@ -71,7 +72,7 @@ class WhoAddsWhomTest extends FacultyTreeTestCase
         $this->assertRejected(fn () => $this->add($this->teacher, $this->database, TreeRole::CoTeacher, $this->studentAccount()), 'user_id');
         $this->assertRejected(fn () => $this->add($this->teacher, $this->database, TreeRole::Tutor, $this->teacherAccount()), 'user_id');
         $this->assertRejected(fn () => $this->add($this->teacher, $this->database, TreeRole::Student, $this->teacherAccount()), 'user_id');
-        $this->assertRejected(fn () => $this->tree->createTree($this->admin, 'Student tree', $this->studentAccount()), 'user_id');
+        $this->assertRejected(fn () => $this->tree->createTree($this->admin, Faculty::factory()->create(), $this->studentAccount()), 'user_id');
     }
 
     public function test_each_role_sits_only_on_its_kind_of_unit(): void
@@ -87,5 +88,24 @@ class WhoAddsWhomTest extends FacultyTreeTestCase
     public function test_a_tree_has_one_dean(): void
     {
         $this->assertRejected(fn () => $this->add($this->admin, $this->root, TreeRole::Dean), 'user_id');
+    }
+
+    public function test_a_person_is_the_dean_of_one_tree_only(): void
+    {
+        $this->assertRejected(fn () => $this->tree->createTree($this->admin, Faculty::factory()->create(), $this->dean), 'user_id');
+
+        // The database refuses it too, even when the service is bypassed.
+        $other = $this->otherTree();
+        $this->expectException(QueryException::class);
+        UnitMembership::create(['unit_id' => $other->id, 'user_id' => $this->dean->id, 'role' => TreeRole::Dean, 'started_at' => now()]);
+    }
+
+    public function test_an_ended_dean_can_lead_another_tree(): void
+    {
+        $this->tree->endMembership($this->admin, $this->root->memberships()->where('role', TreeRole::Dean)->sole(), 'Moved');
+
+        $other = $this->tree->createTree($this->admin, Faculty::factory()->create(), $this->dean);
+
+        $this->assertTrue($other->memberships()->active()->where('user_id', $this->dean->id)->exists());
     }
 }

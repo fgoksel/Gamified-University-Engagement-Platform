@@ -13,8 +13,8 @@ use App\Models\User;
 /**
  * Who may see and change the units of the role tree.
  *
- * The admin is outside the tree: they create each dean's tree, add the
- * courses and can see every tree. Inside a tree a person's rights come
+ * The admin is outside the tree: they create each faculty's tree with its
+ * dean and can see every tree. Courses come from the faculty. Inside a tree a person's rights come
  * from the roles they hold on a unit or on any unit above it.
  */
 class TreeUnitPolicy
@@ -34,15 +34,6 @@ class TreeUnitPolicy
     public function create(User $user): bool
     {
         return $user->hasRole(UserRole::Admin);
-    }
-
-    /**
-     * Only the admin adds Neptun courses, directly under a root.
-     */
-    public function addCourse(User $user, TreeUnit $root): bool
-    {
-        return $root->kind === TreeUnitKind::Root
-            && $user->hasRole(UserRole::Admin);
     }
 
     /**

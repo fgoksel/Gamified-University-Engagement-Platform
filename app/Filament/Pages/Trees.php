@@ -6,8 +6,7 @@ use App\Enums\TreeRole;
 use App\Enums\TreeUnitKind;
 use App\Enums\UserRole;
 use App\Jobs\ImportCourseEnrollmentsJob;
-use App\Models\Course;
-use App\Models\SubjectArea;
+use App\Models\Faculty;
 use App\Models\TreeUnit;
 use App\Models\User;
 use App\Services\TreeService;
@@ -16,7 +15,6 @@ use Closure;
 use Filament\Actions\Action;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
@@ -31,9 +29,10 @@ use Illuminate\Support\HtmlString;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Faculty tree, admin side (build step 2): the admin creates one tree per
- * dean, appoints the dean and adds Neptun courses as courses. Everything
- * is written through TreeService, so the tree rules apply here too.
+ * Faculty trees, admin side: one tree per faculty, with one dean. The tree
+ * is named after its faculty and shows all of the faculty's courses by
+ * itself; courses are managed on the Faculties page. Everything is written
+ * through TreeService, so the tree rules apply here too.
  */
 class Trees extends Page implements HasTable
 {
@@ -63,7 +62,7 @@ class Trees extends Page implements HasTable
             )
             ->columns([
                 TextColumn::make('title')
-                    ->label('Tree')
+                    ->label('Faculty')
                     ->searchable()
                     ->sortable(),
 
@@ -93,8 +92,6 @@ class Trees extends Page implements HasTable
                     ->icon(Heroicon::OutlinedEye)
                     ->url(fn (TreeUnit $record): string => TreeDetail::getUrl(['tree' => $record->id])),
 
-                static::addCourseAction(fn (TreeUnit $record): TreeUnit => $record),
-
                 Action::make('appointDean')
                     ->label('Appoint dean')
                     ->icon(Heroicon::OutlinedUserPlus)
@@ -121,7 +118,7 @@ class Trees extends Page implements HasTable
                 ->icon(Heroicon::OutlinedArrowUpTray)
                 ->color('gray')
                 ->modalHeading('Import course enrolments (CSV)')
-                ->modalDescription('Upload the Neptun enrolment file (max 10 MB) with the columns Neptun Code, Course Code and Course Name. Students are added to the courses of the active semester. Courses that are not in a tree yet are skipped and listed in the result.')
+                ->modalDescription('Upload the Neptun enrolment file (max 10 MB) with the columns Neptun Code, Course Code and Course Name. Students are added to the courses of the active semester. Course codes that do not exist under a faculty yet are skipped and listed in the result.')
                 ->modalSubmitActionLabel('Execute Import')
                 ->form([
                     FileUpload::make('file')
@@ -155,20 +152,21 @@ class Trees extends Page implements HasTable
                 ->label('New tree')
                 ->icon(Heroicon::OutlinedPlus)
                 ->modalHeading('New tree')
-                ->modalDescription('Each dean has one tree. Courses are added to it afterwards.')
+                ->modalDescription('Each faculty has one tree, named after the faculty. Its courses appear in the tree by themselves.')
                 ->modalSubmitActionLabel('Create tree')
                 ->form([
-                    TextInput::make('title')
-                        ->label('Title')
-                        ->placeholder('e.g. Faculty of Informatics')
+                    Select::make('faculty_id')
+                        ->label('Faculty')
+                        ->options(fn (): array => Faculty::query()->whereDoesntHave('tree')->orderBy('name')->pluck('name', 'id')->all())
+                        ->searchable()
                         ->required()
-                        ->maxLength(255),
+                        ->helperText('Only faculties without a tree are listed.'),
 
                     static::deanField(),
                 ])
                 ->action(function (array $data): void {
                     static::attempt(function () use ($data) {
-                        $root = app(TreeService::class)->createTree(static::admin(), $data['title'], User::findOrFail($data['dean_id']));
+                        $root = app(TreeService::class)->createTree(static::admin(), Faculty::findOrFail($data['faculty_id']), User::findOrFail($data['dean_id']));
 
                         Notification::make()
                             ->title('Tree created')
@@ -181,74 +179,7 @@ class Trees extends Page implements HasTable
     }
 
     /**
-     * "Add course": pick a Neptun course that is in no tree yet, or create
-     * one. Also used on the tree page.
-     *
-     * @param  Closure(mixed): TreeUnit  $root  Resolves the tree the course goes into.
-     */
-    public static function addCourseAction(Closure $root): Action
-    {
-        return Action::make('addCourse')
-            ->label('Add course')
-            ->icon(Heroicon::OutlinedPlusCircle)
-            ->modalHeading('Add course')
-            ->modalDescription('Pick a Neptun course. Each course can be in one tree only.')
-            ->modalSubmitActionLabel('Add course')
-            ->form([
-                Select::make('course_id')
-                    ->label('Neptun course')
-                    ->options(fn (): array => Course::query()
-                        ->whereDoesntHave('courseUnit')
-                        ->orderBy('code')
-                        ->get()
-                        ->mapWithKeys(fn (Course $course): array => [$course->id => "{$course->code} · {$course->name}"])
-                        ->all())
-                    ->searchable()
-                    ->required()
-                    ->createOptionForm([
-                        TextInput::make('code')
-                            ->label('Course code')
-                            ->required()
-                            ->maxLength(50)
-                            ->unique(table: Course::class, column: 'code')
-                            ->validationMessages(['unique' => 'A course with this code already exists.']),
-
-                        TextInput::make('name')
-                            ->label('Course name')
-                            ->required()
-                            ->maxLength(255),
-                    ])
-                    ->createOptionUsing(fn (array $data): int => Course::create([
-                        'code' => strtoupper($data['code']),
-                        'name' => $data['name'],
-                    ])->id),
-
-                Select::make('subject_area_id')
-                    ->label('Subject area (optional)')
-                    ->options(fn (): array => SubjectArea::query()->where('is_active', true)->orderBy('title')->pluck('title', 'id')->all())
-                    ->searchable()
-                    ->nullable(),
-            ])
-            ->action(function (array $data, mixed $record = null) use ($root): void {
-                static::attempt(function () use ($data, $record, $root) {
-                    $courseUnit = app(TreeService::class)->addCourse(
-                        static::admin(),
-                        $root($record),
-                        Course::findOrFail($data['course_id']),
-                        isset($data['subject_area_id']) ? SubjectArea::find($data['subject_area_id']) : null,
-                    );
-
-                    Notification::make()
-                        ->title('Course added')
-                        ->success()
-                        ->body("{$courseUnit->title} has been added.")
-                        ->send();
-                });
-            });
-    }
-
-    /**
-     * Only active teacher accounts can be deans.
+     * Only active teacher accounts that are not the dean of a tree yet.
      */
     protected static function deanField(): Select
     {
@@ -256,6 +187,7 @@ class Trees extends Page implements HasTable
             ->label('Dean')
             ->options(fn (): array => User::role(UserRole::Teacher)
                 ->where('status', 'active')
+                ->whereDoesntHave('memberships', fn (Builder $query) => $query->active()->where('role', TreeRole::Dean))
                 ->orderBy('name')
                 ->get()
                 ->mapWithKeys(fn (User $user): array => [$user->id => "{$user->name} ({$user->email})"])

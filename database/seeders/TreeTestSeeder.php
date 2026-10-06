@@ -2,14 +2,14 @@
 
 namespace Database\Seeders;
 
-use App\Enums\TreeUnitKind;
 use App\Enums\UserRole;
 use App\Models\Course;
+use App\Models\Faculty;
 use App\Models\Semester;
-use App\Models\TreeUnit;
 use App\Models\User;
 use App\Services\TreeService;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use RuntimeException;
 
@@ -24,9 +24,9 @@ use RuntimeException;
  * active. Existing users are never changed: an account whose email or
  * Neptun code is already taken is skipped.
  *
- * Then builds the "Faculty of Informatics" tree with dean@test.local as dean
- * and the courses of data/enrolments-test.csv as courses, unless they are
- * there already. Teachers and students are added by hand on "My courses",
+ * Then creates the "Faculty of Informatics" faculty with the courses of
+ * data/enrolments-test.csv, and its tree with dean@test.local as dean, unless
+ * they are there already. Teachers and students are added by hand on "My courses",
  * and students also by importing data/enrolments-test.csv in the admin panel
  * (Trees > Import enrolments).
  */
@@ -54,6 +54,8 @@ class TreeTestSeeder extends Seeder
     public const STUDENTS = ['ABC001', 'ABC002', 'ABC003', 'ABC004', 'ABC005'];
 
     public const TREE = 'Faculty of Informatics';
+
+    public const FACULTY_CODE = 'FI';
 
     /**
      * The courses of data/enrolments-test.csv, course code => name.
@@ -101,21 +103,22 @@ class TreeTestSeeder extends Seeder
             return;
         }
 
-        $tree = app(TreeService::class);
+        $faculty = Faculty::whereRaw('lower(name) = ?', [Str::lower(self::TREE)])->first()
+            ?? Faculty::create(['name' => self::TREE, 'code' => self::FACULTY_CODE]);
+
+        // Courses join the faculty's tree by themselves, now or when the tree is created.
+        foreach (self::COURSES as $code => $name) {
+            if (Course::where('code', $code)->doesntExist()) {
+                Course::create(['faculty_id' => $faculty->id, 'code' => $code, 'name' => $name]);
+            }
+        }
 
         try {
-            $root = TreeUnit::where('kind', TreeUnitKind::Root)->where('title', self::TREE)->first()
-                ?? $tree->createTree($admin, self::TREE, $dean);
-
-            foreach (self::COURSES as $code => $name) {
-                $course = Course::firstOrCreate(['code' => $code], ['name' => $name]);
-
-                if ($course->courseUnit()->doesntExist()) {
-                    $tree->addCourse($admin, $root, $course);
-                }
+            if ($faculty->tree()->doesntExist()) {
+                app(TreeService::class)->createTree($admin, $faculty, $dean);
             }
         } catch (ValidationException $e) {
-            $this->command?->warn('Skipped part of the test tree: '.collect($e->errors())->flatten()->first());
+            $this->command?->warn('Skipped the test tree: '.collect($e->errors())->flatten()->first());
         }
     }
 

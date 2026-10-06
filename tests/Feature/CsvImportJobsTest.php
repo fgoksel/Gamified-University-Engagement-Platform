@@ -276,10 +276,10 @@ class CsvImportJobsTest extends TestCase
         $this->assertSame($semester->id, $record->semester_id);
         $this->assertFalse($record->manual);
         $this->assertSame($this->admin->id, $record->added_by_id);
-        $this->assertSame('Successfully processed: 0 new courses, 3 student-course registrations.', $this->adminMessage()['body']);
+        $this->assertSame('Successfully processed: 3 student-course registrations.', $this->adminMessage()['body']);
     }
 
-    public function test_new_courses_are_created_but_rows_of_courses_outside_a_tree_are_skipped_and_listed(): void
+    public function test_unknown_course_codes_are_skipped_and_listed_and_no_course_is_created(): void
     {
         $this->activeSemester();
         $this->student('ABC123');
@@ -288,12 +288,26 @@ class CsvImportJobsTest extends TestCase
 
         (new ImportCourseEnrollmentsJob($path, $this->admin->id))->handle();
 
-        $this->assertSame(2, Course::count());
-        $this->assertSame(0, UnitMembership::count());
+        $this->assertSame(0, Course::count());
+        $this->assertSame(0, UnitMembership::where('role', TreeRole::Student)->count());
         $this->assertSame(
-            'Successfully processed: 2 new courses, 0 student-course registrations. Skipped 2 rows because the course is not in a faculty tree yet (NEW100, NEW200). Add the course to a tree and import the file again.',
+            'Successfully processed: 0 student-course registrations. Skipped 2 rows because the course code is unknown (NEW100, NEW200). Add the course under its faculty first.',
             $this->adminMessage()['body'],
         );
+    }
+
+    public function test_rows_of_a_faculty_without_a_tree_are_skipped_and_listed(): void
+    {
+        $this->activeSemester();
+        $this->student('ABC123');
+        Course::factory()->create(['code' => 'MED100', 'name' => 'Anatomy']);
+
+        $path = $this->csv("Neptun Code,Course Code,Course Name\nABC123,MED100,Anatomy\n");
+
+        (new ImportCourseEnrollmentsJob($path, $this->admin->id))->handle();
+
+        $this->assertSame(0, UnitMembership::where('role', TreeRole::Student)->count());
+        $this->assertStringContainsString('Skipped 1 rows because the faculty of the course has no tree yet (MED100).', $this->adminMessage()['body']);
     }
 
     public function test_unknown_neptun_codes_are_skipped_and_counted(): void
@@ -308,7 +322,7 @@ class CsvImportJobsTest extends TestCase
 
         $this->assertSame(1, UnitMembership::where('role', TreeRole::Student)->count());
         $this->assertSame(
-            'Successfully processed: 0 new courses, 1 student-course registrations. Skipped 2 rows due to unregistered Neptun codes.',
+            'Successfully processed: 1 student-course registrations. Skipped 2 rows due to unregistered Neptun codes.',
             $this->adminMessage()['body'],
         );
     }
@@ -338,7 +352,7 @@ class CsvImportJobsTest extends TestCase
 
         $this->assertSame(1, Course::count());
         $this->assertSame(1, UnitMembership::where('role', TreeRole::Student)->count());
-        $this->assertStringContainsString('0 new courses, 0 student-course registrations', $this->adminMessage()['body']);
+        $this->assertStringContainsString('Successfully processed: 0 student-course registrations.', $this->adminMessage()['body']);
     }
 
     public function test_a_tutor_of_the_course_is_not_added_as_its_student(): void
@@ -436,14 +450,14 @@ class CsvImportJobsTest extends TestCase
     private function tree(): TreeUnit
     {
         return TreeUnit::where('kind', 'root')->first()
-            ?? app(TreeService::class)->createTree($this->admin, 'Faculty of Informatics', User::factory()->create()->assignRole(UserRole::Teacher));
+            ?? app(TreeService::class)->createTree($this->admin, Faculty::factory()->create(['name' => 'Faculty of Informatics']), User::factory()->create()->assignRole(UserRole::Teacher));
     }
 
     /**
-     * A course in the test tree for the given Neptun course.
+     * A course of the test faculty. It joins the faculty's tree by itself.
      */
     private function course(string $code, string $name): TreeUnit
     {
-        return app(TreeService::class)->addCourse($this->admin, $this->tree(), Course::create(['code' => $code, 'name' => $name]));
+        return Course::create(['faculty_id' => $this->tree()->faculty_id, 'code' => $code, 'name' => $name])->courseUnit;
     }
 }

@@ -19,6 +19,7 @@ class TreeUnit extends Model
 {
     protected $fillable = [
         'parent_id',
+        'faculty_id',
         'kind',
         'title',
         'course_id',
@@ -59,6 +60,14 @@ class TreeUnit extends Model
     public function course(): BelongsTo
     {
         return $this->belongsTo(Course::class);
+    }
+
+    /**
+     * The faculty of a root unit. Each faculty has at most one tree.
+     */
+    public function faculty(): BelongsTo
+    {
+        return $this->belongsTo(Faculty::class);
     }
 
     public function subjectArea(): BelongsTo

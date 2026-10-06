@@ -91,6 +91,8 @@ class TreeTestSeederTest extends TestCase
 
         $root = TreeUnit::where('kind', TreeUnitKind::Root)->sole();
         $this->assertSame('Faculty of Informatics', $root->title);
+        $this->assertSame('Faculty of Informatics', $root->faculty->name);
+        $this->assertSame(3, $root->faculty->courses()->count());
         $this->assertSame('dean@test.local', $root->memberships()->where('role', TreeRole::Dean)->sole()->user->email);
         $this->assertEqualsCanonicalizing(
             ['IT-DB101', 'IT-PR101', 'IT-NW101'],

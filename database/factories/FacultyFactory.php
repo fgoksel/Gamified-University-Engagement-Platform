@@ -2,14 +2,13 @@
 
 namespace Database\Factories;
 
-use App\Models\Course;
 use App\Models\Faculty;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends Factory<Course>
+ * @extends Factory<Faculty>
  */
-class CourseFactory extends Factory
+class FacultyFactory extends Factory
 {
     /**
      * @return array<string, mixed>
@@ -17,9 +16,8 @@ class CourseFactory extends Factory
     public function definition(): array
     {
         return [
-            'faculty_id' => Faculty::factory(),
-            'code' => fake()->unique()->bothify('BMEVI??###'),
-            'name' => fake()->words(2, true),
+            'name' => 'Faculty of '.fake()->unique()->word(),
+            'code' => fake()->unique()->bothify('F??##'),
         ];
     }
 }

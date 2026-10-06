@@ -9,6 +9,7 @@ use App\Filament\Pages\TreeDetail;
 use App\Filament\Pages\Trees;
 use App\Jobs\ImportCourseEnrollmentsJob;
 use App\Models\Course;
+use App\Models\Faculty;
 use App\Models\TreeUnit;
 use App\Models\User;
 use App\Services\TreeService;
@@ -21,8 +22,8 @@ use Livewire\Livewire;
 use Tests\TestCase;
 
 /**
- * Faculty tree, admin side (build step 2): create a tree with its dean,
- * add Neptun courses as courses and view a whole tree.
+ * Faculty trees, admin side: one tree per faculty with one dean, named
+ * after the faculty and holding all of its courses; viewing a whole tree.
  */
 class TreesTest extends TestCase
 {
@@ -44,30 +45,71 @@ class TreesTest extends TestCase
 
     public function test_the_admin_sees_every_tree_with_its_dean_and_course_count(): void
     {
-        $dean = $this->teacher('Dr. Kovács');
-        $root = $this->tree->createTree($this->admin, 'Faculty of Informatics', $dean);
-        $this->tree->addCourse($this->admin, $root, Course::factory()->create());
+        $faculty = Faculty::factory()->create(['name' => 'Faculty of Informatics']);
+        Course::factory()->for($faculty)->count(3)->create();
+        $root = $this->tree->createTree($this->admin, $faculty, $this->teacher('Dr. Kovács'));
 
         Livewire::actingAs($this->admin)
             ->test(Trees::class)
             ->assertOk()
+            ->assertSee('Faculty trees')
             ->assertCanSeeTableRecords([$root])
+            ->assertTableColumnStateSet('children_count', 3, $root)
             ->assertSee('Faculty of Informatics')
             ->assertSee('Dr. Kovács');
     }
 
-    public function test_the_admin_creates_a_tree_with_its_dean(): void
+    public function test_the_admin_creates_a_tree_for_a_faculty_with_its_dean(): void
     {
+        $faculty = Faculty::factory()->create(['name' => 'Faculty of Informatics']);
+        Course::factory()->for($faculty)->create(['name' => 'Database']);
         $dean = $this->teacher();
 
         Livewire::actingAs($this->admin)
             ->test(Trees::class)
-            ->callAction('create', ['title' => 'Faculty of Informatics', 'dean_id' => $dean->id])
+            ->callAction('create', ['faculty_id' => $faculty->id, 'dean_id' => $dean->id])
             ->assertHasNoActionErrors();
 
         $root = TreeUnit::where('kind', TreeUnitKind::Root)->sole();
         $this->assertSame('Faculty of Informatics', $root->title);
+        $this->assertSame($faculty->id, $root->faculty_id);
         $this->assertTrue($root->memberships()->active()->where('user_id', $dean->id)->where('role', TreeRole::Dean)->exists());
+        $this->assertSame(['Database'], $root->children()->pluck('title')->all());
+    }
+
+    public function test_new_tree_offers_only_faculties_without_a_tree_and_people_who_are_not_deans(): void
+    {
+        $taken = Faculty::factory()->create(['name' => 'Faculty of Informatics']);
+        $free = Faculty::factory()->create(['name' => 'Faculty of Medicine']);
+        $busyDean = $this->teacher('Busy Dean');
+        $this->tree->createTree($this->admin, $taken, $busyDean);
+        $this->teacher('Free Teacher');
+
+        Livewire::actingAs($this->admin)
+            ->test(Trees::class)
+            ->mountAction('create')
+            ->assertFormFieldExists('faculty_id', 'mountedActionSchema0', fn ($field) => array_values($field->getOptions()) === ['Faculty of Medicine'])
+            ->assertFormFieldExists('dean_id', 'mountedActionSchema0', fn ($field) => count($field->getOptions()) === 1
+                && str_starts_with(array_values($field->getOptions())[0], 'Free Teacher'));
+
+        $this->assertTrue($free->tree()->doesntExist());
+    }
+
+    public function test_a_faculty_that_has_a_tree_and_a_person_who_is_a_dean_are_refused(): void
+    {
+        $faculty = Faculty::factory()->create();
+        $dean = $this->teacher();
+        $this->tree->createTree($this->admin, $faculty, $dean);
+
+        Livewire::actingAs($this->admin)
+            ->test(Trees::class)
+            ->callAction('create', ['faculty_id' => $faculty->id, 'dean_id' => $this->teacher()->id]);
+
+        Livewire::actingAs($this->admin)
+            ->test(Trees::class)
+            ->callAction('create', ['faculty_id' => Faculty::factory()->create()->id, 'dean_id' => $dean->id]);
+
+        $this->assertSame(1, TreeUnit::where('kind', TreeUnitKind::Root)->count());
     }
 
     public function test_a_student_cannot_be_made_dean(): void
@@ -76,48 +118,30 @@ class TreesTest extends TestCase
 
         Livewire::actingAs($this->admin)
             ->test(Trees::class)
-            ->callAction('create', ['title' => 'Student tree', 'dean_id' => $student->id]);
+            ->callAction('create', ['faculty_id' => Faculty::factory()->create()->id, 'dean_id' => $student->id]);
 
         $this->assertSame(0, TreeUnit::count());
     }
 
-    public function test_the_admin_adds_a_course_as_a_course(): void
+    public function test_the_trees_table_has_no_add_course_action(): void
     {
-        $root = $this->tree->createTree($this->admin, 'Faculty of Informatics', $this->teacher());
-        $course = Course::factory()->create(['code' => 'BMEVIDB101', 'name' => 'Database']);
+        $root = $this->tree->createTree($this->admin, Faculty::factory()->create(), $this->teacher());
 
         Livewire::actingAs($this->admin)
             ->test(Trees::class)
-            ->callTableAction('addCourse', $root, ['course_id' => $course->id])
-            ->assertHasNoTableActionErrors();
-
-        $courseUnit = $root->children()->sole();
-        $this->assertSame(TreeUnitKind::Course, $courseUnit->kind);
-        $this->assertSame('Database', $courseUnit->title);
-        $this->assertSame($course->id, $courseUnit->course_id);
-    }
-
-    public function test_a_course_already_in_a_tree_cannot_be_added_again(): void
-    {
-        $course = Course::factory()->create();
-        $first = $this->tree->createTree($this->admin, 'Faculty of Informatics', $this->teacher());
-        $second = $this->tree->createTree($this->admin, 'Faculty of Engineering', $this->teacher());
-        $this->tree->addCourse($this->admin, $first, $course);
-
-        Livewire::actingAs($this->admin)
-            ->test(Trees::class)
-            ->callTableAction('addCourse', $second, ['course_id' => $course->id]);
-
-        $this->assertSame(0, $second->children()->count());
+            ->assertTableActionDoesNotExist('addCourse')
+            ->assertTableActionVisible('view', $root);
     }
 
     public function test_the_tree_page_shows_every_unit_and_the_people_on_it(): void
     {
+        $faculty = Faculty::factory()->create(['name' => 'Faculty of Informatics']);
+        Course::factory()->for($faculty)->create(['code' => 'BMEVIDB101', 'name' => 'Database']);
+        Course::factory()->for($faculty)->create(['name' => 'Networks']);
         $dean = $this->teacher('Dr. Kovács');
         $teacher = $this->teacher('Dr. Szabó');
-        $root = $this->tree->createTree($this->admin, 'Faculty of Informatics', $dean);
-        $database = $this->tree->addCourse($this->admin, $root, Course::factory()->create(['code' => 'BMEVIDB101', 'name' => 'Database']));
-        $this->tree->addCourse($this->admin, $root, Course::factory()->create(['name' => 'Networks']));
+        $root = $this->tree->createTree($this->admin, $faculty, $dean);
+        $database = $root->children()->where('title', 'Database')->sole();
         $this->tree->addMember($dean, $database, $teacher, TreeRole::Teacher);
         $this->tree->addSubtopic($teacher, $database, 'SQL');
         $this->tree->addMember($teacher, $database, User::factory()->create()->assignRole(UserRole::Student), TreeRole::Student);
@@ -139,8 +163,7 @@ class TreesTest extends TestCase
 
     public function test_a_dean_can_be_appointed_only_when_the_tree_has_none(): void
     {
-        $dean = $this->teacher();
-        $root = $this->tree->createTree($this->admin, 'Faculty of Informatics', $dean);
+        $root = $this->tree->createTree($this->admin, Faculty::factory()->create(), $this->teacher());
 
         Livewire::actingAs($this->admin)
             ->test(Trees::class)
@@ -183,7 +206,7 @@ class TreesTest extends TestCase
 
     public function test_only_admins_can_open_the_tree_pages(): void
     {
-        $root = $this->tree->createTree($this->admin, 'Faculty of Informatics', $dean = $this->teacher());
+        $root = $this->tree->createTree($this->admin, Faculty::factory()->create(), $dean = $this->teacher());
 
         // Like every admin page, non-admins are sent back to the Vue app.
         $this->actingAs($dean)->get('/admin/trees')->assertRedirect('/');

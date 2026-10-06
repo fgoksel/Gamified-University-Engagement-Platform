@@ -2,7 +2,6 @@
 
 namespace App\Jobs;
 
-use App\Enums\TreeUnitKind;
 use App\Enums\UserRole;
 use App\Models\Course;
 use App\Models\Semester;
@@ -16,12 +15,13 @@ use InvalidArgumentException;
  * Import of the Neptun course enrolment file (UC-3.2.3, Technical Specification 7.3.1).
  *
  * Columns: Neptun Code, Course Code, Course Name (all required).
- * Missing courses are created. Every student is found by Neptun code and
- * added as a student on the course's course in the faculty tree, for the
- * semester (default: the active semester). Rows are skipped and counted when
- * the Neptun code is unknown, the course is not in a tree yet, or the student
- * is a tutor in that course. A repeated import adds nothing twice, and
- * nothing is ever deleted (faculty tree, build step 4).
+ * Every student is found by Neptun code and added as a student on the
+ * course in its faculty's tree, for the semester (default: the active
+ * semester). Courses are not created here: they are created only under
+ * their faculty on the Faculties page. Rows are skipped and counted when the
+ * Neptun code is unknown, the course code is unknown, the course's faculty
+ * has no tree yet, or the student is a tutor in that course. A repeated
+ * import adds nothing twice, and nothing is ever deleted.
  */
 class ImportCourseEnrollmentsJob extends ImportCsvJob
 {
@@ -29,27 +29,23 @@ class ImportCourseEnrollmentsJob extends ImportCsvJob
 
     private ?User $admin = null;
 
-    private int $newCourses = 0;
-
     private int $registrations = 0;
 
     private int $unregistered = 0;
 
     private int $tutors = 0;
 
-    private int $notInTreeRows = 0;
+    /** @var array<string, int> Unknown course code => rows */
+    private array $unknownCourses = [];
 
-    /** @var array<string, true> Codes of courses that are in no tree yet. */
+    /** @var array<string, int> Code of a course whose faculty has no tree => rows */
     private array $notInTree = [];
 
     /** @var array<string, int|null> Neptun code => student id */
     private array $students = [];
 
-    /** @var array<string, int> course code => course id */
+    /** @var array<string, Course|null> course code => course */
     private array $courses = [];
-
-    /** @var array<int, TreeUnit|null> course id => course unit */
-    private array $courseUnits = [];
 
     /**
      * @param  int|null  $semesterId  Semester of the enrolments; the active semester when null.
@@ -80,8 +76,8 @@ class ImportCourseEnrollmentsJob extends ImportCsvJob
 
     protected function prepare(): void
     {
-        $this->newCourses = $this->registrations = $this->unregistered = $this->tutors = $this->notInTreeRows = 0;
-        $this->students = $this->courses = $this->courseUnits = $this->notInTree = [];
+        $this->registrations = $this->unregistered = $this->tutors = 0;
+        $this->students = $this->courses = $this->unknownCourses = $this->notInTree = [];
 
         $this->semester = $this->semesterId !== null
             ? Semester::find($this->semesterId)
@@ -97,7 +93,7 @@ class ImportCourseEnrollmentsJob extends ImportCsvJob
     protected function processRow(array $row, int $line): void
     {
         $neptun = Str::upper((string) ($row['neptun_code'] ?? ''));
-        $courseCode = (string) ($row['course_code'] ?? '');
+        $courseCode = Str::upper((string) ($row['course_code'] ?? ''));
         $courseName = (string) ($row['course_name'] ?? '');
 
         if ($neptun === '' || $courseCode === '' || $courseName === '') {
@@ -114,11 +110,18 @@ class ImportCourseEnrollmentsJob extends ImportCsvJob
             return;
         }
 
-        $courseUnit = $this->course($this->courseId($courseCode, $courseName));
+        $course = $this->course($courseCode);
 
-        if ($courseUnit === null) {
-            $this->notInTree[$courseCode] = true;
-            $this->notInTreeRows++;
+        if ($course === null) {
+            $this->unknownCourses[$courseCode] = ($this->unknownCourses[$courseCode] ?? 0) + 1;
+
+            return;
+        }
+
+        $courseUnit = $course->courseUnit;
+
+        if (! $courseUnit instanceof TreeUnit) {
+            $this->notInTree[$courseCode] = ($this->notInTree[$courseCode] ?? 0) + 1;
 
             return;
         }
@@ -132,15 +135,20 @@ class ImportCourseEnrollmentsJob extends ImportCsvJob
 
     protected function summary(): string
     {
-        $text = "Successfully processed: {$this->newCourses} new courses, {$this->registrations} student-course registrations.";
+        $text = "Successfully processed: {$this->registrations} student-course registrations.";
 
         if ($this->unregistered > 0) {
             $text .= " Skipped {$this->unregistered} rows due to unregistered Neptun codes.";
         }
 
-        if ($this->notInTreeRows > 0) {
-            $codes = implode(', ', array_keys($this->notInTree));
-            $text .= " Skipped {$this->notInTreeRows} rows because the course is not in a faculty tree yet ({$codes}). Add the course to a tree and import the file again.";
+        if ($this->unknownCourses !== []) {
+            $text .= ' Skipped '.array_sum($this->unknownCourses).' rows because the course code is unknown ('
+                .implode(', ', array_keys($this->unknownCourses)).'). Add the course under its faculty first.';
+        }
+
+        if ($this->notInTree !== []) {
+            $text .= ' Skipped '.array_sum($this->notInTree).' rows because the faculty of the course has no tree yet ('
+                .implode(', ', array_keys($this->notInTree)).').';
         }
 
         if ($this->tutors > 0) {
@@ -159,29 +167,12 @@ class ImportCourseEnrollmentsJob extends ImportCsvJob
         return $this->students[$neptun] === null ? null : User::find($this->students[$neptun]);
     }
 
-    private function courseId(string $code, string $name): int
+    private function course(string $code): ?Course
     {
-        if (! isset($this->courses[$code])) {
-            $course = Course::firstOrCreate(['code' => $code], ['name' => $name]);
-
-            if ($course->wasRecentlyCreated) {
-                $this->newCourses++;
-            }
-
-            $this->courses[$code] = $course->id;
+        if (! array_key_exists($code, $this->courses)) {
+            $this->courses[$code] = Course::with('courseUnit')->where('code', $code)->first();
         }
 
         return $this->courses[$code];
-    }
-
-    private function course(int $courseId): ?TreeUnit
-    {
-        if (! array_key_exists($courseId, $this->courseUnits)) {
-            $this->courseUnits[$courseId] = TreeUnit::where('course_id', $courseId)
-                ->where('kind', TreeUnitKind::Course)
-                ->first();
-        }
-
-        return $this->courseUnits[$courseId];
     }
 }

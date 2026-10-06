@@ -65,14 +65,14 @@ class DatabaseSchemaTest extends TestCase
     public function test_courses_table_matches_spec(): void
     {
         $this->assertTrue(Schema::hasColumns('courses', [
-            'id', 'code', 'name', 'created_at', 'updated_at',
+            'id', 'faculty_id', 'code', 'name', 'created_at', 'updated_at',
         ]));
     }
 
     public function test_tree_units_table_matches_design(): void
     {
         $this->assertTrue(Schema::hasColumns('tree_units', [
-            'id', 'parent_id', 'kind', 'title', 'course_id', 'subject_area_id',
+            'id', 'parent_id', 'faculty_id', 'kind', 'title', 'course_id', 'subject_area_id',
             'path', 'created_by_id', 'created_at', 'updated_at',
         ]));
     }

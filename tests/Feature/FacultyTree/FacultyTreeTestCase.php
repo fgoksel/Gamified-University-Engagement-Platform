@@ -5,6 +5,7 @@ namespace Tests\Feature\FacultyTree;
 use App\Enums\TreeRole;
 use App\Enums\UserRole;
 use App\Models\Course;
+use App\Models\Faculty;
 use App\Models\TreeUnit;
 use App\Models\UnitMembership;
 use App\Models\User;
@@ -18,7 +19,8 @@ use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
 /**
- * Builds the same small tree for every faculty tree test:
+ * Builds the same small tree for every faculty tree test. The courses come
+ * from the faculty and appear in its tree by themselves:
  *
  *   Faculty of Informatics (root, dean)
  *   ├─ Database (course, teacher)
@@ -36,6 +38,8 @@ abstract class FacultyTreeTestCase extends TestCase
     protected User $dean;
 
     protected User $teacher;
+
+    protected Faculty $faculty;
 
     protected TreeUnit $root;
 
@@ -56,11 +60,28 @@ abstract class FacultyTreeTestCase extends TestCase
         $this->dean = $this->teacherAccount();
         $this->teacher = $this->teacherAccount();
 
-        $this->root = $this->tree->createTree($this->admin, 'Faculty of Informatics', $this->dean);
-        $this->database = $this->tree->addCourse($this->admin, $this->root, Course::factory()->create(['name' => 'Database']));
-        $this->networks = $this->tree->addCourse($this->admin, $this->root, Course::factory()->create(['name' => 'Networks']));
+        $this->faculty = Faculty::factory()->create(['name' => 'Faculty of Informatics']);
+        $this->root = $this->tree->createTree($this->admin, $this->faculty, $this->dean);
+        $this->database = $this->course('Database')->courseUnit;
+        $this->networks = $this->course('Networks')->courseUnit;
         $this->tree->addMember($this->dean, $this->database, $this->teacher, TreeRole::Teacher);
         $this->sql = $this->tree->addSubtopic($this->teacher, $this->database, 'SQL');
+    }
+
+    /**
+     * A new course of the test faculty. It joins the faculty's tree by itself.
+     */
+    protected function course(string $name): Course
+    {
+        return Course::factory()->for($this->faculty)->create(['name' => $name]);
+    }
+
+    /**
+     * A second faculty with its own tree and dean.
+     */
+    protected function otherTree(string $name = 'Faculty of Engineering'): TreeUnit
+    {
+        return $this->tree->createTree($this->admin, Faculty::factory()->create(['name' => $name]), $this->teacherAccount());
     }
 
     protected function teacherAccount(): User

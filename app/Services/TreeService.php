@@ -6,8 +6,8 @@ use App\Enums\TreeRole;
 use App\Enums\TreeUnitKind;
 use App\Enums\TutorPermission;
 use App\Models\Course;
+use App\Models\Faculty;
 use App\Models\Semester;
-use App\Models\SubjectArea;
 use App\Models\TreeUnit;
 use App\Models\UnitMembership;
 use App\Models\User;
@@ -26,40 +26,48 @@ use Illuminate\Validation\ValidationException;
 class TreeService
 {
     /**
-     * The admin creates a dean's tree: a root unit with the dean on it.
+     * The admin creates a faculty's tree with its dean. The tree is named
+     * after the faculty and holds every course of the faculty at once.
      *
      * @throws AuthorizationException|ValidationException
      */
-    public function createTree(User $admin, string $title, User $dean): TreeUnit
+    public function createTree(User $admin, Faculty $faculty, User $dean): TreeUnit
     {
         Gate::forUser($admin)->authorize('create', TreeUnit::class);
 
-        return DB::transaction(function () use ($admin, $title, $dean) {
+        if ($faculty->tree()->exists()) {
+            throw ValidationException::withMessages([
+                'faculty_id' => 'This faculty already has a tree.',
+            ]);
+        }
+
+        return DB::transaction(function () use ($admin, $faculty, $dean) {
             $root = TreeUnit::create([
+                'faculty_id' => $faculty->id,
                 'kind' => TreeUnitKind::Root,
-                'title' => $title,
+                'title' => $faculty->name,
                 'created_by_id' => $admin->id,
             ]);
 
             $this->addMember($admin, $root, $dean, TreeRole::Dean);
+
+            $faculty->courses()->each(fn (Course $course) => $this->placeCourse($course));
 
             return $root;
         });
     }
 
     /**
-     * The admin adds a Neptun course to a dean's tree as a course.
-     *
-     * @throws AuthorizationException|ValidationException
+     * Put a course into its faculty's tree, if the faculty has one and the
+     * course is not there yet. Called whenever a course is created and when
+     * a tree is created, so the tree always shows all of its faculty's courses.
      */
-    public function addCourse(User $admin, TreeUnit $root, Course $course, ?SubjectArea $subjectArea = null): TreeUnit
+    public function placeCourse(Course $course): ?TreeUnit
     {
-        Gate::forUser($admin)->authorize('addCourse', $root);
+        $root = TreeUnit::where('kind', TreeUnitKind::Root)->where('faculty_id', $course->faculty_id)->first();
 
-        if (TreeUnit::where('course_id', $course->id)->exists()) {
-            throw ValidationException::withMessages([
-                'course_id' => 'This course is already a course in a tree.',
-            ]);
+        if ($root === null || TreeUnit::where('course_id', $course->id)->exists()) {
+            return null;
         }
 
         return TreeUnit::create([
@@ -67,8 +75,6 @@ class TreeService
             'kind' => TreeUnitKind::Course,
             'title' => $course->name,
             'course_id' => $course->id,
-            'subject_area_id' => $subjectArea?->id,
-            'created_by_id' => $admin->id,
         ]);
     }
 
@@ -120,7 +126,7 @@ class TreeService
 
         return DB::transaction(function () use ($actor, $unit, $user, $role, $permissions) {
             if ($role === TreeRole::Dean) {
-                $this->ensureNoDean($unit);
+                $this->ensureNoDean($unit, $user);
             } else {
                 $this->makeRoomInCourse($unit, $user, $role);
             }
@@ -247,13 +253,20 @@ class TreeService
     }
 
     /**
-     * One active dean per tree.
+     * One active dean per tree, and a person is the dean of one tree only.
+     * The database enforces both as well.
      */
-    private function ensureNoDean(TreeUnit $root): void
+    private function ensureNoDean(TreeUnit $root, User $user): void
     {
         if ($root->memberships()->active()->where('role', TreeRole::Dean)->exists()) {
             throw ValidationException::withMessages([
                 'user_id' => 'This tree already has a dean.',
+            ]);
+        }
+
+        if ($user->memberships()->active()->where('role', TreeRole::Dean)->exists()) {
+            throw ValidationException::withMessages([
+                'user_id' => 'This person is already the dean of another tree.',
             ]);
         }
     }
