@@ -57,7 +57,7 @@ class ImportCourseEnrollmentsJob extends ImportCsvJob
     public function __construct(
         string $path,
         int $adminId,
-        public readonly ?int $semesterId = null,
+        public ?int $semesterId = null,
         string $disk = 'local',
     ) {
         parent::__construct($path, $adminId, $disk);

@@ -65,6 +65,24 @@ class CsvImportJobsTest extends TestCase
         $this->assertSame([10, 60, 300], $job->backoff());
     }
 
+    public function test_the_queue_worker_can_restore_every_import_job(): void
+    {
+        // The worker unserializes each job before running it. Queue::fake()
+        // skips that step, so it is checked here directly.
+        foreach ([
+            new ImportOrganizersJob('imports/a.csv', $this->admin->id),
+            new ImportStudentsJob('imports/b.csv', $this->admin->id),
+            new ImportCourseEnrollmentsJob('imports/c.csv', $this->admin->id, semesterId: 7),
+        ] as $job) {
+            $restored = unserialize(serialize($job));
+
+            $this->assertSame($job->path, $restored->path);
+            $this->assertSame($this->admin->id, $restored->adminId);
+        }
+
+        $this->assertSame(7, $restored->semesterId);
+    }
+
     public function test_a_job_that_keeps_failing_tells_the_administrator_and_removes_the_file(): void
     {
         $path = $this->csv("Full Name,Email\nAnna Kiss,anna@example.com\n");

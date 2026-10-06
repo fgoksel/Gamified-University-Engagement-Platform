@@ -48,9 +48,12 @@ abstract class ImportCsvJob implements ShouldQueue
      * @param  int  $adminId  The administrator who started the import and receives the result.
      */
     public function __construct(
-        public readonly string $path,
-        public readonly int $adminId,
-        public readonly string $disk = 'local',
+        // Not readonly: the queue worker must be able to restore these when
+        // it unserializes the job, and PHP 8.3 forbids that for readonly
+        // properties declared in a parent class.
+        public string $path,
+        public int $adminId,
+        public string $disk = 'local',
     ) {}
 
     /**
