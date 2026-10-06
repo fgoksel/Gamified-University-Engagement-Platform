@@ -181,6 +181,50 @@ class TreesTest extends TestCase
         $this->assertTrue($root->memberships()->active()->where('user_id', $newDean->id)->exists());
     }
 
+    public function test_the_admin_replaces_a_dean_from_the_trees_table(): void
+    {
+        $oldDean = $this->teacher('Old Dean');
+        $root = $this->tree->createTree($this->admin, Faculty::factory()->create(), $oldDean);
+        $newDean = $this->teacher('New Dean');
+
+        Livewire::actingAs($this->admin)
+            ->test(Trees::class)
+            ->assertTableActionVisible('replaceDean', $root)
+            ->assertTableActionHidden('appointDean', $root)
+            ->callTableAction('replaceDean', $root, ['dean_id' => $newDean->id, 'ended_reason' => 'End of mandate'])
+            ->assertHasNoTableActionErrors();
+
+        $this->assertSame($newDean->id, $root->memberships()->active()->where('role', TreeRole::Dean)->sole()->user_id);
+        $this->assertSame('End of mandate', $root->memberships()->where('user_id', $oldDean->id)->sole()->ended_reason);
+    }
+
+    public function test_replacing_a_dean_needs_a_reason(): void
+    {
+        $oldDean = $this->teacher();
+        $root = $this->tree->createTree($this->admin, Faculty::factory()->create(), $oldDean);
+
+        Livewire::actingAs($this->admin)
+            ->test(Trees::class)
+            ->callTableAction('replaceDean', $root, ['dean_id' => $this->teacher()->id, 'ended_reason' => ''])
+            ->assertHasTableActionErrors(['ended_reason']);
+
+        $this->assertSame($oldDean->id, $root->memberships()->active()->sole()->user_id);
+    }
+
+    public function test_the_admin_replaces_a_dean_from_the_tree_page(): void
+    {
+        $root = $this->tree->createTree($this->admin, Faculty::factory()->create(), $this->teacher());
+        $newDean = $this->teacher();
+
+        Livewire::withQueryParams(['tree' => $root->id])
+            ->actingAs($this->admin)
+            ->test(TreeDetail::class)
+            ->callAction('replaceDean', ['dean_id' => $newDean->id, 'ended_reason' => 'Retired'])
+            ->assertHasNoActionErrors();
+
+        $this->assertSame($newDean->id, $root->memberships()->active()->sole()->user_id);
+    }
+
     public function test_the_admin_uploads_an_enrolment_file_and_the_import_is_queued(): void
     {
         Queue::fake();

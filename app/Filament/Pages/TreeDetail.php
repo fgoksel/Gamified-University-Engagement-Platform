@@ -45,6 +45,8 @@ class TreeDetail extends Page
                 ->icon(Heroicon::OutlinedArrowLeft)
                 ->color('gray')
                 ->url(Trees::getUrl()),
+
+            Trees::replaceDeanAction(fn (): TreeUnit => $this->root),
         ];
     }
 

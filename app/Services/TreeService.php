@@ -58,6 +58,41 @@ class TreeService
     }
 
     /**
+     * The admin replaces a tree's dean in one step: the current dean's role
+     * is ended with the reason and the new dean is appointed. If the new
+     * dean cannot be appointed, nothing changes, so the tree never ends up
+     * without a dean. The old dean's record is kept, like every ended role.
+     *
+     * @throws AuthorizationException|ValidationException
+     */
+    public function replaceDean(User $admin, TreeUnit $root, User $newDean, string $reason): UnitMembership
+    {
+        Gate::forUser($admin)->authorize('add', [UnitMembership::class, $root, TreeRole::Dean]);
+
+        if (trim($reason) === '') {
+            throw ValidationException::withMessages([
+                'ended_reason' => 'Give a reason for replacing the dean.',
+            ]);
+        }
+
+        $current = $root->memberships()->active()->where('role', TreeRole::Dean)->first();
+
+        if ($current?->user_id === $newDean->id) {
+            throw ValidationException::withMessages([
+                'user_id' => 'This person is already the dean of this tree.',
+            ]);
+        }
+
+        return DB::transaction(function () use ($admin, $root, $newDean, $reason, $current) {
+            if ($current !== null) {
+                $this->endMembership($admin, $current, $reason);
+            }
+
+            return $this->addMember($admin, $root, $newDean, TreeRole::Dean);
+        });
+    }
+
+    /**
      * Put a course into its faculty's tree, if the faculty has one and the
      * course is not there yet. Called whenever a course is created and when
      * a tree is created, so the tree always shows all of its faculty's courses.

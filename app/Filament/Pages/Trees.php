@@ -15,6 +15,7 @@ use Closure;
 use Filament\Actions\Action;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
@@ -106,6 +107,8 @@ class Trees extends Page implements HasTable
                             Notification::make()->title('Dean appointed')->success()->send();
                         });
                     }),
+
+                static::replaceDeanAction(fn (TreeUnit $record): TreeUnit => $record),
             ]);
     }
 
@@ -176,6 +179,50 @@ class Trees extends Page implements HasTable
                     });
                 }),
         ];
+    }
+
+    /**
+     * "Replace dean": ends the current dean's role with a reason and appoints
+     * the new dean in one step, so the tree is never left without a dean.
+     * Also used on the tree page.
+     *
+     * @param  Closure(mixed): TreeUnit  $root  Resolves the tree.
+     */
+    public static function replaceDeanAction(Closure $root): Action
+    {
+        return Action::make('replaceDean')
+            ->label('Replace dean')
+            ->icon(Heroicon::OutlinedArrowPath)
+            ->visible(fn (mixed $record = null): bool => static::currentDean($root($record)) !== null)
+            ->modalHeading('Replace dean')
+            ->modalDescription(fn (mixed $record = null): string => 'The role of '.static::currentDean($root($record))?->name
+                .' ends today with your reason, and the new dean takes over at once. The old record is kept in the history.')
+            ->modalSubmitActionLabel('Replace dean')
+            ->form([
+                static::deanField()->label('New dean'),
+
+                TextInput::make('ended_reason')
+                    ->label('Reason')
+                    ->placeholder('e.g. End of mandate')
+                    ->required()
+                    ->maxLength(255),
+            ])
+            ->action(function (array $data, mixed $record = null) use ($root): void {
+                static::attempt(function () use ($data, $record, $root) {
+                    $membership = app(TreeService::class)->replaceDean(static::admin(), $root($record), User::findOrFail($data['dean_id']), $data['ended_reason']);
+
+                    Notification::make()
+                        ->title('Dean replaced')
+                        ->success()
+                        ->body("{$membership->user->name} is now the dean.")
+                        ->send();
+                });
+            });
+    }
+
+    protected static function currentDean(TreeUnit $root): ?User
+    {
+        return $root->memberships()->active()->where('role', TreeRole::Dean)->first()?->user;
     }
 
     /**
