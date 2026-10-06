@@ -125,4 +125,23 @@ class ImportController extends Controller
             fclose($output);
         }, 200, $headers);
     }
+
+    /**
+     * Download sample CSV template for course enrolments (UC-3.2.3).
+     */
+    public function sampleEnrolmentsCsv(): StreamedResponse
+    {
+        $headers = [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="enrolments_sample.csv"',
+        ];
+
+        return response()->stream(function () {
+            $output = fopen('php://output', 'w');
+            fputcsv($output, ['Neptun Code', 'Course Code', 'Course Name']);
+            fputcsv($output, ['ABC123', 'BMEVIDB101', 'Database Systems']);
+            fputcsv($output, ['XYZ789', 'BMEVIDB101', 'Database Systems']);
+            fclose($output);
+        }, 200, $headers);
+    }
 }

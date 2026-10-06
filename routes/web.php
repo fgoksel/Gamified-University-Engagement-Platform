@@ -95,6 +95,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         ->name('sample-csv.organizers');
     Route::get('/sample-csv/students', [ImportController::class, 'sampleStudentsCsv'])
         ->name('sample-csv.students');
+    Route::get('/sample-csv/enrolments', [ImportController::class, 'sampleEnrolmentsCsv'])
+        ->name('sample-csv.enrolments');
 
     // Topic tag requests from teachers (Task #31, UC-3.4)
     Route::post('/topic-tag-requests/{id}/approve', [TopicTagRequestController::class, 'approve'])

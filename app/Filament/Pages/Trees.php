@@ -5,6 +5,7 @@ namespace App\Filament\Pages;
 use App\Enums\TreeRole;
 use App\Enums\TreeUnitKind;
 use App\Enums\UserRole;
+use App\Jobs\ImportCourseEnrollmentsJob;
 use App\Models\Course;
 use App\Models\SubjectArea;
 use App\Models\TreeUnit;
@@ -13,6 +14,7 @@ use App\Services\TreeService;
 use BackedEnum;
 use Closure;
 use Filament\Actions\Action;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
@@ -25,6 +27,7 @@ use Filament\Tables\Table;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\HtmlString;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -112,6 +115,42 @@ class Trees extends Page implements HasTable
     protected function getHeaderActions(): array
     {
         return [
+            // UC-3.2.3: Neptun course enrolments become student memberships (build step 4)
+            Action::make('importEnrolments')
+                ->label('Import enrolments (CSV)')
+                ->icon(Heroicon::OutlinedArrowUpTray)
+                ->color('gray')
+                ->modalHeading('Import course enrolments (CSV)')
+                ->modalDescription('Upload the Neptun enrolment file (max 10 MB) with the columns Neptun Code, Course Code and Course Name. Students are added to the subjects of the active semester. Courses that are not in a tree yet are skipped and listed in the result.')
+                ->modalSubmitActionLabel('Execute Import')
+                ->form([
+                    FileUpload::make('file')
+                        ->label('CSV File')
+                        ->disk('local')
+                        ->directory('imports')
+                        ->acceptedFileTypes([
+                            'text/csv',
+                            'text/plain',
+                            'application/csv',
+                            'text/comma-separated-values',
+                            'text/x-csv',
+                            'application/vnd.ms-excel',
+                        ])
+                        ->maxFiles(1)
+                        ->maxSize(10240) // 10MB per Technical Spec 7.3.1
+                        ->required()
+                        ->helperText(new HtmlString('<a href="/admin/sample-csv/enrolments" class="text-primary-600 underline font-medium" download>Download sample CSV template</a>')),
+                ])
+                ->action(function (array $data): void {
+                    ImportCourseEnrollmentsJob::dispatch($data['file'], Auth::id());
+
+                    Notification::make()
+                        ->title('Enrolment Import Queued')
+                        ->success()
+                        ->body('The CSV file was uploaded and background import has been queued. You will receive a panel notification when the import finishes.')
+                        ->send();
+                }),
+
             Action::make('create')
                 ->label('New tree')
                 ->icon(Heroicon::OutlinedPlus)

@@ -139,6 +139,44 @@ class TreeService
     }
 
     /**
+     * The Neptun enrolment import adds a student to a subject (build step 4).
+     * Runs in a queued job started by the admin, so there is no policy check.
+     *
+     * Returns "added", "already" when the student already studies the
+     * subject, or "staff" when they hold another role in it (rule 5). Nothing
+     * is ever ended or deleted here.
+     *
+     * @return 'added'|'already'|'staff'
+     */
+    public function importStudent(TreeUnit $subject, User $student, Semester $semester, ?User $admin = null): string
+    {
+        return DB::transaction(function () use ($subject, $student, $semester, $admin) {
+            $roles = UnitMembership::query()
+                ->active()
+                ->where('user_id', $student->id)
+                ->whereIn('unit_id', TreeUnit::within($subject)->select('id'))
+                ->lockForUpdate()
+                ->pluck('role');
+
+            if ($roles->isNotEmpty()) {
+                return $roles->every(fn (TreeRole $role) => $role === TreeRole::Student) ? 'already' : 'staff';
+            }
+
+            UnitMembership::create([
+                'unit_id' => $subject->id,
+                'user_id' => $student->id,
+                'role' => TreeRole::Student,
+                'added_by_id' => $admin?->id,
+                'semester_id' => $semester->id,
+                'manual' => false,
+                'started_at' => now(),
+            ]);
+
+            return 'added';
+        });
+    }
+
+    /**
      * End a role (rule 8). The record stays, with the date and the reason.
      *
      * @throws AuthorizationException|ValidationException

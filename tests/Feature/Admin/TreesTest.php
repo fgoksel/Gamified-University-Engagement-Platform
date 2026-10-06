@@ -7,12 +7,16 @@ use App\Enums\TreeUnitKind;
 use App\Enums\UserRole;
 use App\Filament\Pages\TreeDetail;
 use App\Filament\Pages\Trees;
+use App\Jobs\ImportCourseEnrollmentsJob;
 use App\Models\Course;
 use App\Models\TreeUnit;
 use App\Models\User;
 use App\Services\TreeService;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -152,6 +156,29 @@ class TreesTest extends TestCase
             ->assertHasNoTableActionErrors();
 
         $this->assertTrue($root->memberships()->active()->where('user_id', $newDean->id)->exists());
+    }
+
+    public function test_the_admin_uploads_an_enrolment_file_and_the_import_is_queued(): void
+    {
+        Queue::fake();
+        Storage::fake('local');
+
+        $file = UploadedFile::fake()->createWithContent('enrolments.csv', "Neptun Code,Course Code,Course Name\nABC123,BMEVIDB101,Database\n");
+
+        Livewire::actingAs($this->admin)
+            ->test(Trees::class)
+            ->callAction('importEnrolments', ['file' => $file])
+            ->assertHasNoActionErrors();
+
+        Queue::assertPushed(ImportCourseEnrollmentsJob::class, fn (ImportCourseEnrollmentsJob $job) => $job->adminId === $this->admin->id);
+    }
+
+    public function test_the_admin_downloads_the_sample_enrolment_file(): void
+    {
+        $response = $this->actingAs($this->admin)->get('/admin/sample-csv/enrolments');
+
+        $response->assertOk();
+        $this->assertStringStartsWith('"Neptun Code","Course Code","Course Name"', $response->streamedContent());
     }
 
     public function test_only_admins_can_open_the_tree_pages(): void
