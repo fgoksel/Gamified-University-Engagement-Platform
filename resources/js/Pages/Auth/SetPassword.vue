@@ -1,5 +1,6 @@
 <script setup>
 import { useForm } from "@inertiajs/vue3";
+import AlertMessage from "../../Components/AlertMessage.vue";
 import PrimaryButton from "../../Components/PrimaryButton.vue";
 import TextField from "../../Components/TextField.vue";
 
@@ -9,6 +10,8 @@ const props = defineProps({
     token: { type: String, required: true },
     email: { type: String, required: true },
     isActivation: { type: Boolean, default: false },
+    // Set when the link logged out another account in this browser
+    loggedOutName: { type: String, default: null },
 });
 
 const form = useForm({
@@ -31,6 +34,11 @@ function submit() {
             {{ isActivation ? "Activate your account" : "Set a new password" }}
         </h1>
         <p class="mt-1 text-sm break-all text-fg-muted">For {{ email }}</p>
+
+        <AlertMessage v-if="loggedOutName" class="mt-4">
+            {{ loggedOutName }} was logged out in this browser, so this account
+            can be set up.
+        </AlertMessage>
 
         <form class="mt-6 space-y-5" novalidate @submit.prevent="submit">
             <TextField

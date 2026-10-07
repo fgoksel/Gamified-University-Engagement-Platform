@@ -2,10 +2,12 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Enums\UserRole;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\SetPasswordController;
 use App\Models\User;
 use App\Notifications\PasswordResetNotification;
+use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
@@ -38,6 +40,41 @@ class SetPasswordTest extends TestCase
                 ->component('Auth/SetPassword')
                 ->where('email', $user->email)
                 ->where('isActivation', true));
+    }
+
+    public function test_the_link_works_even_when_someone_else_is_logged_in_in_the_same_browser(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+        $admin = User::factory()->create(['name' => 'Admin Person'])->assignRole(UserRole::Admin);
+        $student = $this->invitedUser();
+
+        // E.g. the admin imported the students and opens the email in Mailpit.
+        $this->actingAs($admin)
+            ->get('/auth/activate/valid-token')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Auth/SetPassword')
+                ->where('email', $student->email)
+                ->where('loggedOutName', 'Admin Person'));
+
+        $this->assertGuest();
+
+        $this->post('/auth/set-password', [
+            'token' => 'valid-token',
+            'password' => 'new-password',
+            'password_confirmation' => 'new-password',
+        ])->assertRedirect(route('login'));
+
+        $this->assertSame('active', $student->fresh()->status);
+    }
+
+    public function test_an_unknown_link_does_not_log_anyone_out(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->get('/auth/activate/no-such-token')->assertRedirect(route('login'));
+
+        $this->assertAuthenticatedAs($user);
     }
 
     public function test_expired_or_unknown_link_goes_to_login_with_a_message(): void

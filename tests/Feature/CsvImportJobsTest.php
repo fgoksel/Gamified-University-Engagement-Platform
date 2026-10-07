@@ -2,22 +2,25 @@
 
 namespace Tests\Feature;
 
+use App\Enums\TreeRole;
 use App\Enums\UserRole;
 use App\Jobs\ImportCourseEnrollmentsJob;
 use App\Jobs\ImportOrganizersJob;
 use App\Jobs\ImportStudentsJob;
+use App\Models\Course;
 use App\Models\Faculty;
 use App\Models\Semester;
+use App\Models\TreeUnit;
+use App\Models\UnitMembership;
 use App\Models\User;
 use App\Notifications\OrganizerInvitationNotification;
 use App\Notifications\StudentInvitationNotification;
+use App\Services\TreeService;
 use Database\Seeders\RolePermissionSeeder;
 use Filament\Notifications\DatabaseNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Queue;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 use Tests\TestCase;
@@ -41,7 +44,6 @@ class CsvImportJobsTest extends TestCase
 
         $this->admin = User::factory()->create()->assignRole(UserRole::Admin);
 
-        $this->createCourseTablesIfMissing();
     }
 
     // ---- Queue behaviour ---------------------------------------------------
@@ -61,6 +63,24 @@ class CsvImportJobsTest extends TestCase
         $job = new ImportOrganizersJob('imports/a.csv', $this->admin->id);
         $this->assertSame(3, $job->tries);
         $this->assertSame([10, 60, 300], $job->backoff());
+    }
+
+    public function test_the_queue_worker_can_restore_every_import_job(): void
+    {
+        // The worker unserializes each job before running it. Queue::fake()
+        // skips that step, so it is checked here directly.
+        foreach ([
+            new ImportOrganizersJob('imports/a.csv', $this->admin->id),
+            new ImportStudentsJob('imports/b.csv', $this->admin->id),
+            new ImportCourseEnrollmentsJob('imports/c.csv', $this->admin->id, semesterId: 7),
+        ] as $job) {
+            $restored = unserialize(serialize($job));
+
+            $this->assertSame($job->path, $restored->path);
+            $this->assertSame($this->admin->id, $restored->adminId);
+        }
+
+        $this->assertSame(7, $restored->semesterId);
     }
 
     public function test_a_job_that_keeps_failing_tells_the_administrator_and_removes_the_file(): void
@@ -234,11 +254,13 @@ class CsvImportJobsTest extends TestCase
         $this->assertStringContainsString('Full Name, Email, Neptun Code', $this->adminMessage()['body']);
     }
 
-    // ---- Course enrolments (UC-3.2.3) --------------------------------------
+    // ---- Course enrolments (UC-3.2.3, faculty tree build step 4) ---------
 
-    public function test_courses_are_created_and_students_are_linked_for_the_active_semester(): void
+    public function test_students_are_added_to_the_courses_of_their_courses_for_the_active_semester(): void
     {
         $semester = $this->activeSemester();
+        $programming = $this->course('BMEINFO101', 'Programming 1');
+        $databases = $this->course('BMEINFO102', 'Databases');
         $anna = $this->student('ABC123');
         $bela = $this->student('DEF456');
 
@@ -246,25 +268,61 @@ class CsvImportJobsTest extends TestCase
 
         (new ImportCourseEnrollmentsJob($path, $this->admin->id))->handle();
 
-        $this->assertSame(2, DB::table('courses')->count());
-        $this->assertSame(3, DB::table('student_course_enrollments')->where('semester_id', $semester->id)->count());
-        $this->assertSame(2, DB::table('student_course_enrollments')->where('student_id', $anna->id)->count());
-        $this->assertSame(1, DB::table('student_course_enrollments')->where('student_id', $bela->id)->count());
-        $this->assertSame('Successfully processed: 2 new courses, 3 student-course registrations.', $this->adminMessage()['body']);
+        $this->assertSame(2, $programming->memberships()->active()->where('role', TreeRole::Student)->count());
+        $this->assertSame(1, $databases->memberships()->active()->where('user_id', $anna->id)->count());
+        $this->assertSame(1, $bela->memberships()->count());
+
+        $record = $anna->memberships()->where('unit_id', $programming->id)->sole();
+        $this->assertSame($semester->id, $record->semester_id);
+        $this->assertFalse($record->manual);
+        $this->assertSame($this->admin->id, $record->added_by_id);
+        $this->assertSame('Successfully processed: 3 student-course registrations.', $this->adminMessage()['body']);
+    }
+
+    public function test_unknown_course_codes_are_skipped_and_listed_and_no_course_is_created(): void
+    {
+        $this->activeSemester();
+        $this->student('ABC123');
+
+        $path = $this->csv("Neptun Code,Course Code,Course Name\nABC123,NEW100,New course\nABC123,NEW200,Other course\n");
+
+        (new ImportCourseEnrollmentsJob($path, $this->admin->id))->handle();
+
+        $this->assertSame(0, Course::count());
+        $this->assertSame(0, UnitMembership::where('role', TreeRole::Student)->count());
+        $this->assertSame(
+            'Successfully processed: 0 student-course registrations. Skipped 2 rows because the course code is unknown (NEW100, NEW200). Add the course under its faculty first.',
+            $this->adminMessage()['body'],
+        );
+    }
+
+    public function test_rows_of_a_faculty_without_a_tree_are_skipped_and_listed(): void
+    {
+        $this->activeSemester();
+        $this->student('ABC123');
+        Course::factory()->create(['code' => 'MED100', 'name' => 'Anatomy']);
+
+        $path = $this->csv("Neptun Code,Course Code,Course Name\nABC123,MED100,Anatomy\n");
+
+        (new ImportCourseEnrollmentsJob($path, $this->admin->id))->handle();
+
+        $this->assertSame(0, UnitMembership::where('role', TreeRole::Student)->count());
+        $this->assertStringContainsString('Skipped 1 rows because the faculty of the course has no tree yet (MED100).', $this->adminMessage()['body']);
     }
 
     public function test_unknown_neptun_codes_are_skipped_and_counted(): void
     {
         $this->activeSemester();
+        $this->course('BMEINFO101', 'Programming 1');
         $this->student('ABC123');
 
         $path = $this->csv("Neptun Code,Course Code,Course Name\nABC123,BMEINFO101,Programming 1\nZZZ999,BMEINFO101,Programming 1\nYYY888,BMEINFO101,Programming 1\n");
 
         (new ImportCourseEnrollmentsJob($path, $this->admin->id))->handle();
 
-        $this->assertSame(1, DB::table('student_course_enrollments')->count());
+        $this->assertSame(1, UnitMembership::where('role', TreeRole::Student)->count());
         $this->assertSame(
-            'Successfully processed: 1 new courses, 1 student-course registrations. Skipped 2 rows due to unregistered Neptun codes.',
+            'Successfully processed: 1 student-course registrations. Skipped 2 rows due to unregistered Neptun codes.',
             $this->adminMessage()['body'],
         );
     }
@@ -272,56 +330,78 @@ class CsvImportJobsTest extends TestCase
     public function test_only_students_are_linked_to_courses(): void
     {
         $this->activeSemester();
+        $this->course('BMEINFO101', 'Programming 1');
         User::factory()->create(['neptun_code' => 'TEACH1'])->assignRole(UserRole::Teacher);
 
         $path = $this->csv("Neptun Code,Course Code,Course Name\nTEACH1,BMEINFO101,Programming 1\n");
 
         (new ImportCourseEnrollmentsJob($path, $this->admin->id))->handle();
 
-        $this->assertSame(0, DB::table('student_course_enrollments')->count());
+        $this->assertSame(0, UnitMembership::where('role', TreeRole::Student)->count());
     }
 
     public function test_importing_the_same_enrolment_file_twice_creates_no_duplicates(): void
     {
         $this->activeSemester();
+        $this->course('BMEINFO101', 'Programming 1');
         $this->student('ABC123');
         $content = "Neptun Code,Course Code,Course Name\nABC123,BMEINFO101,Programming 1\n";
 
         (new ImportCourseEnrollmentsJob($this->csv($content), $this->admin->id))->handle();
         (new ImportCourseEnrollmentsJob($this->csv($content), $this->admin->id))->handle();
 
-        $this->assertSame(1, DB::table('courses')->count());
-        $this->assertSame(1, DB::table('student_course_enrollments')->count());
-        $this->assertStringContainsString('0 new courses, 0 student-course registrations', $this->adminMessage()['body']);
+        $this->assertSame(1, Course::count());
+        $this->assertSame(1, UnitMembership::where('role', TreeRole::Student)->count());
+        $this->assertStringContainsString('Successfully processed: 0 student-course registrations.', $this->adminMessage()['body']);
     }
 
-    public function test_previous_semester_data_is_deleted_only_when_the_box_is_checked(): void
+    public function test_a_tutor_of_the_course_is_not_added_as_its_student(): void
+    {
+        $this->activeSemester();
+        $courseUnit = $this->course('BMEINFO101', 'Programming 1');
+        $anna = $this->student('ABC123');
+        $teacher = User::factory()->create()->assignRole(UserRole::Teacher);
+        $tree = app(TreeService::class);
+        $tree->addMember($this->dean(), $courseUnit, $teacher, TreeRole::Teacher);
+        $tree->addMember($teacher, $courseUnit, $anna, TreeRole::Tutor);
+
+        $path = $this->csv("Neptun Code,Course Code,Course Name\nABC123,BMEINFO101,Programming 1\n");
+
+        (new ImportCourseEnrollmentsJob($path, $this->admin->id))->handle();
+
+        $this->assertSame([TreeRole::Tutor], $anna->memberships()->active()->pluck('role')->all());
+        $this->assertStringContainsString('Skipped 1 rows because the student is a tutor in that course.', $this->adminMessage()['body']);
+    }
+
+    public function test_an_import_never_ends_or_deletes_existing_roles(): void
     {
         $old = Semester::create(['name' => '2025/2026 Spring', 'starts_at' => '2026-02-01', 'ends_at' => '2026-06-30', 'status' => 'archived']);
-        $current = $this->activeSemester();
+        $this->activeSemester();
+        $courseUnit = $this->course('OLD100', 'Old course');
+        $this->course('BMEINFO101', 'Programming 1');
         $anna = $this->student('ABC123');
-        $courseId = DB::table('courses')->insertGetId(['code' => 'OLD100', 'name' => 'Old course', 'created_at' => now(), 'updated_at' => now()]);
-        DB::table('student_course_enrollments')->insert(['student_id' => $anna->id, 'course_id' => $courseId, 'semester_id' => $old->id, 'created_at' => now(), 'updated_at' => now()]);
+        app(TreeService::class)->importStudent($courseUnit, $anna, $old, $this->admin);
 
-        $content = "Neptun Code,Course Code,Course Name\nABC123,BMEINFO101,Programming 1\n";
+        $path = $this->csv("Neptun Code,Course Code,Course Name\nABC123,BMEINFO101,Programming 1\n");
 
-        (new ImportCourseEnrollmentsJob($this->csv($content), $this->admin->id, deletePreviousSemesterData: false))->handle();
-        $this->assertSame(1, DB::table('student_course_enrollments')->where('semester_id', $old->id)->count());
+        (new ImportCourseEnrollmentsJob($path, $this->admin->id))->handle();
 
-        (new ImportCourseEnrollmentsJob($this->csv($content), $this->admin->id, deletePreviousSemesterData: true))->handle();
-        $this->assertSame(0, DB::table('student_course_enrollments')->where('semester_id', $old->id)->count());
-        $this->assertSame(1, DB::table('student_course_enrollments')->where('semester_id', $current->id)->count());
+        $oldRecord = $anna->memberships()->where('unit_id', $courseUnit->id)->sole();
+        $this->assertTrue($oldRecord->isActive());
+        $this->assertSame($old->id, $oldRecord->semester_id);
+        $this->assertSame(2, $anna->memberships()->active()->count());
     }
 
     public function test_without_an_active_semester_nothing_is_imported_and_the_administrator_is_told(): void
     {
+        $this->course('BMEINFO101', 'Programming 1');
         $this->student('ABC123');
 
         $path = $this->csv("Neptun Code,Course Code,Course Name\nABC123,BMEINFO101,Programming 1\n");
 
         (new ImportCourseEnrollmentsJob($path, $this->admin->id))->handle();
 
-        $this->assertSame(0, DB::table('student_course_enrollments')->count());
+        $this->assertSame(0, UnitMembership::where('role', TreeRole::Student)->count());
         $this->assertStringContainsString('no active semester', $this->adminMessage()['body']);
     }
 
@@ -360,29 +440,24 @@ class CsvImportJobsTest extends TestCase
     }
 
     /**
-     * The courses tables belong to the migration tasks #6 and #8. They are created here
-     * in the shape of Technical Specification 6.2.12 and 6.2.13 until those tasks are merged.
+     * The dean of the one test tree, created on first use.
      */
-    private function createCourseTablesIfMissing(): void
+    private function dean(): User
     {
-        if (! Schema::hasTable('courses')) {
-            Schema::create('courses', function ($table) {
-                $table->id();
-                $table->string('code', 50)->unique();
-                $table->string('name');
-                $table->timestamps();
-            });
-        }
+        return $this->tree()->memberships()->sole()->user;
+    }
 
-        if (! Schema::hasTable('student_course_enrollments')) {
-            Schema::create('student_course_enrollments', function ($table) {
-                $table->id();
-                $table->foreignId('student_id')->constrained('users')->cascadeOnDelete();
-                $table->foreignId('course_id')->constrained('courses')->cascadeOnDelete();
-                $table->foreignId('semester_id')->constrained('semesters')->cascadeOnDelete();
-                $table->timestamps();
-                $table->unique(['student_id', 'course_id', 'semester_id']);
-            });
-        }
+    private function tree(): TreeUnit
+    {
+        return TreeUnit::where('kind', 'root')->first()
+            ?? app(TreeService::class)->createTree($this->admin, Faculty::factory()->create(['name' => 'Faculty of Informatics']), User::factory()->create()->assignRole(UserRole::Teacher));
+    }
+
+    /**
+     * A course of the test faculty. It joins the faculty's tree by itself.
+     */
+    private function course(string $code, string $name): TreeUnit
+    {
+        return Course::create(['faculty_id' => $this->tree()->faculty_id, 'code' => $code, 'name' => $name])->courseUnit;
     }
 }

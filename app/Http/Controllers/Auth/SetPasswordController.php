@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
@@ -26,7 +27,7 @@ class SetPasswordController extends Controller
     /**
      * Show the Password Setup page, or send the user back if the link is bad.
      */
-    public function create(string $token): Response|RedirectResponse
+    public function create(Request $request, string $token): Response|RedirectResponse
     {
         $user = $this->findUserByToken($token);
 
@@ -38,6 +39,7 @@ class SetPasswordController extends Controller
             'token' => $token,
             'email' => $user->email,
             'isActivation' => $user->isInvited(),
+            'loggedOutName' => $this->logOutSomeoneElse($request, $user),
         ]);
     }
 
@@ -58,6 +60,8 @@ class SetPasswordController extends Controller
         if (! $user) {
             return redirect()->route('login')->with('error', self::EXPIRED_MESSAGE);
         }
+
+        $this->logOutSomeoneElse($request, $user);
 
         // On a password reset the old password is the user's own one (UC-1.1 exceptions).
         if (! $user->isInvited() && Hash::check($request->input('password'), $user->password)) {
@@ -81,6 +85,27 @@ class SetPasswordController extends Controller
         return redirect()->route('login')->with('success', $wasInvited
             ? 'Your account is active. You can now log in with your new password.'
             : 'Your password has been changed. You can now log in with your new password.');
+    }
+
+    /**
+     * The link belongs to $owner. If another account is logged in in this
+     * browser (for example the admin who sent the invitations), log it out,
+     * so the page is not skipped and the new password is not mixed up with
+     * that session. Returns the name of the account that was logged out.
+     */
+    private function logOutSomeoneElse(Request $request, User $owner): ?string
+    {
+        $current = $request->user();
+
+        if ($current === null || $current->is($owner)) {
+            return null;
+        }
+
+        Auth::guard('web')->logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return $current->name;
     }
 
     /**

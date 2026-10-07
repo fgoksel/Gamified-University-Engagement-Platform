@@ -62,6 +62,30 @@ class DatabaseSchemaTest extends TestCase
         ]));
     }
 
+    public function test_courses_table_matches_spec(): void
+    {
+        $this->assertTrue(Schema::hasColumns('courses', [
+            'id', 'faculty_id', 'code', 'name', 'created_at', 'updated_at',
+        ]));
+    }
+
+    public function test_tree_units_table_matches_design(): void
+    {
+        $this->assertTrue(Schema::hasColumns('tree_units', [
+            'id', 'parent_id', 'faculty_id', 'kind', 'title', 'course_id', 'subject_area_id',
+            'path', 'created_by_id', 'created_at', 'updated_at',
+        ]));
+    }
+
+    public function test_unit_memberships_table_matches_design(): void
+    {
+        $this->assertTrue(Schema::hasColumns('unit_memberships', [
+            'id', 'unit_id', 'user_id', 'role', 'added_by_id', 'permissions',
+            'semester_id', 'manual', 'started_at', 'ended_at', 'ended_reason',
+            'created_at', 'updated_at',
+        ]));
+    }
+
     public function test_new_users_default_to_invited_and_must_change_password(): void
     {
         $id = DB::table('users')->insertGetId([
