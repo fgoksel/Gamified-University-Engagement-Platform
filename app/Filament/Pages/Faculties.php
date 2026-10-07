@@ -2,7 +2,6 @@
 
 namespace App\Filament\Pages;
 
-use App\Enums\TreeRole;
 use App\Models\Faculty;
 use BackedEnum;
 use Closure;
@@ -19,7 +18,7 @@ use Illuminate\Support\Str;
 
 /**
  * The faculties. Each faculty owns its Neptun courses (opened with
- * "Courses") and can have one tree, which shows all of those courses.
+ * "Courses"). Faculties are not part of the topic tree.
  */
 class Faculties extends Page implements HasTable
 {
@@ -43,7 +42,6 @@ class Faculties extends Page implements HasTable
             ->query(
                 Faculty::query()
                     ->withCount('courses')
-                    ->with(['tree.memberships' => fn ($query) => $query->active()->where('role', TreeRole::Dean)->with('user')])
                     ->orderBy('name')
             )
             ->columns([
@@ -60,15 +58,6 @@ class Faculties extends Page implements HasTable
                 TextColumn::make('courses_count')
                     ->label('Courses')
                     ->sortable(),
-
-                TextColumn::make('tree')
-                    ->label('Tree')
-                    ->state(fn (Faculty $record): ?string => $record->tree
-                        ? 'Dean: '.($record->tree->memberships->first()?->user->name ?? 'none')
-                        : null)
-                    ->placeholder('No tree yet')
-                    ->badge()
-                    ->color(fn (Faculty $record): string => $record->tree ? 'primary' : 'gray'),
             ])
             ->actions([
                 Action::make('courses')

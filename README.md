@@ -61,6 +61,30 @@ On Windows PowerShell, use `copy .env.example .env` for step 1.
 
 The passwords above are for local development only. Never reuse them on a server.
 
+## Topics (the abstract topic tree)
+
+**Topics** is a generic tree that people organise themselves, with reusable roles that are given at a topic and
+apply to everything below it. There is no required faculty, course or other level, and a fresh installation starts with
+no topics and no organisational roles. Architecture, the migration mapping from the old faculty tree, the rules and what
+is deferred are in [docs/topic-tree.md](docs/topic-tree.md).
+
+- The explorer is at http://localhost:8081/topics (System Admins also find **Topics** and **Topic roles** in the admin panel).
+  System Admins appoint, remove and replace System Admins on **System admins** in the admin panel.
+- The nesting limit is `TOPICS_MAX_DEPTH` (default 32).
+- **Demo data (optional, never part of the normal seeders):** to try the explorer with example topics, roles and accounts
+
+  ```bash
+  docker compose exec app php artisan db:seed --class=TopicDemoSeeder
+  ```
+
+  It creates two unrelated roots with a few nested levels, four example roles and five example accounts
+  (`demo.lead@example.test`, `demo.delegate@example.test`, `demo.contributor@example.test`, `demo.reader@example.test`,
+  `demo.programmer@example.test`, password `password`). Running it again changes nothing, and it refuses to run when
+  `APP_ENV=production`. The role and topic names are examples; none of them is special.
+- Upgrading an existing database: `php artisan migrate` copies the old faculty tree into topics (ids are kept, the old
+  tables stay untouched). See "Migration and compatibility" in the document above before upgrading a database that matters,
+  and take a backup first.
+
 ## Production: HTTPS and security headers
 
 Locally the site runs on plain HTTP (http://localhost:8081). In production Nginx ends the TLS connection

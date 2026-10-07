@@ -8,10 +8,12 @@ use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Filament\Navigation\NavigationItem;
 use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\AccountWidget;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
@@ -40,6 +42,18 @@ class AdminPanelProvider extends PanelProvider
             ->colors([
                 'primary' => '#1a73db',
                 'gray' => Color::Slate,
+            ])
+            // Topics and roles are managed in the explorer, which uses the same
+            // policies for System Admins and everyone else.
+            ->navigationItems([
+                NavigationItem::make('Topics')
+                    ->url('/topics')
+                    ->icon(Heroicon::OutlinedRectangleGroup)
+                    ->sort(8),
+                NavigationItem::make('Topic roles')
+                    ->url('/topics/roles')
+                    ->icon(Heroicon::OutlinedKey)
+                    ->sort(9),
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')

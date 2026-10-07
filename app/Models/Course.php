@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Services\TreeService;
 use Database\Factories\CourseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -10,9 +9,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
- * A Neptun course of one faculty. Courses are created only on the admin's
- * Faculties page. Every course appears in its faculty's tree as a TreeUnit
- * of kind "course", with no extra step.
+ * A Neptun course of one faculty. Courses are created on the admin's
+ * Faculties page or by the enrolment import.
+ *
+ * A course is not a topic. Only records upgraded from the previous faculty
+ * tree link a course to a topic (topics.course_id); the link is used by the
+ * enrolment import and never decides a topic's name or position.
  */
 class Course extends Model
 {
@@ -25,28 +27,16 @@ class Course extends Model
         'name',
     ];
 
-    protected static function booted(): void
-    {
-        // Live link: a new course shows up in its faculty's tree at once.
-        static::created(fn (Course $course) => app(TreeService::class)->placeCourse($course));
-
-        static::updated(function (Course $course) {
-            if ($course->wasChanged('name')) {
-                $course->courseUnit?->update(['title' => $course->name]);
-            }
-        });
-    }
-
     public function faculty(): BelongsTo
     {
         return $this->belongsTo(Faculty::class);
     }
 
     /**
-     * The tree unit of this course, once its faculty has a tree.
+     * The topic this course was linked to by the upgrade from the old tree, if any.
      */
-    public function courseUnit(): HasOne
+    public function legacyTopic(): HasOne
     {
-        return $this->hasOne(TreeUnit::class);
+        return $this->hasOne(Topic::class);
     }
 }

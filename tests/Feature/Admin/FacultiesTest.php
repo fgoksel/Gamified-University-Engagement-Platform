@@ -2,14 +2,16 @@
 
 namespace Tests\Feature\Admin;
 
-use App\Enums\TreeRole;
 use App\Enums\UserRole;
 use App\Filament\Pages\Faculties;
 use App\Filament\Pages\FacultyCourses;
 use App\Models\Course;
 use App\Models\Faculty;
+use App\Models\RoleAssignment;
+use App\Models\RoleDefinition;
+use App\Models\Topic;
 use App\Models\User;
-use App\Services\TreeService;
+use App\Services\TopicService;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -19,7 +21,8 @@ use Tests\TestCase;
 
 /**
  * The admin's Faculties page and the courses of each faculty. Courses are
- * created only here, and each one appears in its faculty's tree by itself.
+ * created only here. Faculties and courses are plain records: they are not
+ * topics, and creating or renaming them never creates or renames a topic.
  */
 class FacultiesTest extends TestCase
 {
@@ -36,11 +39,10 @@ class FacultiesTest extends TestCase
         $this->admin = User::factory()->create()->assignRole(UserRole::Admin);
     }
 
-    public function test_the_admin_sees_the_faculties_with_their_courses_and_tree(): void
+    public function test_the_admin_sees_the_faculties_with_their_courses(): void
     {
         $informatics = Faculty::factory()->create(['name' => 'Faculty of Informatics']);
         Course::factory()->for($informatics)->count(3)->create();
-        app(TreeService::class)->createTree($this->admin, $informatics, User::factory()->create(['name' => 'Dr. Kovács'])->assignRole(UserRole::Teacher));
         $medicine = Faculty::factory()->create(['name' => 'Faculty of Medicine']);
 
         Livewire::actingAs($this->admin)
@@ -48,8 +50,8 @@ class FacultiesTest extends TestCase
             ->assertOk()
             ->assertCanSeeTableRecords([$informatics, $medicine])
             ->assertTableColumnStateSet('courses_count', 3, $informatics)
-            ->assertSee('Dean: Dr. Kovács')
-            ->assertSee('No tree yet');
+            ->assertDontSee('Dean:')
+            ->assertDontSee('No tree yet');
     }
 
     public function test_the_admin_creates_a_faculty(): void
@@ -86,10 +88,10 @@ class FacultiesTest extends TestCase
         $this->assertSame('Faculty of informatics', $faculty->fresh()->name);
     }
 
-    public function test_a_course_added_to_a_faculty_appears_in_its_tree(): void
+    public function test_a_course_added_to_a_faculty_is_a_record_only_and_creates_no_topic(): void
     {
         $faculty = Faculty::factory()->create();
-        $root = app(TreeService::class)->createTree($this->admin, $faculty, User::factory()->create()->assignRole(UserRole::Teacher));
+        app(TopicService::class)->create($this->admin, null, ['title' => $faculty->name]);
 
         Livewire::withQueryParams(['faculty' => $faculty->id])
             ->actingAs($this->admin)
@@ -99,8 +101,8 @@ class FacultiesTest extends TestCase
 
         $course = Course::where('code', 'IT-DB101')->sole();
         $this->assertSame($faculty->id, $course->faculty_id);
-        $this->assertSame($root->id, $course->courseUnit->parent_id);
-        $this->assertSame('Database', $course->courseUnit->title);
+        $this->assertNull($course->legacyTopic);
+        $this->assertSame(1, Topic::count());
     }
 
     public function test_a_course_code_that_already_exists_is_refused(): void
@@ -115,11 +117,12 @@ class FacultiesTest extends TestCase
             ->assertHasActionErrors(['code']);
     }
 
-    public function test_editing_a_course_renames_it_in_the_tree(): void
+    public function test_editing_a_course_does_not_rename_a_linked_topic(): void
     {
         $faculty = Faculty::factory()->create();
-        app(TreeService::class)->createTree($this->admin, $faculty, User::factory()->create()->assignRole(UserRole::Teacher));
         $course = Course::factory()->for($faculty)->create(['code' => 'IT-DB101', 'name' => 'Database']);
+        $topic = app(TopicService::class)->create($this->admin, null, ['title' => 'Our own name']);
+        $topic->update(['course_id' => $course->id]);
 
         Livewire::withQueryParams(['faculty' => $faculty->id])
             ->actingAs($this->admin)
@@ -128,14 +131,27 @@ class FacultiesTest extends TestCase
             ->callTableAction('edit', $course, ['code' => 'IT-DB101', 'name' => 'Database Systems'])
             ->assertHasNoTableActionErrors();
 
-        $this->assertSame('Database Systems', $course->fresh()->courseUnit->title);
+        $this->assertSame('Database Systems', $course->fresh()->name);
+        $this->assertSame('Our own name', $topic->fresh()->title);
+    }
+
+    public function test_renaming_a_faculty_does_not_rename_any_topic(): void
+    {
+        $faculty = Faculty::factory()->create(['name' => 'Faculty of Informatics', 'code' => 'FI']);
+        $topic = app(TopicService::class)->create($this->admin, null, ['title' => 'Faculty of Informatics']);
+
+        Livewire::actingAs($this->admin)
+            ->test(Faculties::class)
+            ->callTableAction('edit', $faculty, ['name' => 'Faculty of IT', 'code' => 'FI']);
+
+        $this->assertSame('Faculty of IT', $faculty->fresh()->name);
+        $this->assertSame('Faculty of Informatics', $topic->fresh()->title);
     }
 
     public function test_the_admin_imports_courses_from_a_csv_file(): void
     {
         $faculty = Faculty::factory()->create();
         $other = Faculty::factory()->create(['name' => 'Faculty of Law']);
-        app(TreeService::class)->createTree($this->admin, $faculty, User::factory()->create()->assignRole(UserRole::Teacher));
         Course::factory()->for($faculty)->create(['code' => 'IT-DB101']);
         Course::factory()->for($other)->create(['code' => 'LAW100']);
 
@@ -149,7 +165,6 @@ class FacultiesTest extends TestCase
             ->assertNotified();
 
         $this->assertEqualsCanonicalizing(['IT-DB101', 'IT-PR101', 'IT-NW101'], $faculty->courses()->pluck('code')->all());
-        $this->assertSame(3, $faculty->tree->children()->count());
         $this->assertSame($other->id, Course::where('code', 'LAW100')->sole()->faculty_id);
     }
 
@@ -174,17 +189,15 @@ class FacultiesTest extends TestCase
         Course::create(['code' => 'NOFAC1', 'name' => 'No faculty']);
     }
 
-    public function test_the_dean_cannot_create_courses(): void
+    public function test_a_topic_role_does_not_open_the_faculty_pages(): void
     {
-        $faculty = Faculty::factory()->create();
-        $dean = User::factory()->create()->assignRole(UserRole::Teacher);
-        $root = app(TreeService::class)->createTree($this->admin, $faculty, $dean);
+        $teacher = User::factory()->create()->assignRole(UserRole::Teacher);
+        $topic = app(TopicService::class)->create($this->admin, null, ['title' => 'Root']);
+        $role = RoleDefinition::create(['name' => 'Admin', 'capabilities' => ['topic.view'], 'delegable' => []]);
+        RoleAssignment::create(['topic_id' => $topic->id, 'user_id' => $teacher->id, 'role_definition_id' => $role->id, 'started_at' => now()]);
 
-        $this->actingAs($dean)->get('/admin/faculties')->assertRedirect('/');
-        $this->actingAs($dean)->get("/my-courses/{$root->id}")->assertInertia(fn ($page) => $page
-            ->where('addableRoles', [])
-            ->where('canAddSubtopic', false));
-        $this->assertTrue($root->memberships()->where('role', TreeRole::Dean)->exists());
+        $this->actingAs($teacher)->get('/admin/faculties')->assertRedirect('/');
+        $this->assertTrue(User::find($teacher->id)->roleAssignments()->exists());
     }
 
     public function test_only_admins_can_open_the_faculty_pages(): void

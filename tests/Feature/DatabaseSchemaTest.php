@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -69,6 +70,7 @@ class DatabaseSchemaTest extends TestCase
         ]));
     }
 
+    // The legacy faculty-tree tables are kept as they were (the upgrade only copies from them).
     public function test_tree_units_table_matches_design(): void
     {
         $this->assertTrue(Schema::hasColumns('tree_units', [
@@ -84,6 +86,50 @@ class DatabaseSchemaTest extends TestCase
             'semester_id', 'manual', 'started_at', 'ended_at', 'ended_reason',
             'created_at', 'updated_at',
         ]));
+    }
+
+    public function test_topic_tables_match_the_design(): void
+    {
+        $this->assertTrue(Schema::hasColumns('topics', [
+            'id', 'parent_id', 'title', 'code', 'description', 'depth', 'created_by_id',
+            'legacy_tree_unit_id', 'course_id', 'subject_area_id', 'archived_at', 'archived_by_id', 'created_at', 'updated_at',
+        ]));
+        $this->assertTrue(Schema::hasColumns('topic_closure', ['ancestor_id', 'descendant_id', 'distance']));
+        $this->assertTrue(Schema::hasColumns('role_definitions', [
+            'id', 'name', 'description', 'topic_id', 'capabilities', 'delegable', 'created_by_id',
+            'archived_at', 'legacy_key', 'version', 'created_at', 'updated_at',
+        ]));
+        $this->assertTrue(Schema::hasColumns('role_assignments', [
+            'id', 'topic_id', 'user_id', 'role_definition_id', 'granted_by_id', 'granted_by_assignment_id',
+            'authority_snapshot', 'started_at', 'ended_at', 'ended_reason', 'ended_by_id',
+            'replaces_assignment_id', 'replaced_by_assignment_id', 'version', 'semester_id', 'manual',
+            'legacy_permissions',
+        ]));
+        $this->assertTrue(Schema::hasColumns('topic_audit_events', [
+            'id', 'actor_id', 'action', 'topic_id', 'subject_type', 'subject_id', 'before', 'after', 'created_at',
+        ]));
+    }
+
+    public function test_the_topic_title_has_no_length_coupled_path_so_depth_is_not_column_limited(): void
+    {
+        $this->assertFalse(Schema::hasColumn('topics', 'path'));
+    }
+
+    public function test_an_active_role_can_exist_only_once_per_person_and_topic_but_history_is_unlimited(): void
+    {
+        $now = now();
+        $user = DB::table('users')->insertGetId(['name' => 'A', 'email' => 'a@example.com', 'password' => 'x']);
+        $topic = DB::table('topics')->insertGetId(['title' => 'T', 'created_at' => $now, 'updated_at' => $now]);
+        $role = DB::table('role_definitions')->insertGetId(['name' => 'R', 'capabilities' => '["topic.view"]', 'delegable' => '[]', 'created_at' => $now, 'updated_at' => $now]);
+        $row = ['topic_id' => $topic, 'user_id' => $user, 'role_definition_id' => $role, 'started_at' => $now, 'created_at' => $now, 'updated_at' => $now];
+
+        DB::table('role_assignments')->insert($row);
+        // Ended history may repeat freely.
+        DB::table('role_assignments')->insert([...$row, 'ended_at' => $now]);
+        DB::table('role_assignments')->insert([...$row, 'ended_at' => $now]);
+
+        $this->expectException(UniqueConstraintViolationException::class);
+        DB::table('role_assignments')->insert($row);
     }
 
     public function test_new_users_default_to_invited_and_must_change_password(): void

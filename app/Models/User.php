@@ -74,11 +74,11 @@ class User extends Authenticatable implements FilamentUser
     }
 
     /**
-     * The user's roles in the faculty tree, active and ended.
+     * The user's topic roles, active and ended.
      */
-    public function memberships(): HasMany
+    public function roleAssignments(): HasMany
     {
-        return $this->hasMany(UnitMembership::class);
+        return $this->hasMany(RoleAssignment::class);
     }
 
     /**

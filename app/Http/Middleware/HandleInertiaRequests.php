@@ -2,7 +2,9 @@
 
 namespace App\Http\Middleware;
 
+use App\Enums\Capability;
 use App\Enums\UserRole;
+use App\Services\TopicAccess;
 use App\Support\SubjectAreaTree;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -55,6 +57,9 @@ class HandleInertiaRequests extends Middleware
                         : null,
                 ] : null,
             ],
+            // Menu flags for Topics: shown only to people who can open a topic, and
+            // "Roles" only to those who may define or give roles somewhere.
+            'topics' => fn () => $request->user() ? $this->topicMenu($request) : null,
             // Subject Area panel in the sidebar: teachers only (UC-1.2)
             'subjectAreaTree' => fn () => $request->user()?->hasRole(UserRole::Teacher)
                 ? SubjectAreaTree::for($request->user())
@@ -66,6 +71,22 @@ class HandleInertiaRequests extends Middleware
                 'success' => fn () => $request->session()->get('success'),
                 'error' => fn () => $request->session()->get('error'),
             ],
+        ];
+    }
+
+    /**
+     * @return array{available: bool, roles: bool}
+     */
+    private function topicMenu(Request $request): array
+    {
+        $access = app(TopicAccess::class);
+        $user = $request->user();
+
+        return [
+            'available' => $access->isSystemAdmin($user) || $access->grantedTopicIds($user) !== [],
+            'roles' => $access->isSystemAdmin($user)
+                || $access->canAnywhere($user, Capability::DefineRoles)
+                || $access->canAnywhere($user, Capability::AccessAssign),
         ];
     }
 }
