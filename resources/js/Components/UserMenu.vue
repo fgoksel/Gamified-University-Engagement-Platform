@@ -62,7 +62,7 @@ onBeforeUnmount(() => {
             role="menu"
         >
             <Link
-                href="/profile"
+                :href="user.role === 'admin' ? '/admin/profile' : '/profile'"
                 class="flex items-center gap-3 rounded-control px-3 py-2 text-sm text-fg hover:bg-surface-muted"
                 role="menuitem"
                 @click="close"

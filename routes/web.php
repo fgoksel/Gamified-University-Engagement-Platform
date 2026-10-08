@@ -10,9 +10,10 @@ use App\Http\Controllers\Auth\SetPasswordController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\LeaderboardController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\RoleAssignmentController;
+use App\Http\Controllers\RoleDefinitionController;
 use App\Http\Controllers\ScanController;
-use App\Http\Controllers\TreeUnitController;
-use App\Http\Controllers\UnitMembershipController;
+use App\Http\Controllers\TopicController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -73,17 +74,43 @@ Route::middleware('auth')->group(function () {
             Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password.update');
         });
 
-        // "My courses": deans, teachers and co-teachers manage their branch of
-        // the faculty tree. TreeService and the tree policies check every action.
-        Route::middleware('role:teacher')->prefix('my-courses')->name('tree.')->group(function () {
-            Route::get('/', [TreeUnitController::class, 'index'])->name('index');
-            Route::get('/{unit}', [TreeUnitController::class, 'show'])->whereNumber('unit')->name('show');
-            Route::post('/{unit}/subtopics', [TreeUnitController::class, 'storeSubtopic'])->whereNumber('unit')->name('subtopics.store');
-            Route::get('/{unit}/candidates', [UnitMembershipController::class, 'candidates'])->whereNumber('unit')->name('candidates');
-            Route::post('/{unit}/members', [UnitMembershipController::class, 'store'])->whereNumber('unit')->name('members.store');
-            Route::put('/members/{membership}/permissions', [UnitMembershipController::class, 'updatePermissions'])->name('members.permissions');
-            Route::post('/members/{membership}/end', [UnitMembershipController::class, 'end'])->name('members.end');
+        // Topics: the explorer, reusable roles and role assignments. Open to every
+        // signed-in account: what a person sees and may do is decided per topic by
+        // TopicAccess and the policies, never by the account type.
+        Route::prefix('topics')->name('topics.')->group(function () {
+            Route::get('/', [TopicController::class, 'index'])->name('index');
+            Route::post('/', [TopicController::class, 'storeRoot'])->name('store');
+            Route::get('/search', [TopicController::class, 'search'])->name('search');
+
+            Route::get('/roles', [RoleDefinitionController::class, 'index'])->name('roles.index');
+            Route::post('/roles', [RoleDefinitionController::class, 'store'])->name('roles.store');
+            Route::put('/roles/{role}', [RoleDefinitionController::class, 'update'])->whereNumber('role')->name('roles.update');
+            Route::post('/roles/{role}/archive', [RoleDefinitionController::class, 'archive'])->whereNumber('role')->name('roles.archive');
+            Route::get('/roles/{role}/usage', [RoleDefinitionController::class, 'usage'])->whereNumber('role')->name('roles.usage');
+
+            Route::post('/assignments/{assignment}/prepare', [RoleAssignmentController::class, 'prepare'])->whereNumber('assignment')->name('assignments.prepare');
+            Route::post('/assignments/execute', [RoleAssignmentController::class, 'execute'])->name('assignments.execute');
+
+            Route::get('/archived', [TopicController::class, 'archived'])->name('archived');
+            Route::post('/delete/execute', [TopicController::class, 'deleteExecute'])->name('delete.execute');
+
+            Route::get('/{topic}', [TopicController::class, 'show'])->whereNumber('topic')->name('show');
+            Route::put('/{topic}', [TopicController::class, 'update'])->whereNumber('topic')->name('update');
+            Route::get('/{topic}/children', [TopicController::class, 'children'])->whereNumber('topic')->name('children');
+            Route::post('/{topic}/children', [TopicController::class, 'storeChild'])->whereNumber('topic')->name('children.store');
+            Route::get('/{topic}/destinations', [TopicController::class, 'destinations'])->whereNumber('topic')->name('destinations');
+            Route::post('/{topic}/archive', [TopicController::class, 'archive'])->whereNumber('topic')->name('archive');
+            Route::post('/{topic}/restore', [TopicController::class, 'restore'])->whereNumber('topic')->name('restore');
+            Route::post('/{topic}/delete/prepare', [TopicController::class, 'deletePrepare'])->whereNumber('topic')->name('delete.prepare');
+            Route::post('/{topic}/move/preview', [TopicController::class, 'movePreview'])->whereNumber('topic')->name('move.preview');
+            Route::post('/{topic}/move', [TopicController::class, 'move'])->whereNumber('topic')->name('move');
+            Route::get('/{topic}/candidates', [RoleAssignmentController::class, 'candidates'])->whereNumber('topic')->name('candidates');
+            Route::post('/{topic}/assignments', [RoleAssignmentController::class, 'store'])->whereNumber('topic')->name('assignments.store');
         });
+
+        // The previous "My courses" pages now live in Topics.
+        Route::redirect('/my-courses', '/topics');
+        Route::get('/my-courses/{any}', fn () => redirect('/topics'))->where('any', '.*');
     });
 });
 

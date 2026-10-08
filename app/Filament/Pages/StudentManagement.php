@@ -7,6 +7,7 @@ use App\Jobs\ImportStudentsJob;
 use App\Models\Faculty;
 use App\Models\User;
 use App\Notifications\StudentInvitationNotification;
+use App\Services\SystemAdminService;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\FileUpload;
@@ -19,9 +20,9 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 
@@ -219,7 +220,7 @@ class StudentManagement extends Page implements HasTable
                     ->color('danger')
                     ->requiresConfirmation()
                     ->modalHeading('Deactivate Student')
-                    ->modalDescription(fn (User $record): string => "Are you sure you want to deactivate {$record->name}?")
+                    ->modalDescription(fn (User $record): string => "Are you sure you want to deactivate {$record->name}?".static::topicRolesNote($record))
                     ->modalSubmitActionLabel('Yes, Deactivate')
                     ->visible(fn (User $record): bool => $record->status === 'active')
                     ->disabled(fn (User $record): bool => ! auth()->user()?->can('deactivate', $record))
@@ -246,16 +247,14 @@ class StudentManagement extends Page implements HasTable
                             return;
                         }
 
-                        $record->update([
-                            'status' => 'inactive',
-                            // Revoke any pending activation link (UC-3.2.2).
-                            'activation_token' => null,
-                            'activation_token_expires_at' => null,
-                        ]);
+                        // One locked transaction: sessions end and the last-active-admin rule holds
+                        // even when two requests arrive at the same time. Topic roles are kept.
+                        try {
+                            app(SystemAdminService::class)->deactivate(auth()->user(), $record);
+                        } catch (AuthorizationException $exception) {
+                            Notification::make()->title('Action Not Allowed')->danger()->body($exception->getMessage())->send();
 
-                        // Revoke any active sessions immediately (UC-3.2.2).
-                        if (Schema::hasTable('sessions')) {
-                            DB::table('sessions')->where('user_id', $record->id)->delete();
+                            return;
                         }
 
                         Notification::make()
@@ -436,5 +435,17 @@ class StudentManagement extends Page implements HasTable
                         ->send();
                 }),
         ];
+    }
+
+    /**
+     * Topic roles are kept when an account is deactivated: say so, and where to hand them over.
+     */
+    protected static function topicRolesNote(User $record): string
+    {
+        $count = app(SystemAdminService::class)->activeAssignmentCount($record);
+
+        return $count === 0
+            ? ''
+            : " They hold {$count} active topic role(s). These stay in place (nothing is removed); hand them over in Topics when needed.";
     }
 }

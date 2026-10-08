@@ -8,7 +8,12 @@ import { useRole } from "../composables/useRole.js";
 const page = usePage();
 const { role } = useRole();
 
-const items = computed(() => navigation[role.value] ?? []);
+// Items marked "needs" show only when the backend says this person has topics
+const items = computed(() =>
+    (navigation[role.value] ?? []).filter(
+        (item) => !item.needs || page.props.topics?.[item.needs],
+    ),
+);
 
 // Current path without the query string, e.g. "/events?page=2" -> "/events"
 const currentPath = computed(() => page.url.split("?")[0]);
@@ -52,6 +57,7 @@ function isActive(href) {
                 v-else
                 :href="item.href"
                 :icon="item.icon"
+                :external="item.external"
                 :active="isActive(item.href)"
                 :class="item.framed ? 'mt-4 border border-line' : ''"
             >

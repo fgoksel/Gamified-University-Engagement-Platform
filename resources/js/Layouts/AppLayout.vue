@@ -9,6 +9,8 @@ import { useRole } from "../composables/useRole.js";
 
 defineProps({
     title: { type: String, default: "" },
+    // Full-width pages such as the Topics explorer
+    wide: { type: Boolean, default: false },
 });
 
 const page = usePage();
@@ -101,7 +103,8 @@ onBeforeUnmount(() => {
         <!-- Page content -->
         <div class="lg:pl-64">
             <main
-                class="mx-auto w-full max-w-6xl px-4 pt-6 pb-28 sm:px-6 lg:px-8 lg:pb-6"
+                class="mx-auto w-full px-4 pt-6 pb-28 sm:px-6 lg:px-8 lg:pb-6"
+                :class="wide ? 'max-w-none' : 'max-w-6xl'"
             >
                 <h1
                     v-if="title"

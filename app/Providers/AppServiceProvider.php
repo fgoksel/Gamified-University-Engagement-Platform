@@ -2,12 +2,15 @@
 
 namespace App\Providers;
 
-use App\Models\TreeUnit;
-use App\Models\UnitMembership;
+use App\Models\RoleAssignment;
+use App\Models\RoleDefinition;
+use App\Models\Topic;
 use App\Models\User;
 use App\Policies\AdminPolicy;
-use App\Policies\TreeUnitPolicy;
-use App\Policies\UnitMembershipPolicy;
+use App\Policies\RoleAssignmentPolicy;
+use App\Policies\RoleDefinitionPolicy;
+use App\Policies\TopicPolicy;
+use App\Services\TopicAccess;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -23,7 +26,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // One resolver per request, so every check in a request sees the same data.
+        $this->app->scoped(TopicAccess::class);
     }
 
     /**
@@ -38,9 +42,10 @@ class AppServiceProvider extends ServiceProvider
         // Admin self-lock prevention policy (Technical Specification Table 25, Task #32).
         Gate::policy(User::class, AdminPolicy::class);
 
-        // Faculty tree and roles: who may see and change units and memberships.
-        Gate::policy(TreeUnit::class, TreeUnitPolicy::class);
-        Gate::policy(UnitMembership::class, UnitMembershipPolicy::class);
+        // Topics, reusable roles and role assignments.
+        Gate::policy(Topic::class, TopicPolicy::class);
+        Gate::policy(RoleDefinition::class, RoleDefinitionPolicy::class);
+        Gate::policy(RoleAssignment::class, RoleAssignmentPolicy::class);
 
         $this->configureRateLimiting();
     }

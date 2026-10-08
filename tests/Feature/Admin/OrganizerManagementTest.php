@@ -5,8 +5,11 @@ namespace Tests\Feature\Admin;
 use App\Enums\UserRole;
 use App\Filament\Pages\OrganizerManagement;
 use App\Models\Faculty;
+use App\Models\RoleAssignment;
+use App\Models\RoleDefinition;
 use App\Models\User;
 use App\Notifications\OrganizerInvitationNotification;
+use App\Services\TopicService;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -503,5 +506,25 @@ class OrganizerManagementTest extends TestCase
             ->assertHasNoTableActionErrors();
 
         $this->assertDatabaseMissing('sessions', ['user_id' => $organizer->id]);
+    }
+
+    public function test_deactivating_an_organizer_keeps_their_topic_roles_and_the_dialog_says_so(): void
+    {
+        $admin = $this->makeAdmin();
+        $organizer = $this->makeOrganizer('active');
+        $topic = app(TopicService::class)->create($admin, null, ['title' => 'Root']);
+        $role = RoleDefinition::create(['name' => 'Lead', 'capabilities' => ['topic.view'], 'delegable' => []]);
+        $assignment = RoleAssignment::create(['topic_id' => $topic->id, 'user_id' => $organizer->id, 'role_definition_id' => $role->id, 'started_at' => now()]);
+
+        $page = Livewire::actingAs($admin)
+            ->test(OrganizerManagement::class)
+            ->mountTableAction('deactivate', $organizer);
+
+        $this->assertStringContainsString('1 active topic role(s)', (string) $page->instance()->getMountedAction()->getModalDescription());
+
+        $page->callMountedTableAction()->assertHasNoTableActionErrors();
+
+        $this->assertSame('inactive', $organizer->fresh()->status);
+        $this->assertNull($assignment->fresh()->ended_at);
     }
 }

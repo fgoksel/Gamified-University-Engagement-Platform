@@ -2,10 +2,10 @@
 
 namespace App\Filament\Pages;
 
-use App\Enums\TreeRole;
 use App\Imports\CsvRowsImport;
 use App\Models\Course;
 use App\Models\Faculty;
+use App\Models\RoleAssignment;
 use Filament\Actions\Action;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\TextInput;
@@ -24,8 +24,7 @@ use Maatwebsite\Excel\HeadingRowImport;
 
 /**
  * The courses of one faculty. This is the only place where courses are
- * created: added one by one or imported from a CSV file. Each new course
- * appears in the faculty's tree straight away.
+ * created: added one by one or imported from a CSV file.
  */
 class FacultyCourses extends Page implements HasTable
 {
@@ -58,8 +57,7 @@ class FacultyCourses extends Page implements HasTable
             ->query(
                 Course::query()
                     ->where('faculty_id', $this->record->id)
-                    ->with(['courseUnit' => fn ($query) => $query
-                        ->withCount(['memberships as students_count' => fn ($membership) => $membership->active()->where('role', TreeRole::Student)])])
+                    ->with('legacyTopic')
                     ->orderBy('code')
             )
             ->columns([
@@ -75,7 +73,11 @@ class FacultyCourses extends Page implements HasTable
 
                 TextColumn::make('students')
                     ->label('Students')
-                    ->state(fn (Course $record): int => $record->courseUnit?->students_count ?? 0),
+                    ->state(fn (Course $record): int => $record->legacyTopic === null ? 0 : RoleAssignment::query()
+                        ->active()
+                        ->where('topic_id', $record->legacyTopic->id)
+                        ->whereHas('role', fn ($query) => $query->where('legacy_key', 'student'))
+                        ->count()),
 
                 TextColumn::make('created_at')
                     ->label('Added')
