@@ -39,4 +39,12 @@ class Course extends Model
     {
         return $this->hasOne(Topic::class);
     }
+
+    /**
+     * The topic this course is linked to.
+     */
+    public function topic(): HasOne
+    {
+        return $this->hasOne(Topic::class);
+    }
 }

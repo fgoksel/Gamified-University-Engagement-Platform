@@ -3,11 +3,17 @@
 namespace App\Filament\Pages;
 
 use App\Imports\CsvRowsImport;
+use App\Jobs\ImportCourseEnrollmentsJob;
 use App\Models\Course;
 use App\Models\Faculty;
 use App\Models\RoleAssignment;
+use App\Models\Semester;
+use App\Models\Topic;
 use Filament\Actions\Action;
+use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
@@ -16,6 +22,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Url;
 use Maatwebsite\Excel\Excel as ExcelFormat;
@@ -71,6 +78,14 @@ class FacultyCourses extends Page implements HasTable
                     ->searchable()
                     ->sortable(),
 
+                TextColumn::make('legacyTopic.title')
+                    ->label('Linked Topic')
+                    ->placeholder('— Not linked —')
+                    ->badge()
+                    ->color(fn (Course $record): string => $record->legacyTopic ? 'success' : 'gray')
+                    ->searchable()
+                    ->sortable(),
+
                 TextColumn::make('students')
                     ->label('Students')
                     ->state(fn (Course $record): int => $record->legacyTopic === null ? 0 : RoleAssignment::query()
@@ -85,6 +100,169 @@ class FacultyCourses extends Page implements HasTable
                     ->sortable(),
             ])
             ->actions([
+                Action::make('linkTopic')
+                    ->label(fn (Course $record): string => $record->legacyTopic ? 'Change Link' : 'Link to Topic')
+                    ->icon(Heroicon::OutlinedLink)
+                    ->color('gray')
+                    ->modalHeading(fn (Course $record): string => "Link Course {$record->code} to a Topic Node")
+                    ->modalDescription('Link this course to a node in the topic tree. Students imported for this course will be placed on this topic.')
+                    ->modalSubmitActionLabel('Save Link')
+                    ->fillForm(fn (Course $record): array => [
+                        'topic_id' => $record->legacyTopic?->id,
+                    ])
+                    ->form(fn (Course $record): array => [
+                        Select::make('topic_id')
+                            ->label('Topic Node')
+                            ->searchable()
+                            ->preload()
+                            ->options(function () use ($record): array {
+                                return Topic::query()
+                                    ->notArchived()
+                                    ->where(function ($query) use ($record) {
+                                        $query->whereNull('course_id');
+                                        if ($record->legacyTopic) {
+                                            $query->orWhere('id', $record->legacyTopic->id);
+                                        }
+                                    })
+                                    ->orderBy('title')
+                                    ->pluck('title', 'id')
+                                    ->all();
+                            })
+                            ->placeholder('— Unlink / No Topic —')
+                            ->nullable(),
+                    ])
+                    ->action(function (Course $record, array $data): void {
+                        $newTopicId = ! empty($data['topic_id']) ? (int) $data['topic_id'] : null;
+
+                        if ($record->legacyTopic && $record->legacyTopic->id !== $newTopicId) {
+                            $record->legacyTopic->update(['course_id' => null]);
+                        }
+
+                        if ($newTopicId !== null) {
+                            Topic::where('id', $newTopicId)->update(['course_id' => $record->id]);
+                            $topicTitle = Topic::find($newTopicId)?->title ?? 'Topic';
+                            Notification::make()
+                                ->title('Course linked to topic')
+                                ->success()
+                                ->body("{$record->code} is now linked to \"{$topicTitle}\".")
+                                ->send();
+                        } else {
+                            Notification::make()
+                                ->title('Course unlinked from topic')
+                                ->success()
+                                ->body("{$record->code} is no longer linked to a topic.")
+                                ->send();
+                        }
+                    }),
+
+                Action::make('importEnrolments')
+                    ->label('Import Enrolments')
+                    ->icon(Heroicon::OutlinedArrowUpTray)
+                    ->color('success')
+                    ->visible(fn (Course $record): bool => $record->legacyTopic !== null)
+                    ->modalHeading(fn (Course $record): string => "Import Enrolments: {$record->code} ({$record->name})")
+                    ->modalDescription(fn (Course $record): string => "Primary import topic: {$record->legacyTopic->title}. Choose which other same-branch nodes students should also belong to.")
+                    ->modalSubmitActionLabel('Execute Import')
+                    ->form(function (Course $record): array {
+                        $topic = $record->legacyTopic;
+                        if (! $topic) {
+                            return [];
+                        }
+
+                        $ancestorIds = DB::table('topic_closure')
+                            ->where('descendant_id', $topic->id)
+                            ->where('distance', '>', 0)
+                            ->orderBy('distance', 'desc')
+                            ->pluck('ancestor_id')
+                            ->all();
+
+                        $ancestorOptions = Topic::query()
+                            ->whereIn('id', $ancestorIds)
+                            ->notArchived()
+                            ->get()
+                            ->sortBy(fn ($t) => array_search($t->id, $ancestorIds))
+                            ->mapWithKeys(fn ($t) => [$t->id => $t->title.($t->code ? " ({$t->code})" : '')])
+                            ->all();
+
+                        $descendantIds = DB::table('topic_closure')
+                            ->where('ancestor_id', $topic->id)
+                            ->where('distance', '>', 0)
+                            ->orderBy('distance', 'asc')
+                            ->pluck('descendant_id')
+                            ->all();
+
+                        $descendantOptions = Topic::query()
+                            ->whereIn('id', $descendantIds)
+                            ->notArchived()
+                            ->get()
+                            ->sortBy(fn ($t) => array_search($t->id, $descendantIds))
+                            ->mapWithKeys(fn ($t) => [$t->id => $t->title.($t->code ? " ({$t->code})" : '')])
+                            ->all();
+
+                        return [
+                            FileUpload::make('file')
+                                ->label('Neptun Enrolment CSV')
+                                ->disk('local')
+                                ->directory('imports')
+                                ->acceptedFileTypes([
+                                    'text/csv',
+                                    'text/plain',
+                                    'application/csv',
+                                    'text/comma-separated-values',
+                                    'text/x-csv',
+                                    'application/vnd.ms-excel',
+                                ])
+                                ->maxFiles(1)
+                                ->maxSize(10240)
+                                ->required()
+                                ->helperText('Required columns: Neptun Code, Course Code, Course Name'),
+
+                            Select::make('semester_id')
+                                ->label('Semester')
+                                ->options(Semester::query()->orderByDesc('starts_at')->pluck('name', 'id'))
+                                ->default(fn () => Semester::where('status', 'active')->value('id'))
+                                ->required(),
+
+                            Section::make('Which other nodes should these students also belong to?')
+                                ->description("Students will be imported at {$topic->title}. Nothing is added automatically: tick below if they should also belong to parent or child nodes. Only nodes in this exact branch are shown.")
+                                ->schema([
+                                    CheckboxList::make('nodes_above')
+                                        ->label('Nodes Directly Above (Ancestors)')
+                                        ->options($ancestorOptions)
+                                        ->helperText(empty($ancestorOptions) ? 'No ancestor nodes above this topic.' : 'Optional: tick to give students access to ancestor nodes (e.g. Faculty, University).')
+                                        ->bulkToggleable(),
+
+                                    CheckboxList::make('nodes_below')
+                                        ->label('Nodes Directly Below (Descendants)')
+                                        ->options($descendantOptions)
+                                        ->helperText(empty($descendantOptions) ? 'No child nodes below this topic.' : 'Optional: tick to give access to sub-units. Leave unticked for lab groups so lab students can be imported separately.')
+                                        ->bulkToggleable(),
+                                ]),
+                        ];
+                    })
+                    ->action(function (Course $record, array $data): void {
+                        $path = $data['file'];
+                        $semesterId = (int) $data['semester_id'];
+                        $selectedTopicIds = array_map('intval', array_merge(
+                            $data['nodes_above'] ?? [],
+                            $data['nodes_below'] ?? []
+                        ));
+
+                        ImportCourseEnrollmentsJob::dispatch(
+                            $path,
+                            auth()->id(),
+                            semesterId: $semesterId,
+                            additionalTopicIds: $selectedTopicIds,
+                            targetTopicId: $record->legacyTopic->id
+                        );
+
+                        Notification::make()
+                            ->title('Enrolment import queued')
+                            ->success()
+                            ->body("Enrolment import for {$record->code} has been queued. You will receive a panel notification when complete.")
+                            ->send();
+                    }),
+
                 Action::make('edit')
                     ->label('Edit')
                     ->icon(Heroicon::OutlinedPencilSquare)
@@ -108,6 +286,51 @@ class FacultyCourses extends Page implements HasTable
                 ->icon(Heroicon::OutlinedArrowLeft)
                 ->color('gray')
                 ->url(Faculties::getUrl()),
+
+            Action::make('importEnrolments')
+                ->label('Import enrolments (CSV)')
+                ->icon(Heroicon::OutlinedUsers)
+                ->color('gray')
+                ->modalHeading('Bulk Import Course Enrolments (CSV)')
+                ->modalDescription('Upload a Neptun enrolment CSV (Neptun Code, Course Code, Course Name). Students are placed on each course\'s linked topic.')
+                ->modalSubmitActionLabel('Import')
+                ->form([
+                    FileUpload::make('file')
+                        ->label('CSV File')
+                        ->disk('local')
+                        ->directory('imports')
+                        ->acceptedFileTypes([
+                            'text/csv',
+                            'text/plain',
+                            'application/csv',
+                            'text/comma-separated-values',
+                            'text/x-csv',
+                            'application/vnd.ms-excel',
+                        ])
+                        ->maxFiles(1)
+                        ->maxSize(10240)
+                        ->required()
+                        ->helperText('Required columns: Neptun Code, Course Code, Course Name'),
+
+                    Select::make('semester_id')
+                        ->label('Semester')
+                        ->options(Semester::query()->orderByDesc('starts_at')->pluck('name', 'id'))
+                        ->default(fn () => Semester::where('status', 'active')->value('id'))
+                        ->required(),
+                ])
+                ->action(function (array $data): void {
+                    ImportCourseEnrollmentsJob::dispatch(
+                        $data['file'],
+                        auth()->id(),
+                        semesterId: (int) $data['semester_id']
+                    );
+
+                    Notification::make()
+                        ->title('Enrolment import queued')
+                        ->success()
+                        ->body('The enrolment CSV has been queued for background processing.')
+                        ->send();
+                }),
 
             Action::make('import')
                 ->label('Import courses (CSV)')

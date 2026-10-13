@@ -116,11 +116,15 @@ Route::middleware('auth')->group(function () {
 
 // Admin endpoints specified in Technical Specification Table 22
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
-    // Neptun CSV imports (Tasks #24 and #27)
+    // Neptun CSV imports (Tasks #24, #27, and #29)
     Route::post('/import/organizers', [ImportController::class, 'organizers'])
         ->name('import.organizers');
     Route::post('/import/students', [ImportController::class, 'students'])
         ->name('import.students');
+    Route::post('/import/enrolments', [ImportController::class, 'enrolments'])
+        ->name('import.enrolments');
+    Route::get('/topics/{topic}/branch-nodes', [ImportController::class, 'branchNodes'])
+        ->name('topics.branch-nodes');
     Route::get('/sample-csv/organizers', [ImportController::class, 'sampleOrganizersCsv'])
         ->name('sample-csv.organizers');
     Route::get('/sample-csv/students', [ImportController::class, 'sampleStudentsCsv'])
