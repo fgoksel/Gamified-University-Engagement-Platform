@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Services\AssignmentService;
 use App\Support\LegacyTreeUpgrade;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -55,6 +56,9 @@ class ImportCourseEnrollmentsJob extends ImportCsvJob
     private array $courses = [];
 
     private ?RoleDefinition $studentRole = null;
+
+    /** @var Collection<int, Topic>|null Pre-resolved same-branch topics when targetTopicId is fixed */
+    private ?Collection $precomputedAdditionalTopics = null;
 
     /**
      * @param  int|null  $semesterId  Semester of the enrolments; the active semester when null.
@@ -102,6 +106,17 @@ class ImportCourseEnrollmentsJob extends ImportCsvJob
         }
 
         $this->admin = User::find($this->adminId);
+
+        $this->precomputedAdditionalTopics = null;
+        if ($this->targetTopicId !== null && ! empty($this->additionalTopicIds)) {
+            $this->precomputedAdditionalTopics = Topic::whereIn('id', $this->additionalTopicIds)
+                ->where(function ($q) {
+                    $q->whereIn('id', DB::table('topic_closure')->where('descendant_id', $this->targetTopicId)->where('distance', '>', 0)->select('ancestor_id'))
+                        ->orWhereIn('id', DB::table('topic_closure')->where('ancestor_id', $this->targetTopicId)->where('distance', '>', 0)->select('descendant_id'));
+                })
+                ->notArchived()
+                ->get();
+        }
     }
 
     protected function processRow(array $row, int $line): void
@@ -132,9 +147,16 @@ class ImportCourseEnrollmentsJob extends ImportCsvJob
             return;
         }
 
-        $topic = $this->targetTopicId !== null
-            ? Topic::find($this->targetTopicId)
-            : ($course->topic ?? $course->legacyTopic);
+        $courseTopic = $course->topic ?? $course->legacyTopic;
+
+        // When a target topic is specified (per-course import), only process rows belonging to that topic
+        if ($this->targetTopicId !== null && ($courseTopic === null || $courseTopic->id !== $this->targetTopicId)) {
+            $this->notLinked[$courseCode] = ($this->notLinked[$courseCode] ?? 0) + 1;
+
+            return;
+        }
+
+        $topic = $courseTopic;
 
         if (! $topic instanceof Topic) {
             $this->notLinked[$courseCode] = ($this->notLinked[$courseCode] ?? 0) + 1;
@@ -151,8 +173,8 @@ class ImportCourseEnrollmentsJob extends ImportCsvJob
         }
 
         // Validate same-branch constraint for additional topics (directly above or directly below, distance > 0)
-        $validAdditionalTopics = [];
-        if (! empty($this->additionalTopicIds)) {
+        $validAdditionalTopics = $this->precomputedAdditionalTopics;
+        if ($validAdditionalTopics === null && ! empty($this->additionalTopicIds)) {
             $validAdditionalTopics = Topic::whereIn('id', $this->additionalTopicIds)
                 ->where(function ($q) use ($topic) {
                     $q->whereIn('id', DB::table('topic_closure')->where('descendant_id', $topic->id)->where('distance', '>', 0)->select('ancestor_id'))
@@ -162,7 +184,7 @@ class ImportCourseEnrollmentsJob extends ImportCsvJob
                 ->get();
         }
 
-        $topicsToAssign = collect([$topic])->concat($validAdditionalTopics)->unique('id');
+        $topicsToAssign = collect([$topic])->concat($validAdditionalTopics ?? [])->unique('id');
         $registeredPrimary = false;
 
         foreach ($topicsToAssign as $target) {

@@ -226,6 +226,34 @@ class CourseEnrollmentImportTest extends TestCase
         Queue::assertPushed(ImportCourseEnrollmentsJob::class);
     }
 
+    public function test_per_course_import_skips_rows_for_other_courses(): void
+    {
+        $dbTopic = $this->createLinkedCourse('DB101', 'Database Systems');
+        $progTopic = $this->createLinkedCourse('PROG101', 'Programming');
+        $student1 = $this->createStudent('ABC123');
+        $student2 = $this->createStudent('XYZ789');
+
+        // CSV contains rows for both courses
+        $csv = "Neptun Code,Course Code,Course Name\n"
+            ."ABC123,DB101,Database Systems\n"
+            ."XYZ789,PROG101,Programming\n";
+        $path = $this->storeCsv($csv);
+
+        // Targeted import for Database Systems only
+        (new ImportCourseEnrollmentsJob(
+            $path,
+            $this->admin->id,
+            targetTopicId: $dbTopic->id
+        ))->handle();
+
+        // Student 1 (DB101) placed in Database topic
+        $this->assertTrue(RoleAssignment::where(['user_id' => $student1->id, 'topic_id' => $dbTopic->id])->exists());
+
+        // Student 2 (PROG101) is strictly NOT placed in Database topic or Programming topic
+        $this->assertFalse(RoleAssignment::where(['user_id' => $student2->id, 'topic_id' => $dbTopic->id])->exists());
+        $this->assertFalse(RoleAssignment::where(['user_id' => $student2->id, 'topic_id' => $progTopic->id])->exists());
+    }
+
     // ---- Helpers -----------------------------------------------------------
 
     private function storeCsv(string $content): string
