@@ -66,6 +66,11 @@ Route::middleware('auth')->group(function () {
                 ->middleware('permission:events.apply')
                 ->name('events.apply');
 
+            // Student withdraw from an event (Task #50, UC-2.3)
+            Route::post('/events/{event}/withdraw', [EventApplicationController::class, 'withdraw'])
+                ->middleware('permission:events.apply')
+                ->name('events.withdraw');
+
             // Event Form: create an event as a draft or publish it (Task #38, UC-1.3)
             Route::get('/events/create', [EventController::class, 'create'])
                 ->middleware('permission:events.manage_own')

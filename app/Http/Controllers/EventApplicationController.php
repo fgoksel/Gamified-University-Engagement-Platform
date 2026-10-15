@@ -35,4 +35,24 @@ class EventApplicationController extends Controller
 
         return back()->with('success', $message);
     }
+
+    /**
+     * Withdraw an application from an event (Task #50, UC-2.3).
+     */
+    public function withdraw(Request $request, Event $event, EventApplicationService $service): RedirectResponse|JsonResponse
+    {
+        $application = $service->withdraw($request->user(), $event);
+
+        $message = 'You have successfully withdrawn from the event.';
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'status' => $application->status,
+                'message' => $message,
+                'application' => $application,
+            ]);
+        }
+
+        return back()->with('success', $message);
+    }
 }

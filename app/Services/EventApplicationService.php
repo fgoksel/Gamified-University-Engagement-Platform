@@ -112,6 +112,112 @@ class EventApplicationService
     }
 
     /**
+     * Atomically withdraw a student's application from an event (Task #50, UC-2.3).
+     *
+     * In FCFS mode, if an accepted applicant withdraws before the application deadline,
+     * the oldest waitlisted applicant is automatically promoted to accepted (D08, D09).
+     *
+     * @throws ValidationException
+     */
+    public function withdraw(User $student, Event $event): EventApplication
+    {
+        return DB::transaction(function () use ($student, $event) {
+            /** @var Event $lockedEvent */
+            $lockedEvent = Event::query()->whereKey($event->id)->lockForUpdate()->firstOrFail();
+
+            /** @var EventApplication|null $application */
+            $application = EventApplication::query()
+                ->where('event_id', $lockedEvent->id)
+                ->where('student_id', $student->id)
+                ->lockForUpdate()
+                ->first();
+
+            if (! $application) {
+                throw ValidationException::withMessages([
+                    'event' => 'You do not have an application for this event.',
+                ]);
+            }
+
+            if ($application->status === EventApplication::WITHDRAWN) {
+                throw ValidationException::withMessages([
+                    'event' => 'You have already withdrawn from this event.',
+                ]);
+            }
+
+            if ($application->status === EventApplication::REJECTED) {
+                throw ValidationException::withMessages([
+                    'event' => 'You cannot withdraw a rejected application.',
+                ]);
+            }
+
+            if ($application->isCredited()) {
+                throw ValidationException::withMessages([
+                    'event' => 'You cannot withdraw from an event that has already been credited.',
+                ]);
+            }
+
+            if (now()->gt($lockedEvent->event_starts_at)) {
+                throw ValidationException::withMessages([
+                    'event' => 'You cannot withdraw from an event that has already started.',
+                ]);
+            }
+
+            $fromStatus = $application->status;
+
+            $application->update([
+                'status' => EventApplication::WITHDRAWN,
+                'withdrawn_at' => now(),
+            ]);
+
+            EventApplicationTransition::create([
+                'event_application_id' => $application->id,
+                'from_status' => $fromStatus,
+                'to_status' => EventApplication::WITHDRAWN,
+                'actor_id' => $student->id,
+                'reason' => 'Student withdrawal',
+                'created_at' => now(),
+            ]);
+
+            // Auto-promote waitlisted student if:
+            // 1. The withdrawing student was accepted (vacating an accepted seat)
+            // 2. The event is FCFS (D08 & D09 - no auto-promotion in teacher_select mode)
+            // 3. The event is currently published
+            // 4. Withdrawal occurred on or before application_deadline (D09)
+            if ($fromStatus === EventApplication::ACCEPTED
+                && $lockedEvent->application_type === 'fcfs'
+                && $lockedEvent->status === Event::STATUS_PUBLISHED
+                && now()->lte($lockedEvent->application_deadline)) {
+
+                /** @var EventApplication|null $nextWaitlisted */
+                $nextWaitlisted = EventApplication::query()
+                    ->where('event_id', $lockedEvent->id)
+                    ->where('status', EventApplication::WAITLISTED)
+                    ->orderBy('applied_at')
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($nextWaitlisted) {
+                    $nextWaitlisted->update([
+                        'status' => EventApplication::ACCEPTED,
+                        'decided_at' => now(),
+                    ]);
+
+                    EventApplicationTransition::create([
+                        'event_application_id' => $nextWaitlisted->id,
+                        'from_status' => EventApplication::WAITLISTED,
+                        'to_status' => EventApplication::ACCEPTED,
+                        'actor_id' => null,
+                        'reason' => 'Promoted from waitlist upon vacancy',
+                        'created_at' => now(),
+                    ]);
+                }
+            }
+
+            return $application;
+        });
+    }
+
+    /**
      * Check if a student is eligible to apply to the given event.
      *
      * @throws ValidationException
