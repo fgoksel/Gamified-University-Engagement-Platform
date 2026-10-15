@@ -60,6 +60,14 @@ Route::middleware('auth')->group(function () {
                 ->middleware('permission:events.view')
                 ->name('events.index');
 
+            // Event Form: create an event as a draft or publish it (Task #38, UC-1.3)
+            Route::get('/events/create', [EventController::class, 'create'])
+                ->middleware('permission:events.manage_own')
+                ->name('events.create');
+            Route::post('/events', [EventController::class, 'store'])
+                ->middleware('permission:events.manage_own')
+                ->name('events.store');
+
             // Teacher: events I organize (UC-1.3). Student: events I applied to (UC-2.3).
             Route::get('/my-events', [EventController::class, 'mine'])->name('events.mine');
 
