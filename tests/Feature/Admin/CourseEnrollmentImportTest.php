@@ -3,6 +3,7 @@
 namespace Tests\Feature\Admin;
 
 use App\Enums\UserRole;
+use App\Filament\Pages\FacultyCourses;
 use App\Jobs\ImportCourseEnrollmentsJob;
 use App\Models\Course;
 use App\Models\Faculty;
@@ -17,6 +18,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 /**
@@ -252,6 +254,155 @@ class CourseEnrollmentImportTest extends TestCase
         // Student 2 (PROG101) is strictly NOT placed in Database topic or Programming topic
         $this->assertFalse(RoleAssignment::where(['user_id' => $student2->id, 'topic_id' => $dbTopic->id])->exists());
         $this->assertFalse(RoleAssignment::where(['user_id' => $student2->id, 'topic_id' => $progTopic->id])->exists());
+    }
+
+    public function test_lab_subset_import_preserves_course_link_and_does_not_add_parent_or_sibling_memberships(): void
+    {
+        $courseTopic = $this->createLinkedCourse('CHEM101', 'Chemistry');
+        $course = $courseTopic->course;
+        $lab = app(TopicService::class)->create($this->admin, $courseTopic, ['title' => 'Lab B']);
+        $sibling = app(TopicService::class)->create($this->admin, $courseTopic, ['title' => 'Lab A']);
+        $this->createLinkedCourse('OTHER1', 'Other course');
+        $student = $this->createStudent('LAB001');
+        $outsider = $this->createStudent('OTHER1');
+        $csv = "Neptun Code,Course Code,Course Name\nLAB001,CHEM101,Chemistry\nOTHER1,OTHER1,Other course\n";
+
+        $job = new ImportCourseEnrollmentsJob($this->storeCsv($csv), $this->admin->id,
+            targetTopicId: $lab->id, courseId: $course->id);
+        // Exercise the queue's serialization boundary as well.
+        unserialize(serialize($job))->handle();
+
+        $this->assertDatabaseHas('role_assignments', ['user_id' => $student->id, 'topic_id' => $lab->id]);
+        $this->assertSame(1, RoleAssignment::count());
+        $this->assertDatabaseMissing('role_assignments', ['user_id' => $student->id, 'topic_id' => $courseTopic->id]);
+        $this->assertDatabaseMissing('role_assignments', ['topic_id' => $sibling->id]);
+        $this->assertDatabaseMissing('role_assignments', ['user_id' => $outsider->id]);
+        $this->assertSame($courseTopic->id, $course->fresh()->legacyTopic->id);
+        $this->assertNull($lab->fresh()->course_id);
+
+        // Reimport is additive and does not create another membership.
+        (new ImportCourseEnrollmentsJob($this->storeCsv($csv), $this->admin->id,
+            targetTopicId: $lab->id, courseId: $course->id))->handle();
+        $this->assertSame(1, RoleAssignment::count());
+    }
+
+    public function test_lab_import_ticking_is_relative_to_lab_not_parent_course(): void
+    {
+        $courseTopic = $this->createLinkedCourse('CHEM101', 'Chemistry');
+        $lab = app(TopicService::class)->create($this->admin, $courseTopic, ['title' => 'Lab B']);
+        $child = app(TopicService::class)->create($this->admin, $lab, ['title' => 'Lab B quiz']);
+        $sibling = app(TopicService::class)->create($this->admin, $courseTopic, ['title' => 'Lab A']);
+        $student = $this->createStudent('LAB001');
+
+        (new ImportCourseEnrollmentsJob(
+            $this->storeCsv("Neptun Code,Course Code,Course Name\nLAB001,CHEM101,Chemistry\n"),
+            $this->admin->id,
+            additionalTopicIds: [$courseTopic->id, $child->id, $sibling->id],
+            targetTopicId: $lab->id, courseId: $courseTopic->course_id,
+        ))->handle();
+
+        $this->assertEqualsCanonicalizing([$courseTopic->id, $lab->id, $child->id],
+            RoleAssignment::where('user_id', $student->id)->pluck('topic_id')->all());
+    }
+
+    public function test_api_dispatches_lab_destination_and_source_course_separately(): void
+    {
+        Queue::fake();
+        $courseTopic = $this->createLinkedCourse('CHEM101', 'Chemistry');
+        $lab = app(TopicService::class)->create($this->admin, $courseTopic, ['title' => 'Lab B']);
+
+        $this->actingAs($this->admin)->postJson(route('admin.import.enrolments'), [
+            'file' => UploadedFile::fake()->createWithContent('lab.csv', "Neptun Code,Course Code,Course Name\nLAB001,CHEM101,Chemistry\n"),
+            'course_id' => $courseTopic->course_id,
+            'target_topic_id' => $lab->id,
+        ])->assertAccepted();
+
+        Queue::assertPushed(ImportCourseEnrollmentsJob::class, fn ($job) => $job->courseId === $courseTopic->course_id && $job->targetTopicId === $lab->id);
+    }
+
+    public function test_api_rejects_unrelated_and_archived_import_destinations(): void
+    {
+        Queue::fake();
+        $courseTopic = $this->createLinkedCourse('CHEM101', 'Chemistry');
+        $other = $this->createLinkedCourse('OTHER1', 'Other course');
+        $archived = app(TopicService::class)->create($this->admin, $courseTopic, ['title' => 'Old lab']);
+        $archived->update(['archived_at' => now()]);
+
+        foreach ([$other, $archived] as $target) {
+            $this->actingAs($this->admin)->postJson(route('admin.import.enrolments'), [
+                'file' => UploadedFile::fake()->createWithContent('lab.csv', "Neptun Code,Course Code,Course Name\nLAB001,CHEM101,Chemistry\n"),
+                'course_id' => $courseTopic->course_id,
+                'target_topic_id' => $target->id,
+            ])->assertUnprocessable()->assertJsonValidationErrors('target_topic_id');
+        }
+        Queue::assertNothingPushed();
+    }
+
+    public function test_job_revalidates_destination_when_archived_after_dispatch(): void
+    {
+        $courseTopic = $this->createLinkedCourse('CHEM101', 'Chemistry');
+        $lab = app(TopicService::class)->create($this->admin, $courseTopic, ['title' => 'Lab B']);
+        $this->createStudent('LAB001');
+        $job = new ImportCourseEnrollmentsJob(
+            $this->storeCsv("Neptun Code,Course Code,Course Name\nLAB001,CHEM101,Chemistry\n"),
+            $this->admin->id, targetTopicId: $lab->id, courseId: $courseTopic->course_id,
+        );
+        $lab->update(['archived_at' => now()]);
+        $job->handle();
+
+        $this->assertSame(0, RoleAssignment::count());
+        Storage::disk('local')->assertMissing($job->path);
+    }
+
+    public function test_filament_course_import_can_choose_lab_destination(): void
+    {
+        Queue::fake();
+        $courseTopic = $this->createLinkedCourse('CHEM101', 'Chemistry');
+        $course = $courseTopic->course;
+        $lab = app(TopicService::class)->create($this->admin, $courseTopic, ['title' => 'Lab B']);
+
+        Livewire::actingAs($this->admin)->test(FacultyCourses::class, ['faculty' => $course->faculty_id])
+            ->callTableAction('importEnrolments', $course, [
+                'file' => UploadedFile::fake()->createWithContent('lab.csv', "Neptun Code,Course Code,Course Name\nLAB001,CHEM101,Chemistry\n"),
+                'semester_id' => $this->semester->id,
+                'target_topic_id' => $lab->id,
+                'nodes_above' => [],
+                'nodes_below' => [],
+            ])->assertHasNoTableActionErrors();
+
+        Queue::assertPushed(ImportCourseEnrollmentsJob::class, fn ($job) => $job->courseId === $course->id && $job->targetTopicId === $lab->id && $job->additionalTopicIds === []);
+    }
+
+    public function test_job_refuses_lab_moved_outside_source_course_before_execution(): void
+    {
+        $courseTopic = $this->createLinkedCourse('CHEM101', 'Chemistry');
+        $other = $this->createLinkedCourse('OTHER1', 'Other course');
+        $lab = app(TopicService::class)->create($this->admin, $courseTopic, ['title' => 'Lab B']);
+        $this->createStudent('LAB001');
+        $job = new ImportCourseEnrollmentsJob(
+            $this->storeCsv("Neptun Code,Course Code,Course Name\nLAB001,CHEM101,Chemistry\n"),
+            $this->admin->id, targetTopicId: $lab->id, courseId: $courseTopic->course_id,
+        );
+        app(TopicService::class)->move($this->admin, $lab, $other);
+        $job->handle();
+
+        $this->assertSame(0, RoleAssignment::count());
+        Storage::disk('local')->assertMissing($job->path);
+    }
+
+    public function test_changing_form_destination_clears_previous_membership_selections(): void
+    {
+        $courseTopic = $this->createLinkedCourse('CHEM101', 'Chemistry');
+        $course = $courseTopic->course;
+        $lab = app(TopicService::class)->create($this->admin, $courseTopic, ['title' => 'Lab B']);
+        $sibling = app(TopicService::class)->create($this->admin, $courseTopic, ['title' => 'Lab A']);
+
+        Livewire::actingAs($this->admin)->test(FacultyCourses::class, ['faculty' => $course->faculty_id])
+            ->mountTableAction('importEnrolments', $course)
+            ->set('mountedActions.0.data.nodes_below', [$sibling->id])
+            ->set('mountedActions.0.data.target_topic_id', $lab->id)
+            ->assertSet('mountedActions.0.data.nodes_above', [])
+            ->assertSet('mountedActions.0.data.nodes_below', []);
     }
 
     // ---- Helpers -----------------------------------------------------------

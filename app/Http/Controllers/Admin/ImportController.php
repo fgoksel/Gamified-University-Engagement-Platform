@@ -6,11 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Jobs\ImportCourseEnrollmentsJob;
 use App\Jobs\ImportOrganizersJob;
 use App\Jobs\ImportStudentsJob;
+use App\Models\Course;
 use App\Models\Topic;
+use App\Services\CourseEnrollmentScope;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
@@ -138,7 +141,8 @@ class ImportController extends Controller
         $request->validate([
             'file' => ['required', 'file', 'max:10240'], // 10MB max per Tech Spec 7.3.1
             'semester_id' => ['nullable', 'integer', 'exists:semesters,id'],
-            'target_topic_id' => ['nullable', 'integer', 'exists:topics,id'],
+            'course_id' => ['nullable', 'integer', 'exists:courses,id'],
+            'target_topic_id' => ['required_with:course_id', 'nullable', 'integer', 'exists:topics,id'],
             'additional_topic_ids' => ['nullable', 'array'],
             'additional_topic_ids.*' => ['integer', 'exists:topics,id'],
         ]);
@@ -156,6 +160,15 @@ class ImportController extends Controller
             return back()->withErrors(['file' => 'The file must be a CSV file.']);
         }
 
+        $courseId = $request->filled('course_id') ? (int) $request->input('course_id') : null;
+        if ($courseId !== null && CourseEnrollmentScope::destination(
+            Course::findOrFail($courseId), (int) $request->input('target_topic_id'),
+        ) === null) {
+            throw ValidationException::withMessages([
+                'target_topic_id' => 'Choose the linked course topic or an active descendant as the import destination.',
+            ]);
+        }
+
         $path = $file->store('imports', 'local');
         $semesterId = $request->input('semester_id') ? (int) $request->input('semester_id') : null;
         $targetTopicId = $request->input('target_topic_id') ? (int) $request->input('target_topic_id') : null;
@@ -167,6 +180,7 @@ class ImportController extends Controller
             semesterId: $semesterId,
             additionalTopicIds: $additionalTopicIds,
             targetTopicId: $targetTopicId,
+            courseId: $courseId,
         );
 
         if ($request->wantsJson()) {

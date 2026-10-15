@@ -9,14 +9,17 @@ use App\Models\Faculty;
 use App\Models\RoleAssignment;
 use App\Models\Semester;
 use App\Models\Topic;
+use App\Services\CourseEnrollmentScope;
 use Filament\Actions\Action;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\FileUpload;
-use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
@@ -24,6 +27,7 @@ use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Url;
 use Maatwebsite\Excel\Excel as ExcelFormat;
 use Maatwebsite\Excel\Facades\Excel;
@@ -161,43 +165,13 @@ class FacultyCourses extends Page implements HasTable
                     ->color('success')
                     ->visible(fn (Course $record): bool => $record->legacyTopic !== null)
                     ->modalHeading(fn (Course $record): string => "Import Enrolments: {$record->code} ({$record->name})")
-                    ->modalDescription(fn (Course $record): string => "Primary import topic: {$record->legacyTopic->title}. Choose which other same-branch nodes students should also belong to.")
+                    ->modalDescription('Choose the course topic or a subgroup as the destination. Upload only the students who should join that node.')
                     ->modalSubmitActionLabel('Execute Import')
                     ->form(function (Course $record): array {
                         $topic = $record->legacyTopic;
                         if (! $topic) {
                             return [];
                         }
-
-                        $ancestorIds = DB::table('topic_closure')
-                            ->where('descendant_id', $topic->id)
-                            ->where('distance', '>', 0)
-                            ->orderBy('distance', 'desc')
-                            ->pluck('ancestor_id')
-                            ->all();
-
-                        $ancestorOptions = Topic::query()
-                            ->whereIn('id', $ancestorIds)
-                            ->notArchived()
-                            ->get()
-                            ->sortBy(fn ($t) => array_search($t->id, $ancestorIds))
-                            ->mapWithKeys(fn ($t) => [$t->id => $t->title.($t->code ? " ({$t->code})" : '')])
-                            ->all();
-
-                        $descendantIds = DB::table('topic_closure')
-                            ->where('ancestor_id', $topic->id)
-                            ->where('distance', '>', 0)
-                            ->orderBy('distance', 'asc')
-                            ->pluck('descendant_id')
-                            ->all();
-
-                        $descendantOptions = Topic::query()
-                            ->whereIn('id', $descendantIds)
-                            ->notArchived()
-                            ->get()
-                            ->sortBy(fn ($t) => array_search($t->id, $descendantIds))
-                            ->mapWithKeys(fn ($t) => [$t->id => $t->title.($t->code ? " ({$t->code})" : '')])
-                            ->all();
 
                         return [
                             FileUpload::make('file')
@@ -223,24 +197,43 @@ class FacultyCourses extends Page implements HasTable
                                 ->default(fn () => Semester::where('status', 'active')->value('id'))
                                 ->required(),
 
+                            Select::make('target_topic_id')
+                                ->label('Import destination')
+                                ->options(fn (): array => CourseEnrollmentScope::destinations($record)->orderBy('depth')->orderBy('title')->pluck('title', 'id')->all())
+                                ->default($topic->id)
+                                ->required()
+                                ->live()
+                                ->afterStateUpdated(function (Set $set): void {
+                                    $set('nodes_above', []);
+                                    $set('nodes_below', []);
+                                })
+                                ->helperText('For a lab subset, choose its lab node. The course link stays unchanged.'),
+
                             Section::make('Which other nodes should these students also belong to?')
-                                ->description("Students will be imported at {$topic->title}. Nothing is added automatically: tick below if they should also belong to parent or child nodes. Only nodes in this exact branch are shown.")
+                                ->description('Membership is added only at the selected destination and the nodes you tick below. Parent course membership is not added automatically.')
                                 ->schema([
                                     CheckboxList::make('nodes_above')
                                         ->label('Nodes Directly Above (Ancestors)')
-                                        ->options($ancestorOptions)
-                                        ->helperText(empty($ancestorOptions) ? 'No ancestor nodes above this topic.' : 'Optional: tick to give students access to ancestor nodes (e.g. Faculty, University).')
+                                        ->options(fn (Get $get): array => self::importNodeOptions((int) $get('target_topic_id'), true))
+                                        ->helperText('Optional: include parent nodes only when explicitly selected.')
                                         ->bulkToggleable(),
 
                                     CheckboxList::make('nodes_below')
                                         ->label('Nodes Directly Below (Descendants)')
-                                        ->options($descendantOptions)
-                                        ->helperText(empty($descendantOptions) ? 'No child nodes below this topic.' : 'Optional: tick to give access to sub-units. Leave unticked for lab groups so lab students can be imported separately.')
+                                        ->options(fn (Get $get): array => self::importNodeOptions((int) $get('target_topic_id'), false))
+                                        ->helperText('Optional: include child nodes only when explicitly selected.')
                                         ->bulkToggleable(),
                                 ]),
                         ];
                     })
                     ->action(function (Course $record, array $data): void {
+                        $targetTopicId = (int) $data['target_topic_id'];
+                        if (CourseEnrollmentScope::destination($record, $targetTopicId) === null) {
+                            throw ValidationException::withMessages([
+                                'target_topic_id' => 'Choose the linked course topic or an active descendant as the import destination.',
+                            ]);
+                        }
+
                         $path = $data['file'];
                         $semesterId = (int) $data['semester_id'];
                         $selectedTopicIds = array_map('intval', array_merge(
@@ -253,7 +246,8 @@ class FacultyCourses extends Page implements HasTable
                             auth()->id(),
                             semesterId: $semesterId,
                             additionalTopicIds: $selectedTopicIds,
-                            targetTopicId: $record->legacyTopic->id
+                            targetTopicId: $targetTopicId,
+                            courseId: $record->id,
                         );
 
                         Notification::make()
@@ -276,6 +270,21 @@ class FacultyCourses extends Page implements HasTable
                         Notification::make()->title('Course updated')->success()->send();
                     }),
             ]);
+    }
+
+    /** @return array<int, string> */
+    private static function importNodeOptions(int $topicId, bool $ancestors): array
+    {
+        $ids = DB::table('topic_closure')
+            ->where($ancestors ? 'descendant_id' : 'ancestor_id', $topicId)
+            ->where('distance', '>', 0)
+            ->pluck($ancestors ? 'ancestor_id' : 'descendant_id');
+
+        return Topic::query()->whereIn('id', $ids)->notArchived()
+            ->orderBy('depth')->orderBy('title')
+            ->get()->mapWithKeys(fn (Topic $topic): array => [
+                $topic->id => $topic->title.($topic->code ? " ({$topic->code})" : ''),
+            ])->all();
     }
 
     protected function getHeaderActions(): array

@@ -10,6 +10,7 @@ use App\Models\Semester;
 use App\Models\Topic;
 use App\Models\User;
 use App\Services\AssignmentService;
+use App\Services\CourseEnrollmentScope;
 use App\Support\LegacyTreeUpgrade;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Collection;
@@ -57,13 +58,18 @@ class ImportCourseEnrollmentsJob extends ImportCsvJob
 
     private ?RoleDefinition $studentRole = null;
 
+    private ?Topic $destination = null;
+
+    public ?int $courseId = null;
+
     /** @var Collection<int, Topic>|null Pre-resolved same-branch topics when targetTopicId is fixed */
     private ?Collection $precomputedAdditionalTopics = null;
 
     /**
      * @param  int|null  $semesterId  Semester of the enrolments; the active semester when null.
      * @param  array<int>  $additionalTopicIds  Nodes ticked above and below in the same branch.
-     * @param  int|null  $targetTopicId  Specific topic node to import into, overriding course link if provided.
+     * @param  int|null  $targetTopicId  Destination node; without courseId, filters to the course linked to this node.
+     * @param  int|null  $courseId  Source course for a targeted import into its linked topic or a descendant.
      */
     public function __construct(
         string $path,
@@ -72,8 +78,10 @@ class ImportCourseEnrollmentsJob extends ImportCsvJob
         string $disk = 'local',
         public array $additionalTopicIds = [],
         public ?int $targetTopicId = null,
+        ?int $courseId = null,
     ) {
         parent::__construct($path, $adminId, $disk);
+        $this->courseId = $courseId;
     }
 
     protected function requiredColumns(): array
@@ -106,6 +114,18 @@ class ImportCourseEnrollmentsJob extends ImportCsvJob
         }
 
         $this->admin = User::find($this->adminId);
+        $this->destination = null;
+
+        if ($this->courseId !== null) {
+            $course = Course::find($this->courseId);
+            $this->destination = $course && $this->targetTopicId !== null
+                ? CourseEnrollmentScope::destination($course, $this->targetTopicId)
+                : null;
+
+            if ($this->destination === null) {
+                throw new InvalidArgumentException('Choose the linked course topic or an active descendant as the import destination.');
+            }
+        }
 
         $this->precomputedAdditionalTopics = null;
         if ($this->targetTopicId !== null && ! empty($this->additionalTopicIds)) {
@@ -149,14 +169,16 @@ class ImportCourseEnrollmentsJob extends ImportCsvJob
 
         $courseTopic = $course->topic ?? $course->legacyTopic;
 
-        // When a target topic is specified (per-course import), only process rows belonging to that topic
-        if ($this->targetTopicId !== null && ($courseTopic === null || $courseTopic->id !== $this->targetTopicId)) {
-            $this->notLinked[$courseCode] = ($this->notLinked[$courseCode] ?? 0) + 1;
+        // A selected course filters CSV rows independently of the destination node.
+        // Keep the older target-only course import behaviour for existing callers.
+        if (($this->courseId !== null && $course->id !== $this->courseId)
+            || ($this->courseId === null && $this->targetTopicId !== null && $courseTopic?->id !== $this->targetTopicId)) {
+            $this->skip($line, "Course {$courseCode} does not match the selected source course.");
 
             return;
         }
 
-        $topic = $courseTopic;
+        $topic = $this->destination ?? $courseTopic;
 
         if (! $topic instanceof Topic) {
             $this->notLinked[$courseCode] = ($this->notLinked[$courseCode] ?? 0) + 1;
