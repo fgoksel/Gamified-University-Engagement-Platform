@@ -7,6 +7,7 @@ use App\Http\Controllers\Auth\ChangePasswordController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\SetPasswordController;
+use App\Http\Controllers\EventApplicationController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\LeaderboardController;
 use App\Http\Controllers\ProfileController;
@@ -59,6 +60,11 @@ Route::middleware('auth')->group(function () {
             Route::get('/events', [EventController::class, 'index'])
                 ->middleware('permission:events.view')
                 ->name('events.index');
+
+            // Student apply to an event (Task #39, UC-2.3)
+            Route::post('/events/{event}/apply', [EventApplicationController::class, 'store'])
+                ->middleware('permission:events.apply')
+                ->name('events.apply');
 
             // Event Form: create an event as a draft or publish it (Task #38, UC-1.3)
             Route::get('/events/create', [EventController::class, 'create'])
