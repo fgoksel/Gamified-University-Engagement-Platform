@@ -89,6 +89,11 @@ class Event extends Model
         return $this->belongsTo(TopicTag::class, 'topic_tag_id');
     }
 
+    public function topicTag(): BelongsTo
+    {
+        return $this->tag();
+    }
+
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by_id');
