@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\ImportController;
 use App\Http\Controllers\Admin\TopicTagRequestController as AdminTopicTagRequestController;
 use App\Http\Controllers\AppearanceController;
+use App\Http\Controllers\ApplicantController;
 use App\Http\Controllers\Auth\ChangePasswordController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
@@ -70,6 +71,17 @@ Route::middleware('auth')->group(function () {
             Route::post('/events/{event}/withdraw', [EventApplicationController::class, 'withdraw'])
                 ->middleware('permission:events.apply')
                 ->name('events.withdraw');
+
+            // Organizer: applicants list and selection (Task #41, UC-1.6)
+            Route::get('/events/{event}/applicants', [ApplicantController::class, 'index'])
+                ->middleware('permission:applications.manage')
+                ->name('events.applicants');
+            Route::post('/events/{event}/applicants/select', [ApplicantController::class, 'select'])
+                ->middleware('permission:applications.manage')
+                ->name('events.applicants.select');
+            Route::post('/events/{event}/applicants/{application}/reject', [ApplicantController::class, 'reject'])
+                ->middleware('permission:applications.manage')
+                ->name('events.applicants.reject');
 
             // Event Form: create an event as a draft or publish it (Task #38, UC-1.3)
             Route::get('/events/create', [EventController::class, 'create'])
