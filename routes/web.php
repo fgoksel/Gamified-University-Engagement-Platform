@@ -1,7 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\ImportController;
-use App\Http\Controllers\Admin\TopicTagRequestController;
+use App\Http\Controllers\Admin\TopicTagRequestController as AdminTopicTagRequestController;
 use App\Http\Controllers\AppearanceController;
 use App\Http\Controllers\Auth\ChangePasswordController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
@@ -14,6 +14,7 @@ use App\Http\Controllers\RoleAssignmentController;
 use App\Http\Controllers\RoleDefinitionController;
 use App\Http\Controllers\ScanController;
 use App\Http\Controllers\TopicController;
+use App\Http\Controllers\TopicTagRequestController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -61,6 +62,14 @@ Route::middleware('auth')->group(function () {
 
             // Teacher: events I organize (UC-1.3). Student: events I applied to (UC-2.3).
             Route::get('/my-events', [EventController::class, 'mine'])->name('events.mine');
+
+            // Teacher topic tag requests (UC-1.9, Task #47)
+            Route::get('/topic-tag-requests', [TopicTagRequestController::class, 'index'])
+                ->middleware('permission:topic_tags.request')
+                ->name('topic-tag-requests.index');
+            Route::post('/topic-tag-requests', [TopicTagRequestController::class, 'store'])
+                ->middleware('permission:topic_tags.request')
+                ->name('topic-tag-requests.store');
 
             // Students redeem attendance QR codes (UC-2.3)
             Route::get('/scan', [ScanController::class, 'show'])
@@ -116,11 +125,15 @@ Route::middleware('auth')->group(function () {
 
 // Admin endpoints specified in Technical Specification Table 22
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
-    // Neptun CSV imports (Tasks #24 and #27)
+    // Neptun CSV imports (Tasks #24, #27, and #29)
     Route::post('/import/organizers', [ImportController::class, 'organizers'])
         ->name('import.organizers');
     Route::post('/import/students', [ImportController::class, 'students'])
         ->name('import.students');
+    Route::post('/import/enrolments', [ImportController::class, 'enrolments'])
+        ->name('import.enrolments');
+    Route::get('/topics/{topic}/branch-nodes', [ImportController::class, 'branchNodes'])
+        ->name('topics.branch-nodes');
     Route::get('/sample-csv/organizers', [ImportController::class, 'sampleOrganizersCsv'])
         ->name('sample-csv.organizers');
     Route::get('/sample-csv/students', [ImportController::class, 'sampleStudentsCsv'])
@@ -129,8 +142,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         ->name('sample-csv.enrolments');
 
     // Topic tag requests from teachers (Task #31, UC-3.4)
-    Route::post('/topic-tag-requests/{id}/approve', [TopicTagRequestController::class, 'approve'])
+    Route::post('/topic-tag-requests/{id}/approve', [AdminTopicTagRequestController::class, 'approve'])
         ->name('topic-tag-requests.approve');
-    Route::post('/topic-tag-requests/{id}/reject', [TopicTagRequestController::class, 'reject'])
+    Route::post('/topic-tag-requests/{id}/reject', [AdminTopicTagRequestController::class, 'reject'])
         ->name('topic-tag-requests.reject');
 });

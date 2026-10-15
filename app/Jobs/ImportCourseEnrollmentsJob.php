@@ -10,25 +10,25 @@ use App\Models\Semester;
 use App\Models\Topic;
 use App\Models\User;
 use App\Services\AssignmentService;
+use App\Services\CourseEnrollmentScope;
 use App\Support\LegacyTreeUpgrade;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
 /**
- * Import of the Neptun course enrolment file (UC-3.2.3, Technical Specification 7.3.1).
+ * Import of the Neptun course enrolment file (UC-3.2.3, Technical Specification 7.3.1; Task #29).
  *
  * Columns: Neptun Code, Course Code, Course Name (all required).
  *
- * This is a bounded compatibility path, not a topic template. A student is
- * placed only on the topic that the upgrade from the previous faculty tree
- * linked to that course (topics.course_id), using the role definition that
- * was created from the old "student" label. Nothing is attached to any other
- * topic, and nothing is created: rows that cannot be placed are counted in
- * the summary by reason (unknown Neptun code, unknown course, course not
- * linked to a topic, student role unavailable). A repeated import adds
- * nothing twice, and nothing is ever deleted.
+ * Per 13 Oct 2026 agreement:
+ * Students are imported at a specific course topic node. During import, the importer
+ * can select additional nodes directly above (ancestors) or below (descendants) in the
+ * same branch. Nothing is added automatically (replaces automatic upward/downward flow).
+ * Students belong strictly to the import node and the nodes explicitly ticked.
  */
 class ImportCourseEnrollmentsJob extends ImportCsvJob
 {
@@ -37,6 +37,8 @@ class ImportCourseEnrollmentsJob extends ImportCsvJob
     private ?User $admin = null;
 
     private int $registrations = 0;
+
+    private int $additionalPlacements = 0;
 
     private int $unregistered = 0;
 
@@ -56,16 +58,30 @@ class ImportCourseEnrollmentsJob extends ImportCsvJob
 
     private ?RoleDefinition $studentRole = null;
 
+    private ?Topic $destination = null;
+
+    public ?int $courseId = null;
+
+    /** @var Collection<int, Topic>|null Pre-resolved same-branch topics when targetTopicId is fixed */
+    private ?Collection $precomputedAdditionalTopics = null;
+
     /**
      * @param  int|null  $semesterId  Semester of the enrolments; the active semester when null.
+     * @param  array<int>  $additionalTopicIds  Nodes ticked above and below in the same branch.
+     * @param  int|null  $targetTopicId  Destination node; without courseId, filters to the course linked to this node.
+     * @param  int|null  $courseId  Source course for a targeted import into its linked topic or a descendant.
      */
     public function __construct(
         string $path,
         int $adminId,
         public ?int $semesterId = null,
         string $disk = 'local',
+        public array $additionalTopicIds = [],
+        public ?int $targetTopicId = null,
+        ?int $courseId = null,
     ) {
         parent::__construct($path, $adminId, $disk);
+        $this->courseId = $courseId;
     }
 
     protected function requiredColumns(): array
@@ -85,7 +101,7 @@ class ImportCourseEnrollmentsJob extends ImportCsvJob
 
     protected function prepare(): void
     {
-        $this->registrations = $this->unregistered = $this->roleUnavailable = 0;
+        $this->registrations = $this->additionalPlacements = $this->unregistered = $this->roleUnavailable = 0;
         $this->students = $this->courses = $this->unknownCourses = $this->notLinked = [];
         $this->studentRole = null;
 
@@ -98,6 +114,29 @@ class ImportCourseEnrollmentsJob extends ImportCsvJob
         }
 
         $this->admin = User::find($this->adminId);
+        $this->destination = null;
+
+        if ($this->courseId !== null) {
+            $course = Course::find($this->courseId);
+            $this->destination = $course && $this->targetTopicId !== null
+                ? CourseEnrollmentScope::destination($course, $this->targetTopicId)
+                : null;
+
+            if ($this->destination === null) {
+                throw new InvalidArgumentException('Choose the linked course topic or an active descendant as the import destination.');
+            }
+        }
+
+        $this->precomputedAdditionalTopics = null;
+        if ($this->targetTopicId !== null && ! empty($this->additionalTopicIds)) {
+            $this->precomputedAdditionalTopics = Topic::whereIn('id', $this->additionalTopicIds)
+                ->where(function ($q) {
+                    $q->whereIn('id', DB::table('topic_closure')->where('descendant_id', $this->targetTopicId)->where('distance', '>', 0)->select('ancestor_id'))
+                        ->orWhereIn('id', DB::table('topic_closure')->where('ancestor_id', $this->targetTopicId)->where('distance', '>', 0)->select('descendant_id'));
+                })
+                ->notArchived()
+                ->get();
+        }
     }
 
     protected function processRow(array $row, int $line): void
@@ -128,7 +167,18 @@ class ImportCourseEnrollmentsJob extends ImportCsvJob
             return;
         }
 
-        $topic = $course->legacyTopic;
+        $courseTopic = $course->topic ?? $course->legacyTopic;
+
+        // A selected course filters CSV rows independently of the destination node.
+        // Keep the older target-only course import behaviour for existing callers.
+        if (($this->courseId !== null && $course->id !== $this->courseId)
+            || ($this->courseId === null && $this->targetTopicId !== null && $courseTopic?->id !== $this->targetTopicId)) {
+            $this->skip($line, "Course {$courseCode} does not match the selected source course.");
+
+            return;
+        }
+
+        $topic = $this->destination ?? $courseTopic;
 
         if (! $topic instanceof Topic) {
             $this->notLinked[$courseCode] = ($this->notLinked[$courseCode] ?? 0) + 1;
@@ -144,25 +194,54 @@ class ImportCourseEnrollmentsJob extends ImportCsvJob
             return;
         }
 
-        $already = RoleAssignment::query()->active()
-            ->where(['topic_id' => $topic->id, 'user_id' => $student->id, 'role_definition_id' => $role->id])
-            ->exists();
-
-        if ($already) {
-            return;
+        // Validate same-branch constraint for additional topics (directly above or directly below, distance > 0)
+        $validAdditionalTopics = $this->precomputedAdditionalTopics;
+        if ($validAdditionalTopics === null && ! empty($this->additionalTopicIds)) {
+            $validAdditionalTopics = Topic::whereIn('id', $this->additionalTopicIds)
+                ->where(function ($q) use ($topic) {
+                    $q->whereIn('id', DB::table('topic_closure')->where('descendant_id', $topic->id)->where('distance', '>', 0)->select('ancestor_id'))
+                        ->orWhereIn('id', DB::table('topic_closure')->where('ancestor_id', $topic->id)->where('distance', '>', 0)->select('descendant_id'));
+                })
+                ->notArchived()
+                ->get();
         }
 
-        try {
-            app(AssignmentService::class)->grant($this->admin, $topic, $role, $student, $this->semester->id);
+        $topicsToAssign = collect([$topic])->concat($validAdditionalTopics ?? [])->unique('id');
+        $registeredPrimary = false;
+
+        foreach ($topicsToAssign as $target) {
+            $already = RoleAssignment::query()->active()
+                ->where(['topic_id' => $target->id, 'user_id' => $student->id, 'role_definition_id' => $role->id])
+                ->exists();
+
+            if ($already) {
+                continue;
+            }
+
+            try {
+                app(AssignmentService::class)->grant($this->admin, $target, $role, $student, $this->semester->id);
+                if ($target->id === $topic->id) {
+                    $registeredPrimary = true;
+                } else {
+                    $this->additionalPlacements++;
+                }
+            } catch (ValidationException|AuthorizationException) {
+                $this->roleUnavailable++;
+            }
+        }
+
+        if ($registeredPrimary) {
             $this->registrations++;
-        } catch (ValidationException|AuthorizationException) {
-            $this->roleUnavailable++;
         }
     }
 
     protected function summary(): string
     {
         $text = "Successfully processed: {$this->registrations} student-course registrations.";
+
+        if ($this->additionalPlacements > 0) {
+            $text .= " Added {$this->additionalPlacements} additional same-branch node memberships.";
+        }
 
         if ($this->unregistered > 0) {
             $text .= " Skipped {$this->unregistered} rows due to unregistered Neptun codes.";
@@ -175,7 +254,7 @@ class ImportCourseEnrollmentsJob extends ImportCsvJob
 
         if ($this->notLinked !== []) {
             $text .= ' Skipped '.array_sum($this->notLinked).' rows because the course is not linked to a topic ('
-                .implode(', ', array_keys($this->notLinked)).'). Only courses carried over from the previous faculty tree are linked; students are never attached to another topic automatically.';
+                .implode(', ', array_keys($this->notLinked)).'). Link the course to a topic in the topic tree first; students are never attached to another topic automatically.';
         }
 
         if ($this->roleUnavailable > 0) {

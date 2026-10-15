@@ -36,6 +36,7 @@ export const navigation = {
             children: [
                 { label: "All events", href: "/events" },
                 { label: "Organized by me", href: "/my-events" },
+                { label: "Tag requests", href: "/topic-tag-requests" },
             ],
         },
         topics,

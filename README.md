@@ -85,6 +85,24 @@ is deferred are in [docs/topic-tree.md](docs/topic-tree.md).
   tables stay untouched). See "Migration and compatibility" in the document above before upgrading a database that matters,
   and take a backup first.
 
+## Course and lab enrolment imports
+
+In **Faculties → Courses → Import Enrolments**, select the course topic or an active
+descendant (such as Lab Group B) as the **Import destination**. Upload a CSV containing
+only that group's students, with `Neptun Code,Course Code,Course Name` columns.
+The source course filters the CSV rows; choosing a lab does not change the course's topic link.
+
+Students receive membership at the destination and only the additional ancestor/descendant
+nodes explicitly ticked. Selecting a lab does not automatically add its parent course or
+sibling labs. Changing the destination clears the optional selections. Reimporting preserves
+existing memberships and does not duplicate active assignments.
+
+The enrolment API accepts `course_id` with `target_topic_id` for this targeted import.
+The target must be the linked course topic or an active descendant. Existing bulk imports
+without those fields continue to use each CSV course's linked topic. Target-only requests
+retain their existing exact-linked-course filtering. Queued jobs revalidate the destination
+when processing starts, so a moved or archived lab is refused with an import-failure notification.
+
 ## Production: HTTPS and security headers
 
 Locally the site runs on plain HTTP (http://localhost:8081). In production Nginx ends the TLS connection
