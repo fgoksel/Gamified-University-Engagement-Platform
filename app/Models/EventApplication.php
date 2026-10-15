@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class EventApplication extends Model
 {
@@ -61,5 +62,10 @@ class EventApplication extends Model
     public function isCredited(): bool
     {
         return $this->scored_at !== null;
+    }
+
+    public function transitions(): HasMany
+    {
+        return $this->hasMany(EventApplicationTransition::class);
     }
 }
