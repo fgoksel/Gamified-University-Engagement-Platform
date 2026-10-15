@@ -1,6 +1,7 @@
 <script setup>
 import { ref } from "vue";
-import { CalendarCog, Tag } from "@lucide/vue";
+import { Link } from "@inertiajs/vue3";
+import { CalendarCog, Plus, Tag } from "@lucide/vue";
 import EmptyState from "../../Components/EmptyState.vue";
 import TopicTagRequestModal from "../../Components/TopicTagRequestModal.vue";
 
@@ -12,7 +13,7 @@ const showTagModal = ref(false);
 
 <template>
     <div class="space-y-6">
-        <div class="flex justify-end">
+        <div class="flex flex-wrap justify-end gap-3">
             <button
                 type="button"
                 class="inline-flex items-center gap-2 rounded-control border border-line bg-surface px-3 py-2 text-sm font-medium text-fg hover:bg-surface-muted"
@@ -21,6 +22,13 @@ const showTagModal = ref(false);
                 <Tag class="size-4" />
                 Request Topic Tag
             </button>
+            <Link
+                href="/events/create"
+                class="inline-flex items-center gap-2 rounded-control bg-primary px-3 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            >
+                <Plus class="size-4" :stroke-width="2" />
+                New event
+            </Link>
         </div>
 
         <EmptyState :icon="CalendarCog" title="You have no events yet">
