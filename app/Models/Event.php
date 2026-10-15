@@ -99,6 +99,16 @@ class Event extends Model
         return $this->hasMany(EventApplication::class);
     }
 
+    public function pointTransactions(): HasMany
+    {
+        return $this->hasMany(PointTransaction::class);
+    }
+
+    public function qrTokens(): HasMany
+    {
+        return $this->hasMany(QrToken::class);
+    }
+
     /**
      * On hold: kept and restorable, but frozen.
      */
