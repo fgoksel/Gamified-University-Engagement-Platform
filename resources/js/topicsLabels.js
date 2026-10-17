@@ -10,6 +10,13 @@ export const capabilityLabels = {
     "access.assign": "Give people roles",
     "access.end": "End and replace roles",
     "role.define": "Define roles",
+    "events.view": "View events",
+    "events.apply": "Apply to events",
+    "events.create": "Create draft events",
+    "events.manage": "Manage events",
+    "applications.manage": "Manage applicants",
+    "points.credit": "Credit points",
+    "qr_codes.manage": "Manage event QR codes",
 };
 
 export function capabilityLabel(value) {

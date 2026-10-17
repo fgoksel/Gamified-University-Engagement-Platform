@@ -73,25 +73,25 @@ class TopicDemoSeeder extends Seeder
         // Example roles. "Admin" is deliberately view-only: a title gives no power.
         $lead = $roles->create($admin, null, [
             'name' => 'Branch lead',
-            'description' => 'Runs a branch: organises topics and gives roles inside it.',
-            'capabilities' => ['topic.view', 'topic.create', 'topic.edit', 'topic.organise', 'topic.archive', 'access.view', 'access.assign', 'access.end', 'role.define'],
-            'delegable' => ['topic.view', 'topic.create', 'topic.edit', 'topic.organise', 'topic.archive', 'access.view', 'access.assign', 'access.end'],
+            'description' => 'Runs a branch: organises topics, gives roles inside it and runs its events.',
+            'capabilities' => ['topic.view', 'topic.create', 'topic.edit', 'topic.organise', 'topic.archive', 'access.view', 'access.assign', 'access.end', 'role.define', 'events.view', 'events.apply', 'events.create', 'events.manage', 'applications.manage', 'points.credit', 'qr_codes.manage'],
+            'delegable' => ['topic.view', 'topic.create', 'topic.edit', 'topic.organise', 'topic.archive', 'access.view', 'access.assign', 'access.end', 'events.view', 'events.apply', 'events.create', 'applications.manage', 'points.credit'],
         ]);
         $manager = $roles->create($admin, null, [
             'name' => 'Branch manager',
             'description' => 'Like a branch lead, but cannot define roles. A lead can hand this one to a delegate.',
-            'capabilities' => ['topic.view', 'topic.create', 'topic.edit', 'topic.organise', 'access.view', 'access.assign', 'access.end'],
-            'delegable' => ['topic.view', 'topic.create', 'access.view'],
+            'capabilities' => ['topic.view', 'topic.create', 'topic.edit', 'topic.organise', 'access.view', 'access.assign', 'access.end', 'events.view', 'events.apply', 'events.create', 'applications.manage', 'points.credit'],
+            'delegable' => ['topic.view', 'topic.create', 'access.view', 'events.view', 'events.create'],
         ]);
         $contributor = $roles->create($admin, null, [
             'name' => 'Contributor',
-            'description' => 'Adds topics and edits their own.',
-            'capabilities' => ['topic.view', 'topic.create'],
+            'description' => 'Adds topics and edits their own, and creates events.',
+            'capabilities' => ['topic.view', 'topic.create', 'events.view', 'events.create'],
         ]);
         $reader = $roles->create($admin, null, [
             'name' => 'Reader',
-            'description' => 'Can look, nothing else.',
-            'capabilities' => ['topic.view'],
+            'description' => 'Can look and apply for events, nothing else.',
+            'capabilities' => ['topic.view', 'events.view', 'events.apply'],
         ]);
         $roles->create($admin, null, [
             'name' => 'Admin',

@@ -10,17 +10,15 @@ use Illuminate\Support\Collection;
 /**
  * Where a person may put an event (Task #38).
  *
- * Owning topic: a topic where the person may create events. Until the event
- * capabilities of Task #65 exist, "may add topics here" (topic.create) is
- * used for this; swap the capability below when #65 is merged.
+ * Owning topic: a topic where the person holds the events.create capability (Task #65).
  *
  * Audience topic: the owning topic itself or any topic above it (Task #64:
  * an event is announced at or above the place it is managed from).
  */
 class EventPlacement
 {
-    /** The capability that allows creating an event at a topic. Replace with the #65 one. */
-    public const CREATE_CAPABILITY = Capability::Create;
+    /** The capability that allows creating an event at a topic. */
+    public const CREATE_CAPABILITY = Capability::EventsCreate;
 
     public function __construct(private TopicAccess $access) {}
 

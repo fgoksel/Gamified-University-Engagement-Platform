@@ -109,6 +109,23 @@ class Event extends Model
         return $this->hasMany(QrToken::class);
     }
 
+    public function isPublished(): bool
+    {
+        return $this->status === self::STATUS_PUBLISHED;
+    }
+
+    /**
+     * Whether the event is announced right now: a surprise event is not until revealed.
+     */
+    public function isRevealed(): bool
+    {
+        if (! $this->is_hidden) {
+            return true;
+        }
+
+        return $this->reveal_at !== null && $this->reveal_at->isPast();
+    }
+
     /**
      * On hold: kept and restorable, but frozen.
      */
