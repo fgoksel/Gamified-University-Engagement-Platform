@@ -334,4 +334,17 @@ class ApplicantSelectionTest extends TopicTestCase
             ->post(route('events.applicants.reject', [$event, $a]))
             ->assertNotFound();
     }
+
+    public function test_organizer_cannot_approve_their_own_application(): void
+    {
+        $event = $this->event();
+        $this->teacher->update(['neptun_code' => 'TCH001']);
+        $application = app(EventApplicationService::class)->apply($this->teacher, $event);
+
+        $this->actingAs($this->teacher)
+            ->post(route('events.applicants.select', $event), ['selected' => [$application->id]])
+            ->assertSessionHasErrors('selected');
+
+        $this->assertSame(EventApplication::PENDING, $application->refresh()->status);
+    }
 }

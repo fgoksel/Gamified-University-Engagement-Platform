@@ -162,6 +162,13 @@ class ApplicantReviewService
                 $isSelected = $selected->contains($id);
 
                 if ($isSelected && $application->status !== EventApplication::ACCEPTED) {
+                    // D04: In selection mode, an organizer cannot approve their own application.
+                    if ($application->student_id === $actor->id) {
+                        throw ValidationException::withMessages([
+                            'selected' => 'Organizers cannot approve their own applications; another manager must decide.',
+                        ]);
+                    }
+
                     $this->move($application, EventApplication::ACCEPTED, $actor, 'Selected by organizer');
                     $application->update(['decided_by_id' => $actor->id, 'decided_at' => now()]);
                     $notify[] = [$application->student_id, EventApplicationDecisionNotification::ACCEPTED];
