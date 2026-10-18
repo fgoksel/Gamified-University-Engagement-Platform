@@ -7,6 +7,7 @@ use App\Models\EventApplication;
 use App\Models\EventApplicationTransition;
 use App\Models\RoleAssignment;
 use App\Models\User;
+use App\Notifications\EventApplicationDecisionNotification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -210,6 +211,14 @@ class EventApplicationService
                         'reason' => 'Promoted from waitlist upon vacancy',
                         'created_at' => now(),
                     ]);
+
+                    $nextWaitlisted->student?->notify(
+                        new EventApplicationDecisionNotification(
+                            EventApplicationDecisionNotification::ACCEPTED,
+                            $lockedEvent->id,
+                            $lockedEvent->title
+                        )
+                    );
                 }
             }
 

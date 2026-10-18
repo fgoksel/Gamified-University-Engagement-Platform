@@ -10,7 +10,9 @@ use App\Models\Semester;
 use App\Models\Topic;
 use App\Models\TopicTag;
 use App\Models\User;
+use App\Notifications\EventApplicationDecisionNotification;
 use App\Services\EventApplicationService;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\ValidationException;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\Feature\Topics\TopicTestCase;
@@ -177,6 +179,8 @@ class StudentWithdrawalTest extends TopicTestCase
         $this->assertSame(EventApplication::WAITLISTED, $app2->status);
         $this->assertSame(EventApplication::WAITLISTED, $app3->status);
 
+        Notification::fake();
+
         // Student 1 withdraws before application deadline
         $this->service->withdraw($student1, $event);
 
@@ -190,6 +194,14 @@ class StudentWithdrawalTest extends TopicTestCase
         // Student 2 (oldest waitlisted) is automatically promoted to accepted
         $this->assertSame(EventApplication::ACCEPTED, $app2->status);
         $this->assertNotNull($app2->decided_at);
+
+        Notification::assertSentTo(
+            $student2,
+            EventApplicationDecisionNotification::class,
+            fn (EventApplicationDecisionNotification $n) => $n->decision === EventApplicationDecisionNotification::ACCEPTED
+                && $n->eventId === $event->id
+        );
+        Notification::assertNotSentTo($student3, EventApplicationDecisionNotification::class);
 
         // Audit transition recorded for promotion
         $this->assertDatabaseHas('event_application_transitions', [
