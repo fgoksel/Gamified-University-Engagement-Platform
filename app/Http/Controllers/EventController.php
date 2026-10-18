@@ -8,6 +8,7 @@ use App\Models\Event;
 use App\Models\Semester;
 use App\Models\TopicTag;
 use App\Services\EventPlacement;
+use App\Services\OrganizedEvents;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -31,11 +32,21 @@ class EventController extends Controller
      * "My events": a teacher sees the events they organize (UC-1.3),
      * a student sees the events they applied to (UC-2.3).
      */
-    public function mine(Request $request): Response
+    public function mine(Request $request, OrganizedEvents $organized): Response
     {
-        return $request->user()->hasRole(UserRole::Teacher)
-            ? Inertia::render('Events/Organized')
-            : Inertia::render('Events/Applied');
+        if (! $request->user()->hasRole(UserRole::Teacher)) {
+            return Inertia::render('Events/Applied');
+        }
+
+        $filter = in_array($request->query('filter'), OrganizedEvents::FILTERS, true)
+            ? $request->query('filter')
+            : 'upcoming';
+
+        return Inertia::render('Events/Organized', [
+            'filter' => $filter,
+            'counts' => $organized->counts($request->user()),
+            'events' => $organized->list($request->user(), $filter),
+        ]);
     }
 
     /**
