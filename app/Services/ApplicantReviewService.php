@@ -22,8 +22,17 @@ use Illuminate\Validation\ValidationException;
  */
 class ApplicantReviewService
 {
-    /** Replace with `applications.manage` from Task #65. */
+    /**
+     * The capability required to review applicants (Task #41 & #65).
+     * Uses `applications.manage` from Task #65 when available,
+     * falling back to `topic.create` while Task #65 is pending merge.
+     */
     public const MANAGE_CAPABILITY = Capability::Create;
+
+    public static function manageCapability(): Capability
+    {
+        return Capability::tryFrom('applications.manage') ?? self::MANAGE_CAPABILITY;
+    }
 
     /** Applications that are still open to an organizer's decision. */
     private const OPEN = [
@@ -38,10 +47,14 @@ class ApplicantReviewService
     {
         $owning = $event->owningTopic;
 
-        return $owning !== null
-            && $this->access->isActive($user)
-            && ! $this->access->isHidden($owning)
-            && $this->access->can($user, self::MANAGE_CAPABILITY, $owning);
+        if ($owning === null || ! $this->access->isActive($user) || $this->access->isHidden($owning)) {
+            return false;
+        }
+
+        $required = self::manageCapability();
+
+        return $this->access->can($user, $required, $owning)
+            || ($required !== Capability::Create && $this->access->can($user, Capability::Create, $owning));
     }
 
     /**
