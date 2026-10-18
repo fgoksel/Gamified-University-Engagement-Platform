@@ -136,13 +136,20 @@ class EventApplicationService
             ]);
         }
 
+        if ($event->owningTopic?->isArchived() || $event->audienceTopic?->isArchived()) {
+            throw ValidationException::withMessages([
+                'event' => 'Applications are frozen because this topic is archived.',
+            ]);
+        }
+
         if ($event->is_hidden && ($event->reveal_at === null || now()->lt($event->reveal_at))) {
             throw ValidationException::withMessages([
                 'event' => 'This surprise event has not been revealed yet.',
             ]);
         }
 
-        if (now()->gt($event->application_deadline)) {
+        // Hidden surprise events bypass standard application deadline (D02)
+        if (! $event->is_hidden && $event->application_deadline !== null && now()->gt($event->application_deadline)) {
             throw ValidationException::withMessages([
                 'event' => 'The application deadline for this event has passed.',
             ]);
