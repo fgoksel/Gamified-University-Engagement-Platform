@@ -124,6 +124,12 @@ class EventApplicationService
             ]);
         }
 
+        if (empty($student->neptun_code)) {
+            throw ValidationException::withMessages([
+                'student' => 'A valid Neptun code is required to apply to events.',
+            ]);
+        }
+
         if ($event->status !== Event::STATUS_PUBLISHED) {
             throw ValidationException::withMessages([
                 'event' => 'This event is not open for applications.',

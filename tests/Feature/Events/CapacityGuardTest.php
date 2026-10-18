@@ -397,4 +397,17 @@ class CapacityGuardTest extends TopicTestCase
         $this->assertTrue($this->service->hasTimeConflict($student, $eventOverlap));
         $this->assertFalse($this->service->hasTimeConflict($student, $eventSeparate));
     }
+
+    public function test_student_without_neptun_code_cannot_apply(): void
+    {
+        $event = $this->createEvent();
+        $student = $this->makeUser(UserRole::Student, 'No Neptun Student');
+        $student->update(['neptun_code' => null, 'status' => 'active']);
+        $this->assign($student, $this->role('Student', [Capability::View]), $this->course);
+
+        $this->expectException(ValidationException::class);
+        $this->expectExceptionMessage('A valid Neptun code is required to apply to events.');
+
+        $this->service->apply($student, $event);
+    }
 }
