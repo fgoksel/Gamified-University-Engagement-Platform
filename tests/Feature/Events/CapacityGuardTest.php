@@ -410,4 +410,32 @@ class CapacityGuardTest extends TopicTestCase
 
         $this->service->apply($student, $event);
     }
+
+    public function test_revealed_surprise_event_bypasses_application_deadline_before_start(): void
+    {
+        // Event where application deadline passed, but it is a revealed surprise event (D02)
+        $event = $this->createEvent([
+            'is_hidden' => true,
+            'reveal_at' => now()->subHour(),
+            'application_deadline' => now()->subMinutes(30),
+            'event_starts_at' => now()->addHour(),
+        ]);
+        $student = $this->createAudienceStudent('STU001');
+
+        $application = $this->service->apply($student, $event);
+
+        $this->assertSame(EventApplication::ACCEPTED, $application->status);
+    }
+
+    public function test_cannot_apply_when_topic_is_archived(): void
+    {
+        $event = $this->createEvent();
+        $this->course->update(['archived_at' => now()]);
+        $student = $this->createAudienceStudent('STU001');
+
+        $this->expectException(ValidationException::class);
+        $this->expectExceptionMessage('Applications are frozen because this topic is archived.');
+
+        $this->service->apply($student, $event);
+    }
 }

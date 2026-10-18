@@ -42,7 +42,7 @@ class EventController extends Controller
         $applications = EventApplication::query()
             ->where('student_id', $request->user()->id)
             ->with([
-                'event.owningTopic:id,name,code',
+                'event.owningTopic:id,title,code',
                 'event.topicTag:id,name,category',
             ])
             ->orderByDesc('applied_at')
@@ -86,7 +86,8 @@ class EventController extends Controller
                         'application_type' => $event->application_type,
                         'owning_topic' => $event->owningTopic ? [
                             'id' => $event->owningTopic->id,
-                            'name' => $event->owningTopic->name,
+                            'title' => $event->owningTopic->title,
+                            'name' => $event->owningTopic->title,
                             'code' => $event->owningTopic->code,
                         ] : null,
                         'topic_tag' => $event->topicTag ? [
