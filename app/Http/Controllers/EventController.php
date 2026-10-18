@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\UserRole;
 use App\Http\Requests\StoreEventRequest;
 use App\Models\Event;
+use App\Models\EventApplication;
 use App\Models\Semester;
 use App\Models\TopicTag;
 use App\Services\EventPlacement;
@@ -33,9 +34,74 @@ class EventController extends Controller
      */
     public function mine(Request $request): Response
     {
-        return $request->user()->hasRole(UserRole::Teacher)
-            ? Inertia::render('Events/Organized')
-            : Inertia::render('Events/Applied');
+        if ($request->user()->hasRole(UserRole::Teacher)) {
+            return Inertia::render('Events/Organized');
+        }
+
+        $now = now();
+        $applications = EventApplication::query()
+            ->where('student_id', $request->user()->id)
+            ->with([
+                'event.owningTopic:id,title,code',
+                'event.topicTag:id,name,category',
+            ])
+            ->orderByDesc('applied_at')
+            ->get()
+            ->map(function (EventApplication $app) use ($now) {
+                $event = $app->event;
+
+                return [
+                    'id' => $app->id,
+                    'status' => $app->status,
+                    'applied_at' => $app->applied_at?->toIso8601String(),
+                    'decided_at' => $app->decided_at?->toIso8601String(),
+                    'withdrawn_at' => $app->withdrawn_at?->toIso8601String(),
+                    'completed_at' => $app->completed_at?->toIso8601String(),
+                    'scored_at' => $app->scored_at?->toIso8601String(),
+                    'is_credited' => $app->isCredited(),
+                    'can_withdraw' => in_array($app->status, [
+                        EventApplication::PENDING,
+                        EventApplication::ACCEPTED,
+                        EventApplication::WAITLISTED,
+                    ], true)
+                        && $app->scored_at === null
+                        && $event
+                        && $now->lt($event->event_starts_at)
+                        && in_array($event->status, [Event::STATUS_PUBLISHED, Event::STATUS_ON_HOLD], true),
+                    'can_reapply' => $app->status === EventApplication::WITHDRAWN
+                        && $event
+                        && $event->status === Event::STATUS_PUBLISHED
+                        && $now->lte($event->application_deadline)
+                        && $now->lt($event->event_starts_at),
+                    'event' => $event ? [
+                        'id' => $event->id,
+                        'title' => $event->title,
+                        'description' => $event->description,
+                        'category' => $event->category,
+                        'points_value' => $event->points_value,
+                        'event_starts_at' => $event->event_starts_at?->toIso8601String(),
+                        'event_ends_at' => $event->event_ends_at?->toIso8601String(),
+                        'application_deadline' => $event->application_deadline?->toIso8601String(),
+                        'status' => $event->status,
+                        'application_type' => $event->application_type,
+                        'owning_topic' => $event->owningTopic ? [
+                            'id' => $event->owningTopic->id,
+                            'title' => $event->owningTopic->title,
+                            'name' => $event->owningTopic->title,
+                            'code' => $event->owningTopic->code,
+                        ] : null,
+                        'topic_tag' => $event->topicTag ? [
+                            'id' => $event->topicTag->id,
+                            'name' => $event->topicTag->name,
+                            'category' => $event->topicTag->category,
+                        ] : null,
+                    ] : null,
+                ];
+            });
+
+        return Inertia::render('Events/Applied', [
+            'applications' => $applications,
+        ]);
     }
 
     /**
