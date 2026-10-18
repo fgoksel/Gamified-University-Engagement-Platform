@@ -11,6 +11,7 @@ use App\Models\TopicTag;
 use App\Services\EventPlacement;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -109,6 +110,8 @@ class EventController extends Controller
      */
     public function create(Request $request, EventPlacement $placement): Response
     {
+        Gate::forUser($request->user())->authorize('create', Event::class);
+
         return Inertia::render('Events/Create', [
             'owningTopics' => $placement->formOptions($request->user()),
             'tags' => TopicTag::query()

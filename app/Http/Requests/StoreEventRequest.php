@@ -2,9 +2,11 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Event;
 use App\Models\Topic;
 use App\Services\EventPlacement;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
@@ -17,7 +19,7 @@ class StoreEventRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('events.manage_own') ?? false;
+        return $this->user() !== null && Gate::forUser($this->user())->allows('create', Event::class);
     }
 
     /**

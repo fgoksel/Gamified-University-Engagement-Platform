@@ -2,11 +2,13 @@
 
 namespace App\Providers;
 
+use App\Models\Event;
 use App\Models\RoleAssignment;
 use App\Models\RoleDefinition;
 use App\Models\Topic;
 use App\Models\User;
 use App\Policies\AdminPolicy;
+use App\Policies\EventPolicy;
 use App\Policies\RoleAssignmentPolicy;
 use App\Policies\RoleDefinitionPolicy;
 use App\Policies\TopicPolicy;
@@ -46,6 +48,9 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Topic::class, TopicPolicy::class);
         Gate::policy(RoleDefinition::class, RoleDefinitionPolicy::class);
         Gate::policy(RoleAssignment::class, RoleAssignmentPolicy::class);
+
+        // Events: who sees, applies to and runs them follows topic capabilities.
+        Gate::policy(Event::class, EventPolicy::class);
 
         $this->configureRateLimiting();
     }

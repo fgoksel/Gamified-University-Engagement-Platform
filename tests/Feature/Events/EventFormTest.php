@@ -40,7 +40,7 @@ class EventFormTest extends TopicTestCase
 
         // A teacher who may create at Databases only.
         $this->teacher = $this->makeUser(UserRole::Teacher, 'Teacher One');
-        $this->assign($this->teacher, $this->role('Teacher', [Capability::View, Capability::Create]), $this->course);
+        $this->assign($this->teacher, $this->role('Teacher', [Capability::View, Capability::EventsView, Capability::EventsCreate]), $this->course);
 
         Semester::create([
             'name' => '2026/27 autumn',
