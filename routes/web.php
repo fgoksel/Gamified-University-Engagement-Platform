@@ -10,6 +10,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\SetPasswordController;
 use App\Http\Controllers\EventApplicationController;
 use App\Http\Controllers\EventController;
+use App\Http\Controllers\EventStatusController;
 use App\Http\Controllers\LeaderboardController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoleAssignmentController;
@@ -90,6 +91,16 @@ Route::middleware('auth')->group(function () {
                 ->name('events.create');
             Route::post('/events', [EventController::class, 'store'])
                 ->name('events.store');
+
+            // Lifecycle actions on "Organized by me" (Task #37, UC-1.3). EventPolicy::manage
+            // checks the events.manage capability at the owning topic (Task #65).
+            Route::prefix('events/{event}')->whereNumber('event')->group(function () {
+                Route::post('/publish', [EventStatusController::class, 'publish'])->name('events.publish');
+                Route::post('/hold', [EventStatusController::class, 'hold'])->name('events.hold');
+                Route::post('/restore', [EventStatusController::class, 'restore'])->name('events.restore');
+                Route::post('/cancel', [EventStatusController::class, 'cancel'])->name('events.cancel');
+                Route::delete('/', [EventStatusController::class, 'destroy'])->name('events.destroy');
+            });
 
             // Teacher: events I organize (UC-1.3). Student: events I applied to (UC-2.3).
             Route::get('/my-events', [EventController::class, 'mine'])->name('events.mine');

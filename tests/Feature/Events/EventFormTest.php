@@ -40,7 +40,7 @@ class EventFormTest extends TopicTestCase
 
         // A teacher who may create at Databases only.
         $this->teacher = $this->makeUser(UserRole::Teacher, 'Teacher One');
-        $this->assign($this->teacher, $this->role('Teacher', [Capability::View, Capability::EventsView, Capability::EventsCreate]), $this->course);
+        $this->assign($this->teacher, $this->role('Teacher', [Capability::View, Capability::EventsView, Capability::EventsCreate, Capability::EventsManage]), $this->course);
 
         Semester::create([
             'name' => '2026/27 autumn',
@@ -87,6 +87,7 @@ class EventFormTest extends TopicTestCase
                 ->component('Events/Create')
                 ->has('owningTopics', 1)
                 ->where('owningTopics.0.id', $this->course->id)
+                ->where('owningTopics.0.can_publish', true)
                 ->where('owningTopics.0.audiences.0.id', $this->course->id)
                 ->where('owningTopics.0.audiences.1.id', $this->faculty->id)
                 ->where('owningTopics.0.audiences.2.id', $this->university->id)
@@ -117,6 +118,21 @@ class EventFormTest extends TopicTestCase
         $event = Event::sole();
         $this->assertSame('draft', $event->status);
         $this->assertNull($event->published_at);
+    }
+
+    public function test_with_events_create_only_a_draft_can_be_saved_but_not_published(): void
+    {
+        $assistant = $this->makeUser(UserRole::Teacher, 'Assistant');
+        $this->assign($assistant, $this->role('Event drafter', [Capability::View, Capability::EventsView, Capability::EventsCreate]), $this->course);
+
+        $this->actingAs($assistant)->get('/events/create')
+            ->assertInertia(fn (Assert $page) => $page->where('owningTopics.0.can_publish', false));
+
+        $this->actingAs($assistant)->post('/events', $this->valid())->assertSessionHasErrors('action');
+        $this->assertSame(0, Event::count());
+
+        $this->actingAs($assistant)->post('/events', $this->valid(['action' => 'draft']))->assertSessionHasNoErrors();
+        $this->assertSame('draft', Event::sole()->status);
     }
 
     public function test_an_invitation_only_event_has_no_audience(): void

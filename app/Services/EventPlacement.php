@@ -38,6 +38,16 @@ class EventPlacement
             ->values();
     }
 
+    /**
+     * Publishing straight from the form needs events.manage at the owning
+     * topic (Task #65); with events.create only, a draft is saved.
+     */
+    public function mayPublish(User $user, Topic $topic): bool
+    {
+        return ! $this->access->isHidden($topic)
+            && $this->access->can($user, Capability::EventsManage, $topic);
+    }
+
     public function mayOwn(User $user, Topic $topic): bool
     {
         return ! $this->access->isHidden($topic)
@@ -58,7 +68,7 @@ class EventPlacement
     /**
      * For the form: every owning option with the audiences it allows.
      *
-     * @return list<array{id: int, title: string, audiences: list<array{id: int, title: string}>}>
+     * @return list<array{id: int, title: string, can_publish: bool, audiences: list<array{id: int, title: string}>}>
      */
     public function formOptions(User $user): array
     {
@@ -72,6 +82,7 @@ class EventPlacement
         return $owning->map(fn (Topic $topic) => [
             'id' => $topic->id,
             'title' => $topic->title,
+            'can_publish' => $this->mayPublish($user, $topic),
             'audiences' => collect($lineages[$topic->id])
                 ->map(fn (int $id) => ['id' => $id, 'title' => (string) $titles[$id]])
                 ->all(),

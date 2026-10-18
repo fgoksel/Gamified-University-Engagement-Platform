@@ -67,6 +67,12 @@ class StoreEventRequest extends FormRequest
                     return;
                 }
 
+                if ($this->input('action') === 'publish' && ! $placement->mayPublish($this->user(), $owning)) {
+                    $validator->errors()->add('action', 'You may save this event as a draft. Publishing needs the "Manage events" permission at this topic.');
+
+                    return;
+                }
+
                 $audience = $this->input('audience_topic_id');
 
                 if ($audience !== null && ! in_array((int) $audience, $placement->audienceIds($owning), true)) {
