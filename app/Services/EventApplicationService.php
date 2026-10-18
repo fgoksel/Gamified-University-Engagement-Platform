@@ -7,6 +7,7 @@ use App\Models\EventApplication;
 use App\Models\EventApplicationTransition;
 use App\Models\RoleAssignment;
 use App\Models\User;
+use App\Notifications\EventApplicationDecisionNotification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -210,6 +211,14 @@ class EventApplicationService
                         'reason' => 'Promoted from waitlist upon vacancy',
                         'created_at' => now(),
                     ]);
+
+                    $nextWaitlisted->student?->notify(
+                        new EventApplicationDecisionNotification(
+                            EventApplicationDecisionNotification::ACCEPTED,
+                            $lockedEvent->id,
+                            $lockedEvent->title
+                        )
+                    );
                 }
             }
 
@@ -227,6 +236,12 @@ class EventApplicationService
         if ($student->status !== 'active') {
             throw ValidationException::withMessages([
                 'student' => 'Only active accounts may apply to events.',
+            ]);
+        }
+
+        if (empty($student->neptun_code)) {
+            throw ValidationException::withMessages([
+                'student' => 'A valid Neptun code is required to apply to events.',
             ]);
         }
 
