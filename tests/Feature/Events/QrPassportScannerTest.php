@@ -85,12 +85,12 @@ class QrPassportScannerTest extends TopicTestCase
             'capacity' => 10,
             'application_type' => 'fcfs',
             'points_value' => 15,
-            'event_starts_at' => now()->addDays(2),
-            'event_ends_at' => now()->addDays(2)->addHours(2),
-            'application_deadline' => now()->addDays(1),
+            'event_starts_at' => now()->subHour(),
+            'event_ends_at' => now()->addHours(2),
+            'application_deadline' => now()->subDay(),
             'completion_deadline' => now()->addDays(3),
             'status' => Event::STATUS_PUBLISHED,
-            'published_at' => now(),
+            'published_at' => now()->subDays(2),
             ...$overrides,
         ]);
     }
@@ -381,7 +381,7 @@ class QrPassportScannerTest extends TopicTestCase
         $response->assertOk()
             ->assertJson([
                 'status' => 'self_credit',
-                'message' => 'Organizers cannot credit points to themselves.',
+                'message' => 'Points cannot be credited to the person who authorised them.',
                 'student' => [
                     'id' => $this->teacher->id,
                     'name' => $this->teacher->name,
@@ -404,7 +404,7 @@ class QrPassportScannerTest extends TopicTestCase
         $res1->assertOk()
             ->assertJson([
                 'status' => 'not_accepted',
-                'message' => 'Student Unregistered User is not registered or selected for this event.',
+                'message' => 'Unregistered User is not registered or selected for this event.',
             ]);
 
         // 2. Student with waitlisted application
@@ -422,7 +422,7 @@ class QrPassportScannerTest extends TopicTestCase
         $res2->assertOk()
             ->assertJson([
                 'status' => 'not_accepted',
-                'message' => 'Student Waitlisted User is not registered or selected for this event.',
+                'message' => 'Waitlisted User is not registered or selected for this event.',
             ]);
 
         // 3. Student with withdrawn application
@@ -519,5 +519,36 @@ class QrPassportScannerTest extends TopicTestCase
             ->where('students.1.neptun_code', 'S222')
             ->where('students.1.is_credited', false)
         );
+    }
+
+    public function test_crediting_refused_if_event_has_not_started_yet(): void
+    {
+        $futureEvent = $this->makeEvent([
+            'event_starts_at' => now()->addDay(),
+            'event_ends_at' => now()->addDay()->addHours(2),
+        ]);
+        $student = $this->makeStudent('FUT01', 'Future Student');
+        $this->makeAcceptedApplication($futureEvent, $student);
+
+        $this->actingAs($this->teacher)
+            ->postJson("/events/{$futureEvent->id}/credit", ['identifier' => 'FUT01'])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['event']);
+    }
+
+    public function test_crediting_refused_if_completion_deadline_has_passed(): void
+    {
+        $expiredEvent = $this->makeEvent([
+            'event_starts_at' => now()->subDays(5),
+            'event_ends_at' => now()->subDays(5)->addHours(2),
+            'completion_deadline' => now()->subMinute(),
+        ]);
+        $student = $this->makeStudent('EXP01', 'Expired Student');
+        $this->makeAcceptedApplication($expiredEvent, $student);
+
+        $this->actingAs($this->teacher)
+            ->postJson("/events/{$expiredEvent->id}/credit", ['identifier' => 'EXP01'])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['event']);
     }
 }

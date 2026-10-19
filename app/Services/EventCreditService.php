@@ -2,25 +2,26 @@
 
 namespace App\Services;
 
+use App\Exceptions\EventActionRefused;
 use App\Models\Event;
-use App\Models\EventApplication;
 use App\Models\PointTransaction;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 /**
  * Handles attendance verification and point crediting for events (Task #43, UC-1.7).
  *
- * Enforces:
- * - Organizer authorization via topic capabilities (Capability::PointsCredit)
+ * Delegates core crediting invariants to PointLedger::credit():
  * - Anti-Self-Dealing guardrail: organizers cannot credit themselves (D04)
  * - Candidate eligibility: participant must hold an ACCEPTED application (UC-1.7)
  * - Single-award ledger invariant: at most one positive base award per student and event (D06)
+ * - Shared event state & window validation across all crediting routes
  */
 class EventCreditService
 {
+    public function __construct(private PointLedger $ledger) {}
+
     /**
      * Credit attendance points to a student for an event.
      *
@@ -28,15 +29,19 @@ class EventCreditService
      *
      * @throws AuthorizationException|ValidationException
      */
-    public function credit(User $actor, Event $event, int|string|User $identifier, string $source = 'passport'): array
+    public function credit(User $actor, Event $event, int|string|User $identifier, string $source = PointLedger::PASSPORT): array
     {
         // 1. Authorization: Actor must have points.credit capability on owning topic
         if (! $actor->can('credit', $event)) {
             throw new AuthorizationException('You are not authorized to credit points for this event.');
         }
 
-        // 2. Validate Event State
-        $this->validateEventState($event);
+        // 2. Validate Event State & Window via PointLedger refusal check
+        if ($refusal = $this->ledger->refusalFor($event)) {
+            throw ValidationException::withMessages([
+                'event' => $refusal->getMessage(),
+            ]);
+        }
 
         // 3. Resolve Student
         $student = $this->resolveStudent($identifier);
@@ -52,92 +57,19 @@ class EventCreditService
             ];
         }
 
-        // 4. Anti-Self-Dealing Guardrail (Decision Record D04)
-        if ($actor->id === $student->id) {
-            return [
-                'status' => 'self_credit',
-                'message' => 'Organizers cannot credit points to themselves.',
-                'student' => [
-                    'id' => $student->id,
-                    'name' => $student->name,
-                    'neptun_code' => $student->neptun_code,
-                ],
-            ];
-        }
-
-        // 5. Verification & Atomic Crediting
-        return DB::transaction(function () use ($actor, $event, $student, $source) {
-            /** @var Event $lockedEvent */
-            $lockedEvent = Event::query()->whereKey($event->id)->lockForUpdate()->firstOrFail();
-
-            /** @var EventApplication|null $application */
-            $application = EventApplication::query()
-                ->where('event_id', $lockedEvent->id)
-                ->where('student_id', $student->id)
-                ->lockForUpdate()
-                ->first();
-
-            // Verify Application: Must exist and have status 'accepted'
-            if (! $application || $application->status !== EventApplication::ACCEPTED) {
-                return [
-                    'status' => 'not_accepted',
-                    'message' => "Student {$student->name} is not registered or selected for this event.",
-                    'student' => [
-                        'id' => $student->id,
-                        'name' => $student->name,
-                        'neptun_code' => $student->neptun_code,
-                    ],
-                ];
-            }
-
-            // Verify Single-Award Ledger Invariant (Decision Record D06)
-            $alreadyCredited = PointTransaction::query()
-                ->where('event_id', $lockedEvent->id)
-                ->where('student_id', $student->id)
-                ->where('type', PointTransaction::CREDIT)
-                ->lockForUpdate()
-                ->exists();
-
-            if ($alreadyCredited) {
-                return [
-                    'status' => 'already_credited',
-                    'message' => "Points have already been credited to {$student->name} for this event.",
-                    'student' => [
-                        'id' => $student->id,
-                        'name' => $student->name,
-                        'neptun_code' => $student->neptun_code,
-                    ],
-                ];
-            }
-
-            // Create ledger entry
-            PointTransaction::create([
-                'student_id' => $student->id,
-                'event_id' => $lockedEvent->id,
-                'semester_id' => $lockedEvent->semester_id,
-                'credited_by_id' => $actor->id,
-                'points' => $lockedEvent->points_value,
-                'type' => PointTransaction::CREDIT,
-                'source' => $source,
-                'category' => $lockedEvent->category,
-                'created_at' => now(),
-            ]);
-
-            // Update application completion timestamps
-            $application->update([
-                'scored_at' => now(),
-                'completed_at' => now(),
-            ]);
+        // 4. Delegate to PointLedger::credit()
+        try {
+            $transaction = $this->ledger->credit($event, $student, $actor, $source);
 
             $totalCredited = PointTransaction::query()
-                ->where('event_id', $lockedEvent->id)
+                ->where('event_id', $event->id)
                 ->where('type', PointTransaction::CREDIT)
                 ->count();
 
             return [
                 'status' => 'credited',
-                'message' => "Success: Points credited to {$student->name} (+{$lockedEvent->points_value} pts).",
-                'points' => $lockedEvent->points_value,
+                'message' => "Success: Points credited to {$student->name} (+{$transaction->points} pts).",
+                'points' => $transaction->points,
                 'student' => [
                     'id' => $student->id,
                     'name' => $student->name,
@@ -145,7 +77,24 @@ class EventCreditService
                 ],
                 'credited_count' => $totalCredited,
             ];
-        });
+        } catch (EventActionRefused $e) {
+            $status = match ($e->reason) {
+                'self_credit' => 'self_credit',
+                'already_credited' => 'already_credited',
+                'not_registered' => 'not_accepted',
+                default => 'error',
+            };
+
+            return [
+                'status' => $status,
+                'message' => $e->getMessage(),
+                'student' => [
+                    'id' => $student->id,
+                    'name' => $student->name,
+                    'neptun_code' => $student->neptun_code,
+                ],
+            ];
+        }
     }
 
     /**
@@ -194,31 +143,5 @@ class EventCreditService
 
         // Otherwise check as Neptun code (case-insensitive)
         return User::query()->where('neptun_code', strtoupper($raw))->first();
-    }
-
-    /**
-     * Validates that the event is in a state permitting point crediting.
-     *
-     * @throws ValidationException
-     */
-    private function validateEventState(Event $event): void
-    {
-        if ($event->status === Event::STATUS_DRAFT) {
-            throw ValidationException::withMessages([
-                'event' => 'Attendance cannot be credited for draft events.',
-            ]);
-        }
-
-        if ($event->status === Event::STATUS_CANCELLED) {
-            throw ValidationException::withMessages([
-                'event' => 'Attendance cannot be credited for cancelled events.',
-            ]);
-        }
-
-        if ($event->status === Event::STATUS_ON_HOLD) {
-            throw ValidationException::withMessages([
-                'event' => 'Attendance crediting is paused while this event is on hold.',
-            ]);
-        }
     }
 }
