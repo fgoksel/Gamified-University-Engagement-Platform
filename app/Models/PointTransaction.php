@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use LogicException;
 
 /**
  * One row of the points ledger. Rows are only ever added: a correction is a
@@ -36,6 +37,21 @@ class PointTransaction extends Model
     protected function casts(): array
     {
         return ['points' => 'integer'];
+    }
+
+    protected static function booted(): void
+    {
+        // The ledger only grows: a mistake is corrected with a reversal row, never an edit.
+        static::updating(fn () => throw new LogicException('Ledger rows cannot be changed. Add a reversal instead.'));
+        static::deleting(fn () => throw new LogicException('Ledger rows cannot be deleted. Add a reversal instead.'));
+        static::saving(function (PointTransaction $row) {
+            if ($row->type === self::CREDIT && $row->points <= 0) {
+                throw new LogicException('A credit must be a positive number of points.');
+            }
+            if ($row->type === self::REVERSAL && $row->points >= 0) {
+                throw new LogicException('A reversal must be a negative number of points.');
+            }
+        });
     }
 
     public function event(): BelongsTo
