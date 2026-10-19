@@ -10,6 +10,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\SetPasswordController;
 use App\Http\Controllers\EventApplicationController;
 use App\Http\Controllers\EventController;
+use App\Http\Controllers\EventCreditController;
 use App\Http\Controllers\EventStatusController;
 use App\Http\Controllers\LeaderboardController;
 use App\Http\Controllers\ProfileController;
@@ -83,6 +84,12 @@ Route::middleware('auth')->group(function () {
             Route::post('/events/{event}/applicants/{application}/reject', [ApplicantController::class, 'reject'])
                 ->middleware('permission:applications.manage')
                 ->name('events.applicants.reject');
+
+            // Organizer: QR Passport scanner and attendance crediting (Task #43, UC-1.7)
+            Route::get('/events/{event}/scan', [EventCreditController::class, 'showScan'])
+                ->name('events.scan');
+            Route::post('/events/{event}/credit', [EventCreditController::class, 'credit'])
+                ->name('events.credit');
 
             // Event Form: create an event as a draft or publish it (Task #38, UC-1.3)
             // Creating events follows the events.create capability at a topic (Task #65),

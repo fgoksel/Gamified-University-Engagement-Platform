@@ -154,7 +154,16 @@ class OrganizedEventsTest extends TopicTestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->has('events', 1)
                 ->where('events.0.can_manage', false)
-                ->where('events.0.can_review', false));
+                ->where('events.0.can_review', false)
+                ->where('events.0.can_credit', false));
+
+        $crediter = $this->makeUser(UserRole::Teacher, 'Crediter');
+        $this->assign($crediter, $this->role('Event crediter', [Capability::View, Capability::EventsView, Capability::PointsCredit]), $this->course);
+
+        $this->actingAs($crediter)->get('/my-events')
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('events', 1)
+                ->where('events.0.can_credit', true));
 
         $this->actingAs($drafter)->post("/events/{$event->id}/hold")->assertRedirect('/');
         $this->assertSame('published', $event->fresh()->status);

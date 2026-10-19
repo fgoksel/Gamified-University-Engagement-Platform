@@ -136,6 +136,7 @@ class OrganizedEvents
             // What this person may do here (Task #65): buttons follow their capabilities.
             'can_manage' => $gate->allows('manage', $event),
             'can_review' => $gate->allows('manageApplicants', $event),
+            'can_credit' => $gate->allows('credit', $event),
         ])->all();
     }
 }
