@@ -8,6 +8,7 @@ use App\Models\Event;
 use App\Models\EventApplication;
 use App\Models\Semester;
 use App\Models\TopicTag;
+use App\Services\EventCatalog;
 use App\Services\EventPlacement;
 use App\Services\OrganizedEvents;
 use Illuminate\Http\RedirectResponse;
@@ -25,9 +26,18 @@ class EventController extends Controller
     /**
      * All events (UC-1.5, UC-2.3).
      */
-    public function index(): Response
+    public function index(Request $request, EventCatalog $catalog): Response
     {
-        return Inertia::render('Events/Index');
+        $filters = [
+            'q' => (string) $request->query('q', ''),
+            'category' => $request->query('category'),
+            'when' => in_array($request->query('when'), EventCatalog::WHEN, true) ? $request->query('when') : 'upcoming',
+        ];
+
+        return Inertia::render('Events/Index', [
+            'filters' => $filters,
+            'events' => $catalog->page($request->user(), $filters),
+        ]);
     }
 
     /**
