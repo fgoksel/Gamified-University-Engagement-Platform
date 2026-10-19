@@ -1,12 +1,12 @@
 <script setup>
 import { ref, watch } from "vue";
-import { Link, router } from "@inertiajs/vue3";
-import { CalendarDays, Search } from "@lucide/vue";
+import { Link, router, usePage } from "@inertiajs/vue3";
+import { CalendarDays, LoaderCircle, Search } from "@lucide/vue";
 import EmptyState from "../../Components/EmptyState.vue";
 import CatalogEventCard from "../../Components/Events/CatalogEventCard.vue";
 import { categoryDot } from "../../categoryColors.js";
 
-// All events (Task #40, UC-1.5, UC-2.3)
+// All events (Task #40) with the Apply button (Task #49), UC-1.5, UC-2.3
 defineOptions({ layout: { title: "All events" } });
 
 const props = defineProps({
@@ -53,6 +53,37 @@ watch(search, (value) => {
 });
 
 const isFiltered = () => Boolean(props.filters.q || props.filters.category);
+
+// Apply (Task #49): uses the application endpoint of Task #39. The server
+// decides accepted / waitlisted / pending and answers with a flash message.
+const page = usePage();
+const applyingId = ref(null);
+const failedId = ref(null);
+
+function applyLabel(event) {
+    if (event.my_status === "withdrawn") return "Apply again";
+    if (event.application_type === "fcfs" && event.places_left === 0) {
+        return "Join waitlist";
+    }
+    return "Apply";
+}
+
+function apply(event) {
+    failedId.value = null;
+    router.post(
+        `/events/${event.id}/apply`,
+        {},
+        {
+            preserveScroll: true,
+            onStart: () => (applyingId.value = event.id),
+            onError: () => (failedId.value = event.id),
+            onFinish: () => (applyingId.value = null),
+        },
+    );
+}
+
+// The service reports refusals under "event" or "student".
+const applyError = () => page.props.errors?.event ?? page.props.errors?.student;
 
 // Laravel's page labels contain HTML entities ("&laquo; Previous").
 function pageLabel(label) {
@@ -139,7 +170,35 @@ function pageLabel(label) {
                     v-for="event in events.data"
                     :key="event.id"
                     :event="event"
-                />
+                >
+                    <template #actions>
+                        <div
+                            v-if="event.can_apply || failedId === event.id"
+                            class="ml-auto flex flex-col items-end gap-1"
+                        >
+                            <button
+                                v-if="event.can_apply"
+                                type="button"
+                                :disabled="applyingId !== null"
+                                class="inline-flex items-center gap-2 rounded-control bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:opacity-70"
+                                @click="apply(event)"
+                            >
+                                <LoaderCircle
+                                    v-if="applyingId === event.id"
+                                    class="size-4 animate-spin"
+                                />
+                                {{ applyLabel(event) }}
+                            </button>
+                            <p
+                                v-if="failedId === event.id && applyError()"
+                                class="text-right text-sm text-danger-fg"
+                                role="alert"
+                            >
+                                {{ applyError() }}
+                            </p>
+                        </div>
+                    </template>
+                </CatalogEventCard>
             </div>
 
             <!-- Pages -->

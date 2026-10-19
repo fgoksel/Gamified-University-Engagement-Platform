@@ -5,10 +5,10 @@ namespace App\Services;
 use App\Models\Event;
 use App\Models\EventApplication;
 use App\Models\EventApplicationTransition;
-use App\Models\RoleAssignment;
 use App\Models\User;
 use App\Notifications\EventApplicationDecisionNotification;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -251,7 +251,10 @@ class EventApplicationService
             ]);
         }
 
-        if ($event->owningTopic?->isArchived() || $event->audienceTopic?->isArchived()) {
+        // Archiving a topic freezes everything below it too (TopicAccess::isHidden looks upwards).
+        $access = app(TopicAccess::class);
+        if (($event->owningTopic && $access->isHidden($event->owningTopic))
+            || ($event->audienceTopic && $access->isHidden($event->audienceTopic))) {
             throw ValidationException::withMessages([
                 'event' => 'Applications are frozen because this topic is archived.',
             ]);
@@ -283,13 +286,9 @@ class EventApplicationService
             ]);
         }
 
-        $belongsToAudience = RoleAssignment::query()
-            ->active()
-            ->where('user_id', $student->id)
-            ->where('topic_id', $event->audience_topic_id)
-            ->exists();
-
-        if (! $belongsToAudience) {
+        // One rule for "may apply" (Task #65): the person holds events.view and
+        // events.apply at the audience topic, directly or from a topic above it.
+        if (! Gate::forUser($student)->allows('apply', $event)) {
             throw ValidationException::withMessages([
                 'event' => 'You do not belong to the audience for this event.',
             ]);

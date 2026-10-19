@@ -87,7 +87,7 @@ class ApplicantSelectionTest extends TopicTestCase
     {
         $student = $this->makeUser(UserRole::Student, "Student {$neptun}");
         $student->update(['neptun_code' => $neptun]);
-        $this->assign($student, $this->role('Student', [Capability::View]), $this->course);
+        $this->assign($student, $this->role('Student', [Capability::View, Capability::EventsView, Capability::EventsApply]), $this->course);
         $this->travel(1)->seconds();
 
         return app(EventApplicationService::class)->apply($student, $event);
@@ -339,6 +339,8 @@ class ApplicantSelectionTest extends TopicTestCase
     {
         $event = $this->event();
         $this->teacher->update(['neptun_code' => 'TCH001']);
+        // The organiser is also allowed to apply here, as a student would be (Task #65).
+        $this->assign($this->teacher, $this->role('Participant', [Capability::View, Capability::EventsView, Capability::EventsApply]), $this->course);
         $application = app(EventApplicationService::class)->apply($this->teacher, $event);
 
         $this->actingAs($this->teacher)

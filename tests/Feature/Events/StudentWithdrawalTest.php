@@ -94,7 +94,7 @@ class StudentWithdrawalTest extends TopicTestCase
     {
         $student = $this->makeUser(UserRole::Student, "Student {$neptun}");
         $student->update(['neptun_code' => $neptun, 'status' => 'active']);
-        $this->assign($student, $this->role('Student', [Capability::View]), $this->course);
+        $this->assign($student, $this->role('Student', [Capability::View, Capability::EventsView, Capability::EventsApply]), $this->course);
 
         return $student;
     }
