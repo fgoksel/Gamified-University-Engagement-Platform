@@ -47,6 +47,9 @@ const form = useForm({
 const owning = computed(() =>
     props.topics.find((t) => t.id === Number(form.owning_topic_id)),
 );
+// Publishing needs "Manage events" at the owning topic; otherwise only a draft.
+const canPublish = computed(() => owning.value?.can_publish !== false);
+
 const audiences = computed(() => owning.value?.audiences ?? []);
 const selectedTag = computed(() =>
     props.tags.find((t) => t.id === Number(form.topic_tag_id)),
@@ -80,7 +83,11 @@ const selectClass = (field) => [
 </script>
 
 <template>
-    <form class="space-y-6" novalidate @submit.prevent="submit('publish')">
+    <form
+        class="space-y-6"
+        novalidate
+        @submit.prevent="submit(canPublish ? 'publish' : 'draft')"
+    >
         <!-- 1. What -->
         <fieldset
             class="space-y-5 rounded-card border border-line bg-surface p-5 shadow-card sm:p-6"
@@ -359,6 +366,13 @@ const selectClass = (field) => [
         </fieldset>
 
         <!-- Actions -->
+        <p v-if="form.errors.action" class="text-sm text-danger-fg">
+            {{ form.errors.action }}
+        </p>
+        <p v-else-if="!canPublish" class="text-sm text-fg-muted">
+            You can save this event as a draft. Someone who may manage events at
+            this topic publishes it.
+        </p>
         <div class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
             <button
                 type="button"
@@ -369,6 +383,7 @@ const selectClass = (field) => [
                 Save as draft
             </button>
             <button
+                v-if="canPublish"
                 type="submit"
                 :disabled="form.processing"
                 class="inline-flex items-center justify-center rounded-control bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:opacity-70"
