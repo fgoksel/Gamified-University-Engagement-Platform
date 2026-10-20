@@ -5,14 +5,16 @@ namespace App\Http\Controllers;
 use App\Exceptions\EventActionRefused;
 use App\Models\Event;
 use App\Models\QrToken;
+use App\Services\QrImage;
 use App\Services\QrTokenService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 
 /**
- * Making and revoking the QR codes of an event (UC-1.8).
+ * Making, drawing and revoking the QR codes of an event (UC-1.8).
  * Needs the QR capability at the event's topic; creating the event is not enough.
  */
 class EventQrController extends Controller
@@ -48,7 +50,22 @@ class EventQrController extends Controller
             'total_steps' => $token->total_steps,
             'expires_at' => $token->expires_at?->toIso8601String(),
             'url' => $qr->url($token),
+            'svg' => route('events.qr.image', [$event, $token, 'svg']),
+            'png' => route('events.qr.image', [$event, $token, 'png']),
         ], 201);
+    }
+
+    public function image(Request $request, Event $event, QrToken $token, string $format, QrTokenService $qr, QrImage $images): Response
+    {
+        $this->authorise($request, $event);
+        abort_unless($token->event_id === $event->id && $token->revoked_at === null, 404);
+
+        $size = (int) $request->query('size', QrImage::DEFAULT_SIZE);
+        $text = $qr->url($token);
+
+        return $format === 'png'
+            ? response($images->png($text, $size), 200, ['Content-Type' => 'image/png', 'Cache-Control' => 'private, no-store'])
+            : response($images->svg($text, $size), 200, ['Content-Type' => 'image/svg+xml', 'Cache-Control' => 'private, no-store']);
     }
 
     public function revoke(Request $request, Event $event, QrToken $token, QrTokenService $qr): JsonResponse

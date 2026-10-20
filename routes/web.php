@@ -100,10 +100,12 @@ Route::middleware('auth')->group(function () {
             Route::post('/events', [EventController::class, 'store'])
                 ->name('events.store');
 
-            // Making and revoking event QR codes (Task #45). EventPolicy::manageQr checks the
+            // Making, drawing and revoking event QR codes (Tasks #45, #46). EventPolicy::manageQr checks the
             // qr_codes.manage capability at the owning topic.
             Route::post('/events/{event}/qr-tokens', [EventQrController::class, 'store'])
                 ->whereNumber('event')->name('events.qr.store');
+            Route::get('/events/{event}/qr-tokens/{token}/image.{format}', [EventQrController::class, 'image'])
+                ->whereNumber(['event', 'token'])->whereIn('format', ['svg', 'png'])->name('events.qr.image');
             Route::post('/events/{event}/qr-tokens/{token}/revoke', [EventQrController::class, 'revoke'])
                 ->whereNumber(['event', 'token'])->name('events.qr.revoke');
 
