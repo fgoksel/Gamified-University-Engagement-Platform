@@ -36,6 +36,14 @@ class QrToken extends Model
         ];
     }
 
+    /**
+     * A code that is one part of a task of several parts (HW 1, 2, 3).
+     */
+    public function isMilestone(): bool
+    {
+        return $this->total_steps !== null;
+    }
+
     public function event(): BelongsTo
     {
         return $this->belongsTo(Event::class);

@@ -11,6 +11,7 @@ use App\Http\Controllers\Auth\SetPasswordController;
 use App\Http\Controllers\EventApplicationController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\EventCreditController;
+use App\Http\Controllers\EventQrController;
 use App\Http\Controllers\EventStatusController;
 use App\Http\Controllers\LeaderboardController;
 use App\Http\Controllers\ProfileController;
@@ -99,6 +100,13 @@ Route::middleware('auth')->group(function () {
             Route::post('/events', [EventController::class, 'store'])
                 ->name('events.store');
 
+            // Making and revoking event QR codes (Task #45). EventPolicy::manageQr checks the
+            // qr_codes.manage capability at the owning topic.
+            Route::post('/events/{event}/qr-tokens', [EventQrController::class, 'store'])
+                ->whereNumber('event')->name('events.qr.store');
+            Route::post('/events/{event}/qr-tokens/{token}/revoke', [EventQrController::class, 'revoke'])
+                ->whereNumber(['event', 'token'])->name('events.qr.revoke');
+
             // Lifecycle actions on "Organized by me" (Task #37, UC-1.3). EventPolicy::manage
             // checks the events.manage capability at the owning topic (Task #65).
             Route::prefix('events/{event}')->whereNumber('event')->group(function () {
@@ -120,10 +128,15 @@ Route::middleware('auth')->group(function () {
                 ->middleware('permission:topic_tags.request')
                 ->name('topic-tag-requests.store');
 
-            // Students redeem attendance QR codes (UC-2.3)
-            Route::get('/scan', [ScanController::class, 'show'])
-                ->middleware('permission:qr_codes.redeem')
-                ->name('scan');
+            // Students redeem attendance QR codes (UC-2.3). Opening a code only shows the
+            // page; points are given by the POST, which is limited per student.
+            Route::middleware('permission:qr_codes.redeem')->group(function () {
+                Route::get('/scan', [ScanController::class, 'show'])->name('scan');
+                Route::get('/qr/redeem/{code}', [ScanController::class, 'show'])
+                    ->where('code', '[A-Za-z0-9.]+')->name('qr.show');
+                Route::post('/qr/redeem', [ScanController::class, 'redeem'])
+                    ->middleware('throttle:qr-redeem')->name('qr.redeem');
+            });
 
             // Profile Settings: profile data, change password, appearance
             Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
