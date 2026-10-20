@@ -92,6 +92,17 @@ function post(action) {
                 >
                     Scan attendance
                 </Link>
+                <Link
+                    v-if="
+                        event.can_qr &&
+                        event.qr_enabled &&
+                        event.status === 'published'
+                    "
+                    :href="`/events/${event.id}/qr-codes`"
+                    class="inline-flex min-h-9 items-center justify-center rounded-control border border-line bg-surface px-3 text-sm font-medium text-fg hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                >
+                    QR codes
+                </Link>
                 <template v-if="event.can_manage">
                     <Btn
                         v-if="event.status === 'draft'"
