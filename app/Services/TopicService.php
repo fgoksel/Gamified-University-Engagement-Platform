@@ -222,7 +222,10 @@ class TopicService
 
             $topic->update(['archived_at' => now(), 'archived_by_id' => $actor->id]);
 
-            TopicAudit::record($actor, 'topic.archived', $topic->id, 'topic', $topic->id, $before, [...$this->snapshot($topic), 'topics_below' => $below]);
+            // Recorded so the history shows which events the archive froze (Task #66).
+            $frozen = app(TopicEventRules::class)->liveEventsIn($topic);
+
+            TopicAudit::record($actor, 'topic.archived', $topic->id, 'topic', $topic->id, $before, [...$this->snapshot($topic), 'topics_below' => $below, 'events_frozen' => $frozen]);
 
             return $topic;
         });
@@ -297,6 +300,9 @@ class TopicService
         if ($topic->course_id !== null) {
             $blockers[] = 'It is linked to a course that the enrolment import uses.';
         }
+
+        // Events keep their history, so a topic they use is never deleted (Task #66).
+        array_push($blockers, ...app(TopicEventRules::class)->deleteBlockers($topic));
 
         if ($blockers !== []) {
             $blockers[] = 'Archive it instead: nothing is lost and it can be restored.';
@@ -435,6 +441,9 @@ class TopicService
                 $problems[] = "\"{$assignment->role->name}\" is held at a topic that would end up outside the branch this role belongs to. End or replace that role first.";
             }
         }
+
+        // Events in the branch must keep an audience at or above them (Task #66).
+        array_push($problems, ...app(TopicEventRules::class)->moveProblems($topic, $destination));
 
         return array_values(array_unique($problems));
     }

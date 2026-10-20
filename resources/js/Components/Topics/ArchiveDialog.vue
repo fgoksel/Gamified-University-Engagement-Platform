@@ -44,6 +44,10 @@ function submit() {
                 roles and history stay as they are.
             </li>
             <li>Roles inside it cannot be changed while it is archived.</li>
+            <li>
+                Events run inside it are frozen: students cannot see or apply to
+                them, and no points can be given, until it is restored.
+            </li>
             <li>You can restore it any time from “Archived topics”.</li>
         </ul>
         <p

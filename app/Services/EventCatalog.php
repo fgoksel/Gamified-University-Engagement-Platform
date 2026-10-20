@@ -68,6 +68,8 @@ class EventCatalog
             ->where(fn (Builder $q) => $q
                 ->where(fn (Builder $q) => $q
                     ->whereIn('audience_topic_id', $audience)
+                    // Frozen while its own topic is archived (Task #66), like EventPolicy::view.
+                    ->whereIn('owning_topic_id', Topic::query()->notArchived()->select('topics.id'))
                     ->where(fn (Builder $q) => $q
                         ->where('is_hidden', false)
                         ->orWhere('reveal_at', '<=', now())))
