@@ -98,6 +98,9 @@ Route::middleware('auth')->group(function () {
                 ->name('events.scan');
             Route::post('/events/{event}/credit', [EventCreditController::class, 'credit'])
                 ->name('events.credit');
+            // Checklist mode: credit every ticked student in one request (Task #42)
+            Route::post('/events/{event}/credit/bulk', [EventCreditController::class, 'creditMany'])
+                ->name('events.credit.bulk');
 
             // Event Form: create an event as a draft or publish it (Task #38, UC-1.3)
             // Creating events follows the events.create capability at a topic (Task #65),

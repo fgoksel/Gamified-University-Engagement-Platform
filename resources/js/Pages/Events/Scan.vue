@@ -38,6 +38,8 @@ const studentList = ref([...props.students]);
 const creditedCount = ref(props.stats.credited_count || 0);
 
 const searchQuery = ref("");
+const selectedIds = ref([]);
+const bulkProcessing = ref(false);
 let codeReader = null;
 let lastScannedRaw = "";
 let lastScannedTime = 0;
@@ -265,6 +267,92 @@ async function submitCredit(identifier, source = "passport") {
         };
     } finally {
         processing.value = false;
+    }
+}
+
+const selectableStudents = computed(() =>
+    filteredStudents.value.filter((s) => !s.is_credited),
+);
+const allSelected = computed(
+    () =>
+        selectableStudents.value.length > 0 &&
+        selectableStudents.value.every((s) => selectedIds.value.includes(s.id)),
+);
+
+function toggleAll() {
+    if (allSelected.value) {
+        const visible = selectableStudents.value.map((s) => s.id);
+        selectedIds.value = selectedIds.value.filter(
+            (id) => !visible.includes(id),
+        );
+    } else {
+        selectedIds.value = [
+            ...new Set([
+                ...selectedIds.value,
+                ...selectableStudents.value.map((s) => s.id),
+            ]),
+        ];
+    }
+}
+
+// Checklist mode (Task #42): credit every ticked student in one request.
+async function creditSelected() {
+    if (bulkProcessing.value || selectedIds.value.length === 0) return;
+    bulkProcessing.value = true;
+
+    try {
+        const response = await fetch(`/events/${props.event.id}/credit/bulk`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+                "X-CSRF-TOKEN":
+                    document
+                        .querySelector('meta[name="csrf-token"]')
+                        ?.getAttribute("content") || "",
+            },
+            body: JSON.stringify({ student_ids: selectedIds.value }),
+        });
+        const data = await response.json();
+
+        if (!response.ok) {
+            feedback.value = {
+                type: "error",
+                title: "Crediting refused",
+                message:
+                    data.errors?.event?.[0] ||
+                    data.message ||
+                    "Could not credit the selected students.",
+            };
+            return;
+        }
+
+        for (const id of data.credited) {
+            const target = studentList.value.find((s) => s.id === id);
+            if (target) target.is_credited = true;
+        }
+        creditedCount.value = data.credited_count;
+        selectedIds.value = selectedIds.value.filter(
+            (id) => !data.credited.includes(id),
+        );
+
+        const refused = Object.keys(data.refused).length;
+        feedback.value = {
+            type: refused === 0 ? "success" : "warning",
+            title: `${data.credited.length} student${data.credited.length === 1 ? "" : "s"} credited`,
+            message:
+                refused === 0
+                    ? `Each received ${props.event.points_value} points.`
+                    : `${refused} could not be credited: ${Object.values(data.refused).join(" ")}`,
+        };
+    } catch (err) {
+        feedback.value = {
+            type: "error",
+            title: "Connection Error",
+            message: "Failed to communicate with the server. Please try again.",
+        };
+    } finally {
+        bulkProcessing.value = false;
     }
 }
 
@@ -574,6 +662,16 @@ function setMode(newMode) {
                         class="bg-surface-muted text-xs text-fg-muted uppercase"
                     >
                         <tr>
+                            <th class="px-4 py-3 w-10">
+                                <input
+                                    type="checkbox"
+                                    :checked="allSelected"
+                                    :disabled="selectableStudents.length === 0"
+                                    aria-label="Select all students not yet credited"
+                                    data-test="select-all"
+                                    @change="toggleAll"
+                                />
+                            </th>
                             <th class="px-4 py-3 font-medium">Student</th>
                             <th class="px-4 py-3 font-medium">Neptun</th>
                             <th class="px-4 py-3 font-medium">Status</th>
@@ -588,6 +686,16 @@ function setMode(newMode) {
                             :key="student.id"
                             class="hover:bg-surface-muted/50 transition"
                         >
+                            <td class="px-4 py-3">
+                                <input
+                                    v-model="selectedIds"
+                                    type="checkbox"
+                                    :value="student.id"
+                                    :disabled="student.is_credited"
+                                    :aria-label="`Select ${student.name}`"
+                                    data-test="select-student"
+                                />
+                            </td>
                             <td class="px-4 py-3 font-medium text-fg">
                                 {{ student.name }}
                             </td>
@@ -633,6 +741,19 @@ function setMode(newMode) {
                         </tr>
                     </tbody>
                 </table>
+            </div>
+
+            <div class="flex justify-end">
+                <Btn
+                    variant="primary"
+                    :loading="bulkProcessing"
+                    :disabled="selectedIds.length === 0"
+                    data-test="credit-selected"
+                    @click="creditSelected"
+                >
+                    <UserCheck class="size-4" />
+                    Credit selected ({{ selectedIds.length }})
+                </Btn>
             </div>
         </div>
     </div>
