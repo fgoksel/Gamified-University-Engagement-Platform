@@ -65,6 +65,12 @@ Route::middleware('auth')->group(function () {
                 ->middleware('permission:events.view')
                 ->name('events.index');
 
+            // One event's detail page and direct URL (Task #40); visibility follows EventPolicy::view
+            Route::get('/events/{event}', [EventController::class, 'show'])
+                ->whereNumber('event')
+                ->middleware('permission:events.view')
+                ->name('events.show');
+
             // Student apply to an event (Task #39, UC-2.3)
             Route::post('/events/{event}/apply', [EventApplicationController::class, 'store'])
                 ->middleware('permission:events.apply')

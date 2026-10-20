@@ -37,7 +37,7 @@ class OrganizedEvents
     /**
      * @return list<int>
      */
-    private function staffTopicIds(User $user): array
+    public function staffTopicIds(User $user): array
     {
         return $this->staffTopicIds[$user->id] ??= $this->access->visibleTopics($user)
             ->notArchived()

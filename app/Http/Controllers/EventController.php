@@ -8,6 +8,7 @@ use App\Models\Event;
 use App\Models\EventApplication;
 use App\Models\Semester;
 use App\Models\TopicTag;
+use App\Services\EventCatalog;
 use App\Services\EventPlacement;
 use App\Services\OrganizedEvents;
 use Illuminate\Http\RedirectResponse;
@@ -23,11 +24,32 @@ use Inertia\Response;
 class EventController extends Controller
 {
     /**
-     * All events (UC-1.5, UC-2.3).
+     * All events (Task #40, UC-1.5, UC-2.3): filtered by topic or branch, category and date.
      */
-    public function index(): Response
+    public function index(Request $request, EventCatalog $catalog): Response
     {
-        return Inertia::render('Events/Index');
+        $filters = $catalog->filters($request->user(), $request->query());
+
+        return Inertia::render('Events/Index', [
+            'filters' => $filters,
+            // Not "topics": that name is the shared menu flag from HandleInertiaRequests.
+            'topicOptions' => $catalog->topicOptions($request->user()),
+            'events' => $catalog->page($request->user(), $filters),
+        ]);
+    }
+
+    /**
+     * One event's detail page, also reached by its direct URL (Task #40).
+     * It follows the same visibility rules as the catalog (EventPolicy::view);
+     * an event the person may not see is "not found", so its existence is not revealed.
+     */
+    public function show(Request $request, Event $event, EventCatalog $catalog): Response
+    {
+        abort_unless(Gate::forUser($request->user())->allows('view', $event), 404);
+
+        return Inertia::render('Events/Show', [
+            'event' => $catalog->detail($request->user(), $event),
+        ]);
     }
 
     /**
