@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\UserRole;
 use App\Models\User;
 use App\Notifications\EventApplicationDecisionNotification;
+use App\Notifications\EventStatusChangedNotification;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
@@ -48,6 +49,16 @@ class NotificationsTest extends TestCase
         return $user->notifications()->latest()->first()->id;
     }
 
+    private function notifyEvent(User $user, string $change, string $title, ?string $reason = null): void
+    {
+        $user->notifications()->create([
+            'id' => (string) Str::uuid(),
+            'type' => EventStatusChangedNotification::class,
+            'data' => ['change' => $change, 'event_id' => 1, 'event_title' => $title, 'reason' => $reason],
+            'created_at' => now()->subHour()->addMinutes(++$this->minute),
+        ]);
+    }
+
     public function test_the_page_lists_only_my_notifications_with_readable_text(): void
     {
         $me = $this->student();
@@ -67,6 +78,30 @@ class NotificationsTest extends TestCase
                 ->where('notifications.data.2.title', 'You were selected for SQL Workshop')
                 ->where('notifications.data.2.read', false)
                 ->where('notifications.data.2.link', '/my-events'));
+    }
+
+    public function test_waitlist_and_event_changes_have_readable_text_too(): void
+    {
+        $me = $this->student();
+        $this->notify($me, EventApplicationDecisionNotification::CONFIRMED, 'SQL Workshop');
+        $this->notify($me, EventApplicationDecisionNotification::WAITLISTED, 'Chess Night');
+        $this->notify($me, EventApplicationDecisionNotification::PROMOTED, 'Chess Night');
+        $this->notifyEvent($me, EventStatusChangedNotification::ON_HOLD, 'Hack Day');
+        $this->notifyEvent($me, EventStatusChangedNotification::RESTORED, 'Hack Day');
+        $this->notifyEvent($me, EventStatusChangedNotification::CANCELLED, 'Hack Day', 'Speaker is ill');
+
+        $this->actingAs($me)->get('/notifications')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('notifications.data', 6)
+                ->where('notifications.data.0.title', 'Hack Day is cancelled')
+                ->where('notifications.data.0.body', 'The organizer cancelled the event. It will not take place. Reason: Speaker is ill')
+                ->where('notifications.data.1.title', 'Hack Day is back')
+                ->where('notifications.data.2.title', 'Hack Day is on hold')
+                ->where('notifications.data.3.title', 'A place opened up: you are in for Chess Night')
+                ->where('notifications.data.4.title', 'You are on the waitlist for Chess Night')
+                ->where('notifications.data.5.title', 'Your place at SQL Workshop is confirmed')
+                ->where('notifications.data.5.link', '/my-events'));
     }
 
     public function test_the_menu_badge_counts_unread_ones(): void

@@ -198,7 +198,7 @@ class StudentWithdrawalTest extends TopicTestCase
         Notification::assertSentTo(
             $student2,
             EventApplicationDecisionNotification::class,
-            fn (EventApplicationDecisionNotification $n) => $n->decision === EventApplicationDecisionNotification::ACCEPTED
+            fn (EventApplicationDecisionNotification $n) => $n->decision === EventApplicationDecisionNotification::PROMOTED
                 && $n->eventId === $event->id
         );
         Notification::assertNotSentTo($student3, EventApplicationDecisionNotification::class);

@@ -56,8 +56,8 @@ function markAllRead() {
             :icon="Bell"
             title="No notifications"
         >
-            When an organizer selects you for an event or changes your
-            application, you will see it here.
+            When your application changes, or an event you applied to is
+            cancelled, put on hold or restored, you will see it here.
         </EmptyState>
 
         <ul

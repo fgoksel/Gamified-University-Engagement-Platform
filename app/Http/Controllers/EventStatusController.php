@@ -3,9 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\Event;
+use App\Models\EventApplication;
+use App\Models\User;
+use App\Notifications\EventStatusChangedNotification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Notification;
 
 /**
  * Lifecycle actions on "Organized by me" (Task #37, UC-1.3).
@@ -15,6 +19,9 @@ use Illuminate\Support\Facades\Gate;
  *   on_hold    -> published   (restore)
  *   any open   -> cancelled   (cancel, with a reason)
  *   no applicants -> deleted  (delete; otherwise cancel instead)
+ *
+ * Hold, restore and cancel tell the students who still have an application
+ * (Task #53, D09).
  */
 class EventStatusController extends Controller
 {
@@ -48,6 +55,7 @@ class EventStatusController extends Controller
         }
 
         $event->update(['status' => Event::STATUS_ON_HOLD]);
+        $this->notifyApplicants($event, EventStatusChangedNotification::ON_HOLD);
 
         return back()->with('success', "“{$event->title}” is on hold. Students no longer see it.");
     }
@@ -61,6 +69,7 @@ class EventStatusController extends Controller
         }
 
         $event->update(['status' => Event::STATUS_PUBLISHED]);
+        $this->notifyApplicants($event, EventStatusChangedNotification::RESTORED);
 
         return back()->with('success', "“{$event->title}” is published again.");
     }
@@ -84,6 +93,7 @@ class EventStatusController extends Controller
             'cancelled_at' => now(),
             'cancellation_reason' => trim($data['reason']),
         ]);
+        $this->notifyApplicants($event, EventStatusChangedNotification::CANCELLED, $event->cancellation_reason);
 
         return back()->with('success', "“{$event->title}” is cancelled.");
     }
@@ -100,5 +110,19 @@ class EventStatusController extends Controller
         $event->delete();
 
         return back()->with('success', "“{$event->title}” is deleted.");
+    }
+
+    /**
+     * Everyone whose application is still open; withdrawn and rejected students are left alone.
+     */
+    private function notifyApplicants(Event $event, string $change, ?string $reason = null): void
+    {
+        $students = User::query()
+            ->whereIn('id', $event->applications()
+                ->whereIn('status', [EventApplication::PENDING, EventApplication::ACCEPTED, EventApplication::WAITLISTED])
+                ->select('student_id'))
+            ->get();
+
+        Notification::send($students, new EventStatusChangedNotification($change, $event->id, $event->title, $reason));
     }
 }

@@ -8,20 +8,32 @@ use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 /**
- * Tells a student that the organizer accepted, rejected or took back the
- * selection of their application (Tasks #41 and #53, UC-1.6). Queued; sent by
- * mail and stored in-app (shown on the Notifications page).
+ * Tells a student what happened to their application (Tasks #41 and #53,
+ * UC-1.6 / UC-2.3): selected, rejected or taken back out of a selection by the
+ * organizer; or, for first come first served events, given a place, put on the
+ * waitlist or promoted from it. Queued; sent by mail and stored in-app (shown
+ * on the Notifications page).
  */
 class EventApplicationDecisionNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
+    /** Selected by the organizer (selection mode). */
     public const ACCEPTED = 'accepted';
 
     public const REJECTED = 'rejected';
 
     /** Taken out of a selection: the application is pending again (UC-1.6). */
     public const REMOVED = 'removed';
+
+    /** First come first served: a place was free, so the application was accepted at once. */
+    public const CONFIRMED = 'confirmed';
+
+    /** First come first served: the event was full, so the application waits for a place. */
+    public const WAITLISTED = 'waitlisted';
+
+    /** First come first served: someone withdrew and the student moved up from the waitlist. */
+    public const PROMOTED = 'promoted';
 
     public function __construct(
         public readonly string $decision,
@@ -39,28 +51,39 @@ class EventApplicationDecisionNotification extends Notification implements Shoul
 
     public function toMail(object $notifiable): MailMessage
     {
-        $mail = (new MailMessage)->greeting("Hello {$notifiable->name},");
+        [$subject, $lines] = match ($this->decision) {
+            self::ACCEPTED => ['You were selected for an event', [
+                "You have been selected for \"{$this->eventTitle}\".",
+                'You can follow it under My events.',
+            ]],
+            self::REMOVED => ['You were removed from an event selection', [
+                "The organizer removed you from the selection for \"{$this->eventTitle}\".",
+                'Your application is pending again, so the organizer may select you later.',
+            ]],
+            self::CONFIRMED => ['Your place at an event is confirmed', [
+                "Your application for \"{$this->eventTitle}\" was accepted: you have a place.",
+                'You can follow it under My events.',
+            ]],
+            self::WAITLISTED => ['You are on the waitlist for an event', [
+                "\"{$this->eventTitle}\" is full, so you have been placed on the waitlist.",
+                'If a place becomes free you move up automatically, and we will tell you.',
+            ]],
+            self::PROMOTED => ['A place opened up: you are in', [
+                "A place became free at \"{$this->eventTitle}\" and you moved up from the waitlist.",
+                'Your application is now accepted. You can follow it under My events.',
+            ]],
+            default => ['Your event application was not accepted', [
+                "Your application for \"{$this->eventTitle}\" was not accepted by the organizer.",
+            ]],
+        };
 
-        if ($this->decision === self::ACCEPTED) {
-            return $mail
-                ->subject('You were selected for an event')
-                ->line("You have been selected for \"{$this->eventTitle}\".")
-                ->line('You can follow it under My events.')
-                ->salutation('Best regards, University Engagement Team');
+        $mail = (new MailMessage)->subject($subject)->greeting("Hello {$notifiable->name},");
+
+        foreach ($lines as $line) {
+            $mail->line($line);
         }
 
-        if ($this->decision === self::REMOVED) {
-            return $mail
-                ->subject('You were removed from an event selection')
-                ->line("The organizer removed you from the selection for \"{$this->eventTitle}\".")
-                ->line('Your application is pending again, so the organizer may select you later.')
-                ->salutation('Best regards, University Engagement Team');
-        }
-
-        return $mail
-            ->subject('Your event application was not accepted')
-            ->line("Your application for \"{$this->eventTitle}\" was not accepted by the organizer.")
-            ->salutation('Best regards, University Engagement Team');
+        return $mail->salutation('Best regards, University Engagement Team');
     }
 
     /**

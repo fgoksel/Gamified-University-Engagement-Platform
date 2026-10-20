@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Notifications\EventApplicationDecisionNotification;
+use App\Notifications\EventStatusChangedNotification;
 use Illuminate\Notifications\DatabaseNotification;
 
 /**
@@ -55,7 +56,46 @@ class NotificationFeed
                     'Your application is pending again, so the organizer may select you later.',
                     '/my-events',
                 ],
+                EventApplicationDecisionNotification::CONFIRMED => [
+                    "Your place at {$event} is confirmed",
+                    'Your application was accepted. You can follow it under My events.',
+                    '/my-events',
+                ],
+                EventApplicationDecisionNotification::WAITLISTED => [
+                    "You are on the waitlist for {$event}",
+                    'The event is full. If a place becomes free you move up automatically.',
+                    '/my-events',
+                ],
+                EventApplicationDecisionNotification::PROMOTED => [
+                    "A place opened up: you are in for {$event}",
+                    'You moved up from the waitlist and your application is now accepted.',
+                    '/my-events',
+                ],
                 default => ['Update on your application', $event, '/my-events'],
+            };
+        }
+
+        if ($notification->type === EventStatusChangedNotification::class) {
+            $event = $data['event_title'] ?? 'an event';
+            $reason = filled($data['reason'] ?? null) ? " Reason: {$data['reason']}" : '';
+
+            return match ($data['change'] ?? null) {
+                EventStatusChangedNotification::CANCELLED => [
+                    "{$event} is cancelled",
+                    "The organizer cancelled the event. It will not take place.{$reason}",
+                    '/my-events',
+                ],
+                EventStatusChangedNotification::ON_HOLD => [
+                    "{$event} is on hold",
+                    'The event may come back later. Your application is kept.',
+                    '/my-events',
+                ],
+                EventStatusChangedNotification::RESTORED => [
+                    "{$event} is back",
+                    'You keep your place. Check the date; if it no longer suits you, you can withdraw.',
+                    '/my-events',
+                ],
+                default => ['Update on an event you applied to', $event, '/my-events'],
             };
         }
 
