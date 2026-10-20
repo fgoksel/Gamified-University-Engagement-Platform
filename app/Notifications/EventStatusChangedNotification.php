@@ -53,7 +53,7 @@ class EventStatusChangedNotification extends Notification implements ShouldQueue
             ]],
             default => ['An event you applied to is back', [
                 "\"{$this->eventTitle}\" is back on. You keep your place.",
-                'Check the new date under My events. If it no longer suits you, you can withdraw.',
+                'Check the date under My events. If it no longer suits you, you can withdraw.',
             ]],
         };
 
