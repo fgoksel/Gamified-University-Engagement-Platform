@@ -81,6 +81,16 @@ is deferred are in [docs/topic-tree.md](docs/topic-tree.md).
   (`demo.lead@example.test`, `demo.delegate@example.test`, `demo.contributor@example.test`, `demo.reader@example.test`,
   `demo.programmer@example.test`, password `password`). Running it again changes nothing, and it refuses to run when
   `APP_ENV=production`. The role and topic names are examples; none of them is special.
+- **Sprint 2 demo data (optional, never part of the normal seeders):** two branches with their own organisers and
+  students, and events in every state (one running right now), for the events, applications, attendance and points demo
+
+  ```bash
+  docker compose exec app php artisan db:seed --class=Sprint2DemoSeeder
+  ```
+
+  The accounts are `sprint2.<name>@example.test` with password `password`; the script for the demo is in
+  [`docs/sprint2-demo.md`](docs/sprint2-demo.md). Event times are relative to when it runs, so seed shortly before the
+  demo. Like the topic demo, running it again changes nothing and it refuses to run when `APP_ENV=production`.
 - Upgrading an existing database: `php artisan migrate` copies the old faculty tree into topics (ids are kept, the old
   tables stay untouched). See "Migration and compatibility" in the document above before upgrading a database that matters,
   and take a backup first.
