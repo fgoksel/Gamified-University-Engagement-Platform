@@ -154,8 +154,120 @@ class EventCatalogTest extends TopicTestCase
         $this->assertSame(['Football cup'], $this->titlesFor($this->student, '?category=sports'));
         // An unknown category is ignored rather than hiding everything.
         $this->assertCount(2, $this->titlesFor($this->student, '?category=nonsense'));
-        // Search terms are text, not patterns.
+        // Search terms are text, not patterns: % and _ match only themselves.
         $this->assertSame([], $this->titlesFor($this->student, '?q=%25'));
+        $this->assertSame([], $this->titlesFor($this->student, '?q=_'));
+    }
+
+    public function test_percent_and_underscore_in_titles_can_be_searched(): void
+    {
+        $this->event('100% attendance award');
+        $this->event('snake_case workshop');
+        $this->event('Plain talk');
+
+        $this->assertSame(['100% attendance award'], $this->titlesFor($this->student, '?q=100%25'));
+        $this->assertSame(['snake_case workshop'], $this->titlesFor($this->student, '?q=e_c'));
+    }
+
+    public function test_topic_or_branch_filter(): void
+    {
+        $this->event('Course lab', ['audience_topic_id' => $this->course->id]);
+        $this->event('Faculty talk');
+        $this->event('Faculty fair', ['owning_topic_id' => $this->faculty->id, 'audience_topic_id' => $this->faculty->id]);
+
+        // The Databases branch: events run or announced at Databases or below it.
+        $this->assertSame(['Course lab', 'Faculty talk'], $this->titlesFor($this->student, '?topic='.$this->course->id));
+        // The faculty branch also includes the event the faculty itself runs.
+        $this->assertSame(['Course lab', 'Faculty fair', 'Faculty talk'], $this->titlesFor($this->student, '?topic='.$this->faculty->id));
+
+        // Only topics the person can see events in are offered, and others are ignored.
+        $this->actingAs($this->student)->get('/events')
+            ->assertInertia(fn (Assert $page) => $page->where('topicOptions', fn ($topics) => collect($topics)->pluck('id')->sort()->values()->all()
+                === collect([$this->faculty->id, $this->course->id])->sort()->values()->all()));
+        $this->assertCount(3, $this->titlesFor($this->student, '?topic='.$this->otherFaculty->id));
+    }
+
+    public function test_topic_options_are_in_tree_order(): void
+    {
+        // An extra branch whose name sorts before "Faculty of Informatics".
+        $arts = $this->topic('Arts club', $this->university);
+        $viewer = $this->role('Viewer', [Capability::View, Capability::EventsView]);
+        $this->assign($this->student, $viewer, $this->university);
+
+        $this->actingAs($this->student)->get('/events')
+            ->assertInertia(fn (Assert $page) => $page->where('topicOptions', fn ($topics) => collect($topics)->pluck('title')->values()->all() === [
+                'University', 'Arts club', 'Faculty of Informatics', 'Databases', 'Faculty of Medicine',
+            ]));
+    }
+
+    public function test_date_range_filter(): void
+    {
+        $this->event('Next week', ['event_starts_at' => now()->addDays(7)->setTime(10, 0), 'event_ends_at' => now()->addDays(7)->setTime(12, 0)]);
+        $this->event('Next month', ['event_starts_at' => now()->addDays(30)->setTime(10, 0), 'event_ends_at' => now()->addDays(30)->setTime(12, 0)]);
+        $this->event('Last month', [
+            'event_starts_at' => now()->subDays(30)->setTime(10, 0),
+            'event_ends_at' => now()->subDays(30)->setTime(12, 0),
+            'application_deadline' => now()->subDays(31),
+        ]);
+
+        $day = fn (int $days) => now()->addDays($days)->format('Y-m-d');
+
+        // A single day, inclusive at both ends.
+        $this->assertSame(['Next week'], $this->titlesFor($this->student, "?from={$day(7)}&to={$day(7)}"));
+        // Only a start: everything from then on.
+        $this->assertSame(['Next month', 'Next week'], $this->titlesFor($this->student, "?from={$day(1)}"));
+        // A range in the past works too: picking dates switches to "all dates".
+        $this->assertSame(['Last month'], $this->titlesFor($this->student, "?from={$day(-40)}&to={$day(-20)}"));
+        $this->actingAs($this->student)->get("/events?from={$day(-40)}")
+            ->assertInertia(fn (Assert $page) => $page->where('filters.when', 'any'));
+        // Reversed or invalid dates never cause an error.
+        $this->assertSame(['Next week'], $this->titlesFor($this->student, "?from={$day(8)}&to={$day(6)}"));
+        $this->assertCount(2, $this->titlesFor($this->student, '?from=2026-02-31&to=nonsense'));
+    }
+
+    public function test_the_detail_page_follows_the_visibility_rules(): void
+    {
+        $visible = $this->event('Faculty talk', ['description' => "Line one\nLine two"]);
+        $medicine = $this->event('Medicine only', ['owning_topic_id' => $this->otherFaculty->id, 'audience_topic_id' => $this->otherFaculty->id]);
+        $draft = $this->event('Still a draft', ['status' => 'draft', 'published_at' => null]);
+        $surprise = $this->event('Surprise later', ['is_hidden' => true, 'reveal_at' => now()->addDay()]);
+
+        $this->actingAs($this->student)->get("/events/{$visible->id}")
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Events/Show')
+                ->where('event.title', 'Faculty talk')
+                ->where('event.status', 'published')
+                ->where('event.can_apply', true));
+
+        // A direct URL to something the student may not see is simply "not found".
+        foreach ([$medicine, $draft, $surprise] as $hidden) {
+            $this->actingAs($this->student)->get("/events/{$hidden->id}")->assertNotFound();
+        }
+        $this->actingAs($this->student)->get('/events/999999')->assertNotFound();
+
+        // Staff of the owning topic may open their draft and their unrevealed surprise.
+        $this->actingAs($this->teacher)->get("/events/{$draft->id}")->assertOk();
+        $this->actingAs($this->teacher)->get("/events/{$surprise->id}")
+            ->assertInertia(fn (Assert $page) => $page->where('event.is_surprise', true));
+    }
+
+    public function test_the_detail_page_matches_the_policy_for_everyone(): void
+    {
+        $events = collect([
+            $this->event('A'),
+            $this->event('B', ['status' => 'on_hold']),
+            $this->event('C', ['owning_topic_id' => $this->otherFaculty->id, 'audience_topic_id' => $this->otherFaculty->id]),
+            $this->event('D', ['is_hidden' => true, 'reveal_at' => now()->addDay()]),
+            $this->event('E', ['audience_topic_id' => null]),
+        ]);
+
+        foreach ([$this->student, $this->teacher] as $user) {
+            foreach ($events as $event) {
+                $allowed = Gate::forUser($user)->allows('view', $event);
+                $this->actingAs($user)->get("/events/{$event->id}")->assertStatus($allowed ? 200 : 404);
+            }
+        }
     }
 
     public function test_each_event_shows_places_and_the_students_own_application(): void
