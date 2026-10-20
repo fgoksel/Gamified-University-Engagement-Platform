@@ -1,16 +1,21 @@
 <script setup>
 import { ref, watch } from "vue";
-import { Link, router, usePage } from "@inertiajs/vue3";
-import { CalendarDays, LoaderCircle, Search } from "@lucide/vue";
+import { Link, router } from "@inertiajs/vue3";
+import { CalendarDays, Search } from "@lucide/vue";
 import EmptyState from "../../Components/EmptyState.vue";
+import ApplyAction from "../../Components/Events/ApplyAction.vue";
 import CatalogEventCard from "../../Components/Events/CatalogEventCard.vue";
 import { categoryDot } from "../../categoryColors.js";
 
-// All events (Task #40) with the Apply button (Task #49), UC-1.5, UC-2.3
+// All events (Task #40): filtered by topic or branch, category and date,
+// with the Apply button (Task #49). UC-1.5, UC-2.3
 defineOptions({ layout: { title: "All events" } });
 
 const props = defineProps({
     filters: { type: Object, required: true },
+    // Topics the person can see events in: [{ id, title, depth }].
+    // Not "topics": that name is the shared menu flag.
+    topicOptions: { type: Array, default: () => [] },
     // Laravel paginator: { data, links, total, last_page, ... }
     events: { type: Object, required: true },
 });
@@ -26,7 +31,17 @@ const categories = [
 const whenOptions = [
     { value: "upcoming", label: "Upcoming" },
     { value: "past", label: "Past" },
+    { value: "any", label: "All dates" },
 ];
+
+// Indent child topics so the branch structure stays readable in the list.
+const topicLabel = (topic) =>
+    `${"\u00a0\u00a0".repeat(topic.depth)}${topic.title}`;
+
+// A date range shows every matching date, so "Upcoming"/"Past" switch to "All dates".
+function setDate(key, value) {
+    visit({ [key]: value || null, when: "any", page: null });
+}
 
 const search = ref(props.filters.q ?? "");
 
@@ -52,38 +67,19 @@ watch(search, (value) => {
     timer = setTimeout(() => visit({ q: value }), 300);
 });
 
-const isFiltered = () => Boolean(props.filters.q || props.filters.category);
-
-// Apply (Task #49): uses the application endpoint of Task #39. The server
-// decides accepted / waitlisted / pending and answers with a flash message.
-const page = usePage();
-const applyingId = ref(null);
-const failedId = ref(null);
-
-function applyLabel(event) {
-    if (event.my_status === "withdrawn") return "Apply again";
-    if (event.application_type === "fcfs" && event.places_left === 0) {
-        return "Join waitlist";
-    }
-    return "Apply";
-}
-
-function apply(event) {
-    failedId.value = null;
-    router.post(
-        `/events/${event.id}/apply`,
-        {},
-        {
-            preserveScroll: true,
-            onStart: () => (applyingId.value = event.id),
-            onError: () => (failedId.value = event.id),
-            onFinish: () => (applyingId.value = null),
-        },
+const isFiltered = () =>
+    Boolean(
+        props.filters.q ||
+        props.filters.category ||
+        props.filters.topic ||
+        props.filters.from ||
+        props.filters.to,
     );
-}
 
-// The service reports refusals under "event" or "student".
-const applyError = () => page.props.errors?.event ?? page.props.errors?.student;
+function clearFilters() {
+    search.value = "";
+    router.get("/events", {}, { preserveScroll: true, replace: true });
+}
 
 // Laravel's page labels contain HTML entities ("&laquo; Previous").
 function pageLabel(label) {
@@ -131,8 +127,53 @@ function pageLabel(label) {
                 </div>
             </div>
 
+            <div class="grid gap-3 sm:grid-cols-3">
+                <label class="block text-sm">
+                    <span class="font-medium text-fg">Topic or branch</span>
+                    <select
+                        :value="filters.topic ?? ''"
+                        class="mt-1 block w-full rounded-control border border-line bg-surface px-3 py-2 text-fg focus:outline-2 focus:outline-offset-0 focus:outline-ring"
+                        @change="
+                            visit({
+                                topic: $event.target.value || null,
+                                page: null,
+                            })
+                        "
+                    >
+                        <option value="">All topics</option>
+                        <option
+                            v-for="topic in topicOptions"
+                            :key="topic.id"
+                            :value="topic.id"
+                        >
+                            {{ topicLabel(topic) }}
+                        </option>
+                    </select>
+                </label>
+                <label class="block text-sm">
+                    <span class="font-medium text-fg">From</span>
+                    <input
+                        type="date"
+                        :value="filters.from ?? ''"
+                        :max="filters.to ?? undefined"
+                        class="mt-1 block w-full rounded-control border border-line bg-surface px-3 py-2 text-fg focus:outline-2 focus:outline-offset-0 focus:outline-ring"
+                        @change="setDate('from', $event.target.value)"
+                    />
+                </label>
+                <label class="block text-sm">
+                    <span class="font-medium text-fg">To</span>
+                    <input
+                        type="date"
+                        :value="filters.to ?? ''"
+                        :min="filters.from ?? undefined"
+                        class="mt-1 block w-full rounded-control border border-line bg-surface px-3 py-2 text-fg focus:outline-2 focus:outline-offset-0 focus:outline-ring"
+                        @change="setDate('to', $event.target.value)"
+                    />
+                </label>
+            </div>
+
             <div
-                class="flex flex-wrap gap-2"
+                class="flex flex-wrap items-center gap-2"
                 role="group"
                 aria-label="Category"
             >
@@ -156,6 +197,14 @@ function pageLabel(label) {
                     />
                     {{ cat.label }}
                 </button>
+                <button
+                    v-if="isFiltered()"
+                    type="button"
+                    class="ml-auto text-sm text-primary underline-offset-2 hover:underline"
+                    @click="clearFilters"
+                >
+                    Clear filters
+                </button>
             </div>
         </div>
 
@@ -172,31 +221,7 @@ function pageLabel(label) {
                     :event="event"
                 >
                     <template #actions>
-                        <div
-                            v-if="event.can_apply || failedId === event.id"
-                            class="ml-auto flex flex-col items-end gap-1"
-                        >
-                            <button
-                                v-if="event.can_apply"
-                                type="button"
-                                :disabled="applyingId !== null"
-                                class="inline-flex items-center gap-2 rounded-control bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:opacity-70"
-                                @click="apply(event)"
-                            >
-                                <LoaderCircle
-                                    v-if="applyingId === event.id"
-                                    class="size-4 animate-spin"
-                                />
-                                {{ applyLabel(event) }}
-                            </button>
-                            <p
-                                v-if="failedId === event.id && applyError()"
-                                class="text-right text-sm text-danger-fg"
-                                role="alert"
-                            >
-                                {{ applyError() }}
-                            </p>
-                        </div>
+                        <ApplyAction :event="event" />
                     </template>
                 </CatalogEventCard>
             </div>
@@ -238,7 +263,7 @@ function pageLabel(label) {
             :title="isFiltered() ? 'No matching events' : 'No events yet'"
         >
             <template v-if="isFiltered()">
-                Try another search or category.
+                Try another search, topic, category or date.
             </template>
             <template v-else-if="filters.when === 'past'">
                 Events that have ended will be listed here.

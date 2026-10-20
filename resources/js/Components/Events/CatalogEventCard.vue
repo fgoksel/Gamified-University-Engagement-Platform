@@ -8,10 +8,11 @@ import {
     Trophy,
     Users,
 } from "@lucide/vue";
+import { Link } from "@inertiajs/vue3";
 import { categoryDot } from "../../categoryColors.js";
 
-// One event in "All events" (Task #40). The Apply button comes with Task #49:
-// it goes in the "actions" slot and uses event.can_apply.
+// One event in "All events" (Task #40). The Apply button (Task #49) goes in
+// the "actions" slot.
 const props = defineProps({
     event: { type: Object, required: true },
 });
@@ -37,7 +38,7 @@ const placesText = computed(() => {
 
 <template>
     <article
-        class="flex flex-col rounded-card border border-line bg-surface p-5 shadow-card"
+        class="relative flex flex-col rounded-card border border-line bg-surface p-5 shadow-card focus-within:outline-2 focus-within:outline-ring"
     >
         <div class="flex flex-wrap items-center gap-2 text-xs font-medium">
             <span
@@ -57,6 +58,12 @@ const placesText = computed(() => {
                 Surprise event
             </span>
             <span
+                v-if="event.already_applied"
+                class="rounded-full bg-primary/10 px-2.5 py-0.5 text-primary"
+            >
+                Already applied
+            </span>
+            <span
                 v-if="!event.is_open"
                 class="rounded-full bg-surface-muted px-2.5 py-0.5 text-fg-muted"
             >
@@ -64,7 +71,15 @@ const placesText = computed(() => {
             </span>
         </div>
 
-        <h2 class="mt-3 text-base font-semibold text-fg">{{ event.title }}</h2>
+        <h2 class="mt-3 text-base font-semibold text-fg">
+            <!-- The whole card opens the detail page; the link covers it. -->
+            <Link
+                :href="`/events/${event.id}`"
+                class="after:absolute after:inset-0 focus-visible:outline-none hover:underline"
+            >
+                {{ event.title }}
+            </Link>
+        </h2>
         <p class="mt-1 line-clamp-2 text-sm text-fg-muted">
             {{ event.description }}
         </p>
@@ -124,7 +139,9 @@ const placesText = computed(() => {
             <p v-if="event.my_status" class="text-sm font-medium text-primary">
                 {{ myStatusLabel[event.my_status] }}
             </p>
-            <slot name="actions" :event="event" />
+            <div class="relative z-10 ml-auto">
+                <slot name="actions" :event="event" />
+            </div>
         </div>
     </article>
 </template>

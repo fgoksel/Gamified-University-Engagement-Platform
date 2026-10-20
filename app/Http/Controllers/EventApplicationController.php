@@ -8,6 +8,7 @@ use App\Services\EventApplicationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class EventApplicationController extends Controller
 {
@@ -16,6 +17,18 @@ class EventApplicationController extends Controller
      */
     public function store(Request $request, Event $event, EventApplicationService $service): RedirectResponse|JsonResponse
     {
+        // Time-conflict warning (UC-2.3): when the student already has a place at an
+        // overlapping event, they must confirm before the application is sent.
+        if (! $request->boolean('confirm_overlap') && $service->mayApply($request->user(), $event)) {
+            $overlap = $service->conflictingEvent($request->user(), $event);
+
+            if ($overlap !== null) {
+                throw ValidationException::withMessages([
+                    'overlap' => "This event overlaps in time with {$overlap->title}. Are you sure you want to apply?",
+                ]);
+            }
+        }
+
         $application = $service->apply($request->user(), $event);
 
         $message = match ($application->status) {

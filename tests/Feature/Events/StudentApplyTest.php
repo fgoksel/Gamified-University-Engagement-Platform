@@ -14,8 +14,9 @@ use Inertia\Testing\AssertableInertia as Assert;
 use Tests\Feature\Topics\TopicTestCase;
 
 /**
- * Task #49: a student applies from "All events". The catalog and the
- * application endpoint follow the same rule (EventPolicy::apply).
+ * Task #49: a student applies from "All events" or the event's page. The Apply
+ * button and the application endpoint use the same checks; applying needs
+ * explicit membership of the audience topic itself (meeting of 16 Oct).
  */
 class StudentApplyTest extends TopicTestCase
 {
@@ -101,16 +102,102 @@ class StudentApplyTest extends TopicTestCase
         $this->assertSame(EventApplication::WAITLISTED, EventApplication::where('student_id', $second->id)->value('status'));
     }
 
-    public function test_a_student_of_the_whole_university_may_apply_to_a_faculty_event(): void
+    public function test_membership_of_a_topic_above_the_audience_is_not_enough(): void
     {
+        // Meeting of 16 Oct: explicit audience-node membership; nothing flows down.
         $event = $this->event();
         $student = $this->student($this->university, 'UNI001');
 
         $this->actingAs($student)->get('/events')
-            ->assertInertia(fn (Assert $page) => $page->where('events.data.0.can_apply', true));
+            ->assertInertia(fn (Assert $page) => $page->where('events.data.0.can_apply', false));
 
-        $this->actingAs($student)->post("/events/{$event->id}/apply")->assertSessionHasNoErrors();
-        $this->assertTrue(EventApplication::where('student_id', $student->id)->exists());
+        $this->actingAs($student)->post("/events/{$event->id}/apply")
+            ->assertSessionHasErrors(['event' => 'You do not belong to the audience for this event.']);
+        $this->assertSame(0, EventApplication::count());
+    }
+
+    public function test_membership_of_a_topic_below_the_audience_is_not_enough(): void
+    {
+        $event = $this->event();
+        $student = $this->student($this->course, 'CRS001');
+
+        $this->actingAs($student)->post("/events/{$event->id}/apply")
+            ->assertSessionHasErrors(['event' => 'You do not belong to the audience for this event.']);
+    }
+
+    public function test_an_overlapping_event_needs_confirmation_before_applying(): void
+    {
+        $student = $this->student($this->faculty, 'OVL001');
+        $first = $this->event(['title' => 'SQL night']);
+        $this->actingAs($student)->post("/events/{$first->id}/apply")->assertSessionHasNoErrors();
+
+        // Starts one hour into the first one.
+        $second = $this->event([
+            'title' => 'Robotics demo',
+            'event_starts_at' => now()->addDays(5)->addHour(),
+            'event_ends_at' => now()->addDays(5)->addHours(3),
+        ]);
+
+        $this->actingAs($student)->get("/events/{$second->id}")
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('event.can_apply', true)
+                ->where('event.overlaps_with', 'SQL night'));
+
+        // Without confirming: the warning, and nothing is saved.
+        $this->actingAs($student)->post("/events/{$second->id}/apply")
+            ->assertSessionHasErrors(['overlap' => 'This event overlaps in time with SQL night. Are you sure you want to apply?']);
+        $this->assertFalse(EventApplication::where('event_id', $second->id)->exists());
+
+        // After confirming: applied.
+        $this->actingAs($student)->post("/events/{$second->id}/apply", ['confirm_overlap' => true])
+            ->assertSessionHasNoErrors();
+        $this->assertTrue(EventApplication::where('event_id', $second->id)->exists());
+    }
+
+    public function test_no_warning_for_events_that_do_not_overlap_or_where_the_student_has_no_place(): void
+    {
+        $student = $this->student($this->faculty, 'OVL002');
+        $first = $this->event(['title' => 'Morning talk', 'capacity' => 1]);
+        // Someone else takes the only place: the student only waits, so there is no clash.
+        $this->actingAs($this->student($this->faculty, 'OTHER1'))->post("/events/{$first->id}/apply");
+        $this->actingAs($student)->post("/events/{$first->id}/apply");
+        $this->assertSame(EventApplication::WAITLISTED, EventApplication::where('student_id', $student->id)->value('status'));
+
+        $same = $this->event(['title' => 'Same time']);
+        $later = $this->event([
+            'title' => 'Later the same day',
+            'event_starts_at' => now()->addDays(5)->addHours(2),
+            'event_ends_at' => now()->addDays(5)->addHours(4),
+        ]);
+
+        $this->actingAs($student)->post("/events/{$same->id}/apply")->assertSessionHasNoErrors();
+        // Back to back (ends exactly when the next one starts) is not an overlap.
+        $this->actingAs($student)->post("/events/{$later->id}/apply")->assertSessionHasNoErrors();
+    }
+
+    public function test_the_card_says_already_applied(): void
+    {
+        $event = $this->event();
+        $student = $this->student($this->faculty, 'ALR001');
+
+        $this->actingAs($student)->get('/events')
+            ->assertInertia(fn (Assert $page) => $page->where('events.data.0.already_applied', false));
+
+        $this->actingAs($student)->post("/events/{$event->id}/apply");
+
+        $this->actingAs($student)->get('/events')
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('events.data.0.already_applied', true)
+                ->where('events.data.0.can_apply', false));
+        $this->actingAs($student)->get("/events/{$event->id}")
+            ->assertInertia(fn (Assert $page) => $page->where('event.already_applied', true));
+
+        // After withdrawing it is no longer "already applied", and the student may apply again.
+        $this->actingAs($student)->post("/events/{$event->id}/withdraw");
+        $this->actingAs($student)->get('/events')
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('events.data.0.already_applied', false)
+                ->where('events.data.0.can_apply', true));
     }
 
     public function test_a_student_of_only_a_sibling_course_may_not_apply(): void
