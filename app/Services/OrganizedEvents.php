@@ -137,6 +137,7 @@ class OrganizedEvents
             'can_manage' => $gate->allows('manage', $event),
             'can_review' => $gate->allows('manageApplicants', $event),
             'can_credit' => $gate->allows('credit', $event),
+            'can_qr' => $gate->allows('manageQr', $event),
         ])->all();
     }
 }

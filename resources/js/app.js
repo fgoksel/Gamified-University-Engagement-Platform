@@ -5,6 +5,7 @@ import { useThemeStore } from "./stores/theme.js";
 import AppLayout from "./Layouts/AppLayout.vue";
 import AuthLayout from "./Layouts/AuthLayout.vue";
 import GuestLayout from "./Layouts/GuestLayout.vue";
+import PrintLayout from "./Layouts/PrintLayout.vue";
 
 createInertiaApp({
     resolve: (name) => {
@@ -13,8 +14,10 @@ createInertiaApp({
     },
     // Every page gets a layout automatically:
     // Pages/Public/ use GuestLayout, Pages/Auth/ (login, passwords) use
-    // AuthLayout, all others use AppLayout.
+    // AuthLayout, Pages/Print/ (sheets to print) use PrintLayout, all others
+    // use AppLayout.
     layout: (name) => {
+        if (name.startsWith("Print/")) return PrintLayout;
         if (name.startsWith("Public/")) return GuestLayout;
         if (name.startsWith("Auth/")) return AuthLayout;
         return AppLayout;

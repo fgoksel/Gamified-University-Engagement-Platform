@@ -11,6 +11,7 @@ use App\Http\Controllers\Auth\SetPasswordController;
 use App\Http\Controllers\EventApplicationController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\EventCreditController;
+use App\Http\Controllers\EventQrCodeController;
 use App\Http\Controllers\EventQrController;
 use App\Http\Controllers\EventStatusController;
 use App\Http\Controllers\LeaderboardController;
@@ -108,6 +109,14 @@ Route::middleware('auth')->group(function () {
                 ->whereNumber(['event', 'token'])->whereIn('format', ['svg', 'png'])->name('events.qr.image');
             Route::post('/events/{event}/qr-tokens/{token}/revoke', [EventQrController::class, 'revoke'])
                 ->whereNumber(['event', 'token'])->name('events.qr.revoke');
+
+            // The organiser's QR page: make, print (posters and slips) and revoke codes (Task #44).
+            Route::prefix('events/{event}/qr-codes')->whereNumber('event')->name('events.qr-codes.')->group(function () {
+                Route::get('/', [EventQrCodeController::class, 'index'])->name('index');
+                Route::post('/', [EventQrCodeController::class, 'store'])->name('store');
+                Route::post('/{token}/revoke', [EventQrCodeController::class, 'revoke'])->whereNumber('token')->name('revoke');
+                Route::get('/print/{type}', [EventQrCodeController::class, 'print'])->whereIn('type', ['poster', 'slip'])->name('print');
+            });
 
             // Lifecycle actions on "Organized by me" (Task #37, UC-1.3). EventPolicy::manage
             // checks the events.manage capability at the owning topic (Task #65).
