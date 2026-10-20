@@ -60,6 +60,10 @@ class HandleInertiaRequests extends Middleware
             // Menu flags for Topics: shown only to people who can open a topic, and
             // "Roles" only to those who may define or give roles somewhere.
             'topics' => fn () => $request->user() ? $this->topicMenu($request) : null,
+            // Unread in-app notifications, shown as a badge in the menu (Task #53)
+            'notifications' => fn () => $request->user()
+                ? ['unread' => $request->user()->unreadNotifications()->count()]
+                : null,
             // Subject Area panel in the sidebar: teachers only (UC-1.2)
             'subjectAreaTree' => fn () => $request->user()?->hasRole(UserRole::Teacher)
                 ? SubjectAreaTree::for($request->user())

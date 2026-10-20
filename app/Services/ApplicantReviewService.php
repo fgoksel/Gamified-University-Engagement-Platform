@@ -176,6 +176,7 @@ class ApplicantReviewService
                 } elseif (! $isSelected && $application->status === EventApplication::ACCEPTED) {
                     $this->move($application, EventApplication::PENDING, $actor, 'Removed from selection by organizer');
                     $application->update(['decided_by_id' => null, 'decided_at' => null]);
+                    $notify[] = [$application->student_id, EventApplicationDecisionNotification::REMOVED];
                     $unselected++;
                 }
             }

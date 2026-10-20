@@ -1,4 +1,5 @@
 import {
+    Bell,
     CalendarDays,
     FolderTree,
     QrCode,
@@ -10,9 +11,16 @@ import {
 // Main menu of AppLayout, per role. One place to add or rename menu items.
 // An item with "children" is a group heading with links under it.
 // "framed" draws a border around the item (used for the QR shortcut).
+// "badge" names a count in the shared "notifications" prop, shown as a pill.
 // "needs" hides an item unless the backend shares that flag in "topics"
 // (Topics is shown only to people who have access to at least one topic).
 const leaderboard = { label: "Leaderboard", href: "/", icon: Trophy };
+const notifications = {
+    label: "Notifications",
+    href: "/notifications",
+    icon: Bell,
+    badge: "unread",
+};
 const profile = { label: "Profile", href: "/profile", icon: UserRound };
 const topics = {
     label: "Topics",
@@ -41,6 +49,7 @@ export const navigation = {
         },
         topics,
         topicRoles,
+        notifications,
         profile,
     ],
     student: [
@@ -55,6 +64,7 @@ export const navigation = {
         },
         topics,
         topicRoles,
+        notifications,
         profile,
         { label: "Scan QR code", href: "/scan", icon: QrCode, framed: true },
     ],

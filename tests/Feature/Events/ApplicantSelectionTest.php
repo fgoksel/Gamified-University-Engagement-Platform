@@ -199,6 +199,22 @@ class ApplicantSelectionTest extends TopicTestCase
         $this->assertNull($a->decided_at);
     }
 
+    public function test_a_student_taken_out_of_the_selection_is_told_and_nobody_else_is(): void
+    {
+        $event = $this->event(['capacity' => 2]);
+        $a = $this->applicant($event, 'AAA111');
+        $b = $this->applicant($event, 'BBB222');
+        $this->actingAs($this->teacher)->post(route('events.applicants.select', $event), ['selected' => [$a->id, $b->id]]);
+
+        Notification::fake();
+        $this->actingAs($this->teacher)->post(route('events.applicants.select', $event), ['selected' => [$b->id]]);
+
+        Notification::assertSentTo($a->student, EventApplicationDecisionNotification::class,
+            fn ($n) => $n->decision === EventApplicationDecisionNotification::REMOVED && $n->eventId === $event->id);
+        Notification::assertNotSentTo($b->student, EventApplicationDecisionNotification::class);
+        Notification::assertCount(1);
+    }
+
     public function test_more_ticks_than_capacity_is_refused_without_the_expand_flag(): void
     {
         $event = $this->event(['capacity' => 1]);
