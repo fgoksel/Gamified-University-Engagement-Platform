@@ -20,7 +20,10 @@ use Illuminate\Validation\ValidationException;
  */
 class EventCreditService
 {
-    public function __construct(private PointLedger $ledger) {}
+    public function __construct(
+        private PointLedger $ledger,
+        private QrPassport $passports,
+    ) {}
 
     /**
      * Credit attendance points to a student for an event.
@@ -43,8 +46,23 @@ class EventCreditService
             ]);
         }
 
-        // 3. Resolve Student
-        $student = $this->resolveStudent($identifier);
+        // 3. Resolve Student. A scanned passport must be signed and still valid (Task #52).
+        if (is_string($identifier) && $this->passports->looksLikePassport($identifier)) {
+            ['student' => $student, 'problem' => $problem] = $this->passports->resolve($identifier);
+
+            if ($problem !== null) {
+                return [
+                    'status' => $problem === 'expired' ? 'passport_expired' : 'passport_invalid',
+                    'message' => $problem === 'expired'
+                        ? 'This QR passport has expired. Ask the student to open their passport again.'
+                        : 'This QR passport is not valid.',
+                    'student' => ['id' => 0, 'name' => 'Unknown Student', 'neptun_code' => null],
+                ];
+            }
+        } else {
+            $student = $this->resolveStudent($identifier, $source);
+        }
+
         if (! $student) {
             return [
                 'status' => 'not_found',
@@ -98,50 +116,48 @@ class EventCreditService
     }
 
     /**
-     * Resolves a student model from a User instance, ID, Neptun code, or QR URL string.
+     * Resolves a student from what the organiser typed or picked (Task #43).
+     *
+     * Accepted: a Neptun code (typed by an organiser who sees the student), or,
+     * for "manual" only, the id of a student picked from the scanner's own list.
+     * Codes that anyone could make up are refused: unsigned passport links
+     * (/qr/passport/{id}), JSON with an id, or a bare id from the camera. A real
+     * passport is a signed, short-lived code (QrPassport, Task #52).
      */
-    public function resolveStudent(int|string|User $identifier): ?User
+    public function resolveStudent(int|string|User $identifier, string $source = PointLedger::PASSPORT): ?User
     {
         if ($identifier instanceof User) {
             return $identifier;
         }
 
+        $manual = $source === 'manual';
+
         if (is_int($identifier)) {
-            return User::query()->find($identifier);
+            return $manual ? User::query()->find($identifier) : null;
         }
 
         $raw = trim($identifier);
 
-        // Check if raw is a JSON payload
+        if ($raw === '' || str_contains($raw, '/qr/passport/')) {
+            return null;
+        }
+
+        // JSON payloads may name a Neptun code, never an id.
         if (str_starts_with($raw, '{') && str_ends_with($raw, '}')) {
             $data = json_decode($raw, true);
-            if (is_array($data)) {
-                if (! empty($data['user_id'])) {
-                    return User::query()->find((int) $data['user_id']);
-                }
-                if (! empty($data['student_id'])) {
-                    return User::query()->find((int) $data['student_id']);
-                }
-                if (! empty($data['neptun_code'])) {
-                    return User::query()->where('neptun_code', strtoupper((string) $data['neptun_code']))->first();
-                }
-                if (! empty($data['neptun'])) {
-                    return User::query()->where('neptun_code', strtoupper((string) $data['neptun']))->first();
-                }
-            }
+            $neptun = is_array($data) ? ($data['neptun_code'] ?? $data['neptun'] ?? null) : null;
+
+            return is_string($neptun) && $neptun !== ''
+                ? User::query()->where('neptun_code', strtoupper($neptun))->first()
+                : null;
         }
 
-        // Check if raw is a URL like /qr/passport/{user} or http://.../qr/passport/{user}?...
-        if (preg_match('#/qr/passport/(\d+)#', $raw, $matches)) {
-            return User::query()->find((int) $matches[1]);
-        }
-
-        // Check if integer string
+        // A bare id: only when the organiser picked the student from the list.
         if (ctype_digit($raw)) {
-            return User::query()->find((int) $raw);
+            return $manual ? User::query()->find((int) $raw) : null;
         }
 
-        // Otherwise check as Neptun code (case-insensitive)
+        // Otherwise a Neptun code (case-insensitive)
         return User::query()->where('neptun_code', strtoupper($raw))->first();
     }
 }

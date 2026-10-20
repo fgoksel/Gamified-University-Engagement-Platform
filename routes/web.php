@@ -15,6 +15,7 @@ use App\Http\Controllers\EventQrCodeController;
 use App\Http\Controllers\EventQrController;
 use App\Http\Controllers\EventStatusController;
 use App\Http\Controllers\LeaderboardController;
+use App\Http\Controllers\PassportController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoleAssignmentController;
 use App\Http\Controllers\RoleDefinitionController;
@@ -151,6 +152,8 @@ Route::middleware('auth')->group(function () {
             // Students redeem attendance QR codes (UC-2.3). Opening a code only shows the
             // page; points are given by the POST, which is limited per student.
             Route::middleware('permission:qr_codes.redeem')->group(function () {
+                // The student's QR passport, shown to an organiser's "Scan attendance" (Task #52)
+                Route::get('/passport', [PassportController::class, 'show'])->name('passport');
                 Route::get('/scan', [ScanController::class, 'show'])->name('scan');
                 Route::get('/qr/redeem/{code}', [ScanController::class, 'show'])
                     ->where('code', '[A-Za-z0-9.]+')->name('qr.show');

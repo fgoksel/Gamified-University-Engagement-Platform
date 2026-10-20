@@ -12,6 +12,7 @@ use App\Models\Topic;
 use App\Models\TopicTag;
 use App\Models\User;
 use App\Services\EventCreditService;
+use App\Services\QrPassport;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\Feature\Topics\TopicTestCase;
 
@@ -215,17 +216,18 @@ class QrPassportScannerTest extends TopicTestCase
         $this->assertSame(15, $result['points']);
     }
 
-    public function test_scanning_accepted_student_via_qr_url_successfully_credits_points(): void
+    public function test_scanning_a_signed_qr_passport_successfully_credits_points(): void
     {
         $event = $this->makeEvent();
         $student = $this->makeStudent('NEP101', 'Bob Martin');
         $application = $this->makeAcceptedApplication($event, $student);
 
-        $qrUrl = "http://internuni.test/qr/passport/{$student->id}";
+        // What the student's "My QR passport" page shows (Task #52).
+        $passport = app(QrPassport::class)->issue($student);
 
         $response = $this->actingAs($this->teacher)
             ->postJson("/events/{$event->id}/credit", [
-                'identifier' => $qrUrl,
+                'identifier' => $passport,
                 'source' => 'passport',
             ]);
 
@@ -288,20 +290,21 @@ class QrPassportScannerTest extends TopicTestCase
         ]);
     }
 
-    public function test_scanning_accepted_student_via_json_payload(): void
+    public function test_a_json_payload_may_name_a_neptun_code_but_not_an_id(): void
     {
         $event = $this->makeEvent();
         $student = $this->makeStudent('NEP303', 'Diana');
         $this->makeAcceptedApplication($event, $student);
 
-        $jsonPayload = json_encode(['student_id' => $student->id]);
+        // An id can be made up by anyone, so it is not accepted from a scan (Task #52).
+        $this->actingAs($this->teacher)
+            ->postJson("/events/{$event->id}/credit", ['identifier' => json_encode(['student_id' => $student->id])])
+            ->assertOk()
+            ->assertJson(['status' => 'not_found']);
 
-        $response = $this->actingAs($this->teacher)
-            ->postJson("/events/{$event->id}/credit", [
-                'identifier' => $jsonPayload,
-            ]);
-
-        $response->assertOk()
+        $this->actingAs($this->teacher)
+            ->postJson("/events/{$event->id}/credit", ['identifier' => json_encode(['neptun_code' => 'nep303'])])
+            ->assertOk()
             ->assertJson([
                 'status' => 'credited',
                 'points' => 15,

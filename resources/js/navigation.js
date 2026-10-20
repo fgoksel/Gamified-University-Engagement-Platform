@@ -1,4 +1,5 @@
 import {
+    IdCard,
     CalendarDays,
     FolderTree,
     QrCode,
@@ -56,6 +57,7 @@ export const navigation = {
         topics,
         topicRoles,
         profile,
+        { label: "My QR passport", href: "/passport", icon: IdCard },
         { label: "Scan QR code", href: "/scan", icon: QrCode, framed: true },
     ],
     // System Admins work in the admin panel; Topics and Roles open here.
