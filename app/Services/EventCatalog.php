@@ -13,7 +13,6 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Gate;
 
 /**
  * "All events" (Task #40, UC-1.5 / UC-2.3): the published events a person may see,
@@ -37,6 +36,7 @@ class EventCatalog
     public function __construct(
         private TopicAccess $access,
         private OrganizedEvents $organized,
+        private EventApplicationService $applications,
     ) {}
 
     /**
@@ -245,10 +245,17 @@ class EventCatalog
             'is_surprise' => $event->is_hidden,
             'is_open' => $open,
             'my_status' => $myStatus,
-            // Used by the Apply button (Task #49).
-            'can_apply' => $open
+            // Already applied (UC-2.3): an open application blocks applying again.
+            'already_applied' => in_array($myStatus, [EventApplication::PENDING, EventApplication::ACCEPTED, EventApplication::WAITLISTED], true),
+            // Used by the Apply button (Task #49): exactly the server's own checks.
+            'can_apply' => $canApply = (
+                $open
                 && ! in_array($myStatus, [EventApplication::PENDING, EventApplication::ACCEPTED, EventApplication::WAITLISTED, EventApplication::REJECTED], true)
-                && Gate::forUser($user)->allows('apply', $event),
+                && $this->applications->mayApply($user, $event)
+            ),
+            // Time-conflict warning (UC-2.3): the title of an event the student already
+            // has a place at that overlaps this one.
+            'overlaps_with' => $canApply ? $this->applications->conflictingEvent($user, $event)?->title : null,
         ];
     }
 

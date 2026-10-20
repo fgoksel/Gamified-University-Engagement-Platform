@@ -11,9 +11,11 @@ import {
     Trophy,
     Users,
 } from "@lucide/vue";
+import ApplyAction from "../../Components/Events/ApplyAction.vue";
 import { categoryDot } from "../../categoryColors.js";
 
-// One event's detail page, also reached by its direct URL (Task #40).
+// One event's detail page, also reached by its direct URL (Task #40),
+// with the Apply button (Task #49).
 // The server only sends it when EventPolicy::view allows it.
 defineOptions({ layout: { title: "Event" } });
 
@@ -92,8 +94,14 @@ const placesText = computed(() => {
 
             <p
                 v-if="event.my_status"
-                class="mt-2 text-sm font-medium text-primary"
+                class="mt-2 flex flex-wrap items-center gap-2 text-sm font-medium text-primary"
             >
+                <span
+                    v-if="event.already_applied"
+                    class="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs"
+                >
+                    Already applied
+                </span>
                 {{ myStatusLabel[event.my_status] }}
             </p>
 
@@ -160,6 +168,13 @@ const placesText = computed(() => {
                     </div>
                 </div>
             </dl>
+
+            <div
+                v-if="event.can_apply"
+                class="mt-6 flex justify-end border-t border-line pt-6"
+            >
+                <ApplyAction :event="event" />
+            </div>
         </article>
     </div>
 </template>

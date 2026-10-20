@@ -11,8 +11,8 @@ import {
 import { Link } from "@inertiajs/vue3";
 import { categoryDot } from "../../categoryColors.js";
 
-// One event in "All events" (Task #40). The Apply button comes with Task #49:
-// it goes in the "actions" slot and uses event.can_apply.
+// One event in "All events" (Task #40). The Apply button (Task #49) goes in
+// the "actions" slot.
 const props = defineProps({
     event: { type: Object, required: true },
 });
@@ -56,6 +56,12 @@ const placesText = computed(() => {
             >
                 <Sparkles class="size-3.5" />
                 Surprise event
+            </span>
+            <span
+                v-if="event.already_applied"
+                class="rounded-full bg-primary/10 px-2.5 py-0.5 text-primary"
+            >
+                Already applied
             </span>
             <span
                 v-if="!event.is_open"

@@ -97,7 +97,7 @@ class CapacityGuardTest extends TopicTestCase
 
         $targetTopic = $topic ?? $this->course;
         // Assign student to the audience topic node
-        $this->assign($student, $this->role('Student', [Capability::View]), $targetTopic);
+        $this->assign($student, $this->role('Student', [Capability::View, Capability::EventsView, Capability::EventsApply]), $targetTopic);
 
         return $student;
     }
@@ -403,7 +403,7 @@ class CapacityGuardTest extends TopicTestCase
         $event = $this->createEvent();
         $student = $this->makeUser(UserRole::Student, 'No Neptun Student');
         $student->update(['neptun_code' => null, 'status' => 'active']);
-        $this->assign($student, $this->role('Student', [Capability::View]), $this->course);
+        $this->assign($student, $this->role('Student', [Capability::View, Capability::EventsView, Capability::EventsApply]), $this->course);
 
         $this->expectException(ValidationException::class);
         $this->expectExceptionMessage('A valid Neptun code is required to apply to events.');

@@ -9,6 +9,7 @@ use App\Models\RoleAssignment;
 use App\Models\User;
 use App\Notifications\EventApplicationDecisionNotification;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -251,7 +252,10 @@ class EventApplicationService
             ]);
         }
 
-        if ($event->owningTopic?->isArchived() || $event->audienceTopic?->isArchived()) {
+        // Archiving a topic freezes everything below it too (TopicAccess::isHidden looks upwards).
+        $access = app(TopicAccess::class);
+        if (($event->owningTopic && $access->isHidden($event->owningTopic))
+            || ($event->audienceTopic && $access->isHidden($event->audienceTopic))) {
             throw ValidationException::withMessages([
                 'event' => 'Applications are frozen because this topic is archived.',
             ]);
@@ -283,13 +287,17 @@ class EventApplicationService
             ]);
         }
 
-        $belongsToAudience = RoleAssignment::query()
+        // Explicit audience-node membership (D01 & D03, meeting of 16 Oct): the student
+        // must hold an active role on the audience topic itself. Membership of a topic
+        // above it does not count; nothing flows down automatically.
+        $isMember = RoleAssignment::query()
             ->active()
             ->where('user_id', $student->id)
             ->where('topic_id', $event->audience_topic_id)
             ->exists();
 
-        if (! $belongsToAudience) {
+        // ...and be allowed to apply there (events.apply, Task #65).
+        if (! $isMember || ! Gate::forUser($student)->allows('apply', $event)) {
             throw ValidationException::withMessages([
                 'event' => 'You do not belong to the audience for this event.',
             ]);
@@ -297,19 +305,43 @@ class EventApplicationService
     }
 
     /**
+     * Whether the student may apply right now, without throwing: the same checks
+     * as apply(). The catalog uses it so the Apply button and the server agree.
+     */
+    public function mayApply(User $student, Event $event): bool
+    {
+        try {
+            $this->validateEligibility($student, $event);
+        } catch (ValidationException) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Another event the student already has a place at that overlaps this one in time
+     * (UC-2.3: "This event overlaps in time with [event name]"), or null.
+     */
+    public function conflictingEvent(User $student, Event $event): ?Event
+    {
+        return Event::query()
+            ->where('id', '!=', $event->id)
+            ->where('status', Event::STATUS_PUBLISHED)
+            ->where('event_starts_at', '<', $event->event_ends_at)
+            ->where('event_ends_at', '>', $event->event_starts_at)
+            ->whereHas('applications', fn ($query) => $query
+                ->where('student_id', $student->id)
+                ->where('status', EventApplication::ACCEPTED))
+            ->orderBy('event_starts_at')
+            ->first();
+    }
+
+    /**
      * Check whether the student has any schedule overlap with another accepted event.
      */
     public function hasTimeConflict(User $student, Event $event): bool
     {
-        return EventApplication::query()
-            ->where('student_id', $student->id)
-            ->where('status', EventApplication::ACCEPTED)
-            ->where('event_id', '!=', $event->id)
-            ->whereHas('event', function ($query) use ($event) {
-                $query->where('status', Event::STATUS_PUBLISHED)
-                    ->where('event_starts_at', '<', $event->event_ends_at)
-                    ->where('event_ends_at', '>', $event->event_starts_at);
-            })
-            ->exists();
+        return $this->conflictingEvent($student, $event) !== null;
     }
 }

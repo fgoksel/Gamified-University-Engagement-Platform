@@ -3,10 +3,12 @@ import { ref, watch } from "vue";
 import { Link, router } from "@inertiajs/vue3";
 import { CalendarDays, Search } from "@lucide/vue";
 import EmptyState from "../../Components/EmptyState.vue";
+import ApplyAction from "../../Components/Events/ApplyAction.vue";
 import CatalogEventCard from "../../Components/Events/CatalogEventCard.vue";
 import { categoryDot } from "../../categoryColors.js";
 
-// All events (Task #40, UC-1.5, UC-2.3): filtered by topic or branch, category and date
+// All events (Task #40): filtered by topic or branch, category and date,
+// with the Apply button (Task #49). UC-1.5, UC-2.3
 defineOptions({ layout: { title: "All events" } });
 
 const props = defineProps({
@@ -217,7 +219,11 @@ function pageLabel(label) {
                     v-for="event in events.data"
                     :key="event.id"
                     :event="event"
-                />
+                >
+                    <template #actions>
+                        <ApplyAction :event="event" />
+                    </template>
+                </CatalogEventCard>
             </div>
 
             <!-- Pages -->
