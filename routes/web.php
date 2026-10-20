@@ -16,6 +16,7 @@ use App\Http\Controllers\EventQrController;
 use App\Http\Controllers\EventStatusController;
 use App\Http\Controllers\LeaderboardController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\PassportController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoleAssignmentController;
 use App\Http\Controllers\RoleDefinitionController;
@@ -99,6 +100,9 @@ Route::middleware('auth')->group(function () {
                 ->name('events.scan');
             Route::post('/events/{event}/credit', [EventCreditController::class, 'credit'])
                 ->name('events.credit');
+            // Checklist mode: credit every ticked student in one request (Task #42)
+            Route::post('/events/{event}/credit/bulk', [EventCreditController::class, 'creditMany'])
+                ->name('events.credit.bulk');
 
             // Event Form: create an event as a draft or publish it (Task #38, UC-1.3)
             // Creating events follows the events.create capability at a topic (Task #65),
@@ -155,6 +159,8 @@ Route::middleware('auth')->group(function () {
             // Students redeem attendance QR codes (UC-2.3). Opening a code only shows the
             // page; points are given by the POST, which is limited per student.
             Route::middleware('permission:qr_codes.redeem')->group(function () {
+                // The student's QR passport, shown to an organiser's "Scan attendance" (Task #52)
+                Route::get('/passport', [PassportController::class, 'show'])->name('passport');
                 Route::get('/scan', [ScanController::class, 'show'])->name('scan');
                 Route::get('/qr/redeem/{code}', [ScanController::class, 'show'])
                     ->where('code', '[A-Za-z0-9.]+')->name('qr.show');

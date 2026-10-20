@@ -6,6 +6,7 @@ use App\Enums\Capability;
 use App\Models\Topic;
 use App\Services\TopicAccess;
 use App\Services\TopicBrowser;
+use App\Services\TopicEventRules;
 use App\Services\TopicService;
 use App\Support\Like;
 use Illuminate\Http\JsonResponse;
@@ -110,9 +111,15 @@ class TopicController extends Controller
     {
         abort_unless($this->access->canView($request->user(), $topic), 404);
 
+        $frozen = app(TopicEventRules::class)->liveEventsIn($topic);
         $this->topics->archive($request->user(), $topic);
 
-        return $this->after($request, $topic)->with('success', "\"{$topic->title}\" archived. Nothing was deleted; find it under Archived topics to restore it.");
+        // Tell the person what happened to the events in the branch (Task #66).
+        $events = $frozen === 0 ? '' : ($frozen === 1
+            ? ' 1 event in it is frozen until you restore it.'
+            : " {$frozen} events in it are frozen until you restore it.");
+
+        return $this->after($request, $topic)->with('success', "\"{$topic->title}\" archived. Nothing was deleted; find it under Archived topics to restore it.{$events}");
     }
 
     /**

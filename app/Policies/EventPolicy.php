@@ -104,6 +104,12 @@ class EventPolicy
             return false;
         }
 
+        // An archived owning topic freezes the event, even if it is announced to a
+        // topic above that is still open (Task #66). Restoring brings it back.
+        if ($event->owningTopic === null || $this->access->isHidden($event->owningTopic)) {
+            return false;
+        }
+
         $audience = $event->audienceTopic;
 
         return $this->access->canView($user, $audience)

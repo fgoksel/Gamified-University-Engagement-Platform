@@ -6,6 +6,7 @@ use App\Models\Event;
 use App\Models\EventApplication;
 use App\Models\PointTransaction;
 use App\Services\EventCreditService;
+use App\Services\PointLedger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -87,5 +88,42 @@ class EventCreditController extends Controller
         $result = $this->service->credit($request->user(), $event, $data['identifier'], $source);
 
         return response()->json($result);
+    }
+
+    /**
+     * Credit several ticked students at once: the checklist mode of the crediting tab (UC-1.7).
+     * Each student goes through the same checks as a single credit, so one refusal
+     * never stops the others and nobody is credited twice.
+     */
+    public function creditMany(Request $request, Event $event): JsonResponse
+    {
+        abort_unless($request->user()->can('credit', $event), 403);
+
+        $data = $request->validate([
+            'student_ids' => ['required', 'array', 'min:1', 'max:500'],
+            'student_ids.*' => ['integer', 'distinct'],
+        ]);
+
+        $credited = [];
+        $refused = [];
+
+        foreach ($data['student_ids'] as $studentId) {
+            $result = $this->service->credit($request->user(), $event, (int) $studentId, PointLedger::MANUAL);
+
+            if ($result['status'] === 'credited') {
+                $credited[] = (int) $studentId;
+            } else {
+                $refused[(int) $studentId] = $result['message'];
+            }
+        }
+
+        return response()->json([
+            'credited' => $credited,
+            'refused' => $refused,
+            'credited_count' => PointTransaction::query()
+                ->where('event_id', $event->id)
+                ->where('type', PointTransaction::CREDIT)
+                ->count(),
+        ]);
     }
 }
