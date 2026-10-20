@@ -15,6 +15,7 @@ use App\Http\Controllers\EventQrCodeController;
 use App\Http\Controllers\EventQrController;
 use App\Http\Controllers\EventStatusController;
 use App\Http\Controllers\LeaderboardController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PassportController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoleAssignmentController;
@@ -137,6 +138,12 @@ Route::middleware('auth')->group(function () {
                 Route::post('/cancel', [EventStatusController::class, 'cancel'])->name('events.cancel');
                 Route::delete('/', [EventStatusController::class, 'destroy'])->name('events.destroy');
             });
+
+            // In-app notifications, e.g. "You were selected for ..." (Task #53)
+            Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+            Route::post('/notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read-all');
+            Route::post('/notifications/{notification}/read', [NotificationController::class, 'read'])
+                ->whereUuid('notification')->name('notifications.read');
 
             // Teacher: events I organize (UC-1.3). Student: events I applied to (UC-2.3).
             Route::get('/my-events', [EventController::class, 'mine'])->name('events.mine');

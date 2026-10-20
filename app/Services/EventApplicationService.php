@@ -22,11 +22,15 @@ class EventApplicationService
      * Atomically apply a student to an event, enforcing capacity guards,
      * audience eligibility, and reapplication rules.
      *
+     * In FCFS mode the outcome is known at once, so the student is told whether
+     * they got a place or were waitlisted (Task #53). A pending application in
+     * selection mode is told about later, when the organizer decides.
+     *
      * @throws ValidationException
      */
     public function apply(User $student, Event $event): EventApplication
     {
-        return DB::transaction(function () use ($student, $event) {
+        $application = DB::transaction(function () use ($student, $event) {
             /** @var Event $lockedEvent */
             $lockedEvent = Event::query()->whereKey($event->id)->lockForUpdate()->firstOrFail();
 
@@ -111,6 +115,19 @@ class EventApplicationService
 
             return $application;
         });
+
+        // Queued notifications go out only after the transaction has committed.
+        $decision = match ($application->status) {
+            EventApplication::ACCEPTED => EventApplicationDecisionNotification::CONFIRMED,
+            EventApplication::WAITLISTED => EventApplicationDecisionNotification::WAITLISTED,
+            default => null,
+        };
+
+        if ($decision !== null) {
+            $student->notify(new EventApplicationDecisionNotification($decision, $event->id, $event->title));
+        }
+
+        return $application;
     }
 
     /**
@@ -123,7 +140,9 @@ class EventApplicationService
      */
     public function withdraw(User $student, Event $event): EventApplication
     {
-        return DB::transaction(function () use ($student, $event) {
+        $promoted = null;
+
+        $application = DB::transaction(function () use ($student, $event, &$promoted) {
             /** @var Event $lockedEvent */
             $lockedEvent = Event::query()->whereKey($event->id)->lockForUpdate()->firstOrFail();
 
@@ -213,18 +232,21 @@ class EventApplicationService
                         'created_at' => now(),
                     ]);
 
-                    $nextWaitlisted->student?->notify(
-                        new EventApplicationDecisionNotification(
-                            EventApplicationDecisionNotification::ACCEPTED,
-                            $lockedEvent->id,
-                            $lockedEvent->title
-                        )
-                    );
+                    $promoted = $nextWaitlisted->student;
                 }
             }
 
             return $application;
         });
+
+        // Queued notifications go out only after the transaction has committed.
+        $promoted?->notify(new EventApplicationDecisionNotification(
+            EventApplicationDecisionNotification::PROMOTED,
+            $event->id,
+            $event->title
+        ));
+
+        return $application;
     }
 
     /**
