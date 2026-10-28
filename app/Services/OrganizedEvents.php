@@ -135,6 +135,8 @@ class OrganizedEvents
             'can_delete' => $event->applications_count === 0,
             // What this person may do here (Task #65): buttons follow their capabilities.
             'can_manage' => $gate->allows('manage', $event),
+            // Edit (Task #68): open for a draft, a published or a held event, for whoever may update it.
+            'can_edit' => in_array($event->status, EventEditor::EDITABLE, true) && $gate->allows('update', $event),
             'can_review' => $gate->allows('manageApplicants', $event),
             'can_credit' => $gate->allows('credit', $event),
             'can_qr' => $gate->allows('manageQr', $event),

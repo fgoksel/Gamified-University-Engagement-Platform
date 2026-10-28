@@ -9,7 +9,7 @@ use Illuminate\Notifications\Notification;
 
 /**
  * Tells the students who applied to an event that the organizer cancelled it,
- * put it on hold or restored it (Task #53, D09). Queued; sent by mail and
+ * put it on hold, restored it (Task #53, D09) or changed its date or time (Task #68). Queued; sent by mail and
  * stored in-app (shown on the Notifications page).
  */
 class EventStatusChangedNotification extends Notification implements ShouldQueue
@@ -21,6 +21,9 @@ class EventStatusChangedNotification extends Notification implements ShouldQueue
 
     /** Delayed and may come back; applications are kept. */
     public const ON_HOLD = 'on_hold';
+
+    /** The organizer changed the date or time; applications are kept (Task #68). */
+    public const RESCHEDULED = 'rescheduled';
 
     /** Back from hold; applicants keep their place and may withdraw freely. */
     public const RESTORED = 'restored';
@@ -50,6 +53,10 @@ class EventStatusChangedNotification extends Notification implements ShouldQueue
             self::ON_HOLD => ['An event you applied to is on hold', [
                 "The organizer put \"{$this->eventTitle}\" on hold. It may come back later.",
                 'Your application is kept. We will tell you if the event is restored or cancelled.',
+            ]],
+            self::RESCHEDULED => ['The time of an event you applied to changed', [
+                "The organizer changed the date or time of \"{$this->eventTitle}\".",
+                'You keep your place. Check the new time under My events. If it no longer suits you, you can withdraw.',
             ]],
             default => ['An event you applied to is back', [
                 "\"{$this->eventTitle}\" is back on. You keep your place.",

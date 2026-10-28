@@ -95,6 +95,11 @@ class NotificationFeed
                     'You keep your place. Check the date; if it no longer suits you, you can withdraw.',
                     '/my-events',
                 ],
+                EventStatusChangedNotification::RESCHEDULED => [
+                    "The time of {$event} changed",
+                    'You keep your place. Check the new date; if it no longer suits you, you can withdraw.',
+                    '/my-events',
+                ],
                 default => ['Update on an event you applied to', $event, '/my-events'],
             };
         }

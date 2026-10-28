@@ -72,6 +72,25 @@ class EventPolicy
         return $this->holds($user, $event, Capability::EventsManage);
     }
 
+    /**
+     * Change an event after it was created (Task #68, UC-1.3 "Editing an Event").
+     * Whoever may manage the event at its owning topic may edit it; someone who may only
+     * create events there (and so only saves drafts, Task #65) may edit drafts.
+     * Which fields and states are open is decided by EventEditor.
+     */
+    public function update(User $user, Event $event): bool
+    {
+        if ($this->manage($user, $event)) {
+            return true;
+        }
+
+        $topic = $event->owningTopic;
+
+        return $event->status === Event::STATUS_DRAFT
+            && $this->access->canView($user, $topic)
+            && $this->access->can($user, Capability::EventsCreate, $topic);
+    }
+
     public function manageApplicants(User $user, Event $event): bool
     {
         return $this->holds($user, $event, Capability::ApplicationsManage);

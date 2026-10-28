@@ -11,6 +11,7 @@ use App\Http\Controllers\Auth\SetPasswordController;
 use App\Http\Controllers\EventApplicationController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\EventCreditController;
+use App\Http\Controllers\EventEditController;
 use App\Http\Controllers\EventQrCodeController;
 use App\Http\Controllers\EventQrController;
 use App\Http\Controllers\EventStatusController;
@@ -128,6 +129,13 @@ Route::middleware('auth')->group(function () {
                 Route::post('/{token}/revoke', [EventQrCodeController::class, 'revoke'])->whereNumber('token')->name('revoke');
                 Route::get('/print/{type}', [EventQrCodeController::class, 'print'])->whereIn('type', ['poster', 'slip'])->name('print');
             });
+
+            // Edit an event after it was created (Task #68, UC-1.3). EventPolicy::update checks
+            // the capability at the owning topic; EventEditor decides which fields are open.
+            Route::get('/events/{event}/edit', [EventEditController::class, 'edit'])
+                ->whereNumber('event')->name('events.edit');
+            Route::put('/events/{event}', [EventEditController::class, 'update'])
+                ->whereNumber('event')->name('events.update');
 
             // Lifecycle actions on "Organized by me" (Task #37, UC-1.3). EventPolicy::manage
             // checks the events.manage capability at the owning topic (Task #65).
