@@ -5,6 +5,7 @@ namespace App\Imports;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithChunkReading;
+use Maatwebsite\Excel\Concerns\WithCustomCsvSettings;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 
 /**
@@ -14,7 +15,7 @@ use Maatwebsite\Excel\Concerns\WithHeadingRow;
  * The first line holds the column names, so the first data row is line 2.
  * Headings such as "Full Name" arrive as "full_name".
  */
-class CsvRowsImport implements ToCollection, WithChunkReading, WithHeadingRow
+class CsvRowsImport implements ToCollection, WithChunkReading, WithCustomCsvSettings, WithHeadingRow
 {
     /** Rows read per chunk, so a large file never has to fit into memory at once. */
     public const CHUNK_SIZE = 500;
@@ -23,8 +24,17 @@ class CsvRowsImport implements ToCollection, WithChunkReading, WithHeadingRow
 
     /**
      * @param  callable(array<string, mixed>, int): void  $onRow
+     * @param  array<string, mixed>  $csvSettings  Empty: the reader works the settings out itself.
      */
-    public function __construct(private $onRow) {}
+    public function __construct(private $onRow, private array $csvSettings = []) {}
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function getCsvSettings(): array
+    {
+        return $this->csvSettings;
+    }
 
     public function collection(Collection $rows): void
     {

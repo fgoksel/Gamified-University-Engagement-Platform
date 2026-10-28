@@ -109,6 +109,7 @@ class TopicBrowser
             'view_access' => $has(Capability::AccessView),
             'assign' => $has(Capability::AccessAssign),
             'end' => $has(Capability::AccessEnd),
+            'import' => $has(Capability::AccessImport),
             'define_roles' => $has(Capability::DefineRoles),
         ];
     }
@@ -286,7 +287,52 @@ class TopicBrowser
             'inherited' => $rows->where('topic_id', '!=', $topic->id)->map($format)->values()->all(),
             'history' => $history,
             'roles' => $this->access->can($user, Capability::AccessAssign, $topic) ? $this->assignableRoles($user, $topic) : [],
+            'import' => $this->access->can($user, Capability::AccessImport, $topic) ? $this->importOptions($user, $topic) : null,
         ];
+    }
+
+    /**
+     * What "Import students" offers (Task #72): the roles an import may give here,
+     * and the topics above where the same import may also place the students.
+     *
+     * @return array{roles: list<array<string, mixed>>, parents: list<array{id: int, title: string}>}
+     */
+    public function importOptions(User $user, Topic $topic): array
+    {
+        $lineage = $this->access->lineage($topic);
+
+        $roles = RoleDefinition::query()
+            ->usable()
+            ->where(fn ($q) => $q->whereNull('topic_id')->orWhereIn('topic_id', $lineage))
+            ->orderBy('name')
+            ->get()
+            ->filter(fn (RoleDefinition $role) => $this->assignments->importRole($user, $topic, $role)->allowed())
+            ->map(fn (RoleDefinition $role) => $this->roleSummary($role))
+            ->values()
+            ->all();
+
+        return ['roles' => $roles, 'parents' => $this->importParents($user, $topic)];
+    }
+
+    /**
+     * Topics above where the person may also import, nearest first. A topic above
+     * the person's own branch is never offered: they hold no right there (S3, 27 October).
+     *
+     * @return list<array{id: int, title: string}>
+     */
+    public function importParents(User $user, Topic $topic): array
+    {
+        $above = array_slice($this->access->lineage($topic), 1);
+
+        return Topic::query()
+            ->whereIn('id', $above)
+            ->notArchived()
+            ->get(['id', 'title'])
+            ->filter(fn (Topic $parent) => $this->access->can($user, Capability::AccessImport, $parent))
+            ->sortBy(fn (Topic $parent) => array_search($parent->id, $above, true))
+            ->map(fn (Topic $parent) => ['id' => $parent->id, 'title' => $parent->title])
+            ->values()
+            ->all();
     }
 
     /**
