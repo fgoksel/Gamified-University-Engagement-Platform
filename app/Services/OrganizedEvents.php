@@ -114,6 +114,7 @@ class OrganizedEvents
             'id' => $event->id,
             'title' => $event->title,
             'status' => $event->status,
+            'location' => $event->location,
             'category' => $event->category,
             'tag' => $event->tag?->name,
             'owning_topic' => $event->owningTopic?->title,

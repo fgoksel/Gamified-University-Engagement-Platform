@@ -1,7 +1,14 @@
 <script setup>
 import { computed } from "vue";
 import { Link, router } from "@inertiajs/vue3";
-import { CalendarClock, EyeOff, MapPin, QrCode, Users } from "@lucide/vue";
+import {
+    Building2,
+    CalendarClock,
+    EyeOff,
+    MapPin,
+    QrCode,
+    Users,
+} from "@lucide/vue";
 import Btn from "../Topics/Btn.vue";
 import { categoryDot } from "../../categoryColors.js";
 
@@ -165,6 +172,16 @@ function post(action) {
             </div>
             <div class="flex items-start gap-2">
                 <MapPin class="mt-0.5 size-4 shrink-0 text-fg-muted" />
+                <div>
+                    <dt class="sr-only">Location</dt>
+                    <dd v-if="event.location" class="text-fg">
+                        {{ event.location }}
+                    </dd>
+                    <dd v-else class="text-fg-muted">No location yet</dd>
+                </div>
+            </div>
+            <div class="flex items-start gap-2">
+                <Building2 class="mt-0.5 size-4 shrink-0 text-fg-muted" />
                 <div>
                     <dt class="sr-only">Topics</dt>
                     <dd class="text-fg">{{ event.owning_topic }}</dd>

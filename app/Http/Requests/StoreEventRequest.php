@@ -31,6 +31,8 @@ class StoreEventRequest extends FormRequest
             'action' => ['required', Rule::in(['draft', 'publish'])],
             'title' => ['required', 'string', 'max:255'],
             'description' => ['required', 'string', 'max:5000'],
+            // Task #77: free text, may stay empty.
+            'location' => ['nullable', 'string', 'max:255'],
             'topic_tag_id' => ['required', 'integer', Rule::exists('topic_tags', 'id')->where('is_active', true)],
             'owning_topic_id' => ['required', 'integer', 'exists:topics,id'],
             'audience_topic_id' => ['nullable', 'integer', 'exists:topics,id'],

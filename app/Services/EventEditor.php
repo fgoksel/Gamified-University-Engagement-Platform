@@ -35,6 +35,9 @@ use Illuminate\Validation\ValidationException;
  *   surprise setting             always; the reveal time only until it is revealed
  * Places can never drop below the students already accepted.
  *
+ * Students who still have an application are told when the time or the location
+ * changes (Task #77): one message, even when both change in the same save.
+ *
  * Everything is checked again under a database lock, so an edit and a concurrent
  * application or credit cannot slip past each other.
  */
@@ -113,9 +116,9 @@ class EventEditor
      */
     public function update(User $actor, Event $event, array $data, ?string $version = null): Event
     {
-        $changedTime = false;
+        $change = null;
 
-        $updated = DB::transaction(function () use ($actor, $event, $data, $version, &$changedTime) {
+        $updated = DB::transaction(function () use ($actor, $event, $data, $version, &$change) {
             /** @var Event $locked */
             $locked = Event::query()->whereKey($event->id)->lockForUpdate()->firstOrFail();
 
@@ -136,17 +139,27 @@ class EventEditor
             $attributes = $this->attributes($actor, $locked, $data, $this->locks($locked));
 
             $minute = fn (CarbonInterface $time) => $time->copy()->startOfMinute();
-            $changedTime = $locked->status !== Event::STATUS_DRAFT
+            $draft = $locked->status === Event::STATUS_DRAFT;
+            $changedTime = ! $draft
                 && ($minute($attributes['event_starts_at'])->ne($minute($locked->event_starts_at))
                     || $minute($attributes['event_ends_at'])->ne($minute($locked->event_ends_at)));
+            // Set, changed or removed: applicants may have to go somewhere else.
+            $changedLocation = ! $draft && $attributes['location'] !== $locked->location;
+
+            $change = match (true) {
+                $changedTime && $changedLocation => EventStatusChangedNotification::RESCHEDULED_AND_RELOCATED,
+                $changedTime => EventStatusChangedNotification::RESCHEDULED,
+                $changedLocation => EventStatusChangedNotification::RELOCATED,
+                default => null,
+            };
 
             $locked->update($attributes);
 
             return $locked;
         });
 
-        if ($changedTime) {
-            $this->notifyApplicants($updated);
+        if ($change !== null) {
+            $this->notifyApplicants($updated, $change);
         }
 
         return $updated;
@@ -260,9 +273,16 @@ class EventEditor
             throw ValidationException::withMessages($errors);
         }
 
+        // Free text that may stay empty (Task #77). Left out of the request, for example by a
+        // page opened before the field existed, it keeps its value instead of being wiped.
+        $location = array_key_exists('location', $data)
+            ? (filled($data['location']) ? trim($data['location']) : null)
+            : $event->location;
+
         return [
             'title' => trim($data['title']),
             'description' => trim($data['description']),
+            'location' => $location,
             'topic_tag_id' => $tagId,
             'category' => $tag->category,
             'owning_topic_id' => $owningId,
@@ -281,9 +301,9 @@ class EventEditor
     }
 
     /**
-     * The students who still have an application hear about the new time.
+     * The students who still have an application hear about the new time or location.
      */
-    private function notifyApplicants(Event $event): void
+    private function notifyApplicants(Event $event, string $change): void
     {
         $students = User::query()
             ->whereIn('id', $event->applications()
@@ -292,9 +312,10 @@ class EventEditor
             ->get();
 
         Notification::send($students, new EventStatusChangedNotification(
-            EventStatusChangedNotification::RESCHEDULED,
+            $change,
             $event->id,
             $event->title,
+            location: $event->location,
         ));
     }
 }

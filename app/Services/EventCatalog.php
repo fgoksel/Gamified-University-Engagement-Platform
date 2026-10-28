@@ -230,6 +230,7 @@ class EventCatalog
             'id' => $event->id,
             'title' => $event->title,
             'description' => $event->description,
+            'location' => $event->location,
             'category' => $event->category,
             'tag' => $event->tag?->name,
             'owning_topic' => $event->owningTopic?->title,

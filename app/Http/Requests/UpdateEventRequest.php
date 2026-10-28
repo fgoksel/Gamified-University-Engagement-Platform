@@ -40,6 +40,7 @@ class UpdateEventRequest extends FormRequest
             'version' => ['nullable', 'string', 'max:40'],
             'title' => ['required', 'string', 'max:255'],
             'description' => ['required', 'string', 'max:5000'],
+            'location' => ['nullable', 'string', 'max:255'],
             'topic_tag_id' => ['required', 'integer', 'exists:topic_tags,id'],
             'owning_topic_id' => ['required', 'integer', 'exists:topics,id'],
             'audience_topic_id' => ['nullable', 'integer', 'exists:topics,id'],
