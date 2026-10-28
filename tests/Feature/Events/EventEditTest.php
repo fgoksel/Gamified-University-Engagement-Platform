@@ -225,6 +225,18 @@ class EventEditTest extends EventTestCase
         $this->assertTrue($event->refresh()->event_ends_at->gt(now()->addHours(3)));
     }
 
+    public function test_an_event_whose_applications_closed_can_still_be_edited_before_it_starts(): void
+    {
+        $event = $this->upcoming(['application_deadline' => now()->subHour()->startOfMinute()]);
+
+        $this->save($this->organiser, $event, ['description' => 'Room changed'])->assertSessionHasNoErrors();
+        $this->assertSame('Room changed', $event->refresh()->description);
+
+        // Only a changed date has to be in the future.
+        $this->save($this->organiser, $event, ['application_deadline' => now()->subMinutes(30)->format('Y-m-d\TH:i')])
+            ->assertSessionHasErrors('application_deadline');
+    }
+
     public function test_the_dates_must_make_sense(): void
     {
         $event = $this->upcoming();

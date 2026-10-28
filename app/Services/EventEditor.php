@@ -167,6 +167,9 @@ class EventEditor
         $draft = $event->status === Event::STATUS_DRAFT;
 
         $date = fn (string $field): CarbonInterface => Carbon::parse($data[$field]);
+        // A date that is left as it was is never "wrong": the form only holds minutes, and
+        // an event whose applications already closed must still be editable before it starts.
+        $unchanged = fn (string $field, CarbonInterface $value): bool => $event->{$field}->copy()->startOfMinute()->equalTo($value->copy()->startOfMinute());
         $keeps = function (string $field, mixed $value) use ($event, $locks, &$errors): bool {
             if (! isset($locks[$field])) {
                 return false;
@@ -221,13 +224,13 @@ class EventEditor
         $applyBy = $keeps('application_deadline', $data['application_deadline']) ? $event->application_deadline : $date('application_deadline');
         $completeBy = $date('completion_deadline');
 
-        if (! isset($locks['event_starts_at']) && $starts->lte(now())) {
+        if (! isset($locks['event_starts_at']) && $starts->lte(now()) && ! $unchanged('event_starts_at', $starts)) {
             $errors['event_starts_at'] = 'The event must start in the future.';
         }
         if ($ends->lte($starts)) {
             $errors['event_ends_at'] = 'The event must end after it starts.';
         }
-        if (! isset($locks['application_deadline']) && $applyBy->lte(now())) {
+        if (! isset($locks['application_deadline']) && $applyBy->lte(now()) && ! $unchanged('application_deadline', $applyBy)) {
             $errors['application_deadline'] = 'The application deadline must be in the future.';
         }
         if ($applyBy->gt($starts)) {
