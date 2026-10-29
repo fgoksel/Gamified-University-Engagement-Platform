@@ -83,34 +83,6 @@ class TopicAccess
     }
 
     /**
-     * Load the assignments of many accounts in one query, so that asking about each of them
-     * afterwards costs none (the points import checks a whole list, Task #85).
-     *
-     * @param  iterable<User>  $users
-     */
-    public function preload(iterable $users): void
-    {
-        $ids = collect($users)
-            ->filter(fn (User $user) => $this->isActive($user) && ! isset($this->assignments[$user->id]))
-            ->pluck('id');
-
-        if ($ids->isEmpty()) {
-            return;
-        }
-
-        $loaded = RoleAssignment::query()
-            ->active()
-            ->whereIn('user_id', $ids)
-            ->with('role')
-            ->get()
-            ->groupBy('user_id');
-
-        foreach ($ids as $id) {
-            $this->assignments[$id] = $loaded->get($id, collect());
-        }
-    }
-
-    /**
      * Ids of the topic and its ancestors, nearest first.
      *
      * @return list<int>

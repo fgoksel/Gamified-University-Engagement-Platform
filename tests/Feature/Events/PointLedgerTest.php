@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Events;
 
-use App\Enums\Capability;
 use App\Enums\UserRole;
 use App\Exceptions\EventActionRefused;
 use App\Models\Event;
@@ -138,27 +137,6 @@ class PointLedgerTest extends TopicTestCase
 
         $this->refused(fn () => $this->ledger()->credit($this->event, $tutor, $tutor, PointLedger::MANUAL), 'self_credit');
         $this->assertSame(0, PointTransaction::count());
-    }
-
-    public function test_whoever_helps_run_the_event_cannot_receive_its_points_by_any_route(): void
-    {
-        // A student tutor (team rule): accepted for the course's event, and able to credit its points.
-        $tutor = $this->accepted();
-        $this->assign($tutor, $this->role('Tutor', [Capability::View, Capability::EventsView, Capability::PointsCredit]), $this->course);
-        // A role above the course that lets them create its events reaches the event too.
-        $helper = $this->accepted();
-        $this->assign($helper, $this->role('Event helper', [Capability::View, Capability::EventsView, Capability::EventsCreate]), $this->faculty);
-
-        foreach ([$tutor, $helper] as $person) {
-            foreach ([PointLedger::MANUAL, PointLedger::PASSPORT, PointLedger::QR_POSTER, PointLedger::QR_SLIP, PointLedger::MILESTONE] as $source) {
-                $this->refused(fn () => $this->ledger()->credit($this->event, $person, $this->organiser, $source), 'runs_event');
-            }
-
-            $this->refused(fn () => $this->ledger()->creditImported($this->event, $person, $this->organiser), 'runs_event');
-        }
-
-        $this->assertSame(0, PointTransaction::count());
-        $this->assertSame(0, EventApplication::query()->whereNotNull('scored_at')->count());
     }
 
     public function test_only_accepted_participants_can_be_credited(): void

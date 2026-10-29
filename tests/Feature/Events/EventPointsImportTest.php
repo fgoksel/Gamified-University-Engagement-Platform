@@ -286,8 +286,9 @@ class EventPointsImportTest extends EventTestCase
         $this->assertSame(0, PointTransaction::count());
     }
 
-    public function test_a_student_tutor_who_may_credit_cannot_give_points_to_themselves(): void
+    public function test_a_student_tutor_gets_the_points_from_someone_else_but_cannot_give_them_to_themselves(): void
     {
+        // Decision D04 (13 Oct): a tutor may take part and earn points in the area they tutor; they only cannot credit themselves.
         $tutor = $this->member('TUTO01');
         $this->assign($tutor, $this->role('Tutor', [Capability::View, Capability::EventsView, Capability::PointsCredit]), $this->course);
         $this->member('PEER02');
@@ -296,27 +297,11 @@ class EventPointsImportTest extends EventTestCase
 
         $response->assertJsonCount(1, 'credited')->assertJsonPath('credited.0.neptun_code', 'PEER02');
         $this->assertSame([2 => 'You cannot give points to yourself.'], $this->reasons($response, 'skipped'));
-    }
 
-    public function test_whoever_helps_run_the_event_is_skipped_such_as_a_student_tutor(): void
-    {
-        // A student of the course whom a teacher also made its tutor (team rule).
-        $tutor = $this->member('TUTO01');
-        $this->assign($tutor, $this->role('Tutor', [Capability::View, Capability::EventsView, Capability::PointsCredit]), $this->course);
-        // A role above the course that lets them create its events counts as well.
-        $helper = $this->member('HELP02');
-        $this->assign($helper, $this->role('Event helper', [Capability::View, Capability::EventsView, Capability::EventsCreate]), $this->faculty);
-        $this->member('PEER03');
-        $reason = 'Helps run this event, for example as a student tutor, so cannot receive its points.';
-
-        $check = $this->check($this->csv('Neptun Code', 'TUTO01', 'HELP02', 'PEER03'))->assertOk();
-        $check->assertJsonCount(1, 'credit')->assertJsonPath('credit.0.neptun_code', 'PEER03');
-        $this->assertSame([2 => $reason, 3 => $reason], $this->reasons($check, 'skipped'));
-
-        $given = $this->give($this->csv('Neptun Code', 'TUTO01', 'HELP02', 'PEER03'))->assertOk();
-        $given->assertJsonCount(1, 'credited')->assertJsonPath('credited.0.neptun_code', 'PEER03');
-        $this->assertSame([2 => $reason, 3 => $reason], $this->reasons($given, 'skipped'));
-        $this->assertSame(1, PointTransaction::count());
+        // The organiser's list gives the tutor the points like any other student.
+        $this->give($this->csv('Neptun Code', 'TUTO01'))->assertOk()
+            ->assertJsonCount(1, 'credited')
+            ->assertJsonPath('credited.0.neptun_code', 'TUTO01');
     }
 
     public function test_only_an_accepted_application_is_marked_as_credited(): void

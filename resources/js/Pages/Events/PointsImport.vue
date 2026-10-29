@@ -193,9 +193,8 @@ function startOver() {
                 export from Neptun or Moodle. Other columns are ignored. Only
                 students assigned to
                 <strong class="text-fg">{{ event.area }}</strong> can receive
-                the points, and nobody who helps run this event, such as a
-                student tutor. Importing the same list again gives points only
-                to the students who are new on it.
+                the points. Importing the same list again gives points only to
+                the students who are new on it.
             </p>
             <pre
                 class="mt-3 w-fit rounded-control bg-surface-muted px-3 py-2 font-mono text-xs text-fg"

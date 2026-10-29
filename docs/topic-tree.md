@@ -133,9 +133,7 @@ Ended memberships stay ended history and give nothing. Event-related tutor right
 - **Grant chain history for migrated rows is only the grantor's account** (`granted_by_id`); the
   *superior grant* protection needs `granted_by_assignment_id`, which exists only for assignments made
   after the upgrade.
-- The old rule "a tutor is not also a student of the same course" no longer exists. Points follow
-  their own rule (Sprint 3): whoever helps run an event (`EventPolicy::staff`), such as a student tutor,
-  cannot receive its points by any route (`PointLedger::runsEvent()`).
+- The old rule "a tutor is not also a student of the same course" no longer exists.
 
 ### Existing course-enrolment import (compatibility path)
 

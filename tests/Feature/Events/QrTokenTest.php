@@ -140,21 +140,6 @@ class QrTokenTest extends EventTestCase
         $this->assertSame(0, PointTransaction::count());
     }
 
-    public function test_whoever_helps_run_the_event_cannot_redeem_its_codes(): void
-    {
-        // A student tutor (team rule), also accepted, scanning the teacher's poster code.
-        $tutor = $this->student();
-        $this->assign($tutor, $this->role('Tutor', [Capability::View, Capability::EventsView, Capability::PointsCredit]), $this->course);
-        $this->accepted($tutor);
-        $payload = $this->qr()->payload($this->qr()->issue($this->issuer(), $this->event));
-
-        $this->refused(fn () => $this->qr()->redeem($tutor, $payload), 'runs_event');
-
-        // The refusal undid the redemption, so the code is not used up and nothing half-done remains.
-        $this->assertDatabaseCount('qr_redemptions', 0);
-        $this->assertSame(0, PointTransaction::count());
-    }
-
     public function test_only_accepted_students_can_redeem_and_a_scan_never_applies(): void
     {
         $payload = $this->qr()->payload($this->qr()->issue($this->issuer(), $this->event));

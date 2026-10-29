@@ -20,8 +20,7 @@ use Illuminate\Support\Facades\Notification;
  *
  * Team decision of 27 Oct: the file has one column of Neptun codes; students not assigned
  * to the event's area are skipped and listed with the reason; importing the same list again
- * adds only the students who are new on it. Whoever helps run the event, a student tutor
- * for example, is skipped as well (team rule). The organiser first sees what would happen
+ * adds only the students who are new on it. The organiser first sees what would happen
  * (assess()), then gives the points (import()). Every credit goes through the ledger, so
  * the rules and the one-credit-per-student guard are the same as for a QR scan.
  */
@@ -30,10 +29,7 @@ class EventPointsImport
     /** Neptun codes are six letters or digits, as checked by the student import. */
     private const NEPTUN = '/^[A-Z0-9]{6}$/';
 
-    public function __construct(
-        private PointLedger $ledger,
-        private TopicAccess $access,
-    ) {}
+    public function __construct(private PointLedger $ledger) {}
 
     /**
      * What importing these rows would do, without changing anything.
@@ -46,11 +42,9 @@ class EventPointsImport
         $area = $this->ledger->importArea($event);
         $codes = collect($rows)->pluck('code')->filter(fn (string $code) => preg_match(self::NEPTUN, $code) === 1)->unique()->values();
 
-        $students = User::role(UserRole::Student)->with('roles')->whereIn('neptun_code', $codes)->get()
+        $students = User::role(UserRole::Student)->whereIn('neptun_code', $codes)->get()
             ->keyBy(fn (User $student) => strtoupper((string) $student->neptun_code));
         $ids = $students->pluck('id');
-        // Everyone's roles in one query, so asking who helps run the event costs nothing per row.
-        $this->access->preload($students);
         $inArea = RoleAssignment::query()->active()
             ->where('topic_id', $area->id)
             ->whereIn('user_id', $ids)
@@ -86,7 +80,6 @@ class EventPointsImport
                     : 'Already has the points for this event.'],
                 $student->status === 'invited' => ['skipped', 'Has not activated their account yet. Import them again once they have.'],
                 $student->status !== 'active' => ['skipped', 'Their account is deactivated.'],
-                $this->ledger->runsEvent($event, $student) => ['skipped', 'Helps run this event, for example as a student tutor, so cannot receive its points.'],
                 ! $inArea->has($student->id) => ['skipped', "Not assigned to {$area->title}, the area of this event."],
                 ! $seesEvents->has($student->id) => ['skipped', "Their role in {$area->title} does not include \"View events\"."],
                 default => ['credit', null],

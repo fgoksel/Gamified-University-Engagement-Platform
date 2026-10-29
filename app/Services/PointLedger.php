@@ -22,8 +22,7 @@ use Illuminate\Support\Facades\DB;
  * or slip QR code, a finished milestone task) ends up in credit(), and an
  * imported list in creditImported() (Task #85), so they all share the same
  * checks and the same database guard: one base credit per student and event,
- * whichever route wins a race. Whoever helps run an event, a student tutor for
- * example, never receives its points (runsEvent()).
+ * whichever route wins a race.
  */
 class PointLedger
 {
@@ -130,17 +129,6 @@ class PointLedger
     }
 
     /**
-     * Whether the person helps run the event: they may create, manage, select applicants,
-     * credit points or manage QR codes at its topic (EventPolicy::staff). Such a person, for
-     * example a student tutor whom a teacher gave a role in the course, cannot receive the
-     * event's points by any route (team rule, review of Task #85).
-     */
-    public function runsEvent(Event $event, User $person): bool
-    {
-        return $person->can('staff', $event);
-    }
-
-    /**
      * The checks every credit shares, then the ledger row. $eligible says no for this
      * route by throwing; it runs inside the transaction, with the student's application
      * (if any) locked. An accepted application is marked as credited together with the
@@ -155,10 +143,6 @@ class PointLedger
     {
         if ($student->is($creditedBy)) {
             throw new EventActionRefused('self_credit', 'Points cannot be credited to the person who authorised them.', 403);
-        }
-
-        if ($this->runsEvent($event, $student)) {
-            throw new EventActionRefused('runs_event', 'Whoever helps run this event, such as a student tutor, cannot receive its points.', 403);
         }
 
         if ($student->status !== 'active') {
