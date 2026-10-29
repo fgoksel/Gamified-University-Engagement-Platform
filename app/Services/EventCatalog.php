@@ -216,6 +216,7 @@ class EventCatalog
             ...$this->present($user, $event, $mine),
             'status' => $event->status,
             'ends_full' => $event->event_ends_at->format('D j M Y, H:i'),
+            'applications_open_full' => $event->applicationsOpenFrom()?->format('D j M Y, H:i'),
             'applications_close_full' => $event->application_deadline->format('D j M Y, H:i'),
             'completion_deadline' => $event->completion_deadline->format('D j M Y, H:i'),
             'reveal_at' => $event->reveal_at?->format('D j M Y, H:i'),
@@ -272,7 +273,8 @@ class EventCatalog
      */
     private function isOpen(Event $event): bool
     {
-        if (now()->gte($event->event_starts_at)) {
+        // Applications run in their own window, which may reach into the event (Task #78).
+        if (now()->lt($event->applicationsOpenFrom() ?? now()) || now()->gt($event->event_ends_at)) {
             return false;
         }
 

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -39,6 +40,7 @@ class Event extends Model
         'points_value',
         'event_starts_at',
         'event_ends_at',
+        'applications_open_at',
         'application_deadline',
         'completion_deadline',
         'status',
@@ -58,6 +60,7 @@ class Event extends Model
         return [
             'event_starts_at' => 'datetime',
             'event_ends_at' => 'datetime',
+            'applications_open_at' => 'datetime',
             'application_deadline' => 'datetime',
             'completion_deadline' => 'datetime',
             'published_at' => 'datetime',
@@ -113,6 +116,15 @@ class Event extends Model
     public function qrTokens(): HasMany
     {
         return $this->hasMany(QrToken::class);
+    }
+
+    /**
+     * When applications open: the date the organiser chose, or the moment of publishing for an
+     * event without one (Task #78).
+     */
+    public function applicationsOpenFrom(): ?CarbonInterface
+    {
+        return $this->applications_open_at ?? $this->published_at;
     }
 
     public function isPublished(): bool

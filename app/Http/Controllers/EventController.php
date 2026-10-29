@@ -104,7 +104,7 @@ class EventController extends Controller
                         && $event
                         && $event->status === Event::STATUS_PUBLISHED
                         && $now->lte($event->application_deadline)
-                        && $now->lt($event->event_starts_at),
+                        && $now->lte($event->event_ends_at),
                     'event' => $event ? [
                         'id' => $event->id,
                         'title' => $event->title,
@@ -189,6 +189,7 @@ class EventController extends Controller
             'points_value' => $data['points_value'],
             'event_starts_at' => $data['event_starts_at'],
             'event_ends_at' => $data['event_ends_at'],
+            'applications_open_at' => $data['applications_open_at'] ?? null,
             'application_deadline' => $data['application_deadline'],
             'completion_deadline' => $data['completion_deadline'],
             'is_hidden' => $hidden,

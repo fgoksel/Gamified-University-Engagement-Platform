@@ -41,7 +41,8 @@ class StoreEventRequest extends FormRequest
             'points_value' => ['required', 'integer', 'min:1', 'max:1000'],
             'event_starts_at' => ['required', 'date', 'after:now'],
             'event_ends_at' => ['required', 'date', 'after:event_starts_at'],
-            'application_deadline' => ['required', 'date', 'after:now', 'before_or_equal:event_starts_at'],
+            'applications_open_at' => ['nullable', 'date', 'before:application_deadline'],
+            'application_deadline' => ['required', 'date', 'after:now', 'before_or_equal:event_ends_at'],
             'completion_deadline' => ['required', 'date', 'after_or_equal:event_ends_at'],
             'is_hidden' => ['boolean'],
             'reveal_at' => ['nullable', 'required_if:is_hidden,true', 'date', 'after:now', 'before_or_equal:event_starts_at'],
@@ -96,7 +97,8 @@ class StoreEventRequest extends FormRequest
             'event_starts_at.after' => 'The event must start in the future.',
             'event_ends_at.after' => 'The event must end after it starts.',
             'application_deadline.after' => 'The application deadline must be in the future.',
-            'application_deadline.before_or_equal' => 'Applications must close before the event starts.',
+            'applications_open_at.before' => 'Applications must open before they close.',
+            'application_deadline.before_or_equal' => 'Applications must close before the event ends.',
             'completion_deadline.after_or_equal' => 'The completion deadline cannot be before the event ends.',
             'reveal_at.required_if' => 'Choose when a hidden event is revealed.',
             'reveal_at.before_or_equal' => 'A hidden event must be revealed before it starts.',
@@ -111,6 +113,7 @@ class StoreEventRequest extends FormRequest
         return [
             'event_starts_at' => 'start',
             'event_ends_at' => 'end',
+            'applications_open_at' => 'application opening',
             'points_value' => 'points',
         ];
     }
