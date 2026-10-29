@@ -116,6 +116,7 @@ class NotificationFeed
             };
         }
 
-        return [$data['title'] ?? 'Notification', $data['message'] ?? '', null];
+        // Import results are Filament notifications, which keep their text in "body" (Task #72).
+        return [$data['title'] ?? 'Notification', $data['message'] ?? $data['body'] ?? '', null];
     }
 }

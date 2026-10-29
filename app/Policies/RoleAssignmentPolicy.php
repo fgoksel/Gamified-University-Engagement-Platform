@@ -15,8 +15,10 @@ use Illuminate\Auth\Access\Response;
  *
  * Doing something and passing the power on are different: giving a role needs
  * the "give roles" capability at the topic AND every power in the role within
- * what the giver may pass on there. Nobody gives themselves a role, ends or
- * replaces their own, or ends a role that supplied their own authority.
+ * what the giver may pass on there. Importing a list of students (Task #72)
+ * needs the "import students" capability instead, with the same limits. Nobody
+ * gives themselves a role, ends or replaces their own, or ends a role that
+ * supplied their own authority.
  */
 class RoleAssignmentPolicy
 {
@@ -56,6 +58,48 @@ class RoleAssignmentPolicy
             return Response::deny('You cannot give roles here.');
         }
 
+        return $this->withinPowers($user, $topic, $role);
+    }
+
+    /**
+     * Giving a role to an imported student (Task #72).
+     */
+    public function import(User $user, Topic $topic, RoleDefinition $role, User $recipient): Response
+    {
+        if (! $this->access->isActive($user)) {
+            return Response::deny('Your account is not active.');
+        }
+
+        if ($recipient->id === $user->id) {
+            return Response::deny('You cannot give a role to yourself.');
+        }
+
+        return $this->importRole($user, $topic, $role);
+    }
+
+    /**
+     * The part of importing that does not depend on the student: which roles an
+     * import may give here. Topics above the importer's own branch are refused,
+     * because the capability is not held there (S3, 27 October).
+     */
+    public function importRole(User $user, Topic $topic, RoleDefinition $role): Response
+    {
+        if (! $this->access->isActive($user)) {
+            return Response::deny('Your account is not active.');
+        }
+
+        if (! $this->access->can($user, Capability::AccessImport, $topic)) {
+            return Response::deny('You cannot import students here.');
+        }
+
+        return $this->withinPowers($user, $topic, $role);
+    }
+
+    /**
+     * The role is usable at the topic and holds nothing the person may not pass on there.
+     */
+    private function withinPowers(User $user, Topic $topic, RoleDefinition $role): Response
+    {
         if (! $role->isGlobal() && ! $topic->isWithin($role->topic)) {
             return Response::deny('This role belongs to a different branch and cannot be used here.');
         }

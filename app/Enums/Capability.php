@@ -28,6 +28,9 @@ enum Capability: string
 
     case AccessEnd = 'access.end';
 
+    // Task #72: give a role to a whole list of people at once (S3: passed on like the others).
+    case AccessImport = 'access.import';
+
     case DefineRoles = 'role.define';
 
     case EventsView = 'events.view';
@@ -55,6 +58,7 @@ enum Capability: string
             self::AccessView => 'See who has access',
             self::AccessAssign => 'Give people roles',
             self::AccessEnd => 'End and replace roles',
+            self::AccessImport => 'Import students',
             self::DefineRoles => 'Define roles',
             self::EventsView => 'View events',
             self::EventsApply => 'Apply to events',
@@ -77,6 +81,7 @@ enum Capability: string
             self::AccessView => 'See the people and roles assigned in the branch. Does not allow changing them.',
             self::AccessAssign => 'Give an existing role to a person in the branch, within the powers the giver may pass on.',
             self::AccessEnd => 'End or hand over a role in the branch. Never one\'s own role.',
+            self::AccessImport => 'Give a role to a list of students imported from a file of Neptun codes, here or in the branch, within the powers the importer may pass on. Topics above are offered only where the importer has this right too.',
             self::DefineRoles => 'Create and edit reusable roles for this branch, within the powers the creator may pass on.',
             self::EventsView => 'Browse the published, visible events announced to this branch.',
             self::EventsApply => 'Apply for the published events announced to this branch.',
@@ -98,7 +103,7 @@ enum Capability: string
         return match ($this) {
             self::View => [],
             self::AccessView => [self::View],
-            self::AccessAssign, self::AccessEnd => [self::View, self::AccessView],
+            self::AccessAssign, self::AccessEnd, self::AccessImport => [self::View, self::AccessView],
             self::EventsApply, self::EventsCreate => [self::View, self::EventsView],
             self::EventsManage => [self::View, self::EventsView, self::EventsCreate],
             self::ApplicationsManage, self::PointsCredit => [self::View, self::EventsView],

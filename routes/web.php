@@ -23,6 +23,7 @@ use App\Http\Controllers\RoleAssignmentController;
 use App\Http\Controllers\RoleDefinitionController;
 use App\Http\Controllers\ScanController;
 use App\Http\Controllers\TopicController;
+use App\Http\Controllers\TopicImportController;
 use App\Http\Controllers\TopicTagRequestController;
 use Illuminate\Support\Facades\Route;
 
@@ -215,6 +216,8 @@ Route::middleware('auth')->group(function () {
             Route::post('/{topic}/move', [TopicController::class, 'move'])->whereNumber('topic')->name('move');
             Route::get('/{topic}/candidates', [RoleAssignmentController::class, 'candidates'])->whereNumber('topic')->name('candidates');
             Route::post('/{topic}/assignments', [RoleAssignmentController::class, 'store'])->whereNumber('topic')->name('assignments.store');
+            // Task #72: give a role to a list of students from a file of Neptun codes.
+            Route::post('/{topic}/imports', [TopicImportController::class, 'store'])->whereNumber('topic')->name('imports.store');
         });
 
         // The previous "My courses" pages now live in Topics.

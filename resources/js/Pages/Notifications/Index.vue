@@ -86,7 +86,10 @@ function markAllRead() {
                         >
                             {{ notification.title }}
                         </span>
-                        <span class="mt-0.5 block text-sm text-fg-muted">
+                        <!-- Import results list one skipped row per line (Task #72). -->
+                        <span
+                            class="mt-0.5 block text-sm whitespace-pre-line text-fg-muted"
+                        >
                             {{ notification.body }}
                         </span>
                         <span
