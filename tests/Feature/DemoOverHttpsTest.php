@@ -32,8 +32,18 @@ class DemoOverHttpsTest extends TestCase
         $this->assertNotEmpty($service, 'the compose file has a tunnel service');
 
         $this->assertStringContainsString('profiles: ["demo"]', $service[1], 'it starts only on request, never with a plain "up"');
+        $this->assertMatchesRegularExpression('/image: cloudflare\/cloudflared:\d{4}\.\d+\.\d+\n/', $service[1], 'a fixed version, never "latest"');
         $this->assertStringContainsString('--url http://webserver:80', $service[1]);
         $this->assertStringContainsString('- webserver', $service[1]);
+    }
+
+    public function test_the_guide_warns_that_the_tunnel_is_public_and_what_to_do_about_it(): void
+    {
+        $guide = file_get_contents(base_path('docs/demo-over-https.md'));
+
+        $this->assertStringContainsString('APP_DEBUG=false', $guide);
+        $this->assertStringContainsString('Stop the tunnel straight after the demo', $guide);
+        $this->assertStringContainsString('The address changes every time', $guide);
     }
 
     public function test_the_demo_guide_exists_and_is_linked_from_the_readme(): void

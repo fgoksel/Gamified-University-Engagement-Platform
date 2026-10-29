@@ -53,7 +53,7 @@ services:
   # Only started on request: docker compose --profile demo up -d tunnel
   # The address changes at every start; see docs/demo-over-https.md.
   tunnel:
-    image: cloudflare/cloudflared:latest
+    image: cloudflare/cloudflared:2026.10.5
     container_name: gup-tunnel
     profiles: ["demo"]
     command: tunnel --no-autoupdate --url http://webserver:80

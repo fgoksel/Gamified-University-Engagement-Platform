@@ -12,6 +12,19 @@ Nothing here changes the app. Normal work stays on http://localhost:8081.
 - a phone with internet access (mobile data or any Wi-Fi; it does **not** have to be the laptop's network)
 - the laptop with internet access
 
+## Before you start: the tunnel is public
+
+The tunnel puts the site on the public internet. Anyone who has the address can open it, not only your
+phone. The address is long and random and nobody is told about it, but treat it as public:
+
+- **Turn debug off first.** `.env.example` has `APP_DEBUG=true`, which shows full error pages with
+  settings from the environment. In `.env` set `APP_DEBUG=false`, then run `docker compose restart app queue`.
+  Set it back to `true` for normal work afterwards.
+- **Use demo data only.** The demo accounts all have the password `password`, and the System Administrator
+  from the seeder has the password in `.env` (`ADMIN_PASSWORD`, `password` by default). Do not sign in to
+  `/admin` through the tunnel with that password, and never put real student data in this database.
+- **Stop the tunnel straight after the demo** (the last section).
+
 ## Steps
 
 1. **Use built assets, not the Vite dev server.** While `public/hot` exists the page asks the phone for
@@ -46,6 +59,8 @@ docker compose --profile demo stop tunnel
 docker compose up -d vite     # back to the dev server for normal work
 ```
 
+Then set `APP_DEBUG=true` in `.env` again and run `docker compose restart app queue`.
+
 If you built the assets for the demo, `npm run build` output stays in `public/build`; it is ignored by git,
 and the dev server takes over again as soon as `public/hot` is back.
 
@@ -55,6 +70,18 @@ The tunnel service (`cloudflared`) ends the TLS connection and forwards the requ
 server with `X-Forwarded-Proto: https`. `docker/nginx/default.conf` passes that on to PHP as `HTTPS=on`,
 only for that request, so every link, redirect and asset is built with https and the session works as
 usual. Requests to http://localhost:8081 are unchanged.
+
+## The address changes every time
+
+The free tunnel gets a new address at every start. A QR code made on one day contains the address the page
+was opened from, so a **printed** poster or slip from a past demo does not open from a phone's normal camera
+on another day. What works:
+
+- **Scan inside the app.** The scanner under *Scan QR code* reads the code from the link, so it works
+  whatever address the code was made on.
+- **Make the codes again** on the day of the demo, from the tunnel address, if people should scan them with
+  the phone's own camera.
+- For slips that must last, use a fixed address (a real server or a named tunnel) instead of this quick one.
 
 ## If something is wrong
 
