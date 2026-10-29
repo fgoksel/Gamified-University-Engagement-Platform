@@ -138,9 +138,9 @@ class EventPointsImportTest extends EventTestCase
             );
         }
 
-        // An application the student has shows the credit too, so it can no longer be withdrawn.
+        // An accepted application shows the credit too; a pending one is left for the organiser to decide.
         $this->assertNotNull(EventApplication::query()->where('student_id', $bela->id)->value('scored_at'));
-        $this->assertNotNull(EventApplication::query()->where('student_id', $cili->id)->value('scored_at'));
+        $this->assertNull(EventApplication::query()->where('student_id', $cili->id)->value('scored_at'));
 
         Notification::assertCount(3);
         Notification::assertSentTo(
@@ -203,6 +203,21 @@ class EventPointsImportTest extends EventTestCase
 
         $response->assertJsonCount(1, 'credited')->assertJsonPath('credited.0.neptun_code', 'COUR01');
         $this->assertSame([3 => 'Not assigned to Databases, the area of this event.'], $this->reasons($response, 'skipped'));
+    }
+
+    public function test_a_role_in_the_area_counts_only_when_it_includes_view_events(): void
+    {
+        // The same rule as for seeing an event announced there (Task #71).
+        $looker = $this->makeUser(UserRole::Student, 'Student LOOK01');
+        $looker->forceFill(['neptun_code' => 'LOOK01'])->save();
+        $this->assign($looker, $this->role('Topic reader', [Capability::View]), $this->course);
+        $this->member('VIEW02');
+
+        $response = $this->give($this->csv('Neptun Code', 'LOOK01', 'VIEW02'))->assertOk();
+
+        $response->assertJsonCount(1, 'credited')->assertJsonPath('credited.0.neptun_code', 'VIEW02');
+        $this->assertSame([2 => 'Their role in Databases does not include "View events".'], $this->reasons($response, 'skipped'));
+        $this->assertRefused('not_in_area', fn () => app(PointLedger::class)->creditImported($this->event, $looker, $this->organiser));
     }
 
     public function test_a_surprise_event_is_credited_without_any_application(): void
@@ -283,6 +298,48 @@ class EventPointsImportTest extends EventTestCase
         $this->assertSame([2 => 'You cannot give points to yourself.'], $this->reasons($response, 'skipped'));
     }
 
+    public function test_whoever_helps_run_the_event_is_skipped_such_as_a_student_tutor(): void
+    {
+        // A student of the course whom a teacher also made its tutor (team rule).
+        $tutor = $this->member('TUTO01');
+        $this->assign($tutor, $this->role('Tutor', [Capability::View, Capability::EventsView, Capability::PointsCredit]), $this->course);
+        // A role above the course that lets them create its events counts as well.
+        $helper = $this->member('HELP02');
+        $this->assign($helper, $this->role('Event helper', [Capability::View, Capability::EventsView, Capability::EventsCreate]), $this->faculty);
+        $this->member('PEER03');
+        $reason = 'Helps run this event, for example as a student tutor, so cannot receive its points.';
+
+        $check = $this->check($this->csv('Neptun Code', 'TUTO01', 'HELP02', 'PEER03'))->assertOk();
+        $check->assertJsonCount(1, 'credit')->assertJsonPath('credit.0.neptun_code', 'PEER03');
+        $this->assertSame([2 => $reason, 3 => $reason], $this->reasons($check, 'skipped'));
+
+        $given = $this->give($this->csv('Neptun Code', 'TUTO01', 'HELP02', 'PEER03'))->assertOk();
+        $given->assertJsonCount(1, 'credited')->assertJsonPath('credited.0.neptun_code', 'PEER03');
+        $this->assertSame([2 => $reason, 3 => $reason], $this->reasons($given, 'skipped'));
+        $this->assertSame(1, PointTransaction::count());
+    }
+
+    public function test_only_an_accepted_application_is_marked_as_credited(): void
+    {
+        $statuses = [EventApplication::ACCEPTED, EventApplication::PENDING, EventApplication::WAITLISTED, EventApplication::REJECTED, EventApplication::WITHDRAWN];
+        $applications = [];
+
+        foreach ($statuses as $index => $status) {
+            $applications[$status] = $this->accepted($this->member('APPL0'.($index + 1)), status: $status);
+        }
+
+        $this->give($this->csv('Neptun Code', 'APPL01', 'APPL02', 'APPL03', 'APPL04', 'APPL05'))->assertOk()
+            ->assertJsonCount(5, 'credited');
+
+        // The points are theirs either way, but a rejected or withdrawn application must not look credited on My events.
+        foreach ($applications as $status => $application) {
+            $application->refresh();
+            $this->assertSame($status, $application->status);
+            $this->assertSame($status === EventApplication::ACCEPTED, $application->isCredited(), $status);
+            $this->assertSame($status === EventApplication::ACCEPTED, $application->completed_at !== null, $status);
+        }
+    }
+
     public function test_points_that_were_taken_back_are_not_given_again(): void
     {
         $student = $this->member('BACK01');
@@ -295,13 +352,15 @@ class EventPointsImportTest extends EventTestCase
         $this->assertSame(0, $ledger->totals($student)['total']);
     }
 
-    public function test_the_ledger_checks_the_area_and_the_single_credit_again_when_it_writes(): void
+    public function test_the_ledger_checks_the_account_the_area_and_the_single_credit_again_when_it_writes(): void
     {
         $ledger = app(PointLedger::class);
         $outside = $this->member('OUTS01', $this->faculty);
         $inside = $this->member('INSI02');
 
         $this->assertRefused('not_in_area', fn () => $ledger->creditImported($this->event, $outside, $this->organiser));
+        // A teacher who sees the course's events is not one of its students.
+        $this->assertRefused('not_a_student', fn () => $ledger->creditImported($this->event, $this->staff([]), $this->organiser));
 
         $ledger->creditImported($this->event, $inside, $this->organiser);
         $this->assertRefused('already_credited', fn () => $ledger->creditImported($this->event, $inside, $this->organiser));
@@ -327,7 +386,7 @@ class EventPointsImportTest extends EventTestCase
         $this->check(UploadedFile::fake()->createWithContent('empty.csv', ''))
             ->assertJsonValidationErrors(['file' => 'The file is empty.']);
         $this->check(UploadedFile::fake()->createWithContent('list.xlsx', "Neptun Code\nANNA01\n"))
-            ->assertJsonValidationErrors(['file' => 'The file must be a CSV file.']);
+            ->assertJsonValidationErrors(['file' => 'The file must be a CSV file (.csv or .txt).']);
         $this->check($this->csv('Neptun Code', ...array_fill(0, NeptunCodeFile::MAX_ROWS + 1, 'ANNA01')))
             ->assertJsonValidationErrors(['file' => 'The file has more than 5,000 rows. Split it and import the parts one after the other.']);
 

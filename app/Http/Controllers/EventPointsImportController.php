@@ -109,7 +109,7 @@ class EventPointsImportController extends Controller
         $file = $request->file('file');
 
         if (! in_array(strtolower($file->getClientOriginalExtension()), ['csv', 'txt'], true)) {
-            throw ValidationException::withMessages(['file' => 'The file must be a CSV file.']);
+            throw ValidationException::withMessages(['file' => 'The file must be a CSV file (.csv or .txt).']);
         }
 
         return NeptunCodeFile::read($file);

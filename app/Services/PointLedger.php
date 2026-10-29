@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Enums\Capability;
+use App\Enums\UserRole;
 use App\Exceptions\EventActionRefused;
 use App\Models\Event;
 use App\Models\EventApplication;
@@ -20,7 +22,8 @@ use Illuminate\Support\Facades\DB;
  * or slip QR code, a finished milestone task) ends up in credit(), and an
  * imported list in creditImported() (Task #85), so they all share the same
  * checks and the same database guard: one base credit per student and event,
- * whichever route wins a race.
+ * whichever route wins a race. Whoever helps run an event, a student tutor for
+ * example, never receives its points (runsEvent()).
  */
 class PointLedger
 {
@@ -89,17 +92,28 @@ class PointLedger
      * Write the base credit of a student on a list the organiser imported (Task #85).
      * The organiser vouches that the student met the event's condition, so no application
      * is needed: a surprise event, which nobody applies to, is credited this way. The
-     * student must be assigned to the event's area instead (importArea()).
+     * student must have a student account and belong to the event's area instead
+     * (importArea()).
      *
      * @throws EventActionRefused
      */
     public function creditImported(Event $event, User $student, User $creditedBy): PointTransaction
     {
         return $this->write($event, $student, $creditedBy, self::IMPORT, function () use ($event, $student) {
-            $area = $this->importArea($event);
+            if (! $student->hasRole(UserRole::Student)) {
+                throw new EventActionRefused('not_a_student', "{$student->name} does not have a student account.", 403);
+            }
 
-            if (! RoleAssignment::query()->active()->where('topic_id', $area->id)->where('user_id', $student->id)->exists()) {
-                throw new EventActionRefused('not_in_area', "{$student->name} is not assigned to {$area->title}.", 403);
+            $area = $this->importArea($event);
+            $seesEvents = RoleAssignment::query()->active()
+                ->where('topic_id', $area->id)
+                ->where('user_id', $student->id)
+                ->with('role')
+                ->get()
+                ->contains(fn (RoleAssignment $assignment) => $assignment->role->has(Capability::EventsView));
+
+            if (! $seesEvents) {
+                throw new EventActionRefused('not_in_area', "{$student->name} is not assigned to {$area->title} with a role that includes \"View events\".", 403);
             }
         });
     }
@@ -107,7 +121,8 @@ class PointLedger
     /**
      * Whose students an import may credit (Task #85, team decision of 27 Oct): the topic the
      * event is announced to, or the topic that runs it when it is announced to nobody. Only
-     * people assigned to that topic itself count; nothing flows up or down the tree (Task #71).
+     * people whose role at that topic itself includes "View events" count, the same rule as
+     * for seeing an event announced there; nothing flows up or down the tree (Task #71).
      */
     public function importArea(Event $event): Topic
     {
@@ -115,9 +130,22 @@ class PointLedger
     }
 
     /**
+     * Whether the person helps run the event: they may create, manage, select applicants,
+     * credit points or manage QR codes at its topic (EventPolicy::staff). Such a person, for
+     * example a student tutor whom a teacher gave a role in the course, cannot receive the
+     * event's points by any route (team rule, review of Task #85).
+     */
+    public function runsEvent(Event $event, User $person): bool
+    {
+        return $person->can('staff', $event);
+    }
+
+    /**
      * The checks every credit shares, then the ledger row. $eligible says no for this
      * route by throwing; it runs inside the transaction, with the student's application
-     * (if any) locked. An application is marked as credited together with the row.
+     * (if any) locked. An accepted application is marked as credited together with the
+     * row. Any other application is left as it is, so that a rejected or withdrawn one
+     * never shows as credited; an imported credit needs no application.
      *
      * @param  callable(?EventApplication): void  $eligible
      *
@@ -127,6 +155,10 @@ class PointLedger
     {
         if ($student->is($creditedBy)) {
             throw new EventActionRefused('self_credit', 'Points cannot be credited to the person who authorised them.', 403);
+        }
+
+        if ($this->runsEvent($event, $student)) {
+            throw new EventActionRefused('runs_event', 'Whoever helps run this event, such as a student tutor, cannot receive its points.', 403);
         }
 
         if ($student->status !== 'active') {
@@ -169,7 +201,9 @@ class PointLedger
                     'category' => $event->category,
                 ]);
 
-                $application?->forceFill(['completed_at' => now(), 'scored_at' => now()])->save();
+                if ($application?->isAccepted()) {
+                    $application->forceFill(['completed_at' => now(), 'scored_at' => now()])->save();
+                }
 
                 return $row;
             });
