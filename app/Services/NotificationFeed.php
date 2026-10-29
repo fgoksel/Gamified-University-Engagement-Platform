@@ -78,6 +78,8 @@ class NotificationFeed
         if ($notification->type === EventStatusChangedNotification::class) {
             $event = $data['event_title'] ?? 'an event';
             $reason = filled($data['reason'] ?? null) ? " Reason: {$data['reason']}" : '';
+            // Task #77: where the event is after the change; null when the location was removed.
+            $where = filled($data['location'] ?? null) ? "It now takes place at {$data['location']}." : 'The location was removed.';
 
             return match ($data['change'] ?? null) {
                 EventStatusChangedNotification::CANCELLED => [
@@ -98,6 +100,16 @@ class NotificationFeed
                 EventStatusChangedNotification::RESCHEDULED => [
                     "The time of {$event} changed",
                     'You keep your place. Check the new date; if it no longer suits you, you can withdraw.',
+                    '/my-events',
+                ],
+                EventStatusChangedNotification::RELOCATED => [
+                    "The location of {$event} changed",
+                    "{$where} You keep your place; if it no longer suits you, you can withdraw.",
+                    '/my-events',
+                ],
+                EventStatusChangedNotification::RESCHEDULED_AND_RELOCATED => [
+                    "The time and location of {$event} changed",
+                    "{$where} You keep your place. Check the new date; if it no longer suits you, you can withdraw.",
                     '/my-events',
                 ],
                 default => ['Update on an event you applied to', $event, '/my-events'],

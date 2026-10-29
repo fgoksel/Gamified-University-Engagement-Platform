@@ -3,6 +3,7 @@ import { computed } from "vue";
 import { Link } from "@inertiajs/vue3";
 import {
     ArrowLeft,
+    Building2,
     CalendarClock,
     Clock,
     MapPin,
@@ -130,8 +131,15 @@ const placesText = computed(() => {
                         </dd>
                     </div>
                 </div>
-                <div class="flex items-start gap-2">
+                <div v-if="event.location" class="flex items-start gap-2">
                     <MapPin class="mt-0.5 size-4 shrink-0 text-fg-muted" />
+                    <div>
+                        <dt class="text-fg-muted">Location</dt>
+                        <dd class="text-fg">{{ event.location }}</dd>
+                    </div>
+                </div>
+                <div class="flex items-start gap-2">
+                    <Building2 class="mt-0.5 size-4 shrink-0 text-fg-muted" />
                     <div>
                         <dt class="text-fg-muted">Organised by</dt>
                         <dd class="text-fg">{{ event.owning_topic }}</dd>

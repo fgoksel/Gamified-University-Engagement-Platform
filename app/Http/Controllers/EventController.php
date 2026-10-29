@@ -109,6 +109,7 @@ class EventController extends Controller
                         'id' => $event->id,
                         'title' => $event->title,
                         'description' => $event->description,
+                        'location' => $event->location,
                         'category' => $event->category,
                         'points_value' => $event->points_value,
                         'event_starts_at' => $event->event_starts_at?->toIso8601String(),
@@ -174,6 +175,8 @@ class EventController extends Controller
         Event::create([
             'title' => trim($data['title']),
             'description' => trim($data['description']),
+            // Optional free text (Task #77): empty means no location yet.
+            'location' => filled($data['location'] ?? null) ? trim($data['location']) : null,
             'topic_tag_id' => $data['topic_tag_id'],
             // Copied from the tag; the ledger snapshots it again when crediting.
             'category' => TopicTag::findOrFail($data['topic_tag_id'])->category,

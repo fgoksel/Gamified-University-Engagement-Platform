@@ -40,6 +40,7 @@ class EventEditController extends Controller
                 'version' => $editor->version($event),
                 'title' => $event->title,
                 'description' => $event->description,
+                'location' => $event->location,
                 'topic_tag_id' => $event->topic_tag_id,
                 'owning_topic_id' => $event->owning_topic_id,
                 'audience_topic_id' => $event->audience_topic_id,

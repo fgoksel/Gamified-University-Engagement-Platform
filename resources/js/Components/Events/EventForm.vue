@@ -37,6 +37,7 @@ const form = useForm({
     version: props.event?.version ?? null,
     title: props.event?.title ?? "",
     description: props.event?.description ?? "",
+    location: props.event?.location ?? "",
     topic_tag_id: props.event?.topic_tag_id ?? "",
     owning_topic_id: props.event?.owning_topic_id ?? onlyTopic,
     // New events are announced to the owning topic by default.
@@ -232,6 +233,15 @@ const selectClass = (field) => [
             <legend class="px-1 text-base font-semibold text-fg">
                 Where and who
             </legend>
+
+            <!-- Task #77: free text; no room booking or clash check. -->
+            <TextField
+                v-model="form.location"
+                label="Location (optional)"
+                :disabled="readonly"
+                hint="A room or an address. Students see it on the event."
+                :error="form.errors.location"
+            />
 
             <div>
                 <label

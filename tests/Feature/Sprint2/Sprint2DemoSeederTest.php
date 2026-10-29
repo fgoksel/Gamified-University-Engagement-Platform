@@ -70,6 +70,15 @@ class Sprint2DemoSeederTest extends TestCase
         $this->assertSame(0, User::where('email', 'like', 'sprint2.%')->count());
     }
 
+    public function test_the_demo_events_say_where_they_take_place(): void
+    {
+        $this->seedDemo();
+
+        // Task #77: the location is optional, so the draft and the surprise quiz have none yet.
+        $this->assertSame('Computer Lab 1, Informatics Building', $this->event('Indexing Lab')->location);
+        $this->assertSame(['Query Optimisation Seminar', 'Surprise SQL Quiz'], Event::whereNull('location')->orderBy('title')->pluck('title')->all());
+    }
+
     public function test_it_builds_two_branches_with_events_in_every_state_and_is_repeatable(): void
     {
         $this->seedDemo();
