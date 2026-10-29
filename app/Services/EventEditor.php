@@ -31,7 +31,7 @@ use Illuminate\Validation\ValidationException;
  *   who may see and apply, and
  *   how students get a place     once anybody has applied
  *   points and the tag           once anybody was credited (everyone gets the same points)
- *   start and application close  once the event has started
+ *   start                        once the event has started
  *   surprise setting             always; the reveal time only until it is revealed
  * Places can never drop below the students already accepted.
  *
@@ -88,7 +88,6 @@ class EventEditor
 
         if ($event->event_starts_at->isPast()) {
             $locks['event_starts_at'] = 'The event has started, so its start cannot move.';
-            $locks['application_deadline'] = 'The event has started, so the application deadline cannot move.';
         }
 
         if (! $event->is_hidden || $event->isRevealed()) {
@@ -230,11 +229,21 @@ class EventEditor
         if ($ends->lte($starts)) {
             $errors['event_ends_at'] = 'The event must end after it starts.';
         }
-        if (! isset($locks['application_deadline']) && $applyBy->lte(now()) && ! $unchanged('application_deadline', $applyBy)) {
+        if ($applyBy->lte(now()) && ! $unchanged('application_deadline', $applyBy)) {
             $errors['application_deadline'] = 'The application deadline must be in the future.';
         }
-        if ($applyBy->gt($starts)) {
-            $errors['application_deadline'] ??= 'Applications must close before the event starts.';
+        // Applications may stay open while the event runs, but not after it (Task #78).
+        if ($applyBy->gt($ends)) {
+            $errors['application_deadline'] ??= 'Applications must close before the event ends.';
+        }
+
+        // A page opened before this field existed leaves it out: keep what is stored.
+        $opensAt = $event->applications_open_at;
+        if (array_key_exists('applications_open_at', $data)) {
+            $opensAt = ($data['applications_open_at'] ?? null) === null ? null : $date('applications_open_at');
+        }
+        if ($opensAt !== null && $opensAt->gte($applyBy)) {
+            $errors['applications_open_at'] = 'Applications must open before they close.';
         }
         if ($completeBy->lt($ends)) {
             $errors['completion_deadline'] = 'The completion deadline cannot be before the event ends.';
@@ -272,6 +281,7 @@ class EventEditor
             'points_value' => $points,
             'event_starts_at' => $starts,
             'event_ends_at' => $ends,
+            'applications_open_at' => $opensAt,
             'application_deadline' => $applyBy,
             'completion_deadline' => $completeBy,
             'is_hidden' => $hidden,

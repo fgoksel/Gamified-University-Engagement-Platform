@@ -49,6 +49,7 @@ class EventEditController extends Controller
                 // Stored as typed (no zone), so the browser's datetime fields get them as they are.
                 'event_starts_at' => $event->event_starts_at->format('Y-m-d\TH:i'),
                 'event_ends_at' => $event->event_ends_at->format('Y-m-d\TH:i'),
+                'applications_open_at' => $event->applications_open_at?->format('Y-m-d\TH:i'),
                 'application_deadline' => $event->application_deadline->format('Y-m-d\TH:i'),
                 'completion_deadline' => $event->completion_deadline->format('Y-m-d\TH:i'),
                 'is_hidden' => $event->is_hidden,

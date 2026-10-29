@@ -48,6 +48,7 @@ class UpdateEventRequest extends FormRequest
             'points_value' => ['required', 'integer', 'min:1', 'max:1000'],
             'event_starts_at' => ['required', 'date'],
             'event_ends_at' => ['required', 'date'],
+            'applications_open_at' => ['nullable', 'date'],
             'application_deadline' => ['required', 'date'],
             'completion_deadline' => ['required', 'date'],
             'is_hidden' => ['boolean'],

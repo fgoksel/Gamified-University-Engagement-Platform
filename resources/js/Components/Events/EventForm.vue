@@ -399,7 +399,7 @@ const selectClass = (field) => [
                     type="datetime-local"
                     :disabled="lockedField('application_deadline')"
                     :hint="
-                        locks.application_deadline ?? 'At or before the start.'
+                        locks.application_deadline ?? 'At or before the end.'
                     "
                     :error="form.errors.application_deadline"
                 />
