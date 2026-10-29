@@ -81,7 +81,8 @@ class TopicDemoSeeder extends Seeder
             'name' => 'Branch manager',
             'description' => 'Like a branch lead, but cannot define roles. A lead can hand this one to a delegate.',
             'capabilities' => ['topic.view', 'topic.create', 'topic.edit', 'topic.organise', 'access.view', 'access.assign', 'access.end', 'access.import', 'events.view', 'events.apply', 'events.create', 'applications.manage', 'points.credit'],
-            'delegable' => ['topic.view', 'topic.create', 'access.view', 'events.view', 'events.create'],
+            // events.apply lets a delegate give "Reader" to their students, by hand or by import (Task #72).
+            'delegable' => ['topic.view', 'topic.create', 'access.view', 'events.view', 'events.apply', 'events.create'],
         ]);
         $contributor = $roles->create($admin, null, [
             'name' => 'Contributor',

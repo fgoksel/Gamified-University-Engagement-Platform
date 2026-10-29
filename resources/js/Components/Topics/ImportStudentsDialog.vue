@@ -55,12 +55,14 @@ function submit() {
         @close="emit('close')"
     >
         <form id="import-form" class="space-y-5" @submit.prevent="submit">
+            <!-- Task #71: students see the events of the topics they are assigned to, and only those. -->
             <p
                 class="rounded-control bg-info-soft px-3 py-2 text-sm text-info-fg"
             >
                 Every student in the file gets the chosen role at
                 <strong>{{ topic.title }}</strong
-                >, which also applies to every topic below it. Students who
+                >. They see only the events announced to the topics they are
+                added to, not the events of topics above or below. Students who
                 already have the role there are left as they are, so importing
                 the same file again adds nobody twice.
             </p>
@@ -145,8 +147,9 @@ function submit() {
                     Also add them to
                 </legend>
                 <p class="mt-1 text-sm text-fg-muted">
-                    A topic above then holds everyone imported into it. Only the
-                    topics above where you may import are listed.
+                    Tick a topic above if these students should also see the
+                    events announced there. Only the topics above where you may
+                    import are listed.
                 </p>
                 <div class="mt-1.5 space-y-2">
                     <label
