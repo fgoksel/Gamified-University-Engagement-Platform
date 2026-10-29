@@ -135,6 +135,7 @@ class Sprint2DemoSeeder extends Seeder
         $joins = $this->event($ivan, $databases, 'Tutoring', [
             'title' => 'SQL Joins Workshop',
             'description' => 'Two places only. Demo: Eszter applies and is waitlisted; Anna withdraws and Csilla moves up.',
+            'location' => 'Room 2.14, Informatics Building',
             'capacity' => 2,
         ], startsIn: '+3 days');
         $applications->apply($this->people['anna'], $joins);
@@ -145,6 +146,7 @@ class Sprint2DemoSeeder extends Seeder
         $hackathon = $this->event($ivan, $databases, 'Conference Talk', [
             'title' => 'Database Design Hackathon',
             'description' => 'Selection mode. Demo: tick three for two places to see the capacity question, then select two and reject one.',
+            'location' => 'Computer Lab 3, Informatics Building',
             'capacity' => 2,
             'application_type' => 'teacher_select',
             'points_value' => 30,
@@ -157,6 +159,7 @@ class Sprint2DemoSeeder extends Seeder
         $lab = $this->event($ivan, $databases, 'Tutoring', [
             'title' => 'Indexing Lab',
             'description' => 'Running right now. Demo: Bence is already credited; credit Csilla by checklist, Anna by her QR passport, and let Dani scan the poster.',
+            'location' => 'Computer Lab 1, Informatics Building',
             'capacity' => 10,
             'points_value' => 20,
         ], startsIn: '-30 minutes');
@@ -170,6 +173,7 @@ class Sprint2DemoSeeder extends Seeder
         $lecture = $this->event($ivan, $databases, 'Exam Preparation', [
             'title' => 'Intro to SQL Lecture',
             'description' => 'Took place last week; attendance was credited.',
+            'location' => 'Lecture Hall A, Main Building',
             'capacity' => 40,
             'points_value' => 10,
             'status' => Event::STATUS_COMPLETED,
@@ -180,6 +184,7 @@ class Sprint2DemoSeeder extends Seeder
         }
 
         // Every other state of the lifecycle, to show on "Organized by me".
+        // The draft has no location yet: the field is optional (Task #77).
         $this->event($ivan, $databases, 'Conference Talk', [
             'title' => 'Query Optimisation Seminar',
             'description' => 'Still a draft: students cannot see it.',
@@ -190,6 +195,7 @@ class Sprint2DemoSeeder extends Seeder
         $career = $this->event($ivan, $databases, 'Volunteer Work', [
             'title' => 'Database Careers Evening',
             'description' => 'On hold: hidden from students, applications kept. Demo: restore it, and Anna is told.',
+            'location' => 'Aula, Main Building',
         ], startsIn: '+8 days');
         $applications->apply($this->people['anna'], $career);
         $career->update(['status' => Event::STATUS_ON_HOLD]);
@@ -197,6 +203,7 @@ class Sprint2DemoSeeder extends Seeder
         $this->event($ivan, $databases, 'Tutoring', [
             'title' => 'Lab Safety Briefing',
             'description' => 'Cancelled, with a reason. It cannot be brought back.',
+            'location' => 'Computer Lab 1, Informatics Building',
             'status' => Event::STATUS_CANCELLED,
             'cancelled_at' => now(),
             'cancellation_reason' => 'The lab is being renovated.',
@@ -218,6 +225,7 @@ class Sprint2DemoSeeder extends Seeder
         $run = $this->event($sara, $athletics, 'Charity Run', [
             'title' => 'Campus 5K Run',
             'description' => 'Faculty of Sport only. Running right now; Erik is already credited.',
+            'location' => 'University Park, main gate',
             'capacity' => 50,
             'points_value' => 25,
         ], startsIn: '-20 minutes');
@@ -228,6 +236,7 @@ class Sprint2DemoSeeder extends Seeder
         $championship = $this->event($sara, $athletics, 'University Championship', [
             'title' => 'Athletics Championship',
             'description' => 'Open to the Athletics Club only.',
+            'location' => 'University Stadium',
             'capacity' => 20,
             'points_value' => 40,
         ], startsIn: '+6 days');

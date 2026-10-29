@@ -361,6 +361,12 @@ function reapply(app) {
                             {{ formatDateTime(app.event.application_deadline) }}
                         </div>
                     </div>
+                    <div v-if="app.event.location">
+                        <span class="font-medium text-fg">Location:</span>
+                        <div class="mt-0.5">
+                            {{ app.event.location }}
+                        </div>
+                    </div>
                     <div>
                         <span class="font-medium text-fg">Reward:</span>
                         <div class="mt-0.5 font-semibold text-fg">

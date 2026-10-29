@@ -271,16 +271,18 @@ class CapacityGuardTest extends TopicTestCase
         $this->service->apply($student, $event);
     }
 
-    public function test_cannot_apply_after_event_starts(): void
+    public function test_cannot_apply_after_the_event_ended(): void
     {
+        // Applications may run into the event (Task #78), but never past its end.
         $event = $this->createEvent([
-            'event_starts_at' => now()->subMinute(),
+            'event_starts_at' => now()->subHours(2),
+            'event_ends_at' => now()->subMinute(),
             'application_deadline' => now()->addHour(),
         ]);
         $student = $this->createAudienceStudent('STU001');
 
         $this->expectException(ValidationException::class);
-        $this->expectExceptionMessage('This event has already started.');
+        $this->expectExceptionMessage('This event has already ended.');
 
         $this->service->apply($student, $event);
     }

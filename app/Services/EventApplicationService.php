@@ -289,6 +289,15 @@ class EventApplicationService
             ]);
         }
 
+        // Applications have their own window (Task #78): they open on the chosen date, or when
+        // the event was published, and may stay open while the event runs.
+        $opensAt = $event->applicationsOpenFrom();
+        if ($opensAt !== null && now()->lt($opensAt)) {
+            throw ValidationException::withMessages([
+                'event' => 'Applications for this event are not open yet.',
+            ]);
+        }
+
         // Hidden surprise events bypass standard application deadline (D02)
         if (! $event->is_hidden && $event->application_deadline !== null && now()->gt($event->application_deadline)) {
             throw ValidationException::withMessages([
@@ -296,9 +305,9 @@ class EventApplicationService
             ]);
         }
 
-        if (now()->gt($event->event_starts_at)) {
+        if (now()->gt($event->event_ends_at)) {
             throw ValidationException::withMessages([
-                'event' => 'This event has already started.',
+                'event' => 'This event has already ended.',
             ]);
         }
 

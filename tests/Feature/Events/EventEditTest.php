@@ -215,7 +215,9 @@ class EventEditTest extends EventTestCase
         ]);
 
         $this->save($this->organiser, $event, ['event_starts_at' => now()->addDay()->format('Y-m-d\TH:i')])->assertSessionHasErrors('event_starts_at');
-        $this->save($this->organiser, $event, ['application_deadline' => now()->addMinutes(5)->format('Y-m-d\TH:i')])->assertSessionHasErrors('application_deadline');
+        // Applications may stay open while the event runs (Task #78), up to its end but not past it.
+        $this->save($this->organiser, $event, ['application_deadline' => now()->addHours(3)->format('Y-m-d\TH:i')])->assertSessionHasErrors('application_deadline');
+        $this->save($this->organiser, $event, ['application_deadline' => now()->addMinutes(30)->format('Y-m-d\TH:i')])->assertSessionHasNoErrors();
 
         $this->save($this->organiser, $event, [
             'event_ends_at' => now()->addHours(4)->startOfMinute()->format('Y-m-d\TH:i'),
@@ -244,7 +246,7 @@ class EventEditTest extends EventTestCase
 
         $this->save($this->organiser, $event, ['event_starts_at' => $fmt(now()->subDay())])->assertSessionHasErrors('event_starts_at');
         $this->save($this->organiser, $event, ['event_ends_at' => $fmt($event->event_starts_at->copy()->subHour())])->assertSessionHasErrors('event_ends_at');
-        $this->save($this->organiser, $event, ['application_deadline' => $fmt($event->event_starts_at->copy()->addHour())])->assertSessionHasErrors('application_deadline');
+        $this->save($this->organiser, $event, ['application_deadline' => $fmt($event->event_ends_at->copy()->addHour())])->assertSessionHasErrors('application_deadline');
         $this->save($this->organiser, $event, ['completion_deadline' => $fmt($event->event_ends_at->copy()->subHour())])->assertSessionHasErrors('completion_deadline');
     }
 
