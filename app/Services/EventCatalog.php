@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\DB;
  *
  * The query follows EventPolicy::view so the list never shows more than the
  * policy allows:
- *   - announced to an audience topic where the person holds events.view
+ *   - announced to an audience topic where the person is assigned with events.view
  *     (and, for a surprise event, already revealed), or
  *   - owned at a topic where the person is event staff (staff see surprises early).
  * Drafts, events on hold and cancelled events never appear here; organisers
@@ -40,19 +40,24 @@ class EventCatalog
     ) {}
 
     /**
-     * Topics where the person may see the events announced there.
+     * Topics whose events the person may see: the ones they are assigned to themselves, with
+     * the right to view events there (Task #71). A topic above or below does not count.
      *
      * @return list<int>
      */
     public function audienceTopicIds(User $user): array
     {
-        return $this->access->visibleTopics($user)
-            ->notArchived()
-            ->get()
-            ->filter(fn (Topic $topic) => $this->access->can($user, Capability::EventsView, $topic))
-            ->pluck('id')
-            ->values()
-            ->all();
+        // Topics inside an archived branch are left out, like EventPolicy does (one query, not one per topic).
+        $topics = Topic::query()->notArchived()->whereNotIn('topics.id', DB::table('topic_closure as c')
+            ->join('topics as a', 'a.id', '=', 'c.ancestor_id')
+            ->whereNotNull('a.archived_at')
+            ->select('c.descendant_id'));
+
+        if (! $this->access->isSystemAdmin($user)) {
+            $topics->whereIn('topics.id', $this->access->topicIdsHolding($user, Capability::EventsView));
+        }
+
+        return $topics->pluck('topics.id')->map(fn ($id) => (int) $id)->values()->all();
     }
 
     /**

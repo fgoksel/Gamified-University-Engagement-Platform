@@ -151,6 +151,39 @@ class TopicAccess
     }
 
     /**
+     * Whether the person holds the capability through an assignment on this very topic.
+     * Unlike can(), nothing is inherited from the topics above: used where a topic means
+     * "the people assigned to it", such as the audience of an event (Task #71).
+     */
+    public function holdsAt(User $user, Capability $capability, Topic $topic): bool
+    {
+        if ($this->isSystemAdmin($user)) {
+            return true;
+        }
+
+        return $this->assignmentsOf($user)->contains(
+            fn (RoleAssignment $a) => $a->topic_id === $topic->id && $a->role->has($capability)
+        );
+    }
+
+    /**
+     * The topics where the person holds the capability through an assignment of their own
+     * (see holdsAt()).
+     *
+     * @return list<int>
+     */
+    public function topicIdsHolding(User $user, Capability $capability): array
+    {
+        return $this->assignmentsOf($user)
+            ->filter(fn (RoleAssignment $a) => $a->role->has($capability))
+            ->pluck('topic_id')
+            ->unique()
+            ->map(fn ($id) => (int) $id)
+            ->values()
+            ->all();
+    }
+
+    /**
      * Whether the person holds the capability anywhere at all.
      */
     public function canAnywhere(User $user, Capability $capability): bool
