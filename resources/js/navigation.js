@@ -1,8 +1,9 @@
 import {
     Bell,
-    IdCard,
     CalendarDays,
     FolderTree,
+    Home,
+    IdCard,
     QrCode,
     ShieldCheck,
     Trophy,
@@ -15,7 +16,7 @@ import {
 // "badge" names a count in the shared "notifications" prop, shown as a pill.
 // "needs" hides an item unless the backend shares that flag in "topics"
 // (Topics is shown only to people who have access to at least one topic).
-const leaderboard = { label: "Leaderboard", href: "/", icon: Trophy };
+const home = { label: "Home", href: "/", icon: Home };
 const notifications = {
     label: "Notifications",
     href: "/notifications",
@@ -38,7 +39,7 @@ const topicRoles = {
 
 export const navigation = {
     teacher: [
-        leaderboard,
+        home,
         {
             label: "Events",
             icon: CalendarDays,
@@ -54,21 +55,21 @@ export const navigation = {
         profile,
     ],
     student: [
-        leaderboard,
+        home,
+        { label: "Events", href: "/events", icon: CalendarDays },
+        { label: "Scan", href: "/scan", icon: QrCode },
         {
-            label: "Events",
-            icon: CalendarDays,
+            label: "My events and passport",
+            icon: IdCard,
             children: [
-                { label: "All events", href: "/events" },
                 { label: "My events", href: "/my-events" },
+                { label: "My QR passport", href: "/passport" },
             ],
         },
+        profile,
+        notifications,
         topics,
         topicRoles,
-        notifications,
-        profile,
-        { label: "My QR passport", href: "/passport", icon: IdCard },
-        { label: "Scan QR code", href: "/scan", icon: QrCode, framed: true },
     ],
     // System Admins work in the admin panel; Topics and Roles open here.
     admin: [
