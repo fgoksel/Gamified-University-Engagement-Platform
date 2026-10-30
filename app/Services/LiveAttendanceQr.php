@@ -178,9 +178,17 @@ class LiveAttendanceQr
             'url' => $open ? route('qr.show', ['code' => $this->payload($session)]) : null,
             'image' => $open ? route('events.checkin.image', $event) : null,
             'step_seconds' => $this->step(),
+            // How long the previous code still works after the change, so the screen (Task #81) never keeps
+            // showing a code that scans no longer accept.
+            'margin_seconds' => $this->margin(),
             'seconds_left' => $open ? $this->step() - (now()->getTimestamp() % $this->step()) : null,
+            // The screen's countdown (Task #81) runs to the moment the code changes, not to the next whole second.
+            'ms_left' => $open ? $this->msLeft() : null,
             'checked_in' => $this->checkedIn($event),
             'accepted' => $this->accepted($event),
+            // Why a scan would be refused right now (not started, past the points end date, on hold), so the
+            // organiser sees it on the screen (Task #81). Null while scans count.
+            'refusal' => $this->ledger->refusalFor($event)?->getMessage(),
         ];
     }
 
@@ -340,12 +348,27 @@ class LiveAttendanceQr
         return substr(hash_hmac('sha256', "{$session->id}.{$slot}", config('app.key').'|'.$session->secret), 0, 32);
     }
 
-    /** Students with points for this event, by any route. */
+    /** Milliseconds until the code changes. */
+    private function msLeft(): int
+    {
+        $step = $this->step() * 1000;
+
+        return $step - (now()->getTimestampMs() % $step);
+    }
+
+    /**
+     * Accepted students with points for this event, by any route. The screen counts how many accepted
+     * students have checked in (Task #81), so someone credited only by an import is not one of them.
+     */
     private function checkedIn(Event $event): int
     {
         return PointTransaction::query()
             ->where('event_id', $event->id)
             ->where('type', PointTransaction::CREDIT)
+            ->whereIn('student_id', EventApplication::query()
+                ->select('student_id')
+                ->where('event_id', $event->id)
+                ->where('status', EventApplication::ACCEPTED))
             ->distinct()
             ->count('student_id');
     }
