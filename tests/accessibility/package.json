@@ -1,0 +1,14 @@
+{
+    "name": "gup-accessibility-check",
+    "private": true,
+    "type": "module",
+    "description": "Task #61: axe and Lighthouse accessibility check of the main screens, before and after.",
+    "scripts": {
+        "check": "node run.mjs"
+    },
+    "dependencies": {
+        "@axe-core/playwright": "4.14.0",
+        "lighthouse": "13.6.0",
+        "playwright-core": "1.64.1"
+    }
+}

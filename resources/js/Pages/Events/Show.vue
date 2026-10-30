@@ -110,70 +110,77 @@ const placesText = computed(() => {
                 {{ event.description }}
             </p>
 
+            <!-- Each item is a dt with its dd's straight inside one div, the shape a screen
+                 reader reads as "label: value" (Task #61, WCAG 1.3.1). The icon sits in the dt
+                 and the values are indented by its width, so the page looks the same. -->
             <dl class="mt-6 grid gap-4 text-sm sm:grid-cols-2">
-                <div class="flex items-start gap-2">
-                    <CalendarClock
-                        class="mt-0.5 size-4 shrink-0 text-fg-muted"
-                    />
-                    <div>
-                        <dt class="text-fg-muted">When</dt>
-                        <dd class="text-fg">
-                            {{ event.starts }} – {{ event.ends_full }}
-                        </dd>
-                    </div>
+                <div>
+                    <dt class="flex items-start gap-2 text-fg-muted">
+                        <CalendarClock class="mt-0.5 size-4 shrink-0" />
+                        When
+                    </dt>
+                    <dd class="pl-6 text-fg">
+                        {{ event.starts }} – {{ event.ends_full }}
+                    </dd>
                 </div>
-                <div class="flex items-start gap-2">
-                    <Clock class="mt-0.5 size-4 shrink-0 text-fg-muted" />
-                    <div>
-                        <dt class="text-fg-muted">Applications close</dt>
-                        <dd class="text-fg">
-                            {{ event.applications_close_full }}
-                        </dd>
-                    </div>
+                <div>
+                    <dt class="flex items-start gap-2 text-fg-muted">
+                        <Clock class="mt-0.5 size-4 shrink-0" />
+                        Applications close
+                    </dt>
+                    <dd class="pl-6 text-fg">
+                        {{ event.applications_close_full }}
+                    </dd>
                 </div>
-                <div v-if="event.location" class="flex items-start gap-2">
-                    <MapPin class="mt-0.5 size-4 shrink-0 text-fg-muted" />
-                    <div>
-                        <dt class="text-fg-muted">Location</dt>
-                        <dd class="text-fg">{{ event.location }}</dd>
-                    </div>
+                <div v-if="event.location">
+                    <dt class="flex items-start gap-2 text-fg-muted">
+                        <MapPin class="mt-0.5 size-4 shrink-0" />
+                        Location
+                    </dt>
+                    <dd class="pl-6 text-fg">
+                        {{ event.location }}
+                    </dd>
                 </div>
-                <div class="flex items-start gap-2">
-                    <Building2 class="mt-0.5 size-4 shrink-0 text-fg-muted" />
-                    <div>
-                        <dt class="text-fg-muted">Organised by</dt>
-                        <dd class="text-fg">{{ event.owning_topic }}</dd>
-                        <dd v-if="event.audience_topic" class="text-fg-muted">
-                            Open to {{ event.audience_topic }}
-                        </dd>
-                        <dd v-else class="text-fg-muted">
-                            Invited students only
-                        </dd>
-                    </div>
+                <div>
+                    <dt class="flex items-start gap-2 text-fg-muted">
+                        <Building2 class="mt-0.5 size-4 shrink-0" />
+                        Organised by
+                    </dt>
+                    <dd class="pl-6 text-fg">
+                        {{ event.owning_topic }}
+                    </dd>
+                    <dd v-if="event.audience_topic" class="pl-6 text-fg-muted">
+                        Open to {{ event.audience_topic }}
+                    </dd>
+                    <dd v-else class="pl-6 text-fg-muted">
+                        Invited students only
+                    </dd>
                 </div>
-                <div class="flex items-start gap-2">
-                    <Users class="mt-0.5 size-4 shrink-0 text-fg-muted" />
-                    <div>
-                        <dt class="text-fg-muted">Places</dt>
-                        <dd class="text-fg">{{ placesText }}</dd>
-                    </div>
+                <div>
+                    <dt class="flex items-start gap-2 text-fg-muted">
+                        <Users class="mt-0.5 size-4 shrink-0" />
+                        Places
+                    </dt>
+                    <dd class="pl-6 text-fg">
+                        {{ placesText }}
+                    </dd>
                 </div>
-                <div class="flex items-start gap-2">
-                    <Trophy class="mt-0.5 size-4 shrink-0 text-fg-muted" />
-                    <div>
-                        <dt class="text-fg-muted">Points</dt>
-                        <dd class="text-fg">
-                            {{ event.points }} points, given until
-                            {{ event.completion_deadline }}
-                        </dd>
-                    </div>
+                <div>
+                    <dt class="flex items-start gap-2 text-fg-muted">
+                        <Trophy class="mt-0.5 size-4 shrink-0" />
+                        Points
+                    </dt>
+                    <dd class="pl-6 text-fg">
+                        {{ event.points }} points, given until
+                        {{ event.completion_deadline }}
+                    </dd>
                 </div>
-                <div v-if="event.qr_enabled" class="flex items-start gap-2">
-                    <QrCode class="mt-0.5 size-4 shrink-0 text-fg-muted" />
-                    <div>
-                        <dt class="text-fg-muted">Attendance</dt>
-                        <dd class="text-fg">Confirmed with a QR code</dd>
-                    </div>
+                <div v-if="event.qr_enabled">
+                    <dt class="flex items-start gap-2 text-fg-muted">
+                        <QrCode class="mt-0.5 size-4 shrink-0" />
+                        Attendance
+                    </dt>
+                    <dd class="pl-6 text-fg">Confirmed with a QR code</dd>
                 </div>
             </dl>
 
