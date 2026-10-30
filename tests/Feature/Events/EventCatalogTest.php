@@ -47,7 +47,7 @@ class EventCatalogTest extends TopicTestCase
             'status' => 'active',
         ]);
 
-        // A student of the Faculty of Informatics: sees events announced there and below.
+        // A student of the Faculty of Informatics: sees the events announced to that node, and only that node (Task #71).
         $this->student = $this->makeUser(UserRole::Student, 'Student One');
         $this->student->forceFill(['neptun_code' => 'ABC123'])->save();
         $this->assign($this->student, $this->role('Student', [Capability::View, Capability::EventsView, Capability::EventsApply]), $this->faculty);
@@ -105,7 +105,8 @@ class EventCatalogTest extends TopicTestCase
         $this->event('Surprise later', ['is_hidden' => true, 'reveal_at' => now()->addDay()]);
         $this->event('Surprise now', ['is_hidden' => true, 'reveal_at' => now()->subHour()]);
 
-        $this->assertSame(['Course lab', 'Faculty talk', 'Surprise now'], $this->titlesFor($this->student));
+        // 'Course lab' is announced to a node the student is not assigned to, so it is not listed.
+        $this->assertSame(['Faculty talk', 'Surprise now'], $this->titlesFor($this->student));
     }
 
     public function test_the_list_matches_the_event_policy(): void
@@ -175,16 +176,16 @@ class EventCatalogTest extends TopicTestCase
         $this->event('Faculty talk');
         $this->event('Faculty fair', ['owning_topic_id' => $this->faculty->id, 'audience_topic_id' => $this->faculty->id]);
 
-        // The Databases branch: events run or announced at Databases or below it.
-        $this->assertSame(['Course lab', 'Faculty talk'], $this->titlesFor($this->student, '?topic='.$this->course->id));
-        // The faculty branch also includes the event the faculty itself runs.
-        $this->assertSame(['Course lab', 'Faculty fair', 'Faculty talk'], $this->titlesFor($this->student, '?topic='.$this->faculty->id));
+        // The student is assigned to the faculty only, so 'Course lab' (announced to Databases) is not theirs.
+        // The faculty branch: events run or announced at the faculty or below it.
+        $this->assertSame(['Faculty fair', 'Faculty talk'], $this->titlesFor($this->student, '?topic='.$this->faculty->id));
+        // Databases is not a topic the student is assigned to, so it is not offered and the filter is ignored.
+        $this->assertSame(['Faculty fair', 'Faculty talk'], $this->titlesFor($this->student, '?topic='.$this->course->id));
 
-        // Only topics the person can see events in are offered, and others are ignored.
+        // Only the topics the person is assigned to are offered, and others are ignored.
         $this->actingAs($this->student)->get('/events')
-            ->assertInertia(fn (Assert $page) => $page->where('topicOptions', fn ($topics) => collect($topics)->pluck('id')->sort()->values()->all()
-                === collect([$this->faculty->id, $this->course->id])->sort()->values()->all()));
-        $this->assertCount(3, $this->titlesFor($this->student, '?topic='.$this->otherFaculty->id));
+            ->assertInertia(fn (Assert $page) => $page->where('topicOptions', fn ($topics) => collect($topics)->pluck('id')->all() === [$this->faculty->id]));
+        $this->assertCount(2, $this->titlesFor($this->student, '?topic='.$this->otherFaculty->id));
     }
 
     public function test_topic_options_are_in_tree_order(): void
@@ -192,7 +193,9 @@ class EventCatalogTest extends TopicTestCase
         // An extra branch whose name sorts before "Faculty of Informatics".
         $arts = $this->topic('Arts club', $this->university);
         $viewer = $this->role('Viewer', [Capability::View, Capability::EventsView]);
-        $this->assign($this->student, $viewer, $this->university);
+        foreach ([$this->university, $arts, $this->course, $this->otherFaculty] as $topic) {
+            $this->assign($this->student, $viewer, $topic);
+        }
 
         $this->actingAs($this->student)->get('/events')
             ->assertInertia(fn (Assert $page) => $page->where('topicOptions', fn ($topics) => collect($topics)->pluck('title')->values()->all() === [

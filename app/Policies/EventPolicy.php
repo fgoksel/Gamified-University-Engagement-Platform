@@ -50,7 +50,7 @@ class EventPolicy
 
     /**
      * Seeing the event: staff always; everybody else once it is published, revealed,
-     * not on hold, and announced to an audience node they may see.
+     * not on hold, and announced to an audience node they are assigned to.
      */
     public function view(User $user, Event $event): bool
     {
@@ -64,12 +64,31 @@ class EventPolicy
         }
 
         return $this->announcedTo($user, $event)
-            && $this->access->can($user, Capability::EventsApply, $event->audienceTopic);
+            && $this->access->holdsAt($user, Capability::EventsApply, $event->audienceTopic);
     }
 
     public function manage(User $user, Event $event): bool
     {
         return $this->holds($user, $event, Capability::EventsManage);
+    }
+
+    /**
+     * Change an event after it was created (Task #68, UC-1.3 "Editing an Event").
+     * Whoever may manage the event at its owning topic may edit it; someone who may only
+     * create events there (and so only saves drafts, Task #65) may edit drafts.
+     * Which fields and states are open is decided by EventEditor.
+     */
+    public function update(User $user, Event $event): bool
+    {
+        if ($this->manage($user, $event)) {
+            return true;
+        }
+
+        $topic = $event->owningTopic;
+
+        return $event->status === Event::STATUS_DRAFT
+            && $this->access->canView($user, $topic)
+            && $this->access->can($user, Capability::EventsCreate, $topic);
     }
 
     public function manageApplicants(User $user, Event $event): bool
@@ -112,7 +131,11 @@ class EventPolicy
 
         $audience = $event->audienceTopic;
 
-        return $this->access->canView($user, $audience)
-            && $this->access->can($user, Capability::EventsView, $audience);
+        // The audience is the set of people assigned to that node itself (Task #71, meeting
+        // of 26 Oct): a student of a course does not see an event announced to its faculty,
+        // and a faculty student does not see a course's event, unless they are assigned there
+        // too. Nothing flows up or down the tree on its own.
+        return ! $this->access->isHidden($audience)
+            && $this->access->holdsAt($user, Capability::EventsView, $audience);
     }
 }

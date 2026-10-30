@@ -1,10 +1,11 @@
 <script setup>
 import { ref } from "vue";
 import { Link } from "@inertiajs/vue3";
-import { History, UserPlus } from "@lucide/vue";
+import { FileUp, History, UserPlus } from "@lucide/vue";
 import Btn from "./Btn.vue";
 import AssignDialog from "./AssignDialog.vue";
 import ChangeRoleDialog from "./ChangeRoleDialog.vue";
+import ImportStudentsDialog from "./ImportStudentsDialog.vue";
 import CapabilityList from "./CapabilityList.vue";
 import { formatDate } from "../../topicsLabels.js";
 
@@ -19,6 +20,7 @@ const props = defineProps({
 });
 
 const assigning = ref(false);
+const importing = ref(false);
 const changing = ref(null); // { mode, assignment }
 
 // Inherited roles grouped by the ancestor they come from
@@ -64,14 +66,32 @@ function inheritedGroups() {
                     </span>
                 </p>
             </div>
-            <Btn v-if="can.assign" variant="primary" @click="assigning = true">
-                <UserPlus
-                    class="size-4"
-                    :stroke-width="1.75"
-                    aria-hidden="true"
-                />
-                Give a role
-            </Btn>
+            <div class="flex flex-wrap gap-2">
+                <!-- Task #72: give a role to a list of students from a file. -->
+                <Btn
+                    v-if="can.import && access.import"
+                    @click="importing = true"
+                >
+                    <FileUp
+                        class="size-4"
+                        :stroke-width="1.75"
+                        aria-hidden="true"
+                    />
+                    Import students
+                </Btn>
+                <Btn
+                    v-if="can.assign"
+                    variant="primary"
+                    @click="assigning = true"
+                >
+                    <UserPlus
+                        class="size-4"
+                        :stroke-width="1.75"
+                        aria-hidden="true"
+                    />
+                    Give a role
+                </Btn>
+            </div>
         </div>
 
         <section aria-labelledby="assigned-here">
@@ -224,6 +244,12 @@ function inheritedGroups() {
             :topic="topic"
             :roles="access.roles"
             @close="assigning = false"
+        />
+        <ImportStudentsDialog
+            v-if="importing"
+            :topic="topic"
+            :options="access.import"
+            @close="importing = false"
         />
         <ChangeRoleDialog
             v-if="changing"

@@ -1,6 +1,7 @@
-// Small JSON helper for the Topics screens (lazy tree, search, previews).
-// Sends the session cookie and Laravel's CSRF token, and turns error
-// responses into a thrown Error with a readable message.
+// Small JSON helper for the Topics screens (lazy tree, search, previews) and
+// file uploads that answer with JSON (Task #85). Sends the session cookie and
+// Laravel's CSRF token, and turns error responses into a thrown Error with a
+// readable message.
 
 function xsrfToken() {
     const match = document.cookie.match(/(?:^|; )XSRF-TOKEN=([^;]*)/);
@@ -16,6 +17,8 @@ export class ApiError extends Error {
 }
 
 async function request(method, url, body) {
+    // A form with a file goes as it is: the browser sets its content type.
+    const isForm = body instanceof FormData;
     const response = await fetch(url, {
         method,
         credentials: "same-origin",
@@ -23,9 +26,9 @@ async function request(method, url, body) {
             Accept: "application/json",
             "X-Requested-With": "XMLHttpRequest",
             "X-XSRF-TOKEN": xsrfToken(),
-            ...(body ? { "Content-Type": "application/json" } : {}),
+            ...(body && !isForm ? { "Content-Type": "application/json" } : {}),
         },
-        body: body ? JSON.stringify(body) : undefined,
+        body: isForm ? body : body ? JSON.stringify(body) : undefined,
     });
 
     const data = await response.json().catch(() => ({}));
@@ -48,6 +51,7 @@ async function request(method, url, body) {
 export const api = {
     get: (url) => request("GET", url),
     post: (url, body = {}) => request("POST", url, body),
+    upload: (url, form) => request("POST", url, form),
 };
 
 // Wait before running a search while someone is still typing.

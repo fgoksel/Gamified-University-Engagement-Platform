@@ -34,16 +34,38 @@ class AssignmentService
      */
     public function grant(User $actor, Topic $topic, RoleDefinition $role, User $recipient, ?int $semesterId = null): RoleAssignment
     {
-        Gate::forUser($actor)->authorize('grant', [RoleAssignment::class, $topic, $role, $recipient]);
+        return $this->give('grant', Capability::AccessAssign, $actor, $topic, $role, $recipient, $semesterId);
+    }
+
+    /**
+     * Give a role to a student listed in an import file (Task #72): the same checks
+     * as grant(), with the "import students" capability as the authority.
+     *
+     * @throws AuthorizationException|ValidationException
+     */
+    public function import(User $actor, Topic $topic, RoleDefinition $role, User $recipient, ?int $semesterId = null): RoleAssignment
+    {
+        return $this->give('import', Capability::AccessImport, $actor, $topic, $role, $recipient, $semesterId);
+    }
+
+    /**
+     * @param  string  $ability  The RoleAssignmentPolicy check that allows it.
+     * @param  Capability  $authority  Whose assignment is recorded as the authority.
+     *
+     * @throws AuthorizationException|ValidationException
+     */
+    private function give(string $ability, Capability $authority, User $actor, Topic $topic, RoleDefinition $role, User $recipient, ?int $semesterId): RoleAssignment
+    {
+        Gate::forUser($actor)->authorize($ability, [RoleAssignment::class, $topic, $role, $recipient]);
 
         try {
-            return DB::transaction(function () use ($actor, $topic, $role, $recipient, $semesterId) {
+            return DB::transaction(function () use ($ability, $authority, $actor, $topic, $role, $recipient, $semesterId) {
                 // Lock first: reads that follow then see the latest committed data.
                 $role = RoleDefinition::query()->whereKey($role->id)->lockForUpdate()->firstOrFail();
                 $actor = User::query()->findOrFail($actor->id);
                 $recipient = User::query()->whereKey($recipient->id)->lockForUpdate()->firstOrFail();
                 $this->access->flush();
-                Gate::forUser($actor)->authorize('grant', [RoleAssignment::class, $topic, $role, $recipient]);
+                Gate::forUser($actor)->authorize($ability, [RoleAssignment::class, $topic, $role, $recipient]);
 
                 if ($role->isArchived()) {
                     throw ValidationException::withMessages(['role_definition_id' => 'This role is archived and cannot be given to anyone new.']);
@@ -55,9 +77,9 @@ class AssignmentService
                     throw ValidationException::withMessages(['user_id' => "{$recipient->name} already has this role here."]);
                 }
 
-                $assignment = $this->create($actor, $topic, $role, $recipient, $semesterId === null ? [] : ['semester_id' => $semesterId]);
+                $assignment = $this->create($actor, $topic, $role, $recipient, $semesterId === null ? [] : ['semester_id' => $semesterId], $authority);
 
-                TopicAudit::record($actor, 'assignment.granted', $topic->id, 'role_assignment', $assignment->id, null, $this->snapshot($assignment));
+                TopicAudit::record($actor, $ability === 'import' ? 'assignment.imported' : 'assignment.granted', $topic->id, 'role_assignment', $assignment->id, null, $this->snapshot($assignment));
 
                 return $assignment;
             });
@@ -204,12 +226,13 @@ class AssignmentService
 
     /**
      * @param  array<string, mixed>  $extra
+     * @param  Capability  $capability  The capability that allowed it: its assignment is recorded as the authority.
      */
-    private function create(User $actor, Topic $topic, RoleDefinition $role, User $recipient, array $extra = []): RoleAssignment
+    private function create(User $actor, Topic $topic, RoleDefinition $role, User $recipient, array $extra = [], Capability $capability = Capability::AccessAssign): RoleAssignment
     {
         $authority = $this->access->isSystemAdmin($actor)
             ? null
-            : $this->access->coveringAssignments($actor, $topic)->first(fn (RoleAssignment $a) => $a->role->has(Capability::AccessAssign));
+            : $this->access->coveringAssignments($actor, $topic)->first(fn (RoleAssignment $a) => $a->role->has($capability));
 
         return RoleAssignment::create([
             'topic_id' => $topic->id,

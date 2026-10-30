@@ -1,6 +1,7 @@
 <script setup>
 import { computed } from "vue";
 import {
+    Building2,
     CalendarClock,
     MapPin,
     QrCode,
@@ -97,9 +98,14 @@ const placesText = computed(() => {
                     </span>
                 </dd>
             </div>
+            <div v-if="event.location" class="flex items-start gap-2">
+                <dt class="sr-only">Location</dt>
+                <MapPin class="mt-0.5 size-4 shrink-0 text-fg-muted" />
+                <dd class="text-fg">{{ event.location }}</dd>
+            </div>
             <div class="flex items-start gap-2">
                 <dt class="sr-only">Organised by</dt>
-                <MapPin class="mt-0.5 size-4 shrink-0 text-fg-muted" />
+                <Building2 class="mt-0.5 size-4 shrink-0 text-fg-muted" />
                 <dd class="text-fg">
                     {{ event.owning_topic }}
                     <span

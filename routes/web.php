@@ -9,8 +9,11 @@ use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\SetPasswordController;
 use App\Http\Controllers\EventApplicationController;
+use App\Http\Controllers\EventCheckinController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\EventCreditController;
+use App\Http\Controllers\EventEditController;
+use App\Http\Controllers\EventPointsImportController;
 use App\Http\Controllers\EventQrCodeController;
 use App\Http\Controllers\EventQrController;
 use App\Http\Controllers\EventStatusController;
@@ -22,6 +25,7 @@ use App\Http\Controllers\RoleAssignmentController;
 use App\Http\Controllers\RoleDefinitionController;
 use App\Http\Controllers\ScanController;
 use App\Http\Controllers\TopicController;
+use App\Http\Controllers\TopicImportController;
 use App\Http\Controllers\TopicTagRequestController;
 use Illuminate\Support\Facades\Route;
 
@@ -104,6 +108,15 @@ Route::middleware('auth')->group(function () {
             Route::post('/events/{event}/credit/bulk', [EventCreditController::class, 'creditMany'])
                 ->name('events.credit.bulk');
 
+            // Organizer: give an event's points to an imported list of students (Task #85).
+            // EventPolicy::credit is checked in the controller, like the routes above.
+            Route::get('/events/{event}/points-import', [EventPointsImportController::class, 'show'])
+                ->whereNumber('event')->name('events.points-import');
+            Route::post('/events/{event}/points-import/preview', [EventPointsImportController::class, 'preview'])
+                ->whereNumber('event')->name('events.points-import.preview');
+            Route::post('/events/{event}/points-import', [EventPointsImportController::class, 'store'])
+                ->whereNumber('event')->name('events.points-import.store');
+
             // Event Form: create an event as a draft or publish it (Task #38, UC-1.3)
             // Creating events follows the events.create capability at a topic (Task #65),
             // checked in the controller and the form request, not an account-wide permission.
@@ -121,6 +134,18 @@ Route::middleware('auth')->group(function () {
             Route::post('/events/{event}/qr-tokens/{token}/revoke', [EventQrController::class, 'revoke'])
                 ->whereNumber(['event', 'token'])->name('events.qr.revoke');
 
+            // Live attendance check-in (Task #80): the code that changes every few seconds. EventPolicy::manageQr
+            // is checked in the service; students only ask whether check-in is open.
+            Route::prefix('events/{event}/checkin')->whereNumber('event')->name('events.checkin.')->group(function () {
+                Route::get('/', [EventCheckinController::class, 'state'])->name('state');
+                Route::post('/open', [EventCheckinController::class, 'open'])->name('open');
+                Route::post('/pause', [EventCheckinController::class, 'pause'])->name('pause');
+                Route::post('/stop', [EventCheckinController::class, 'stop'])->name('stop');
+                Route::get('/image.svg', [EventCheckinController::class, 'image'])->name('image');
+            });
+            Route::get('/events/{event}/checkin/status', [EventCheckinController::class, 'status'])
+                ->whereNumber('event')->middleware('permission:events.view')->name('events.checkin.status');
+
             // The organiser's QR page: make, print (posters and slips) and revoke codes (Task #44).
             Route::prefix('events/{event}/qr-codes')->whereNumber('event')->name('events.qr-codes.')->group(function () {
                 Route::get('/', [EventQrCodeController::class, 'index'])->name('index');
@@ -128,6 +153,13 @@ Route::middleware('auth')->group(function () {
                 Route::post('/{token}/revoke', [EventQrCodeController::class, 'revoke'])->whereNumber('token')->name('revoke');
                 Route::get('/print/{type}', [EventQrCodeController::class, 'print'])->whereIn('type', ['poster', 'slip'])->name('print');
             });
+
+            // Edit an event after it was created (Task #68, UC-1.3). EventPolicy::update checks
+            // the capability at the owning topic; EventEditor decides which fields are open.
+            Route::get('/events/{event}/edit', [EventEditController::class, 'edit'])
+                ->whereNumber('event')->name('events.edit');
+            Route::put('/events/{event}', [EventEditController::class, 'update'])
+                ->whereNumber('event')->name('events.update');
 
             // Lifecycle actions on "Organized by me" (Task #37, UC-1.3). EventPolicy::manage
             // checks the events.manage capability at the owning topic (Task #65).
@@ -207,6 +239,8 @@ Route::middleware('auth')->group(function () {
             Route::post('/{topic}/move', [TopicController::class, 'move'])->whereNumber('topic')->name('move');
             Route::get('/{topic}/candidates', [RoleAssignmentController::class, 'candidates'])->whereNumber('topic')->name('candidates');
             Route::post('/{topic}/assignments', [RoleAssignmentController::class, 'store'])->whereNumber('topic')->name('assignments.store');
+            // Task #72: give a role to a list of students from a file of Neptun codes.
+            Route::post('/{topic}/imports', [TopicImportController::class, 'store'])->whereNumber('topic')->name('imports.store');
         });
 
         // The previous "My courses" pages now live in Topics.
