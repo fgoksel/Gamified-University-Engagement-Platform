@@ -22,11 +22,11 @@ const statusLabel = {
 
 const statusClass = {
     draft: "bg-surface-muted text-fg-muted",
-    published: "bg-primary/10 text-primary",
+    published: "bg-primary/10 text-brand-800 dark:text-brand-300",
     on_hold:
-        "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200",
+        "bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-200",
     completed: "bg-surface-muted text-fg",
-    cancelled: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200",
+    cancelled: "bg-red-100 text-red-900 dark:bg-red-900/40 dark:text-red-200",
 };
 
 const isOpen = computed(() =>

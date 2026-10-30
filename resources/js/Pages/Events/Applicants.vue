@@ -127,7 +127,7 @@ function formatDateTime(iso) {
     <div class="space-y-5">
         <Link
             href="/my-events"
-            class="inline-flex items-center gap-1.5 text-sm text-fg-muted hover:text-fg"
+            class="inline-flex min-h-11 items-center gap-1.5 text-sm text-fg-muted hover:text-fg focus-visible:outline-2 focus-visible:outline-ring rounded-control"
         >
             <ArrowLeft class="size-4" /> Back to my events
         </Link>

@@ -387,14 +387,14 @@ function setMode(newMode) {
         <div class="flex items-center justify-between">
             <Link
                 href="/my-events"
-                class="inline-flex items-center gap-1.5 text-sm text-fg-muted hover:text-fg transition"
+                class="inline-flex min-h-11 items-center gap-1.5 text-sm text-fg-muted hover:text-fg transition focus-visible:outline-2 focus-visible:outline-ring rounded-control"
             >
                 <ArrowLeft class="size-4" /> Back to my events
             </Link>
 
             <Link
                 :href="`/events/${event.id}/applicants`"
-                class="inline-flex items-center gap-1.5 text-sm text-fg-muted hover:text-fg transition"
+                class="inline-flex min-h-11 items-center gap-1.5 text-sm text-fg-muted hover:text-fg transition focus-visible:outline-2 focus-visible:outline-ring rounded-control"
             >
                 View applicants list
             </Link>
