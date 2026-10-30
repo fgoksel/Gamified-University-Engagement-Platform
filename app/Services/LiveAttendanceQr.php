@@ -221,7 +221,7 @@ class LiveAttendanceQr
     /**
      * Check in a student with a scanned code.
      *
-     * @return array{outcome: string, message: string, event: string, points: int, step: ?int, total_steps: ?int}
+     * @return array{outcome: string, message: string, event: string, points: int, category: string, step: ?int, total_steps: ?int}
      *
      * @throws EventActionRefused
      */
@@ -305,6 +305,7 @@ class LiveAttendanceQr
             'message' => "Check-in recorded. {$row->points} points credited.",
             'event' => $event->title,
             'points' => $row->points,
+            'category' => $row->category,
             'step' => null,
             'total_steps' => null,
         ];

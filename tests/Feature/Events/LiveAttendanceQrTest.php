@@ -154,7 +154,7 @@ class LiveAttendanceQrTest extends TopicTestCase
         $student = $this->student('LIVE01');
 
         $this->scan($student, $this->open())->assertOk()
-            ->assertJson(['outcome' => 'credited', 'points' => 15, 'event' => $this->event->title]);
+            ->assertJson(['outcome' => 'credited', 'points' => 15, 'category' => 'scientific', 'event' => $this->event->title]);
 
         $row = PointTransaction::query()->where('event_id', $this->event->id)->where('student_id', $student->id)->sole();
         $this->assertSame('qr_live', $row->source);
@@ -486,7 +486,8 @@ class LiveAttendanceQrTest extends TopicTestCase
         $token = app(QrTokenService::class)->issue($this->organiser, $this->event);
         $poster = app(QrTokenService::class)->payload($token);
 
-        $this->scan($student, $poster)->assertOk()->assertJson(['outcome' => 'credited']);
+        // The confirmation shows the points and their category for every kind of code (Task #82).
+        $this->scan($student, $poster)->assertOk()->assertJson(['outcome' => 'credited', 'points' => 15, 'category' => 'scientific']);
         $this->scan($student, $this->open())->assertStatus(409)->assertJson(['reason' => 'already_claimed']);
     }
 }

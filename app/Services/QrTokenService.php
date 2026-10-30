@@ -124,7 +124,7 @@ class QrTokenService
     /**
      * Redeem a scanned code for the signed-in student.
      *
-     * @return array{outcome: string, message: string, event: string, points: int, step: ?int, total_steps: ?int}
+     * @return array{outcome: string, message: string, event: string, points: int, category: string, step: ?int, total_steps: ?int}
      *
      * @throws EventActionRefused
      */
@@ -172,7 +172,7 @@ class QrTokenService
     }
 
     /**
-     * @return array{outcome: string, message: string, event: string, points: int, step: ?int, total_steps: ?int}
+     * @return array{outcome: string, message: string, event: string, points: int, category: string, step: ?int, total_steps: ?int}
      */
     private function claim(QrToken $token, Event $event, User $student): array
     {
@@ -213,6 +213,7 @@ class QrTokenService
                     'message' => "Part {$token->step_number} recorded ({$done} of {$token->total_steps}). Points are credited when every part is done.",
                     'event' => $event->title,
                     'points' => 0,
+                    'category' => $event->category,
                     'step' => $token->step_number,
                     'total_steps' => $token->total_steps,
                 ];
@@ -231,6 +232,7 @@ class QrTokenService
             'message' => "Completion recorded! {$row->points} points credited.",
             'event' => $event->title,
             'points' => $row->points,
+            'category' => $row->category,
             'step' => $token->step_number,
             'total_steps' => $token->total_steps,
         ];
