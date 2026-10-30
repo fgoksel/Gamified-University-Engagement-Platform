@@ -165,3 +165,22 @@
         color: var(--color-fg);
     }
 }
+
+/* The calm confirmation after a check-in (Task #82): one short fade, and nothing at all
+   for people who ask their system to reduce motion. */
+@keyframes confirm-in {
+    from {
+        opacity: 0;
+        transform: translateY(0.25rem);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .confirm-in {
+        animation: confirm-in 0.25s ease-out both;
+    }
+}

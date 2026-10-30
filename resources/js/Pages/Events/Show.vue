@@ -13,6 +13,7 @@ import {
     Users,
 } from "@lucide/vue";
 import ApplyAction from "../../Components/Events/ApplyAction.vue";
+import CheckinBanner from "../../Components/Events/CheckinBanner.vue";
 import { categoryDot } from "../../categoryColors.js";
 
 // One event's detail page, also reached by its direct URL (Task #40),
@@ -51,6 +52,17 @@ const placesText = computed(() => {
         >
             <ArrowLeft class="size-4" /> All events
         </Link>
+
+        <!-- Task #82: while the organiser shows the attendance code, an accepted student is told to scan it -->
+        <CheckinBanner
+            v-if="
+                event.my_status === 'accepted' &&
+                event.qr_enabled &&
+                event.status === 'published'
+            "
+            :event-id="event.id"
+            :points="event.points"
+        />
 
         <article
             class="rounded-card border border-line bg-surface p-5 shadow-card sm:p-8"
