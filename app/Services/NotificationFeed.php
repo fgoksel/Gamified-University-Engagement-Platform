@@ -2,8 +2,11 @@
 
 namespace App\Services;
 
+use App\Enums\TaxonomyCategory;
+use App\Models\Event;
 use App\Notifications\EventApplicationDecisionNotification;
 use App\Notifications\EventStatusChangedNotification;
+use App\Notifications\PointsCreditedNotification;
 use Illuminate\Notifications\DatabaseNotification;
 
 /**
@@ -114,6 +117,19 @@ class NotificationFeed
                 ],
                 default => ['Update on an event you applied to', $event, '/my-events'],
             };
+        }
+
+        if ($notification->type === PointsCreditedNotification::class) {
+            $points = (int) ($data['points'] ?? 0);
+            $category = TaxonomyCategory::tryFrom((string) ($data['category'] ?? ''))?->label();
+            $event = Event::find($data['event_id'] ?? null);
+
+            return [
+                $points === 1 ? 'You received 1 point' : "You received {$points} points",
+                'The organizer gave you the points of '.($data['event_title'] ?? 'an event').'.'.($category ? " They count under {$category}." : ''),
+                // Linked only while the student may open the event: a surprise event can stay hidden from them.
+                $event !== null && $notification->notifiable?->can('view', $event) ? "/events/{$event->id}" : null,
+            ];
         }
 
         // Import results are Filament notifications, which keep their text in "body" (Task #72).
