@@ -110,6 +110,20 @@ function post(action) {
                 >
                     QR codes
                 </Link>
+                <!-- Task #81: opens check-in and shows the live code full-screen. A completed
+                     event takes check-ins until its points end date, like the import below. -->
+                <Btn
+                    v-if="
+                        event.can_qr &&
+                        event.qr_enabled &&
+                        ['published', 'completed'].includes(event.status)
+                    "
+                    small
+                    data-test="attendance-qr"
+                    @click="post('checkin/screen')"
+                >
+                    Show attendance QR
+                </Btn>
                 <!-- Task #85: a completed event takes points until its points end date. -->
                 <Link
                     v-if="
