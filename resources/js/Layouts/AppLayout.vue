@@ -49,7 +49,8 @@ onBeforeUnmount(() => {
             class="hidden border-r border-line bg-surface lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col"
         >
             <div class="flex h-16 items-center px-5">
-                <Link href="/" aria-label="Go to leaderboard">
+                <!-- The name starts with the words on screen, so voice control can find the link (Task #61, WCAG 2.5.3) -->
+                <Link href="/" aria-label="Campus Engage, home">
                     <AppLogo />
                 </Link>
             </div>
@@ -60,7 +61,7 @@ onBeforeUnmount(() => {
         <header
             class="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-line bg-surface px-4 lg:hidden"
         >
-            <Link href="/" aria-label="Go to leaderboard">
+            <Link href="/" aria-label="Campus Engage, home">
                 <AppLogo />
             </Link>
             <button

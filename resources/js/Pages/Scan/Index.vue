@@ -12,6 +12,7 @@ import { BrowserQRCodeReader } from "@zxing/library";
 import Btn from "../../Components/Topics/Btn.vue";
 import TextField from "../../Components/TextField.vue";
 import { extractCode } from "../../qrCode.js";
+import { categoryDot, categoryLabel } from "../../categoryColors.js";
 
 // Student: scan an event's QR code to confirm attendance (UC-2.3, Task #51).
 // The server decides everything (POST /qr/redeem, Task #45): this page only
@@ -71,7 +72,9 @@ async function redeem(text) {
                     ? {
                           type: "success",
                           title: `${data.points} points credited`,
-                          message: `${data.message} (${data.event})`,
+                          message: data.event,
+                          points: data.points,
+                          category: data.category,
                       }
                     : {
                           type: "progress",
@@ -194,6 +197,7 @@ onUnmounted(stopCamera);
         <section
             v-else-if="result"
             class="space-y-4 rounded-card border border-line bg-surface p-6 text-center shadow-card"
+            :class="{ 'confirm-in': result.type === 'success' }"
             role="status"
             data-test="result"
         >
@@ -216,6 +220,36 @@ onUnmounted(stopCamera);
                 </h2>
                 <p class="mt-1 text-sm text-fg-muted">{{ result.message }}</p>
             </div>
+            <!-- What was credited: the points and where they count -->
+            <dl
+                v-if="result.points"
+                class="mx-auto grid max-w-xs grid-cols-2 gap-3 rounded-control bg-surface-muted p-3 text-sm"
+                data-test="confirmation"
+            >
+                <div>
+                    <dt class="text-fg-muted">Points</dt>
+                    <dd
+                        class="text-lg font-semibold text-fg"
+                        data-test="points"
+                    >
+                        +{{ result.points }}
+                    </dd>
+                </div>
+                <div>
+                    <dt class="text-fg-muted">Category</dt>
+                    <dd
+                        class="flex items-center justify-center gap-1.5 text-lg font-semibold text-fg"
+                        data-test="category"
+                    >
+                        <span
+                            class="size-2.5 rounded-full"
+                            :class="categoryDot[result.category]"
+                            aria-hidden="true"
+                        />
+                        {{ categoryLabel[result.category] ?? result.category }}
+                    </dd>
+                </div>
+            </dl>
             <div class="flex flex-wrap justify-center gap-2">
                 <Btn variant="primary" data-test="again" @click="scanAnother">
                     <RotateCw class="size-4" />

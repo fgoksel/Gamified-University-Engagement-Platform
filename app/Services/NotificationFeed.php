@@ -2,8 +2,11 @@
 
 namespace App\Services;
 
+use App\Enums\TaxonomyCategory;
+use App\Models\Event;
 use App\Notifications\EventApplicationDecisionNotification;
 use App\Notifications\EventStatusChangedNotification;
+use App\Notifications\PointsCreditedNotification;
 use Illuminate\Notifications\DatabaseNotification;
 
 /**
@@ -78,6 +81,8 @@ class NotificationFeed
         if ($notification->type === EventStatusChangedNotification::class) {
             $event = $data['event_title'] ?? 'an event';
             $reason = filled($data['reason'] ?? null) ? " Reason: {$data['reason']}" : '';
+            // Task #77: where the event is after the change; null when the location was removed.
+            $where = filled($data['location'] ?? null) ? "It now takes place at {$data['location']}." : 'The location was removed.';
 
             return match ($data['change'] ?? null) {
                 EventStatusChangedNotification::CANCELLED => [
@@ -95,10 +100,39 @@ class NotificationFeed
                     'You keep your place. Check the date; if it no longer suits you, you can withdraw.',
                     '/my-events',
                 ],
+                EventStatusChangedNotification::RESCHEDULED => [
+                    "The time of {$event} changed",
+                    'You keep your place. Check the new date; if it no longer suits you, you can withdraw.',
+                    '/my-events',
+                ],
+                EventStatusChangedNotification::RELOCATED => [
+                    "The location of {$event} changed",
+                    "{$where} You keep your place; if it no longer suits you, you can withdraw.",
+                    '/my-events',
+                ],
+                EventStatusChangedNotification::RESCHEDULED_AND_RELOCATED => [
+                    "The time and location of {$event} changed",
+                    "{$where} You keep your place. Check the new date; if it no longer suits you, you can withdraw.",
+                    '/my-events',
+                ],
                 default => ['Update on an event you applied to', $event, '/my-events'],
             };
         }
 
-        return [$data['title'] ?? 'Notification', $data['message'] ?? '', null];
+        if ($notification->type === PointsCreditedNotification::class) {
+            $points = (int) ($data['points'] ?? 0);
+            $category = TaxonomyCategory::tryFrom((string) ($data['category'] ?? ''))?->label();
+            $event = Event::find($data['event_id'] ?? null);
+
+            return [
+                $points === 1 ? 'You received 1 point' : "You received {$points} points",
+                'The organizer gave you the points of '.($data['event_title'] ?? 'an event').'.'.($category ? " They count under {$category}." : ''),
+                // Linked only while the student may open the event: a surprise event can stay hidden from them.
+                $event !== null && $notification->notifiable?->can('view', $event) ? "/events/{$event->id}" : null,
+            ];
+        }
+
+        // Import results are Filament notifications, which keep their text in "body" (Task #72).
+        return [$data['title'] ?? 'Notification', $data['message'] ?? $data['body'] ?? '', null];
     }
 }

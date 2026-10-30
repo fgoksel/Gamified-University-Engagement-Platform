@@ -7,6 +7,7 @@ use App\Models\RoleDefinition;
 use App\Models\Topic;
 use App\Models\User;
 use App\Services\TopicAccess;
+use App\Services\TopicBrowser;
 use Database\Seeders\DatabaseSeeder;
 use Database\Seeders\TopicDemoSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -48,6 +49,20 @@ class TopicDemoSeederTest extends TestCase
         $this->assertSame('assignment', $delegate->authority_snapshot['via']);
 
         $this->assertSame(['topic.view'], RoleDefinition::where('name', 'Admin')->first()->capabilityList());
+    }
+
+    public function test_the_delegate_can_import_students_as_readers_into_their_own_course_only(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+        $this->seed(TopicDemoSeeder::class);
+
+        // Task #72: the Branch manager imports students with the student role "Reader"; no topic
+        // above is offered, because the import right ends at the top of their own branch (S3).
+        $delegate = User::where('email', 'demo.delegate@example.test')->first();
+        $options = app(TopicBrowser::class)->importOptions($delegate, Topic::where('title', 'Database')->first());
+
+        $this->assertContains('Reader', array_column($options['roles'], 'name'));
+        $this->assertSame([], $options['parents']);
     }
 
     public function test_it_refuses_to_run_in_production(): void

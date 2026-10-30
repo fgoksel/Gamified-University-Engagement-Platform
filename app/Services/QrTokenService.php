@@ -27,7 +27,7 @@ class QrTokenService
 {
     public const MAX_STEPS = 10;
 
-    public function __construct(private PointLedger $ledger) {}
+    public function __construct(private PointLedger $ledger, private LiveAttendanceQr $live) {}
 
     /**
      * Make a new code for an event. The issuer needs the QR capability at the event's topic.
@@ -124,12 +124,17 @@ class QrTokenService
     /**
      * Redeem a scanned code for the signed-in student.
      *
-     * @return array{outcome: string, message: string, event: string, points: int, step: ?int, total_steps: ?int}
+     * @return array{outcome: string, message: string, event: string, points: int, category: string, step: ?int, total_steps: ?int}
      *
      * @throws EventActionRefused
      */
     public function redeem(User $student, string $payload): array
     {
+        // The code the organiser shows live during the event (Task #80) is not stored as a token.
+        if ($this->live->looksLikeLiveCode($payload)) {
+            return $this->live->redeem($student, $payload);
+        }
+
         $token = $this->resolve($payload);
         $event = $token->event;
 
@@ -167,7 +172,7 @@ class QrTokenService
     }
 
     /**
-     * @return array{outcome: string, message: string, event: string, points: int, step: ?int, total_steps: ?int}
+     * @return array{outcome: string, message: string, event: string, points: int, category: string, step: ?int, total_steps: ?int}
      */
     private function claim(QrToken $token, Event $event, User $student): array
     {
@@ -208,6 +213,7 @@ class QrTokenService
                     'message' => "Part {$token->step_number} recorded ({$done} of {$token->total_steps}). Points are credited when every part is done.",
                     'event' => $event->title,
                     'points' => 0,
+                    'category' => $event->category,
                     'step' => $token->step_number,
                     'total_steps' => $token->total_steps,
                 ];
@@ -226,6 +232,7 @@ class QrTokenService
             'message' => "Completion recorded! {$row->points} points credited.",
             'event' => $event->title,
             'points' => $row->points,
+            'category' => $row->category,
             'step' => $token->step_number,
             'total_steps' => $token->total_steps,
         ];

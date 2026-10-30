@@ -49,6 +49,17 @@ services:
     depends_on:
       - app
 
+  # Phone demos (Task #88): a free https address for the site, so phones can use the camera.
+  # Only started on request: docker compose --profile demo up -d tunnel
+  # The address changes at every start; see docs/demo-over-https.md.
+  tunnel:
+    image: cloudflare/cloudflared:2026.10.5
+    container_name: gup-tunnel
+    profiles: ["demo"]
+    command: tunnel --no-autoupdate --url http://webserver:80
+    depends_on:
+      - webserver
+
   vite:
     build:
       context: ./docker/php

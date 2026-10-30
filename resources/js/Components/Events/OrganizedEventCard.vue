@@ -1,7 +1,14 @@
 <script setup>
 import { computed } from "vue";
 import { Link, router } from "@inertiajs/vue3";
-import { CalendarClock, EyeOff, MapPin, QrCode, Users } from "@lucide/vue";
+import {
+    Building2,
+    CalendarClock,
+    EyeOff,
+    MapPin,
+    QrCode,
+    Users,
+} from "@lucide/vue";
 import Btn from "../Topics/Btn.vue";
 import { categoryDot } from "../../categoryColors.js";
 
@@ -103,6 +110,25 @@ function post(action) {
                 >
                     QR codes
                 </Link>
+                <!-- Task #85: a completed event takes points until its points end date. -->
+                <Link
+                    v-if="
+                        event.can_credit &&
+                        ['published', 'completed'].includes(event.status)
+                    "
+                    :href="`/events/${event.id}/points-import`"
+                    class="inline-flex min-h-9 items-center justify-center rounded-control border border-line bg-surface px-3 text-sm font-medium text-fg hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                >
+                    Give points by import
+                </Link>
+                <Link
+                    v-if="event.can_edit"
+                    :href="`/events/${event.id}/edit`"
+                    class="inline-flex min-h-9 items-center justify-center rounded-control border border-line bg-surface px-3 text-sm font-medium text-fg hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                    data-test="edit"
+                >
+                    Edit
+                </Link>
                 <template v-if="event.can_manage">
                     <Btn
                         v-if="event.status === 'draft'"
@@ -142,53 +168,81 @@ function post(action) {
             </div>
         </div>
 
+        <!-- Each item is a dt with its dd's straight inside one div (Task #61, WCAG 1.3.1).
+             The dt holds the icon and a label for screen readers; the grid keeps the icon
+             left of the values, as before. content-start keeps the values together when a
+             neighbouring item is taller. -->
         <dl
             class="mt-4 grid gap-x-6 gap-y-3 text-sm sm:grid-cols-2 lg:grid-cols-4"
         >
-            <div class="flex items-start gap-2">
-                <CalendarClock class="mt-0.5 size-4 shrink-0 text-fg-muted" />
-                <div>
-                    <dt class="sr-only">When</dt>
-                    <dd class="text-fg">{{ event.starts }}–{{ event.ends }}</dd>
-                    <dd class="text-fg-muted">
-                        Applications close {{ event.applications_close }}
-                    </dd>
-                </div>
+            <div class="grid grid-cols-[auto_1fr] content-start gap-x-2">
+                <dt>
+                    <CalendarClock
+                        class="mt-0.5 size-4 shrink-0 text-fg-muted"
+                    />
+                    <span class="sr-only">When</span>
+                </dt>
+                <dd class="col-start-2 text-fg">
+                    {{ event.starts }}–{{ event.ends }}
+                </dd>
+                <dd class="col-start-2 text-fg-muted">
+                    Applications close {{ event.applications_close }}
+                </dd>
             </div>
-            <div class="flex items-start gap-2">
-                <MapPin class="mt-0.5 size-4 shrink-0 text-fg-muted" />
-                <div>
-                    <dt class="sr-only">Topics</dt>
-                    <dd class="text-fg">{{ event.owning_topic }}</dd>
-                    <dd class="text-fg-muted">
-                        {{
-                            event.audience_topic
-                                ? `Open to ${event.audience_topic}`
-                                : "Invited students only"
-                        }}
-                    </dd>
-                </div>
+            <div class="grid grid-cols-[auto_1fr] content-start gap-x-2">
+                <dt>
+                    <MapPin class="mt-0.5 size-4 shrink-0 text-fg-muted" />
+                    <span class="sr-only">Location</span>
+                </dt>
+                <dd v-if="event.location" class="col-start-2 text-fg">
+                    {{ event.location }}
+                </dd>
+                <dd v-else class="col-start-2 text-fg-muted">
+                    No location yet
+                </dd>
             </div>
-            <div class="flex items-start gap-2">
-                <Users class="mt-0.5 size-4 shrink-0 text-fg-muted" />
-                <div>
-                    <dt class="sr-only">Places</dt>
-                    <dd class="text-fg">
-                        {{ event.accepted }} / {{ event.capacity }} places taken
-                    </dd>
-                    <dd class="text-fg-muted">
-                        {{ event.waiting }} waiting ·
-                        {{
-                            event.application_type === "fcfs"
-                                ? "first come, first served"
-                                : "you choose"
-                        }}
-                    </dd>
-                </div>
+            <div class="grid grid-cols-[auto_1fr] content-start gap-x-2">
+                <dt>
+                    <Building2 class="mt-0.5 size-4 shrink-0 text-fg-muted" />
+                    <span class="sr-only">Topics</span>
+                </dt>
+                <dd class="col-start-2 text-fg">
+                    {{ event.owning_topic }}
+                </dd>
+                <dd class="col-start-2 text-fg-muted">
+                    {{
+                        event.audience_topic
+                            ? `Open to ${event.audience_topic}`
+                            : "Invited students only"
+                    }}
+                </dd>
             </div>
-            <div v-if="event.qr_enabled" class="flex items-start gap-2">
-                <QrCode class="mt-0.5 size-4 shrink-0 text-fg-muted" />
-                <dd class="text-fg">QR attendance</dd>
+            <div class="grid grid-cols-[auto_1fr] content-start gap-x-2">
+                <dt>
+                    <Users class="mt-0.5 size-4 shrink-0 text-fg-muted" />
+                    <span class="sr-only">Places</span>
+                </dt>
+                <dd class="col-start-2 text-fg">
+                    {{ event.accepted }} / {{ event.capacity }} places taken
+                </dd>
+                <dd class="col-start-2 text-fg-muted">
+                    {{ event.waiting }} waiting ·
+                    {{
+                        event.application_type === "fcfs"
+                            ? "first come, first served"
+                            : "you choose"
+                    }}
+                </dd>
+            </div>
+            <div
+                v-if="event.qr_enabled"
+                class="grid grid-cols-[auto_1fr] content-start gap-x-2"
+            >
+                <dt>
+                    <QrCode class="mt-0.5 size-4 shrink-0 text-fg-muted" />
+                    <span class="sr-only">Attendance</span>
+                </dt>
+                <dd class="col-start-2 text-fg">QR attendance</dd>
             </div>
         </dl>
 

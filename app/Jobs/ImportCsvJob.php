@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Imports\CsvHeadingsImport;
 use App\Imports\CsvRowsImport;
 use App\Models\User;
 use Filament\Notifications\Notification;
@@ -13,7 +14,6 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Storage;
 use InvalidArgumentException;
 use Maatwebsite\Excel\Facades\Excel;
-use Maatwebsite\Excel\HeadingRowImport;
 use Throwable;
 
 /**
@@ -96,6 +96,16 @@ abstract class ImportCsvJob implements ShouldQueue
     protected function prepare(): void {}
 
     /**
+     * How to read the file, for example ['delimiter' => ',']. Empty: the reader works it out.
+     *
+     * @return array<string, mixed>
+     */
+    protected function csvSettings(): array
+    {
+        return [];
+    }
+
+    /**
      * Runs after the last row; returns the summary sentence for the administrator.
      */
     abstract protected function summary(): string;
@@ -119,7 +129,7 @@ abstract class ImportCsvJob implements ShouldQueue
         }
 
         Excel::import(
-            new CsvRowsImport(fn (array $row, int $line) => $this->processRow($row, $line)),
+            new CsvRowsImport(fn (array $row, int $line) => $this->processRow($row, $line), $this->csvSettings()),
             $this->path,
             $this->disk,
             \Maatwebsite\Excel\Excel::CSV,
@@ -170,7 +180,7 @@ abstract class ImportCsvJob implements ShouldQueue
      */
     private function assertFileStructure(): void
     {
-        $headings = Excel::toArray(new HeadingRowImport, $this->path, $this->disk, \Maatwebsite\Excel\Excel::CSV)[0][0] ?? [];
+        $headings = Excel::toArray(new CsvHeadingsImport($this->csvSettings()), $this->path, $this->disk, \Maatwebsite\Excel\Excel::CSV)[0][0] ?? [];
 
         if (array_diff($this->requiredColumns(), $headings) !== []) {
             throw new InvalidArgumentException(

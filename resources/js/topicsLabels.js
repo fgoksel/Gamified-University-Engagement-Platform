@@ -9,6 +9,7 @@ export const capabilityLabels = {
     "access.view": "See who has access",
     "access.assign": "Give people roles",
     "access.end": "End and replace roles",
+    "access.import": "Import students",
     "role.define": "Define roles",
     "events.view": "View events",
     "events.apply": "Apply to events",

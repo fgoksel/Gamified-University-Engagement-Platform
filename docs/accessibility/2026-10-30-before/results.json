@@ -1,0 +1,1859 @@
+{
+  "meta": {
+    "label": "dev 9a2e918, before (Task #61)",
+    "date": "2026-10-30T11:05:30.517Z",
+    "baseUrl": "http://127.0.0.1:8099",
+    "tools": {
+      "lighthouse": "13.6.0",
+      "axe-core": "4.14.0",
+      "playwright-core": "1.64.1",
+      "chrome": "Chrome/156.0.0.0"
+    },
+    "axeTags": [
+      "wcag2a",
+      "wcag2aa",
+      "wcag21a",
+      "wcag21aa",
+      "wcag22aa",
+      "best-practice"
+    ],
+    "viewports": {
+      "desktop": {
+        "width": 1280,
+        "height": 800
+      },
+      "phone": {
+        "width": 390,
+        "height": 844
+      }
+    },
+    "lighthouse": "accessibility category only, default phone emulation"
+  },
+  "results": [
+    {
+      "who": "Guest",
+      "name": "Log in",
+      "route": "/login",
+      "axe": {
+        "desktop": [
+          {
+            "id": "region",
+            "impact": "moderate",
+            "help": "All page content should be contained by landmarks",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/region?application=playwright",
+            "wcag": [],
+            "bestPractice": true,
+            "count": 1,
+            "elements": [
+              ".text-lg"
+            ]
+          }
+        ],
+        "phone": [
+          {
+            "id": "region",
+            "impact": "moderate",
+            "help": "All page content should be contained by landmarks",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/region?application=playwright",
+            "wcag": [],
+            "bestPractice": true,
+            "count": 1,
+            "elements": [
+              ".text-lg"
+            ]
+          }
+        ]
+      },
+      "status": 200,
+      "finalUrl": "/login",
+      "smallTargets": {
+        "count": 5,
+        "controls": [
+          "input[email] \"\" 308x42",
+          "input[password] \"\" 308x42",
+          "button \"Show password\" 40x42",
+          "a \"Forgot password?\" 117x18",
+          "button \"Log in\" 308x40"
+        ]
+      },
+      "lighthouse": {
+        "score": 100,
+        "finalUrl": "/login",
+        "failing": [],
+        "warnings": []
+      }
+    },
+    {
+      "who": "Guest",
+      "name": "Forgot password",
+      "route": "/forgot-password",
+      "axe": {
+        "desktop": [
+          {
+            "id": "region",
+            "impact": "moderate",
+            "help": "All page content should be contained by landmarks",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/region?application=playwright",
+            "wcag": [],
+            "bestPractice": true,
+            "count": 1,
+            "elements": [
+              ".text-lg"
+            ]
+          }
+        ],
+        "phone": [
+          {
+            "id": "region",
+            "impact": "moderate",
+            "help": "All page content should be contained by landmarks",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/region?application=playwright",
+            "wcag": [],
+            "bestPractice": true,
+            "count": 1,
+            "elements": [
+              ".text-lg"
+            ]
+          }
+        ]
+      },
+      "status": 200,
+      "finalUrl": "/forgot-password",
+      "smallTargets": {
+        "count": 3,
+        "controls": [
+          "input[email] \"\" 308x42",
+          "button \"Send reset link\" 308x40",
+          "a \"Back to log in\" 108x20"
+        ]
+      },
+      "lighthouse": {
+        "score": 100,
+        "finalUrl": "/forgot-password",
+        "failing": [],
+        "warnings": []
+      }
+    },
+    {
+      "who": "Student (Anna)",
+      "name": "Home",
+      "route": "/",
+      "axe": {
+        "desktop": [
+          {
+            "id": "label-content-name-mismatch",
+            "impact": "serious",
+            "help": "Elements must have their visible text as part of their accessible name",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/label-content-name-mismatch?application=playwright",
+            "wcag": [
+              "wcag253"
+            ],
+            "bestPractice": false,
+            "count": 1,
+            "elements": [
+              ".px-5 > a[aria-label=\"Go to leaderboard\"][href=\"/\"]"
+            ]
+          }
+        ],
+        "phone": [
+          {
+            "id": "label-content-name-mismatch",
+            "impact": "serious",
+            "help": "Elements must have their visible text as part of their accessible name",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/label-content-name-mismatch?application=playwright",
+            "wcag": [
+              "wcag253"
+            ],
+            "bestPractice": false,
+            "count": 1,
+            "elements": [
+              "header > a[aria-label=\"Go to leaderboard\"][href=\"/\"]"
+            ]
+          },
+          {
+            "id": "region",
+            "impact": "moderate",
+            "help": "All page content should be contained by landmarks",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/region?application=playwright",
+            "wcag": [],
+            "bestPractice": true,
+            "count": 1,
+            "elements": [
+              ".right-5"
+            ]
+          }
+        ]
+      },
+      "status": 200,
+      "finalUrl": "/",
+      "smallTargets": {
+        "count": 2,
+        "controls": [
+          "a \"Go to leaderboard\" 177x36",
+          "button \"Open menu\" 40x40"
+        ]
+      },
+      "lighthouse": {
+        "score": 100,
+        "finalUrl": "/",
+        "failing": [
+          {
+            "id": "label-content-name-mismatch",
+            "title": "Elements with visible text labels do not have matching accessible names.",
+            "weight": 0,
+            "items": 1
+          }
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "who": "Student (Anna)",
+      "name": "All events",
+      "route": "/events",
+      "axe": {
+        "desktop": [
+          {
+            "id": "color-contrast",
+            "impact": "serious",
+            "help": "Elements must meet minimum color contrast ratio thresholds",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/color-contrast?application=playwright",
+            "wcag": [
+              "wcag143"
+            ],
+            "bestPractice": false,
+            "count": 3,
+            "elements": [
+              "article:nth-child(1) > .text-xs.flex-wrap.font-medium > .bg-primary\\/10.text-primary.px-2\\.5 (#1a73db on #e8f1fb: 4.07:1, needs 4.5:1)",
+              "article:nth-child(2) > .text-xs.flex-wrap.font-medium > .bg-primary\\/10.text-primary.px-2\\.5 (#1a73db on #e8f1fb: 4.07:1, needs 4.5:1)",
+              "article:nth-child(3) > .text-xs.flex-wrap.font-medium > .bg-primary\\/10.text-primary.px-2\\.5 (#1a73db on #e8f1fb: 4.07:1, needs 4.5:1)"
+            ]
+          },
+          {
+            "id": "label-content-name-mismatch",
+            "impact": "serious",
+            "help": "Elements must have their visible text as part of their accessible name",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/label-content-name-mismatch?application=playwright",
+            "wcag": [
+              "wcag253"
+            ],
+            "bestPractice": false,
+            "count": 1,
+            "elements": [
+              ".px-5 > a[aria-label=\"Go to leaderboard\"][href=\"/\"]"
+            ]
+          }
+        ],
+        "phone": [
+          {
+            "id": "color-contrast",
+            "impact": "serious",
+            "help": "Elements must meet minimum color contrast ratio thresholds",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/color-contrast?application=playwright",
+            "wcag": [
+              "wcag143"
+            ],
+            "bestPractice": false,
+            "count": 3,
+            "elements": [
+              "article:nth-child(1) > .text-xs.flex-wrap.font-medium > .bg-primary\\/10.text-primary.px-2\\.5 (#1a73db on #e8f1fb: 4.07:1, needs 4.5:1)",
+              "article:nth-child(2) > .text-xs.flex-wrap.font-medium > .bg-primary\\/10.text-primary.px-2\\.5 (#1a73db on #e8f1fb: 4.07:1, needs 4.5:1)",
+              "article:nth-child(3) > .text-xs.flex-wrap.font-medium > .bg-primary\\/10.text-primary.px-2\\.5 (#1a73db on #e8f1fb: 4.07:1, needs 4.5:1)"
+            ]
+          },
+          {
+            "id": "label-content-name-mismatch",
+            "impact": "serious",
+            "help": "Elements must have their visible text as part of their accessible name",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/label-content-name-mismatch?application=playwright",
+            "wcag": [
+              "wcag253"
+            ],
+            "bestPractice": false,
+            "count": 1,
+            "elements": [
+              "header > a[aria-label=\"Go to leaderboard\"][href=\"/\"]"
+            ]
+          },
+          {
+            "id": "region",
+            "impact": "moderate",
+            "help": "All page content should be contained by landmarks",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/region?application=playwright",
+            "wcag": [],
+            "bestPractice": true,
+            "count": 1,
+            "elements": [
+              ".right-5"
+            ]
+          }
+        ]
+      },
+      "status": 200,
+      "finalUrl": "/events",
+      "smallTargets": {
+        "count": 17,
+        "controls": [
+          "a \"Go to leaderboard\" 177x36",
+          "button \"Open menu\" 40x40",
+          "input[search] \"\" 358x42",
+          "button \"Upcoming\" 92x32",
+          "button \"Past\" 53x32",
+          "button \"All dates\" 80x32",
+          "select \"All topics Databases\" 358x38",
+          "input[date] \"\" 358x38 (x2)",
+          "button \"All\" 43x30",
+          "button \"Academic\" 107x30",
+          "button \"Scientific\" 102x30",
+          "button \"Sports\" 84x30",
+          "button \"Community\" 119x30",
+          "a \"Indexing Lab\" 96x20",
+          "a \"SQL Joins Workshop\" 155x20",
+          "a \"Database Design Hackathon\" 213x20"
+        ]
+      },
+      "lighthouse": {
+        "score": 96,
+        "finalUrl": "/events",
+        "failing": [
+          {
+            "id": "color-contrast",
+            "title": "Background and foreground colors do not have a sufficient contrast ratio.",
+            "weight": 7,
+            "items": 3
+          },
+          {
+            "id": "label-content-name-mismatch",
+            "title": "Elements with visible text labels do not have matching accessible names.",
+            "weight": 0,
+            "items": 1
+          }
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "who": "Student (Anna)",
+      "name": "Event page, open for applications",
+      "route": "/events/1",
+      "axe": {
+        "desktop": [
+          {
+            "id": "color-contrast",
+            "impact": "serious",
+            "help": "Elements must meet minimum color contrast ratio thresholds",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/color-contrast?application=playwright",
+            "wcag": [
+              "wcag143"
+            ],
+            "bestPractice": false,
+            "count": 1,
+            "elements": [
+              ".bg-primary\\/10 (#1a73db on #e8f1fb: 4.07:1, needs 4.5:1)"
+            ]
+          },
+          {
+            "id": "definition-list",
+            "impact": "serious",
+            "help": "<dl> elements must only directly contain properly-ordered <dt> and <dd> groups, <script>, <template> or <div> elements",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/definition-list?application=playwright",
+            "wcag": [
+              "wcag131"
+            ],
+            "bestPractice": false,
+            "count": 1,
+            "elements": [
+              "dl"
+            ]
+          },
+          {
+            "id": "dlitem",
+            "impact": "serious",
+            "help": "<dt> and <dd> elements must be contained by a <dl>",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/dlitem?application=playwright",
+            "wcag": [
+              "wcag131"
+            ],
+            "bestPractice": false,
+            "count": 15,
+            "elements": [
+              ".items-start.gap-2:nth-child(1) > div > dt",
+              ".items-start.gap-2:nth-child(1) > div > dd",
+              ".items-start.gap-2:nth-child(2) > div > dt",
+              ".items-start.gap-2:nth-child(2) > div > dd",
+              ".items-start.gap-2:nth-child(3) > div > dt",
+              ".items-start.gap-2:nth-child(3) > div > dd",
+              ".items-start.gap-2:nth-child(4) > div > dt",
+              ".items-start.gap-2:nth-child(4) > div > dd:nth-child(2)"
+            ]
+          },
+          {
+            "id": "label-content-name-mismatch",
+            "impact": "serious",
+            "help": "Elements must have their visible text as part of their accessible name",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/label-content-name-mismatch?application=playwright",
+            "wcag": [
+              "wcag253"
+            ],
+            "bestPractice": false,
+            "count": 1,
+            "elements": [
+              ".px-5 > a[aria-label=\"Go to leaderboard\"][href=\"/\"]"
+            ]
+          }
+        ],
+        "phone": [
+          {
+            "id": "color-contrast",
+            "impact": "serious",
+            "help": "Elements must meet minimum color contrast ratio thresholds",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/color-contrast?application=playwright",
+            "wcag": [
+              "wcag143"
+            ],
+            "bestPractice": false,
+            "count": 1,
+            "elements": [
+              ".bg-primary\\/10 (#1a73db on #e8f1fb: 4.07:1, needs 4.5:1)"
+            ]
+          },
+          {
+            "id": "definition-list",
+            "impact": "serious",
+            "help": "<dl> elements must only directly contain properly-ordered <dt> and <dd> groups, <script>, <template> or <div> elements",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/definition-list?application=playwright",
+            "wcag": [
+              "wcag131"
+            ],
+            "bestPractice": false,
+            "count": 1,
+            "elements": [
+              "dl"
+            ]
+          },
+          {
+            "id": "dlitem",
+            "impact": "serious",
+            "help": "<dt> and <dd> elements must be contained by a <dl>",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/dlitem?application=playwright",
+            "wcag": [
+              "wcag131"
+            ],
+            "bestPractice": false,
+            "count": 15,
+            "elements": [
+              ".items-start.gap-2:nth-child(1) > div > dt",
+              ".items-start.gap-2:nth-child(1) > div > dd",
+              ".items-start.gap-2:nth-child(2) > div > dt",
+              ".items-start.gap-2:nth-child(2) > div > dd",
+              ".items-start.gap-2:nth-child(3) > div > dt",
+              ".items-start.gap-2:nth-child(3) > div > dd",
+              ".items-start.gap-2:nth-child(4) > div > dt",
+              ".items-start.gap-2:nth-child(4) > div > dd:nth-child(2)"
+            ]
+          },
+          {
+            "id": "label-content-name-mismatch",
+            "impact": "serious",
+            "help": "Elements must have their visible text as part of their accessible name",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/label-content-name-mismatch?application=playwright",
+            "wcag": [
+              "wcag253"
+            ],
+            "bestPractice": false,
+            "count": 1,
+            "elements": [
+              "header > a[aria-label=\"Go to leaderboard\"][href=\"/\"]"
+            ]
+          },
+          {
+            "id": "region",
+            "impact": "moderate",
+            "help": "All page content should be contained by landmarks",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/region?application=playwright",
+            "wcag": [],
+            "bestPractice": true,
+            "count": 1,
+            "elements": [
+              ".right-5"
+            ]
+          }
+        ]
+      },
+      "status": 200,
+      "finalUrl": "/events/1",
+      "smallTargets": {
+        "count": 3,
+        "controls": [
+          "a \"Go to leaderboard\" 177x36",
+          "button \"Open menu\" 40x40",
+          "a \"All events\" 83x20"
+        ]
+      },
+      "lighthouse": {
+        "score": 85,
+        "finalUrl": "/events/1",
+        "failing": [
+          {
+            "id": "color-contrast",
+            "title": "Background and foreground colors do not have a sufficient contrast ratio.",
+            "weight": 7,
+            "items": 1
+          },
+          {
+            "id": "definition-list",
+            "title": "`<dl>`'s do not contain only properly-ordered `<dt>` and `<dd>` groups, `<script>`, `<template>` or `<div>` elements.",
+            "weight": 7,
+            "items": 1
+          },
+          {
+            "id": "dlitem",
+            "title": "Definition list items are not wrapped in `<dl>` elements",
+            "weight": 7,
+            "items": 15
+          },
+          {
+            "id": "label-content-name-mismatch",
+            "title": "Elements with visible text labels do not have matching accessible names.",
+            "weight": 0,
+            "items": 1
+          }
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "who": "Student (Anna)",
+      "name": "Event page, accepted and running",
+      "route": "/events/3",
+      "axe": {
+        "desktop": [
+          {
+            "id": "color-contrast",
+            "impact": "serious",
+            "help": "Elements must meet minimum color contrast ratio thresholds",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/color-contrast?application=playwright",
+            "wcag": [
+              "wcag143"
+            ],
+            "bestPractice": false,
+            "count": 1,
+            "elements": [
+              ".bg-primary\\/10 (#1a73db on #e8f1fb: 4.07:1, needs 4.5:1)"
+            ]
+          },
+          {
+            "id": "definition-list",
+            "impact": "serious",
+            "help": "<dl> elements must only directly contain properly-ordered <dt> and <dd> groups, <script>, <template> or <div> elements",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/definition-list?application=playwright",
+            "wcag": [
+              "wcag131"
+            ],
+            "bestPractice": false,
+            "count": 1,
+            "elements": [
+              "dl"
+            ]
+          },
+          {
+            "id": "dlitem",
+            "impact": "serious",
+            "help": "<dt> and <dd> elements must be contained by a <dl>",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/dlitem?application=playwright",
+            "wcag": [
+              "wcag131"
+            ],
+            "bestPractice": false,
+            "count": 15,
+            "elements": [
+              ".items-start.gap-2:nth-child(1) > div > dt",
+              ".items-start.gap-2:nth-child(1) > div > dd",
+              ".items-start.gap-2:nth-child(2) > div > dt",
+              ".items-start.gap-2:nth-child(2) > div > dd",
+              ".items-start.gap-2:nth-child(3) > div > dt",
+              ".items-start.gap-2:nth-child(3) > div > dd",
+              ".items-start.gap-2:nth-child(4) > div > dt",
+              ".items-start.gap-2:nth-child(4) > div > dd:nth-child(2)"
+            ]
+          },
+          {
+            "id": "label-content-name-mismatch",
+            "impact": "serious",
+            "help": "Elements must have their visible text as part of their accessible name",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/label-content-name-mismatch?application=playwright",
+            "wcag": [
+              "wcag253"
+            ],
+            "bestPractice": false,
+            "count": 1,
+            "elements": [
+              ".px-5 > a[aria-label=\"Go to leaderboard\"][href=\"/\"]"
+            ]
+          }
+        ],
+        "phone": [
+          {
+            "id": "color-contrast",
+            "impact": "serious",
+            "help": "Elements must meet minimum color contrast ratio thresholds",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/color-contrast?application=playwright",
+            "wcag": [
+              "wcag143"
+            ],
+            "bestPractice": false,
+            "count": 1,
+            "elements": [
+              ".bg-primary\\/10 (#1a73db on #e8f1fb: 4.07:1, needs 4.5:1)"
+            ]
+          },
+          {
+            "id": "definition-list",
+            "impact": "serious",
+            "help": "<dl> elements must only directly contain properly-ordered <dt> and <dd> groups, <script>, <template> or <div> elements",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/definition-list?application=playwright",
+            "wcag": [
+              "wcag131"
+            ],
+            "bestPractice": false,
+            "count": 1,
+            "elements": [
+              "dl"
+            ]
+          },
+          {
+            "id": "dlitem",
+            "impact": "serious",
+            "help": "<dt> and <dd> elements must be contained by a <dl>",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/dlitem?application=playwright",
+            "wcag": [
+              "wcag131"
+            ],
+            "bestPractice": false,
+            "count": 15,
+            "elements": [
+              ".items-start.gap-2:nth-child(1) > div > dt",
+              ".items-start.gap-2:nth-child(1) > div > dd",
+              ".items-start.gap-2:nth-child(2) > div > dt",
+              ".items-start.gap-2:nth-child(2) > div > dd",
+              ".items-start.gap-2:nth-child(3) > div > dt",
+              ".items-start.gap-2:nth-child(3) > div > dd",
+              ".items-start.gap-2:nth-child(4) > div > dt",
+              ".items-start.gap-2:nth-child(4) > div > dd:nth-child(2)"
+            ]
+          },
+          {
+            "id": "label-content-name-mismatch",
+            "impact": "serious",
+            "help": "Elements must have their visible text as part of their accessible name",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/label-content-name-mismatch?application=playwright",
+            "wcag": [
+              "wcag253"
+            ],
+            "bestPractice": false,
+            "count": 1,
+            "elements": [
+              "header > a[aria-label=\"Go to leaderboard\"][href=\"/\"]"
+            ]
+          },
+          {
+            "id": "region",
+            "impact": "moderate",
+            "help": "All page content should be contained by landmarks",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/region?application=playwright",
+            "wcag": [],
+            "bestPractice": true,
+            "count": 1,
+            "elements": [
+              ".right-5"
+            ]
+          }
+        ]
+      },
+      "status": 200,
+      "finalUrl": "/events/3",
+      "smallTargets": {
+        "count": 3,
+        "controls": [
+          "a \"Go to leaderboard\" 177x36",
+          "button \"Open menu\" 40x40",
+          "a \"All events\" 83x20"
+        ]
+      },
+      "lighthouse": {
+        "score": 85,
+        "finalUrl": "/events/3",
+        "failing": [
+          {
+            "id": "color-contrast",
+            "title": "Background and foreground colors do not have a sufficient contrast ratio.",
+            "weight": 7,
+            "items": 1
+          },
+          {
+            "id": "definition-list",
+            "title": "`<dl>`'s do not contain only properly-ordered `<dt>` and `<dd>` groups, `<script>`, `<template>` or `<div>` elements.",
+            "weight": 7,
+            "items": 1
+          },
+          {
+            "id": "dlitem",
+            "title": "Definition list items are not wrapped in `<dl>` elements",
+            "weight": 7,
+            "items": 15
+          },
+          {
+            "id": "label-content-name-mismatch",
+            "title": "Elements with visible text labels do not have matching accessible names.",
+            "weight": 0,
+            "items": 1
+          }
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "who": "Student (Anna)",
+      "name": "My events",
+      "route": "/my-events",
+      "axe": {
+        "desktop": [
+          {
+            "id": "color-contrast",
+            "impact": "serious",
+            "help": "Elements must meet minimum color contrast ratio thresholds",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/color-contrast?application=playwright",
+            "wcag": [
+              "wcag143"
+            ],
+            "bestPractice": false,
+            "count": 6,
+            "elements": [
+              ".border-primary (#1a73db on #f5f8fc: 4.36:1, needs 4.5:1)",
+              ".rounded-card.p-5.shadow-card:nth-child(1) > .items-start.justify-between.flex-wrap > .gap-2.flex-wrap.flex > .bg-emerald-500\\/10.text-emerald-600.dark\\:text-emerald-400 (#009966 on #e5f8f2: 3.31:1, needs 4.5:1)",
+              ".bg-amber-500\\/10 (#e17100 on #fff5e6: 2.96:1, needs 4.5:1)",
+              ".rounded-card.p-5.shadow-card:nth-child(3) > .items-start.justify-between.flex-wrap > .gap-2.flex-wrap.flex > .bg-emerald-500\\/10.text-emerald-600.dark\\:text-emerald-400 (#009966 on #e5f8f2: 3.31:1, needs 4.5:1)",
+              ".rounded-card.p-5.shadow-card:nth-child(4) > .items-start.justify-between.flex-wrap > .gap-2.flex-wrap.flex > .bg-emerald-500\\/10.text-emerald-600.dark\\:text-emerald-400 (#009966 on #e5f8f2: 3.31:1, needs 4.5:1)",
+              ".rounded-card.p-5.shadow-card:nth-child(5) > .items-start.justify-between.flex-wrap > .gap-2.flex-wrap.flex > .bg-emerald-500\\/10.text-emerald-600.dark\\:text-emerald-400 (#009966 on #e5f8f2: 3.31:1, needs 4.5:1)"
+            ]
+          },
+          {
+            "id": "label-content-name-mismatch",
+            "impact": "serious",
+            "help": "Elements must have their visible text as part of their accessible name",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/label-content-name-mismatch?application=playwright",
+            "wcag": [
+              "wcag253"
+            ],
+            "bestPractice": false,
+            "count": 1,
+            "elements": [
+              ".px-5 > a[aria-label=\"Go to leaderboard\"][href=\"/\"]"
+            ]
+          }
+        ],
+        "phone": [
+          {
+            "id": "color-contrast",
+            "impact": "serious",
+            "help": "Elements must meet minimum color contrast ratio thresholds",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/color-contrast?application=playwright",
+            "wcag": [
+              "wcag143"
+            ],
+            "bestPractice": false,
+            "count": 6,
+            "elements": [
+              ".border-primary (#1a73db on #f5f8fc: 4.36:1, needs 4.5:1)",
+              ".rounded-card.p-5.shadow-card:nth-child(1) > .items-start.justify-between.flex-wrap > .gap-2.flex-wrap.flex > .bg-emerald-500\\/10.text-emerald-600.dark\\:text-emerald-400 (#009966 on #e5f8f2: 3.31:1, needs 4.5:1)",
+              ".bg-amber-500\\/10 (#e17100 on #fff5e6: 2.96:1, needs 4.5:1)",
+              ".rounded-card.p-5.shadow-card:nth-child(3) > .items-start.justify-between.flex-wrap > .gap-2.flex-wrap.flex > .bg-emerald-500\\/10.text-emerald-600.dark\\:text-emerald-400 (#009966 on #e5f8f2: 3.31:1, needs 4.5:1)",
+              ".rounded-card.p-5.shadow-card:nth-child(4) > .items-start.justify-between.flex-wrap > .gap-2.flex-wrap.flex > .bg-emerald-500\\/10.text-emerald-600.dark\\:text-emerald-400 (#009966 on #e5f8f2: 3.31:1, needs 4.5:1)",
+              ".rounded-card.p-5.shadow-card:nth-child(5) > .items-start.justify-between.flex-wrap > .gap-2.flex-wrap.flex > .bg-emerald-500\\/10.text-emerald-600.dark\\:text-emerald-400 (#009966 on #e5f8f2: 3.31:1, needs 4.5:1)"
+            ]
+          },
+          {
+            "id": "label-content-name-mismatch",
+            "impact": "serious",
+            "help": "Elements must have their visible text as part of their accessible name",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/label-content-name-mismatch?application=playwright",
+            "wcag": [
+              "wcag253"
+            ],
+            "bestPractice": false,
+            "count": 1,
+            "elements": [
+              "header > a[aria-label=\"Go to leaderboard\"][href=\"/\"]"
+            ]
+          },
+          {
+            "id": "region",
+            "impact": "moderate",
+            "help": "All page content should be contained by landmarks",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/region?application=playwright",
+            "wcag": [],
+            "bestPractice": true,
+            "count": 1,
+            "elements": [
+              ".right-5"
+            ]
+          }
+        ]
+      },
+      "status": 200,
+      "finalUrl": "/my-events",
+      "smallTargets": {
+        "count": 9,
+        "controls": [
+          "a \"Go to leaderboard\" 177x36",
+          "button \"Open menu\" 40x40",
+          "a \"Browse Events\" 358x38",
+          "button \"All (5)\" 39x34",
+          "button \"Active (4)\" 62x34",
+          "button \"History (1)\" 65x34",
+          "button \"Withdraw\" 82x30 (x3)"
+        ]
+      },
+      "lighthouse": {
+        "score": 95,
+        "finalUrl": "/my-events",
+        "failing": [
+          {
+            "id": "color-contrast",
+            "title": "Background and foreground colors do not have a sufficient contrast ratio.",
+            "weight": 7,
+            "items": 6
+          },
+          {
+            "id": "label-content-name-mismatch",
+            "title": "Elements with visible text labels do not have matching accessible names.",
+            "weight": 0,
+            "items": 1
+          }
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "who": "Student (Anna)",
+      "name": "QR passport",
+      "route": "/passport",
+      "axe": {
+        "desktop": [
+          {
+            "id": "label-content-name-mismatch",
+            "impact": "serious",
+            "help": "Elements must have their visible text as part of their accessible name",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/label-content-name-mismatch?application=playwright",
+            "wcag": [
+              "wcag253"
+            ],
+            "bestPractice": false,
+            "count": 1,
+            "elements": [
+              ".px-5 > a[aria-label=\"Go to leaderboard\"][href=\"/\"]"
+            ]
+          }
+        ],
+        "phone": [
+          {
+            "id": "label-content-name-mismatch",
+            "impact": "serious",
+            "help": "Elements must have their visible text as part of their accessible name",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/label-content-name-mismatch?application=playwright",
+            "wcag": [
+              "wcag253"
+            ],
+            "bestPractice": false,
+            "count": 1,
+            "elements": [
+              "header > a[aria-label=\"Go to leaderboard\"][href=\"/\"]"
+            ]
+          },
+          {
+            "id": "region",
+            "impact": "moderate",
+            "help": "All page content should be contained by landmarks",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/region?application=playwright",
+            "wcag": [],
+            "bestPractice": true,
+            "count": 1,
+            "elements": [
+              ".right-5"
+            ]
+          }
+        ]
+      },
+      "status": 200,
+      "finalUrl": "/passport",
+      "smallTargets": {
+        "count": 3,
+        "controls": [
+          "a \"Go to leaderboard\" 177x36",
+          "button \"Open menu\" 40x40",
+          "button \"Refresh now\" 113x28"
+        ]
+      },
+      "lighthouse": {
+        "score": 100,
+        "finalUrl": "/passport",
+        "failing": [
+          {
+            "id": "label-content-name-mismatch",
+            "title": "Elements with visible text labels do not have matching accessible names.",
+            "weight": 0,
+            "items": 1
+          }
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "who": "Student (Anna)",
+      "name": "Scan",
+      "route": "/scan",
+      "axe": {
+        "desktop": [
+          {
+            "id": "label-content-name-mismatch",
+            "impact": "serious",
+            "help": "Elements must have their visible text as part of their accessible name",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/label-content-name-mismatch?application=playwright",
+            "wcag": [
+              "wcag253"
+            ],
+            "bestPractice": false,
+            "count": 1,
+            "elements": [
+              ".px-5 > a[aria-label=\"Go to leaderboard\"][href=\"/\"]"
+            ]
+          }
+        ],
+        "phone": [
+          {
+            "id": "label-content-name-mismatch",
+            "impact": "serious",
+            "help": "Elements must have their visible text as part of their accessible name",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/label-content-name-mismatch?application=playwright",
+            "wcag": [
+              "wcag253"
+            ],
+            "bestPractice": false,
+            "count": 1,
+            "elements": [
+              "header > a[aria-label=\"Go to leaderboard\"][href=\"/\"]"
+            ]
+          },
+          {
+            "id": "region",
+            "impact": "moderate",
+            "help": "All page content should be contained by landmarks",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/region?application=playwright",
+            "wcag": [],
+            "bestPractice": true,
+            "count": 1,
+            "elements": [
+              ".right-5"
+            ]
+          }
+        ]
+      },
+      "status": 200,
+      "finalUrl": "/scan",
+      "smallTargets": {
+        "count": 3,
+        "controls": [
+          "a \"Go to leaderboard\" 177x36",
+          "button \"Open menu\" 40x40",
+          "input[text] \"\" 324x42"
+        ]
+      },
+      "lighthouse": {
+        "score": 100,
+        "finalUrl": "/scan",
+        "failing": [
+          {
+            "id": "label-content-name-mismatch",
+            "title": "Elements with visible text labels do not have matching accessible names.",
+            "weight": 0,
+            "items": 1
+          }
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "who": "Student (Anna)",
+      "name": "Notifications",
+      "route": "/notifications",
+      "axe": {
+        "desktop": [
+          {
+            "id": "label-content-name-mismatch",
+            "impact": "serious",
+            "help": "Elements must have their visible text as part of their accessible name",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/label-content-name-mismatch?application=playwright",
+            "wcag": [
+              "wcag253"
+            ],
+            "bestPractice": false,
+            "count": 1,
+            "elements": [
+              ".px-5 > a[aria-label=\"Go to leaderboard\"][href=\"/\"]"
+            ]
+          }
+        ],
+        "phone": [
+          {
+            "id": "label-content-name-mismatch",
+            "impact": "serious",
+            "help": "Elements must have their visible text as part of their accessible name",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/label-content-name-mismatch?application=playwright",
+            "wcag": [
+              "wcag253"
+            ],
+            "bestPractice": false,
+            "count": 1,
+            "elements": [
+              "header > a[aria-label=\"Go to leaderboard\"][href=\"/\"]"
+            ]
+          },
+          {
+            "id": "region",
+            "impact": "moderate",
+            "help": "All page content should be contained by landmarks",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/region?application=playwright",
+            "wcag": [],
+            "bestPractice": true,
+            "count": 1,
+            "elements": [
+              ".right-5"
+            ]
+          }
+        ]
+      },
+      "status": 200,
+      "finalUrl": "/notifications",
+      "smallTargets": {
+        "count": 2,
+        "controls": [
+          "a \"Go to leaderboard\" 177x36",
+          "button \"Open menu\" 40x40"
+        ]
+      },
+      "lighthouse": {
+        "score": 100,
+        "finalUrl": "/notifications",
+        "failing": [
+          {
+            "id": "label-content-name-mismatch",
+            "title": "Elements with visible text labels do not have matching accessible names.",
+            "weight": 0,
+            "items": 1
+          }
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "who": "Student (Anna)",
+      "name": "Profile",
+      "route": "/profile",
+      "axe": {
+        "desktop": [
+          {
+            "id": "label-content-name-mismatch",
+            "impact": "serious",
+            "help": "Elements must have their visible text as part of their accessible name",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/label-content-name-mismatch?application=playwright",
+            "wcag": [
+              "wcag253"
+            ],
+            "bestPractice": false,
+            "count": 1,
+            "elements": [
+              ".px-5 > a[aria-label=\"Go to leaderboard\"][href=\"/\"]"
+            ]
+          }
+        ],
+        "phone": [
+          {
+            "id": "label-content-name-mismatch",
+            "impact": "serious",
+            "help": "Elements must have their visible text as part of their accessible name",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/label-content-name-mismatch?application=playwright",
+            "wcag": [
+              "wcag253"
+            ],
+            "bestPractice": false,
+            "count": 1,
+            "elements": [
+              "header > a[aria-label=\"Go to leaderboard\"][href=\"/\"]"
+            ]
+          },
+          {
+            "id": "region",
+            "impact": "moderate",
+            "help": "All page content should be contained by landmarks",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/region?application=playwright",
+            "wcag": [],
+            "bestPractice": true,
+            "count": 1,
+            "elements": [
+              ".right-5"
+            ]
+          }
+        ]
+      },
+      "status": 200,
+      "finalUrl": "/profile",
+      "smallTargets": {
+        "count": 10,
+        "controls": [
+          "a \"Go to leaderboard\" 177x36",
+          "button \"Open menu\" 40x40",
+          "button \"Upload photo\" 138x38",
+          "input[password] \"\" 316x42 (x3)",
+          "button \"Show password\" 40x42 (x3)",
+          "button \"Change password\" 316x40"
+        ]
+      },
+      "lighthouse": {
+        "score": 100,
+        "finalUrl": "/profile",
+        "failing": [
+          {
+            "id": "label-content-name-mismatch",
+            "title": "Elements with visible text labels do not have matching accessible names.",
+            "weight": 0,
+            "items": 1
+          }
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "who": "Student (Anna)",
+      "name": "Change password",
+      "route": "/password/change",
+      "axe": {
+        "desktop": [
+          {
+            "id": "region",
+            "impact": "moderate",
+            "help": "All page content should be contained by landmarks",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/region?application=playwright",
+            "wcag": [],
+            "bestPractice": true,
+            "count": 1,
+            "elements": [
+              ".text-lg"
+            ]
+          }
+        ],
+        "phone": [
+          {
+            "id": "region",
+            "impact": "moderate",
+            "help": "All page content should be contained by landmarks",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/region?application=playwright",
+            "wcag": [],
+            "bestPractice": true,
+            "count": 1,
+            "elements": [
+              ".text-lg"
+            ]
+          }
+        ]
+      },
+      "status": 200,
+      "finalUrl": "/password/change",
+      "smallTargets": {
+        "count": 8,
+        "controls": [
+          "input[password] \"\" 308x42 (x3)",
+          "button \"Show password\" 40x42 (x3)",
+          "button \"Save\" 308x40",
+          "button \"Log out\" 49x20"
+        ]
+      },
+      "lighthouse": {
+        "score": 100,
+        "finalUrl": "/password/change",
+        "failing": [],
+        "warnings": []
+      }
+    },
+    {
+      "who": "Organiser (Ivan)",
+      "name": "Organized by me",
+      "route": "/my-events",
+      "axe": {
+        "desktop": [
+          {
+            "id": "color-contrast",
+            "impact": "serious",
+            "help": "Elements must meet minimum color contrast ratio thresholds",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/color-contrast?application=playwright",
+            "wcag": [
+              "wcag143"
+            ],
+            "bestPractice": false,
+            "count": 4,
+            "elements": [
+              "article:nth-child(1) > .justify-between.flex-wrap.gap-3 > .min-w-0 > .flex-wrap.gap-2.flex > .bg-primary\\/10.text-primary.px-2\\.5 (#1a73db on #e8f1fb: 4.07:1, needs 4.5:1)",
+              "article:nth-child(2) > .justify-between.flex-wrap.gap-3 > .min-w-0 > .flex-wrap.gap-2.flex > .bg-primary\\/10.text-primary.px-2\\.5 (#1a73db on #e8f1fb: 4.07:1, needs 4.5:1)",
+              "article:nth-child(3) > .justify-between.flex-wrap.gap-3 > .min-w-0 > .flex-wrap.gap-2.flex > .bg-primary\\/10.text-primary.px-2\\.5 (#1a73db on #e8f1fb: 4.07:1, needs 4.5:1)",
+              "article:nth-child(4) > .justify-between.flex-wrap.gap-3 > .min-w-0 > .flex-wrap.gap-2.flex > .bg-primary\\/10.text-primary.px-2\\.5 (#1a73db on #e8f1fb: 4.07:1, needs 4.5:1)"
+            ]
+          },
+          {
+            "id": "definition-list",
+            "impact": "serious",
+            "help": "<dl> elements must only directly contain properly-ordered <dt> and <dd> groups, <script>, <template> or <div> elements",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/definition-list?application=playwright",
+            "wcag": [
+              "wcag131"
+            ],
+            "bestPractice": false,
+            "count": 4,
+            "elements": [
+              "article:nth-child(1) > dl",
+              "article:nth-child(2) > dl",
+              "article:nth-child(3) > dl",
+              "article:nth-child(4) > dl"
+            ]
+          },
+          {
+            "id": "dlitem",
+            "impact": "serious",
+            "help": "<dt> and <dd> elements must be contained by a <dl>",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/dlitem?application=playwright",
+            "wcag": [
+              "wcag131"
+            ],
+            "bestPractice": false,
+            "count": 44,
+            "elements": [
+              "article:nth-child(1) > dl > .items-start.gap-2.flex:nth-child(1) > div > dt",
+              "article:nth-child(1) > dl > .items-start.gap-2.flex:nth-child(1) > div > dd:nth-child(2)",
+              "article:nth-child(1) > dl > .items-start.gap-2.flex:nth-child(1) > div > dd:nth-child(3)",
+              "article:nth-child(1) > dl > .items-start.gap-2.flex:nth-child(2) > div > dt",
+              "article:nth-child(1) > dl > .items-start.gap-2.flex:nth-child(2) > div > dd",
+              "article:nth-child(1) > dl > .items-start.gap-2.flex:nth-child(3) > div > dt",
+              "article:nth-child(1) > dl > .items-start.gap-2.flex:nth-child(3) > div > dd:nth-child(2)",
+              "article:nth-child(1) > dl > .items-start.gap-2.flex:nth-child(3) > div > dd:nth-child(3)"
+            ]
+          },
+          {
+            "id": "label-content-name-mismatch",
+            "impact": "serious",
+            "help": "Elements must have their visible text as part of their accessible name",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/label-content-name-mismatch?application=playwright",
+            "wcag": [
+              "wcag253"
+            ],
+            "bestPractice": false,
+            "count": 1,
+            "elements": [
+              ".px-5 > a[aria-label=\"Go to leaderboard\"][href=\"/\"]"
+            ]
+          }
+        ],
+        "phone": [
+          {
+            "id": "color-contrast",
+            "impact": "serious",
+            "help": "Elements must meet minimum color contrast ratio thresholds",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/color-contrast?application=playwright",
+            "wcag": [
+              "wcag143"
+            ],
+            "bestPractice": false,
+            "count": 4,
+            "elements": [
+              "article:nth-child(1) > .justify-between.flex-wrap.gap-3 > .min-w-0 > .flex-wrap.gap-2.flex > .bg-primary\\/10.text-primary.px-2\\.5 (#1a73db on #e8f1fb: 4.07:1, needs 4.5:1)",
+              "article:nth-child(2) > .justify-between.flex-wrap.gap-3 > .min-w-0 > .flex-wrap.gap-2.flex > .bg-primary\\/10.text-primary.px-2\\.5 (#1a73db on #e8f1fb: 4.07:1, needs 4.5:1)",
+              "article:nth-child(3) > .justify-between.flex-wrap.gap-3 > .min-w-0 > .flex-wrap.gap-2.flex > .bg-primary\\/10.text-primary.px-2\\.5 (#1a73db on #e8f1fb: 4.07:1, needs 4.5:1)",
+              "article:nth-child(4) > .justify-between.flex-wrap.gap-3 > .min-w-0 > .flex-wrap.gap-2.flex > .bg-primary\\/10.text-primary.px-2\\.5 (#1a73db on #e8f1fb: 4.07:1, needs 4.5:1)"
+            ]
+          },
+          {
+            "id": "definition-list",
+            "impact": "serious",
+            "help": "<dl> elements must only directly contain properly-ordered <dt> and <dd> groups, <script>, <template> or <div> elements",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/definition-list?application=playwright",
+            "wcag": [
+              "wcag131"
+            ],
+            "bestPractice": false,
+            "count": 4,
+            "elements": [
+              "article:nth-child(1) > dl",
+              "article:nth-child(2) > dl",
+              "article:nth-child(3) > dl",
+              "article:nth-child(4) > dl"
+            ]
+          },
+          {
+            "id": "dlitem",
+            "impact": "serious",
+            "help": "<dt> and <dd> elements must be contained by a <dl>",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/dlitem?application=playwright",
+            "wcag": [
+              "wcag131"
+            ],
+            "bestPractice": false,
+            "count": 44,
+            "elements": [
+              "article:nth-child(1) > dl > .items-start.gap-2.flex:nth-child(1) > div > dt",
+              "article:nth-child(1) > dl > .items-start.gap-2.flex:nth-child(1) > div > dd:nth-child(2)",
+              "article:nth-child(1) > dl > .items-start.gap-2.flex:nth-child(1) > div > dd:nth-child(3)",
+              "article:nth-child(1) > dl > .items-start.gap-2.flex:nth-child(2) > div > dt",
+              "article:nth-child(1) > dl > .items-start.gap-2.flex:nth-child(2) > div > dd",
+              "article:nth-child(1) > dl > .items-start.gap-2.flex:nth-child(3) > div > dt",
+              "article:nth-child(1) > dl > .items-start.gap-2.flex:nth-child(3) > div > dd:nth-child(2)",
+              "article:nth-child(1) > dl > .items-start.gap-2.flex:nth-child(3) > div > dd:nth-child(3)"
+            ]
+          },
+          {
+            "id": "label-content-name-mismatch",
+            "impact": "serious",
+            "help": "Elements must have their visible text as part of their accessible name",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/label-content-name-mismatch?application=playwright",
+            "wcag": [
+              "wcag253"
+            ],
+            "bestPractice": false,
+            "count": 1,
+            "elements": [
+              "header > a[aria-label=\"Go to leaderboard\"][href=\"/\"]"
+            ]
+          }
+        ]
+      },
+      "status": 200,
+      "finalUrl": "/my-events",
+      "smallTargets": {
+        "count": 38,
+        "controls": [
+          "a \"Go to leaderboard\" 177x36",
+          "button \"Open menu\" 40x40",
+          "button \"Request Topic Tag\" 169x38",
+          "a \"New event\" 117x38",
+          "a \"Upcoming 4\" 123x38",
+          "a \"Drafts 1\" 93x38",
+          "a \"Past 1\" 81x38",
+          "a \"On hold 1\" 104x38",
+          "a \"Cancelled 1\" 118x38",
+          "a \"Applicants\" 96x36 (x4)",
+          "a \"Scan attendance\" 136x36 (x4)",
+          "a \"QR codes\" 88x36 (x4)",
+          "a \"Give points by import\" 165x36 (x4)",
+          "a \"Edit\" 52x36 (x4)",
+          "button \"Put on hold\" 100x36 (x4)",
+          "button \"Cancel event\" 111x36 (x4)",
+          "button \"Delete\" 67x36"
+        ]
+      },
+      "lighthouse": {
+        "score": 85,
+        "finalUrl": "/my-events",
+        "failing": [
+          {
+            "id": "color-contrast",
+            "title": "Background and foreground colors do not have a sufficient contrast ratio.",
+            "weight": 7,
+            "items": 4
+          },
+          {
+            "id": "definition-list",
+            "title": "`<dl>`'s do not contain only properly-ordered `<dt>` and `<dd>` groups, `<script>`, `<template>` or `<div>` elements.",
+            "weight": 7,
+            "items": 4
+          },
+          {
+            "id": "dlitem",
+            "title": "Definition list items are not wrapped in `<dl>` elements",
+            "weight": 7,
+            "items": 44
+          },
+          {
+            "id": "label-content-name-mismatch",
+            "title": "Elements with visible text labels do not have matching accessible names.",
+            "weight": 0,
+            "items": 1
+          }
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "who": "Organiser (Ivan)",
+      "name": "Create event",
+      "route": "/events/create",
+      "axe": {
+        "desktop": [
+          {
+            "id": "label-content-name-mismatch",
+            "impact": "serious",
+            "help": "Elements must have their visible text as part of their accessible name",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/label-content-name-mismatch?application=playwright",
+            "wcag": [
+              "wcag253"
+            ],
+            "bestPractice": false,
+            "count": 1,
+            "elements": [
+              ".px-5 > a[aria-label=\"Go to leaderboard\"][href=\"/\"]"
+            ]
+          }
+        ],
+        "phone": [
+          {
+            "id": "label-content-name-mismatch",
+            "impact": "serious",
+            "help": "Elements must have their visible text as part of their accessible name",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/label-content-name-mismatch?application=playwright",
+            "wcag": [
+              "wcag253"
+            ],
+            "bestPractice": false,
+            "count": 1,
+            "elements": [
+              "header > a[aria-label=\"Go to leaderboard\"][href=\"/\"]"
+            ]
+          }
+        ]
+      },
+      "status": 200,
+      "finalUrl": "/events/create",
+      "smallTargets": {
+        "count": 17,
+        "controls": [
+          "a \"Go to leaderboard\" 177x36",
+          "button \"Open menu\" 40x40",
+          "input[text] \"\" 316x42 (x2)",
+          "select \"Choose a tag… Exam Preparation (academic\" 316x40",
+          "select \"Choose a topic… Faculty of Informatics D\" 316x40",
+          "select \"Invited students only\" 316x40",
+          "input[number] \"30\" 316x42",
+          "input[number] \"10\" 316x42",
+          "input[radio] \"fcfs\" 316x40",
+          "input[datetime-local] \"\" 316x42 (x4)",
+          "input[checkbox] \"on\" 316x40",
+          "button \"Save as draft\" 358x42",
+          "button \"Publish event\" 358x40"
+        ]
+      },
+      "lighthouse": {
+        "score": 100,
+        "finalUrl": "/events/create",
+        "failing": [
+          {
+            "id": "label-content-name-mismatch",
+            "title": "Elements with visible text labels do not have matching accessible names.",
+            "weight": 0,
+            "items": 1
+          }
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "who": "Organiser (Ivan)",
+      "name": "Edit event",
+      "route": "/events/1/edit",
+      "axe": {
+        "desktop": [
+          {
+            "id": "label-content-name-mismatch",
+            "impact": "serious",
+            "help": "Elements must have their visible text as part of their accessible name",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/label-content-name-mismatch?application=playwright",
+            "wcag": [
+              "wcag253"
+            ],
+            "bestPractice": false,
+            "count": 1,
+            "elements": [
+              ".px-5 > a[aria-label=\"Go to leaderboard\"][href=\"/\"]"
+            ]
+          }
+        ],
+        "phone": [
+          {
+            "id": "label-content-name-mismatch",
+            "impact": "serious",
+            "help": "Elements must have their visible text as part of their accessible name",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/label-content-name-mismatch?application=playwright",
+            "wcag": [
+              "wcag253"
+            ],
+            "bestPractice": false,
+            "count": 1,
+            "elements": [
+              "header > a[aria-label=\"Go to leaderboard\"][href=\"/\"]"
+            ]
+          }
+        ]
+      },
+      "status": 200,
+      "finalUrl": "/events/1/edit",
+      "smallTargets": {
+        "count": 19,
+        "controls": [
+          "a \"Go to leaderboard\" 177x36",
+          "button \"Open menu\" 40x40",
+          "a \"Organized by me\" 129x20",
+          "a \"Applied Students\" 137x38",
+          "a \"Point Crediting\" 123x38",
+          "a \"QR codes\" 86x38",
+          "input[text] \"SQL Joins Workshop\" 316x42",
+          "select \"Choose a tag… Exam Preparation (academic\" 316x40",
+          "input[text] \"Room 2.14, Informatics Building\" 316x42",
+          "select \"Choose a topic… Databases\" 316x40",
+          "select \"Everyone in Databases Everyone in Facult\" 316x40",
+          "input[number] \"2\" 316x42",
+          "input[number] \"15\" 316x42",
+          "input[radio] \"fcfs\" 316x40",
+          "input[datetime-local] \"2026-11-02T11:01\" 316x42",
+          "input[datetime-local] \"2026-11-02T13:01\" 316x42",
+          "input[datetime-local] \"2026-11-02T10:01\" 316x42",
+          "input[datetime-local] \"2026-11-16T11:01\" 316x42",
+          "button \"Save changes\" 358x40"
+        ]
+      },
+      "lighthouse": {
+        "score": 100,
+        "finalUrl": "/events/1/edit",
+        "failing": [
+          {
+            "id": "label-content-name-mismatch",
+            "title": "Elements with visible text labels do not have matching accessible names.",
+            "weight": 0,
+            "items": 1
+          }
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "who": "Organiser (Ivan)",
+      "name": "Applicants",
+      "route": "/events/1/applicants",
+      "axe": {
+        "desktop": [
+          {
+            "id": "label-content-name-mismatch",
+            "impact": "serious",
+            "help": "Elements must have their visible text as part of their accessible name",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/label-content-name-mismatch?application=playwright",
+            "wcag": [
+              "wcag253"
+            ],
+            "bestPractice": false,
+            "count": 1,
+            "elements": [
+              ".px-5 > a[aria-label=\"Go to leaderboard\"][href=\"/\"]"
+            ]
+          }
+        ],
+        "phone": [
+          {
+            "id": "label-content-name-mismatch",
+            "impact": "serious",
+            "help": "Elements must have their visible text as part of their accessible name",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/label-content-name-mismatch?application=playwright",
+            "wcag": [
+              "wcag253"
+            ],
+            "bestPractice": false,
+            "count": 1,
+            "elements": [
+              "header > a[aria-label=\"Go to leaderboard\"][href=\"/\"]"
+            ]
+          }
+        ]
+      },
+      "status": 200,
+      "finalUrl": "/events/1/applicants",
+      "smallTargets": {
+        "count": 6,
+        "controls": [
+          "a \"Go to leaderboard\" 177x36",
+          "button \"Open menu\" 40x40",
+          "a \"Back to my events\" 138x20",
+          "button \"10 pts\" 50x36 (x2)",
+          "button \"30 pts\" 50x36"
+        ]
+      },
+      "lighthouse": {
+        "score": 100,
+        "finalUrl": "/events/1/applicants",
+        "failing": [
+          {
+            "id": "label-content-name-mismatch",
+            "title": "Elements with visible text labels do not have matching accessible names.",
+            "weight": 0,
+            "items": 1
+          }
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "who": "Organiser (Ivan)",
+      "name": "Scan attendance (passport)",
+      "route": "/events/3/scan",
+      "axe": {
+        "desktop": [
+          {
+            "id": "label-content-name-mismatch",
+            "impact": "serious",
+            "help": "Elements must have their visible text as part of their accessible name",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/label-content-name-mismatch?application=playwright",
+            "wcag": [
+              "wcag253"
+            ],
+            "bestPractice": false,
+            "count": 1,
+            "elements": [
+              ".px-5 > a[aria-label=\"Go to leaderboard\"][href=\"/\"]"
+            ]
+          }
+        ],
+        "phone": [
+          {
+            "id": "label-content-name-mismatch",
+            "impact": "serious",
+            "help": "Elements must have their visible text as part of their accessible name",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/label-content-name-mismatch?application=playwright",
+            "wcag": [
+              "wcag253"
+            ],
+            "bestPractice": false,
+            "count": 1,
+            "elements": [
+              "header > a[aria-label=\"Go to leaderboard\"][href=\"/\"]"
+            ]
+          }
+        ]
+      },
+      "status": 200,
+      "finalUrl": "/events/3/scan",
+      "smallTargets": {
+        "count": 4,
+        "controls": [
+          "a \"Go to leaderboard\" 177x36",
+          "button \"Open menu\" 40x40",
+          "a \"Back to my events\" 138x20",
+          "a \"View applicants list\" 122x20"
+        ]
+      },
+      "lighthouse": {
+        "score": 100,
+        "finalUrl": "/events/3/scan",
+        "failing": [
+          {
+            "id": "label-content-name-mismatch",
+            "title": "Elements with visible text labels do not have matching accessible names.",
+            "weight": 0,
+            "items": 1
+          }
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "who": "Organiser (Ivan)",
+      "name": "QR codes",
+      "route": "/events/3/qr-codes",
+      "axe": {
+        "desktop": [
+          {
+            "id": "label-content-name-mismatch",
+            "impact": "serious",
+            "help": "Elements must have their visible text as part of their accessible name",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/label-content-name-mismatch?application=playwright",
+            "wcag": [
+              "wcag253"
+            ],
+            "bestPractice": false,
+            "count": 1,
+            "elements": [
+              ".px-5 > a[aria-label=\"Go to leaderboard\"][href=\"/\"]"
+            ]
+          }
+        ],
+        "phone": [
+          {
+            "id": "label-content-name-mismatch",
+            "impact": "serious",
+            "help": "Elements must have their visible text as part of their accessible name",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/label-content-name-mismatch?application=playwright",
+            "wcag": [
+              "wcag253"
+            ],
+            "bestPractice": false,
+            "count": 1,
+            "elements": [
+              "header > a[aria-label=\"Go to leaderboard\"][href=\"/\"]"
+            ]
+          }
+        ]
+      },
+      "status": 200,
+      "finalUrl": "/events/3/qr-codes",
+      "smallTargets": {
+        "count": 6,
+        "controls": [
+          "a \"Go to leaderboard\" 177x36",
+          "button \"Open menu\" 40x40",
+          "a \"Organized by me\" 129x20",
+          "a \"Print 1 poster\" 135x38",
+          "input[number] \"1\" 316x42",
+          "button \"Revoke\" 73x36"
+        ]
+      },
+      "lighthouse": {
+        "score": 100,
+        "finalUrl": "/events/3/qr-codes",
+        "failing": [
+          {
+            "id": "label-content-name-mismatch",
+            "title": "Elements with visible text labels do not have matching accessible names.",
+            "weight": 0,
+            "items": 1
+          }
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "who": "Organiser (Ivan)",
+      "name": "Points import",
+      "route": "/events/3/points-import",
+      "axe": {
+        "desktop": [
+          {
+            "id": "label-content-name-mismatch",
+            "impact": "serious",
+            "help": "Elements must have their visible text as part of their accessible name",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/label-content-name-mismatch?application=playwright",
+            "wcag": [
+              "wcag253"
+            ],
+            "bestPractice": false,
+            "count": 1,
+            "elements": [
+              ".px-5 > a[aria-label=\"Go to leaderboard\"][href=\"/\"]"
+            ]
+          }
+        ],
+        "phone": [
+          {
+            "id": "label-content-name-mismatch",
+            "impact": "serious",
+            "help": "Elements must have their visible text as part of their accessible name",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/label-content-name-mismatch?application=playwright",
+            "wcag": [
+              "wcag253"
+            ],
+            "bestPractice": false,
+            "count": 1,
+            "elements": [
+              "header > a[aria-label=\"Go to leaderboard\"][href=\"/\"]"
+            ]
+          }
+        ]
+      },
+      "status": 200,
+      "finalUrl": "/events/3/points-import",
+      "smallTargets": {
+        "count": 3,
+        "controls": [
+          "a \"Go to leaderboard\" 177x36",
+          "button \"Open menu\" 40x40",
+          "a \"Organized by me\" 129x20"
+        ]
+      },
+      "lighthouse": {
+        "score": 100,
+        "finalUrl": "/events/3/points-import",
+        "failing": [
+          {
+            "id": "label-content-name-mismatch",
+            "title": "Elements with visible text labels do not have matching accessible names.",
+            "weight": 0,
+            "items": 1
+          }
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "who": "Organiser (Ivan)",
+      "name": "Topics",
+      "route": "/topics",
+      "axe": {
+        "desktop": [
+          {
+            "id": "label-content-name-mismatch",
+            "impact": "serious",
+            "help": "Elements must have their visible text as part of their accessible name",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/label-content-name-mismatch?application=playwright",
+            "wcag": [
+              "wcag253"
+            ],
+            "bestPractice": false,
+            "count": 1,
+            "elements": [
+              ".px-5 > a[aria-label=\"Go to leaderboard\"][href=\"/\"]"
+            ]
+          }
+        ],
+        "phone": [
+          {
+            "id": "label-content-name-mismatch",
+            "impact": "serious",
+            "help": "Elements must have their visible text as part of their accessible name",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/label-content-name-mismatch?application=playwright",
+            "wcag": [
+              "wcag253"
+            ],
+            "bestPractice": false,
+            "count": 1,
+            "elements": [
+              ".sticky > a[aria-label=\"Go to leaderboard\"][href=\"/\"]"
+            ]
+          }
+        ]
+      },
+      "status": 200,
+      "finalUrl": "/topics/2",
+      "smallTargets": {
+        "count": 2,
+        "controls": [
+          "a \"Go to leaderboard\" 177x36",
+          "button \"Open menu\" 40x40"
+        ]
+      },
+      "lighthouse": {
+        "score": 100,
+        "finalUrl": "/topics/2",
+        "failing": [
+          {
+            "id": "label-content-name-mismatch",
+            "title": "Elements with visible text labels do not have matching accessible names.",
+            "weight": 0,
+            "items": 1
+          }
+        ],
+        "warnings": [
+          "The page may not be loading as expected because your test URL (http://127.0.0.1:8099/topics) was redirected to http://127.0.0.1:8099/topics/2. Try testing the second URL directly."
+        ]
+      }
+    }
+  ]
+}

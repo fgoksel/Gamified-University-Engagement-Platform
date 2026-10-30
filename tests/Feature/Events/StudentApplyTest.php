@@ -108,8 +108,9 @@ class StudentApplyTest extends TopicTestCase
         $event = $this->event();
         $student = $this->student($this->university, 'UNI001');
 
+        // Task #71: the event is not even listed for someone who is not assigned to its node.
         $this->actingAs($student)->get('/events')
-            ->assertInertia(fn (Assert $page) => $page->where('events.data.0.can_apply', false));
+            ->assertInertia(fn (Assert $page) => $page->has('events.data', 0));
 
         $this->actingAs($student)->post("/events/{$event->id}/apply")
             ->assertSessionHasErrors(['event' => 'You do not belong to the audience for this event.']);
