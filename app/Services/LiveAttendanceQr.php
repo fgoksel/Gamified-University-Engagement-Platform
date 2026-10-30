@@ -178,6 +178,9 @@ class LiveAttendanceQr
             'url' => $open ? route('qr.show', ['code' => $this->payload($session)]) : null,
             'image' => $open ? route('events.checkin.image', $event) : null,
             'step_seconds' => $this->step(),
+            // How long the previous code still works after the change, so the screen (Task #81) never keeps
+            // showing a code that scans no longer accept.
+            'margin_seconds' => $this->margin(),
             'seconds_left' => $open ? $this->step() - (now()->getTimestamp() % $this->step()) : null,
             // The screen's countdown (Task #81) runs to the moment the code changes, not to the next whole second.
             'ms_left' => $open ? $this->msLeft() : null,

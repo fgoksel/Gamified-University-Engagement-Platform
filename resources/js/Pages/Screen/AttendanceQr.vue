@@ -34,6 +34,7 @@ const RETRY_MS = 2000;
 // Asking for the next code just after it changes, never at the very edge of a step.
 const AFTER_CHANGE_MS = 300;
 // A picture this long past its change is no longer shown: the code may have stopped working.
+// Never longer than the server still accepts the old code (its margin, 2 s by default).
 const STALE_MS = 1500;
 
 const state = ref(props.checkin);
@@ -61,11 +62,14 @@ const secondsLeft = computed(() => Math.max(1, Math.ceil(msLeft.value / 1000)));
 const progress = computed(() =>
     Math.min(100, (msLeft.value / (state.value.step_seconds * 1000)) * 100),
 );
+const staleMs = computed(() =>
+    Math.min(STALE_MS, state.value.margin_seconds * 1000),
+);
 const codeVisible = computed(
     () =>
         state.value.open &&
         picture.value !== null &&
-        now.value < changeAt.value + STALE_MS,
+        now.value < changeAt.value + staleMs.value,
 );
 
 const placeholder = computed(() => {
@@ -91,9 +95,15 @@ const placeholder = computed(() => {
 });
 
 let refreshTimer = null;
+let staleTimer = null;
 let clock = null;
 let unmounted = false;
 let drawn = 0;
+
+// The clock of the countdown, at least at a given moment (a timer may fire a hair early).
+function tick(atLeast = 0) {
+    now.value = Math.max(performance.now(), atLeast);
+}
 
 function schedule(delay) {
     clearTimeout(refreshTimer);
@@ -109,9 +119,22 @@ function setPicture(next) {
     picture.value = next;
 }
 
+// A new picture goes up together with the moment its code changes, so the countdown starts
+// with the picture. The moment it goes stale gets a tick of its own: the 200 ms clock could
+// leave up a code that scans no longer accept.
+function showPicture(url, changesAt) {
+    tick();
+    setPicture(url);
+    changeAt.value = changesAt;
+
+    const staleAt = changesAt + staleMs.value;
+    clearTimeout(staleTimer);
+    staleTimer = setTimeout(() => tick(staleAt), staleAt - performance.now());
+}
+
 // The server draws the code that is showing now. Fetched once and shown from memory, so
 // the picture cannot change under the countdown. False when there is no code to draw.
-async function drawCode() {
+async function drawCode(changesAt) {
     const ticket = ++drawn;
     const response = await fetch(`${base}/image.svg`, {
         credentials: "same-origin",
@@ -126,7 +149,7 @@ async function drawCode() {
 
     // A newer picture is already on its way.
     if (ticket === drawn && !unmounted) {
-        setPicture(URL.createObjectURL(blob));
+        showPicture(URL.createObjectURL(blob), changesAt);
     }
 
     return true;
@@ -137,12 +160,13 @@ async function apply(data) {
     offline.value = false;
 
     if (data.open) {
-        changeAt.value = performance.now() + data.ms_left;
+        // When this code changes, timed as the answer arrives. Its countdown starts when its
+        // picture shows: until then the old picture keeps its own limit.
+        const changesAt = performance.now() + data.ms_left;
 
-        if (await drawCode()) {
+        if (await drawCode(changesAt)) {
             schedule(
-                Math.max(0, changeAt.value - performance.now()) +
-                    AFTER_CHANGE_MS,
+                Math.max(0, changesAt - performance.now()) + AFTER_CHANGE_MS,
             );
         } else {
             // Paused or stopped on another device a moment ago: ask again.
@@ -276,6 +300,8 @@ function onFullscreenChange() {
 
 function onVisibilityChange() {
     if (!document.hidden) {
+        // Timers sleep while the page is hidden: a picture that went stale meanwhile goes at once.
+        tick();
         refresh();
     }
 }
@@ -283,9 +309,7 @@ function onVisibilityChange() {
 onMounted(() => {
     canFullscreen.value = document.fullscreenEnabled === true;
     document.title = `Attendance QR – ${props.event.title}`;
-    clock = setInterval(() => {
-        now.value = performance.now();
-    }, 200);
+    clock = setInterval(tick, 200);
     document.addEventListener("visibilitychange", onVisibilityChange);
     document.addEventListener("fullscreenchange", onFullscreenChange);
 
@@ -296,6 +320,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
     unmounted = true;
     clearTimeout(refreshTimer);
+    clearTimeout(staleTimer);
     clearInterval(clock);
     document.removeEventListener("visibilitychange", onVisibilityChange);
     document.removeEventListener("fullscreenchange", onFullscreenChange);

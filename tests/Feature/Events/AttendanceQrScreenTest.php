@@ -114,7 +114,8 @@ class AttendanceQrScreenTest extends TopicTestCase
                 ->where('checkin.open', false)
                 ->where('checkin.paused', false)
                 ->where('checkin.code', null)
-                ->where('checkin.step_seconds', 5));
+                ->where('checkin.step_seconds', 5)
+                ->where('checkin.margin_seconds', 2));
 
         $this->assertSame(0, EventCheckinSession::count());
     }
@@ -134,6 +135,16 @@ class AttendanceQrScreenTest extends TopicTestCase
                 ->where('checkin.code', app(LiveAttendanceQr::class)->payload($session))
                 ->where('checkin.ms_left', 2000) // three seconds into a five-second step
                 ->where('checkin.refusal', null));
+    }
+
+    public function test_the_screen_learns_how_long_an_old_code_still_works(): void
+    {
+        // With a shorter margin the screen must hide an old picture sooner: scans of it are refused.
+        config(['checkin.margin_seconds' => 1]);
+
+        $this->actingAs($this->organiser)->getJson("/events/{$this->event->id}/checkin")
+            ->assertOk()
+            ->assertJson(['step_seconds' => 5, 'margin_seconds' => 1]);
     }
 
     public function test_show_attendance_qr_shows_a_paused_code_again(): void
