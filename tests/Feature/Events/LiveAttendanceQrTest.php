@@ -16,12 +16,14 @@ use App\Models\User;
 use App\Services\LiveAttendanceQr;
 use App\Services\QrTokenService;
 use Illuminate\Support\Carbon;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Feature\Topics\TopicTestCase;
 
 /**
- * Task #80 (meeting of 26 Oct, section 3): the live attendance code changes every 10 seconds.
- * The server accepts a scan only from an accepted student, inside the points window, with the
- * current or the previous code (about 20 seconds), once per student and event.
+ * Task #80 (meeting of 26 Oct, section 3): the live attendance code changes every few seconds
+ * (5 by default, a setting between 3 and 8). The server accepts a scan only from an accepted
+ * student, inside the points window, with the code that is showing or, for a margin of 2 seconds
+ * (a setting between 0 and 2), the one that was showing a moment ago, once per student and event.
  */
 class LiveAttendanceQrTest extends TopicTestCase
 {
@@ -61,8 +63,18 @@ class LiveAttendanceQrTest extends TopicTestCase
         // An event that started an hour ago and ends in two: the middle of the event.
         $this->event = $this->event();
 
-        // Stand still inside a 10-second step, three seconds in, so no test runs over a boundary.
-        $this->travelTo(Carbon::createFromTimestamp(intdiv(time(), 10) * 10 + 3));
+        // Stand still inside a step, three seconds in, so no test runs over the moment a code changes.
+        $this->standAt(3);
+    }
+
+    /**
+     * Stand still at a given second inside a step.
+     */
+    private function standAt(int $secondsIntoStep, ?int $step = null): void
+    {
+        $step ??= $this->live()->step();
+
+        $this->travelTo(Carbon::createFromTimestamp(intdiv(time(), $step) * $step + $secondsIntoStep));
     }
 
     private function event(array $attributes = []): Event
@@ -120,18 +132,20 @@ class LiveAttendanceQrTest extends TopicTestCase
         $code = $this->open();
 
         $this->assertMatchesRegularExpression('/^LV1\.\d+\.\d+\.[a-f0-9]{32}$/', $code);
-        $this->assertSame(intdiv(now()->getTimestamp(), 10), (int) explode('.', $code)[2]);
+        $this->assertSame(intdiv(now()->getTimestamp(), $this->live()->step()), (int) explode('.', $code)[2]);
     }
 
-    public function test_the_code_changes_every_ten_seconds_and_not_before(): void
+    public function test_the_code_changes_every_five_seconds_and_not_before(): void
     {
+        $this->assertSame(5, $this->live()->step());
+
         $session = $this->live()->open($this->organiser, $this->event);
         $first = $this->live()->payload($session);
 
-        $this->travel(6)->seconds(); // still the same step
+        $this->travel(1)->seconds(); // four seconds into the step: still the same code
         $this->assertSame($first, $this->live()->payload($session));
 
-        $this->travel(5)->seconds(); // into the next step
+        $this->travel(1)->seconds(); // the next step
         $this->assertNotSame($first, $this->live()->payload($session));
     }
 
@@ -147,22 +161,22 @@ class LiveAttendanceQrTest extends TopicTestCase
         $this->assertSame($this->organiser->id, $row->credited_by_id);
     }
 
-    public function test_the_code_that_was_showing_a_moment_ago_still_works(): void
+    public function test_the_code_that_was_showing_a_moment_ago_still_works_for_the_margin(): void
     {
         $student = $this->student('LIVE02');
         $code = $this->open();
 
-        $this->travel(10)->seconds(); // one step later: about 10 to 20 seconds old
+        $this->travel(3)->seconds(); // one second into the next step: inside the two-second margin
 
         $this->scan($student, $code)->assertOk()->assertJson(['outcome' => 'credited']);
     }
 
-    public function test_a_code_older_than_about_twenty_seconds_is_refused(): void
+    public function test_the_previous_code_is_refused_once_the_margin_is_over(): void
     {
         $student = $this->student('LIVE03');
         $code = $this->open();
 
-        $this->travel(20)->seconds(); // two steps later
+        $this->travel(4)->seconds(); // two seconds into the next step: the margin is over
 
         $this->scan($student, $code)->assertStatus(409)->assertJson(['reason' => 'expired']);
         $this->assertSame(0, PointTransaction::count());
@@ -173,9 +187,41 @@ class LiveAttendanceQrTest extends TopicTestCase
         $absent = $this->student('LIVE04');
         $code = $this->open();
 
-        $this->travel(30)->seconds();
+        $this->travel(8)->seconds(); // long enough to photograph it, send it and open it
 
         $this->scan($absent, $code)->assertStatus(409)->assertJson(['reason' => 'expired']);
+    }
+
+    /**
+     * @return array<string, array{int, int}>
+     */
+    public static function windows(): array
+    {
+        return [
+            'the defaults' => [5, 2],
+            'the longest step' => [8, 2],
+            'no margin' => [5, 0],
+            'the shortest step with a short margin' => [3, 1],
+        ];
+    }
+
+    #[DataProvider('windows')]
+    public function test_a_code_works_for_its_step_plus_the_margin_and_not_a_second_longer(int $step, int $margin): void
+    {
+        config(['checkin.step_seconds' => $step, 'checkin.margin_seconds' => $margin]);
+
+        // One student for every second, from the moment the code appears until well after it is dead.
+        $students = collect(range(0, $step + $margin + 2))->map(fn (int $second) => $this->student('SWP'.str_pad((string) $second, 3, '0', STR_PAD_LEFT)));
+
+        $start = Carbon::createFromTimestamp(intdiv(time(), $step) * $step);
+        $this->travelTo($start);
+        $code = $this->open();
+
+        foreach ($students as $second => $student) {
+            $this->travelTo($start->copy()->addSeconds($second));
+
+            $this->scan($student, $code)->assertStatus($second < $step + $margin ? 200 : 409);
+        }
     }
 
     public function test_a_second_scan_adds_no_credit(): void
@@ -197,7 +243,7 @@ class LiveAttendanceQrTest extends TopicTestCase
     {
         $student = $this->student('LIVE06');
         $session = $this->live()->open($this->organiser, $this->event);
-        $slot = intdiv(now()->getTimestamp(), 10);
+        $slot = intdiv(now()->getTimestamp(), $this->live()->step());
         $real = $this->live()->payload($session);
 
         foreach ([
@@ -222,6 +268,38 @@ class LiveAttendanceQrTest extends TopicTestCase
 
         // Accepted for the other event only: the code belongs to the first one.
         $this->scan($student, $code)->assertStatus(403)->assertJson(['reason' => 'not_registered']);
+    }
+
+    public function test_the_settings_are_held_inside_their_ranges(): void
+    {
+        // Out of range: the nearest allowed value. Not a number (an empty line in .env): the default.
+        foreach ([[99, 8], [8, 8], [5, 5], [3, 3], [1, 3], [0, 3], [-4, 3], ['6', 6], ['', 5], [null, 5], ['abc', 5]] as [$set, $expected]) {
+            config(['checkin.step_seconds' => $set]);
+            $this->assertSame($expected, $this->live()->step(), 'step for '.var_export($set, true));
+        }
+
+        foreach ([[9, 2], [2, 2], [1, 1], [0, 0], [-3, 0], ['', 2], [null, 2], ['x', 2]] as [$set, $expected]) {
+            config(['checkin.margin_seconds' => $set]);
+            $this->assertSame($expected, $this->live()->margin(), 'margin for '.var_export($set, true));
+        }
+    }
+
+    public function test_the_step_setting_changes_how_long_a_code_is_shown(): void
+    {
+        config(['checkin.step_seconds' => 8]);
+        $this->standAt(3, 8);
+
+        $session = $this->live()->open($this->organiser, $this->event);
+        $first = $this->live()->payload($session);
+
+        $this->actingAs($this->organiser)->getJson("/events/{$this->event->id}/checkin")
+            ->assertJson(['step_seconds' => 8, 'seconds_left' => 5]);
+
+        $this->travel(4)->seconds(); // seven seconds into an eight-second step: the same code
+        $this->assertSame($first, $this->live()->payload($session));
+
+        $this->travel(1)->seconds(); // the next step
+        $this->assertNotSame($first, $this->live()->payload($session));
     }
 
     public function test_only_accepted_students_get_points(): void
@@ -329,8 +407,8 @@ class LiveAttendanceQrTest extends TopicTestCase
                 'open' => true,
                 'paused' => false,
                 'code' => $code,
-                'step_seconds' => 10,
-                'seconds_left' => 7, // three seconds into the step
+                'step_seconds' => 5,
+                'seconds_left' => 2, // three seconds into a five-second step
                 'checked_in' => 1,
                 'accepted' => 3,
             ])
@@ -372,7 +450,7 @@ class LiveAttendanceQrTest extends TopicTestCase
         $student = $this->student('LIVE17');
         $url = "/events/{$this->event->id}/checkin/status";
 
-        $this->actingAs($student)->getJson($url)->assertOk()->assertExactJson(['open' => false, 'accepted' => true, 'credited' => false, 'step_seconds' => 10]);
+        $this->actingAs($student)->getJson($url)->assertOk()->assertExactJson(['open' => false, 'accepted' => true, 'credited' => false, 'step_seconds' => 5]);
 
         $code = $this->open();
         $this->actingAs($student)->getJson($url)->assertOk()->assertJson(['open' => true]);

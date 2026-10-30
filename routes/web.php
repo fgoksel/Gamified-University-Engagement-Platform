@@ -134,7 +134,7 @@ Route::middleware('auth')->group(function () {
             Route::post('/events/{event}/qr-tokens/{token}/revoke', [EventQrController::class, 'revoke'])
                 ->whereNumber(['event', 'token'])->name('events.qr.revoke');
 
-            // Live attendance check-in (Task #80): the code that changes every 10 seconds. EventPolicy::manageQr
+            // Live attendance check-in (Task #80): the code that changes every few seconds. EventPolicy::manageQr
             // is checked in the service; students only ask whether check-in is open.
             Route::prefix('events/{event}/checkin')->whereNumber('event')->name('events.checkin.')->group(function () {
                 Route::get('/', [EventCheckinController::class, 'state'])->name('state');

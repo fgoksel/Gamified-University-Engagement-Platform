@@ -8,7 +8,7 @@ return new class extends Migration
 {
     /**
      * Live attendance check-in (Task #80, meeting of 26 Oct): the organiser shows a QR code that
-     * changes every 10 seconds. A session is the time the code is being shown for an event.
+     * changes every few seconds. A session is the time the code is being shown for an event.
      * The code itself is never stored: it is computed from the session's secret and the time,
      * so a session only needs to say whether check-in is open, paused or over.
      */

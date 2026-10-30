@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Gate;
 
 /**
  * Live attendance check-in (Task #80): the organiser opens, pauses and stops the code that
- * changes every 10 seconds, and reads what it shows now. Needs the QR capability at the event's
+ * changes every few seconds, and reads what it shows now. Needs the QR capability at the event's
  * topic (EventPolicy::manageQr). Students ask only whether check-in is open. The screens come
  * with the organiser's "Show attendance QR" view and the student's "Check-in is open" banner.
  */
