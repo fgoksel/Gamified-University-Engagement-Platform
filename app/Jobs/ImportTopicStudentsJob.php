@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Enums\UserRole;
+use App\Imports\CsvDelimiter;
 use App\Models\RoleAssignment;
 use App\Models\RoleDefinition;
 use App\Models\Semester;
@@ -100,11 +101,7 @@ class ImportTopicStudentsJob extends ImportCsvJob
             fclose($stream);
         }
 
-        return ['delimiter' => match (true) {
-            str_contains($heading, ';') => ';',
-            str_contains($heading, "\t") => "\t",
-            default => ',',
-        }];
+        return ['delimiter' => CsvDelimiter::fromHeading($heading)];
     }
 
     protected function prepare(): void

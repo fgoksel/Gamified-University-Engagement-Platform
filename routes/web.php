@@ -13,6 +13,7 @@ use App\Http\Controllers\EventCheckinController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\EventCreditController;
 use App\Http\Controllers\EventEditController;
+use App\Http\Controllers\EventPointsImportController;
 use App\Http\Controllers\EventQrCodeController;
 use App\Http\Controllers\EventQrController;
 use App\Http\Controllers\EventStatusController;
@@ -106,6 +107,15 @@ Route::middleware('auth')->group(function () {
             // Checklist mode: credit every ticked student in one request (Task #42)
             Route::post('/events/{event}/credit/bulk', [EventCreditController::class, 'creditMany'])
                 ->name('events.credit.bulk');
+
+            // Organizer: give an event's points to an imported list of students (Task #85).
+            // EventPolicy::credit is checked in the controller, like the routes above.
+            Route::get('/events/{event}/points-import', [EventPointsImportController::class, 'show'])
+                ->whereNumber('event')->name('events.points-import');
+            Route::post('/events/{event}/points-import/preview', [EventPointsImportController::class, 'preview'])
+                ->whereNumber('event')->name('events.points-import.preview');
+            Route::post('/events/{event}/points-import', [EventPointsImportController::class, 'store'])
+                ->whereNumber('event')->name('events.points-import.store');
 
             // Event Form: create an event as a draft or publish it (Task #38, UC-1.3)
             // Creating events follows the events.create capability at a topic (Task #65),
