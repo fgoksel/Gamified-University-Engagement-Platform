@@ -31,6 +31,9 @@ class PointLedger
 
     public const MILESTONE = 'milestone';
 
+    /** The live QR code the organiser shows during the event, changing every 10 seconds (Task #80). */
+    public const QR_LIVE = 'qr_live';
+
     public function __construct(private TopicAccess $access) {}
 
     /**
