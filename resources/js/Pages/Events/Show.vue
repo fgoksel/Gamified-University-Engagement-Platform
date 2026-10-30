@@ -53,12 +53,13 @@ const placesText = computed(() => {
             <ArrowLeft class="size-4" /> All events
         </Link>
 
-        <!-- Task #82: while the organiser shows the attendance code, an accepted student is told to scan it -->
+        <!-- Task #82: while the organiser shows the attendance code, an accepted student is told to scan it.
+             Check-in also works on a completed event, until its points end date. -->
         <CheckinBanner
             v-if="
                 event.my_status === 'accepted' &&
                 event.qr_enabled &&
-                event.status === 'published'
+                ['published', 'completed'].includes(event.status)
             "
             :event-id="event.id"
             :points="event.points"

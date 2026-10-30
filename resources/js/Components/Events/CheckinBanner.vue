@@ -7,6 +7,11 @@ import { QrCode } from "@lucide/vue";
 // as the organiser is showing the attendance code. It asks the server again every few
 // seconds, so it appears when check-in opens and goes away when it is paused, stopped or
 // done. It never holds the code: the student scans it at the event.
+//
+// How often it asks does not follow the code, which changes every 5 seconds or so: it only has
+// to notice that check-in opened or closed, and a code step would double the load for nothing.
+const POLL_SECONDS = 10;
+
 const props = defineProps({
     eventId: { type: Number, required: true },
     points: { type: Number, default: null },
@@ -44,12 +49,9 @@ async function refresh() {
 function start() {
     stop();
     refresh();
-    timer = setInterval(
-        () => {
-            if (!document.hidden) refresh();
-        },
-        (status.value.step_seconds ?? 10) * 1000,
-    );
+    timer = setInterval(() => {
+        if (!document.hidden) refresh();
+    }, POLL_SECONDS * 1000);
 }
 
 function stop() {
