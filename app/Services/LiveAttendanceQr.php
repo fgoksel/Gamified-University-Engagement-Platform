@@ -15,15 +15,17 @@ use Illuminate\Support\Str;
 /**
  * Attendance with a live QR code (Task #80, meeting of 26 Oct, section 3).
  *
- * The organiser opens check-in when they choose and shows a code that changes every 10 seconds
- * (on a projector or their own phone). A student scans it in the app and gets the event's points.
+ * The organiser opens check-in when they choose and shows a code that changes every few seconds,
+ * 5 by default (on a projector or their own phone). A student scans it in the app and gets the
+ * event's points.
  *
  * What the QR holds is "LV1.<session id>.<time slot>.<signature>":
- *   - the time slot is the clock divided into 10-second steps, and the signature is an HMAC of the
- *     session and the slot with the application key and the session's secret, so nobody can make
- *     a code or work out the next one;
- *   - the current code and the one before it are accepted (about 20 seconds), which allows for a
- *     slow phone. A photo sent to an absent friend stops working within that time;
+ *   - the time slot is the clock divided into steps (config/checkin.php), and the signature is an
+ *     HMAC of the session and the slot with the application key and the session's secret, so nobody
+ *     can make a code or work out the next one;
+ *   - a code is accepted while it is showing, and for a margin of 1 or 2 seconds after the next one
+ *     appears, which allows for the time a phone needs to read it and send it (5 + 2 = 7 seconds at
+ *     most with the default settings). A photo sent to an absent friend is dead by then;
  *   - pausing hides the code and stops acceptance, stopping ends the session for good.
  *
  * A scan never gives points by itself. It goes through the same checks as every other QR code: an
@@ -34,13 +36,35 @@ class LiveAttendanceQr
 {
     public const PREFIX = 'LV1';
 
-    /** How many seconds one code is shown. */
-    public const STEP = 10;
+    /** Seconds one code is shown: the default, and the range the setting is held to (config/checkin.php). */
+    public const DEFAULT_STEP = 5;
 
-    /** How many earlier codes are still accepted (one: the code that was showing a moment ago). */
-    public const GRACE_STEPS = 1;
+    public const MIN_STEP = 3;
+
+    public const MAX_STEP = 8;
+
+    /** Seconds the previous code still works after a new one appears: the default, and the most allowed. */
+    public const DEFAULT_MARGIN = 2;
+
+    public const MAX_MARGIN = 2;
 
     public function __construct(private PointLedger $ledger) {}
+
+    /**
+     * How many seconds one code is shown (the setting, held between 3 and 8).
+     */
+    public function step(): int
+    {
+        return $this->setting('step_seconds', self::DEFAULT_STEP, self::MIN_STEP, self::MAX_STEP);
+    }
+
+    /**
+     * How many seconds the previous code still works after a new one appears (held between 0 and 2).
+     */
+    public function margin(): int
+    {
+        return $this->setting('margin_seconds', self::DEFAULT_MARGIN, 0, self::MAX_MARGIN);
+    }
 
     /**
      * The session that has not been stopped, if there is one.
@@ -153,8 +177,8 @@ class LiveAttendanceQr
             'code' => $open ? $this->payload($session) : null,
             'url' => $open ? route('qr.show', ['code' => $this->payload($session)]) : null,
             'image' => $open ? route('events.checkin.image', $event) : null,
-            'step_seconds' => self::STEP,
-            'seconds_left' => $open ? self::STEP - (now()->getTimestamp() % self::STEP) : null,
+            'step_seconds' => $this->step(),
+            'seconds_left' => $open ? $this->step() - (now()->getTimestamp() % $this->step()) : null,
             'checked_in' => $this->checkedIn($event),
             'accepted' => $this->accepted($event),
         ];
@@ -175,7 +199,7 @@ class LiveAttendanceQr
             'credited' => PointTransaction::query()
                 ->where('event_id', $event->id)->where('student_id', $student->id)
                 ->where('type', PointTransaction::CREDIT)->exists(),
-            'step_seconds' => self::STEP,
+            'step_seconds' => $this->step(),
         ];
     }
 
@@ -226,14 +250,21 @@ class LiveAttendanceQr
             throw new EventActionRefused('paused', 'Check-in is paused. Wait until the organiser shows the code again.', 409);
         }
 
-        $now = $this->slot();
+        $step = $this->step();
+        $seconds = now()->getTimestamp();
+        $current = intdiv($seconds, $step);
 
         // A code from the future cannot be real: it is made up.
-        if ((int) $slot > $now) {
+        if ((int) $slot > $current) {
             throw $invalid;
         }
 
-        if ((int) $slot < $now - self::GRACE_STEPS) {
+        // The code that is showing, or the one before it but only in the first seconds of the new
+        // step: the time a phone needs to read the code and send it, never a whole extra step.
+        $showing = (int) $slot === $current;
+        $justReplaced = (int) $slot === $current - 1 && $seconds % $step < $this->margin();
+
+        if (! $showing && ! $justReplaced) {
             throw new EventActionRefused('expired', 'This code has expired. Scan the code that is showing now.', 409);
         }
 
@@ -287,10 +318,21 @@ class LiveAttendanceQr
         }
     }
 
-    /** The current 10-second step of the clock. */
+    /** The current step of the clock. */
     private function slot(): int
     {
-        return intdiv(now()->getTimestamp(), self::STEP);
+        return intdiv(now()->getTimestamp(), $this->step());
+    }
+
+    /**
+     * A setting from config/checkin.php, held inside its range. Anything that is not a number
+     * (an empty line in .env) falls back to the default.
+     */
+    private function setting(string $key, int $default, int $min, int $max): int
+    {
+        $value = config("checkin.{$key}");
+
+        return is_numeric($value) ? max($min, min($max, (int) $value)) : $default;
     }
 
     private function signature(EventCheckinSession $session, int $slot): string

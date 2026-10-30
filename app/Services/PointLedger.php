@@ -36,7 +36,7 @@ class PointLedger
 
     public const MILESTONE = 'milestone';
 
-    /** The live QR code the organiser shows during the event, changing every 10 seconds (Task #80). */
+    /** The live QR code the organiser shows during the event, changing every few seconds (Task #80). */
     public const QR_LIVE = 'qr_live';
 
     /** A list of students imported by the organiser (Task #85). */
