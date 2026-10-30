@@ -27,7 +27,7 @@ class QrTokenService
 {
     public const MAX_STEPS = 10;
 
-    public function __construct(private PointLedger $ledger) {}
+    public function __construct(private PointLedger $ledger, private LiveAttendanceQr $live) {}
 
     /**
      * Make a new code for an event. The issuer needs the QR capability at the event's topic.
@@ -130,6 +130,11 @@ class QrTokenService
      */
     public function redeem(User $student, string $payload): array
     {
+        // The code the organiser shows live during the event (Task #80) is not stored as a token.
+        if ($this->live->looksLikeLiveCode($payload)) {
+            return $this->live->redeem($student, $payload);
+        }
+
         $token = $this->resolve($payload);
         $event = $token->event;
 

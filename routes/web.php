@@ -9,6 +9,7 @@ use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\SetPasswordController;
 use App\Http\Controllers\EventApplicationController;
+use App\Http\Controllers\EventCheckinController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\EventCreditController;
 use App\Http\Controllers\EventEditController;
@@ -132,6 +133,18 @@ Route::middleware('auth')->group(function () {
                 ->whereNumber(['event', 'token'])->whereIn('format', ['svg', 'png'])->name('events.qr.image');
             Route::post('/events/{event}/qr-tokens/{token}/revoke', [EventQrController::class, 'revoke'])
                 ->whereNumber(['event', 'token'])->name('events.qr.revoke');
+
+            // Live attendance check-in (Task #80): the code that changes every few seconds. EventPolicy::manageQr
+            // is checked in the service; students only ask whether check-in is open.
+            Route::prefix('events/{event}/checkin')->whereNumber('event')->name('events.checkin.')->group(function () {
+                Route::get('/', [EventCheckinController::class, 'state'])->name('state');
+                Route::post('/open', [EventCheckinController::class, 'open'])->name('open');
+                Route::post('/pause', [EventCheckinController::class, 'pause'])->name('pause');
+                Route::post('/stop', [EventCheckinController::class, 'stop'])->name('stop');
+                Route::get('/image.svg', [EventCheckinController::class, 'image'])->name('image');
+            });
+            Route::get('/events/{event}/checkin/status', [EventCheckinController::class, 'status'])
+                ->whereNumber('event')->middleware('permission:events.view')->name('events.checkin.status');
 
             // The organiser's QR page: make, print (posters and slips) and revoke codes (Task #44).
             Route::prefix('events/{event}/qr-codes')->whereNumber('event')->name('events.qr-codes.')->group(function () {
