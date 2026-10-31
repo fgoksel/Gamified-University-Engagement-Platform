@@ -200,7 +200,7 @@ function pageLabel(label) {
                 <button
                     v-if="isFiltered()"
                     type="button"
-                    class="ml-auto text-sm text-primary underline-offset-2 hover:underline"
+                    class="ml-auto text-sm text-link underline-offset-2 hover:underline"
                     @click="clearFilters"
                 >
                     Clear filters

@@ -108,7 +108,7 @@ const placesText = computed(() => {
 
             <p
                 v-if="event.my_status"
-                class="mt-2 flex flex-wrap items-center gap-2 text-sm font-medium text-primary"
+                class="mt-2 flex flex-wrap items-center gap-2 text-sm font-medium text-link"
             >
                 <StatusChip v-if="event.already_applied" tone="info">
                     Already applied

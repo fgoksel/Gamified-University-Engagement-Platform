@@ -133,7 +133,7 @@ const placesText = computed(() => {
         <div
             class="mt-auto flex flex-wrap items-center justify-between gap-3 pt-5"
         >
-            <p v-if="event.my_status" class="text-sm font-medium text-primary">
+            <p v-if="event.my_status" class="text-sm font-medium text-link">
                 {{ myStatusLabel[event.my_status] }}
             </p>
             <div class="relative z-10 ml-auto">
