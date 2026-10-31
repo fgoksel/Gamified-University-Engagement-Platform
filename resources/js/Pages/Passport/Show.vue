@@ -95,7 +95,7 @@ const progress = computed(
                 New code in {{ secondsLeft }}s
                 <button
                     type="button"
-                    class="ml-1 inline-flex items-center gap-1 rounded-control px-2 py-1 text-fg hover:bg-surface-muted"
+                    class="ml-1 inline-flex min-h-11 items-center gap-1 rounded-control px-2 py-1 text-fg hover:bg-surface-muted"
                     @click="refresh"
                 >
                     <RefreshCw class="size-3.5" />

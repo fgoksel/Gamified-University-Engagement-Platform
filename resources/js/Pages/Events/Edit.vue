@@ -2,6 +2,8 @@
 import { Link } from "@inertiajs/vue3";
 import { ArrowLeft } from "@lucide/vue";
 import EventForm from "../../Components/Events/EventForm.vue";
+import StatusChip from "../../Components/StatusChip.vue";
+import { eventStatusTone } from "../../eventStatus.js";
 
 // Organizer: change an event after it was created (Task #68, UC-1.3 "Editing an Event").
 // "Event Details" is this page; "Applied Students" and "Point Crediting" are the
@@ -48,11 +50,9 @@ const tabClass = (active) => [
 
         <div class="flex flex-wrap items-center gap-3">
             <h2 class="text-lg font-semibold text-fg">{{ event.title }}</h2>
-            <span
-                class="rounded-full bg-surface-muted px-2.5 py-0.5 text-xs font-medium text-fg-muted"
-            >
+            <StatusChip :tone="eventStatusTone[event.status]">
                 {{ statusLabel[event.status] }}
-            </span>
+            </StatusChip>
         </div>
 
         <nav

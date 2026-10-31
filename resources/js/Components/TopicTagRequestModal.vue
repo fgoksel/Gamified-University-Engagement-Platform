@@ -64,7 +64,7 @@ function submit() {
                     <select
                         id="tag-category"
                         v-model="form.category"
-                        class="block w-full rounded-control border bg-surface px-3 py-2 text-fg focus:outline-2 focus:outline-offset-0 focus:outline-ring"
+                        class="block min-h-11 w-full rounded-control border bg-surface px-3 py-2 text-fg focus:outline-2 focus:outline-offset-0 focus:outline-ring"
                         :class="
                             form.errors.category
                                 ? 'border-danger'
