@@ -151,7 +151,7 @@ function reapply(app) {
                 class="pb-3 border-b-2 transition"
                 :class="
                     currentTab === 'all'
-                        ? 'border-primary text-primary font-semibold'
+                        ? 'border-primary text-link font-semibold'
                         : 'border-transparent text-fg-muted hover:text-fg'
                 "
                 @click="currentTab = 'all'"
@@ -163,7 +163,7 @@ function reapply(app) {
                 class="pb-3 border-b-2 transition"
                 :class="
                     currentTab === 'active'
-                        ? 'border-primary text-primary font-semibold'
+                        ? 'border-primary text-link font-semibold'
                         : 'border-transparent text-fg-muted hover:text-fg'
                 "
                 @click="currentTab = 'active'"
@@ -175,7 +175,7 @@ function reapply(app) {
                 class="pb-3 border-b-2 transition"
                 :class="
                     currentTab === 'history'
-                        ? 'border-primary text-primary font-semibold'
+                        ? 'border-primary text-link font-semibold'
                         : 'border-transparent text-fg-muted hover:text-fg'
                 "
                 @click="currentTab = 'history'"
