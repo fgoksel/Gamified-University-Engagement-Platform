@@ -93,7 +93,7 @@ class EventCatalogTest extends TopicTestCase
         return $titles;
     }
 
-    public function test_a_student_sees_only_published_revealed_events_announced_to_them(): void
+    public function test_a_student_sees_only_published_events_announced_to_them(): void
     {
         $this->event('Faculty talk');
         $this->event('Course lab', ['audience_topic_id' => $this->course->id]);
@@ -102,11 +102,12 @@ class EventCatalogTest extends TopicTestCase
         $this->event('Still a draft', ['status' => 'draft', 'published_at' => null]);
         $this->event('Paused', ['status' => 'on_hold']);
         $this->event('Called off', ['status' => 'cancelled']);
-        $this->event('Surprise later', ['is_hidden' => true, 'reveal_at' => now()->addDay()]);
-        $this->event('Surprise now', ['is_hidden' => true, 'reveal_at' => now()->subHour()]);
+        // A surprise event is never listed to students (Task #86), not even one with an old reveal time.
+        $this->event('Surprise', ['is_hidden' => true]);
+        $this->event('Surprise with an old reveal time', ['is_hidden' => true, 'reveal_at' => now()->subHour()]);
 
         // 'Course lab' is announced to a node the student is not assigned to, so it is not listed.
-        $this->assertSame(['Faculty talk', 'Surprise now'], $this->titlesFor($this->student));
+        $this->assertSame(['Faculty talk'], $this->titlesFor($this->student));
     }
 
     public function test_the_list_matches_the_event_policy(): void
@@ -115,7 +116,7 @@ class EventCatalogTest extends TopicTestCase
             $this->event('A'),
             $this->event('B', ['audience_topic_id' => $this->university->id, 'owning_topic_id' => $this->course->id]),
             $this->event('C', ['owning_topic_id' => $this->otherFaculty->id, 'audience_topic_id' => $this->otherFaculty->id]),
-            $this->event('D', ['is_hidden' => true, 'reveal_at' => now()->addDay()]),
+            $this->event('D', ['is_hidden' => true]),
         ]);
 
         foreach ([$this->student, $this->teacher] as $user) {
@@ -125,11 +126,11 @@ class EventCatalogTest extends TopicTestCase
         }
     }
 
-    public function test_staff_see_their_surprise_event_before_it_is_revealed(): void
+    public function test_staff_see_a_surprise_event_and_students_never_do(): void
     {
-        $this->event('Surprise later', ['is_hidden' => true, 'reveal_at' => now()->addDay()]);
+        $this->event('Surprise', ['is_hidden' => true]);
 
-        $this->assertSame(['Surprise later'], $this->titlesFor($this->teacher));
+        $this->assertSame(['Surprise'], $this->titlesFor($this->teacher));
         $this->assertSame([], $this->titlesFor($this->student));
     }
 
@@ -233,7 +234,7 @@ class EventCatalogTest extends TopicTestCase
         $visible = $this->event('Faculty talk', ['description' => "Line one\nLine two"]);
         $medicine = $this->event('Medicine only', ['owning_topic_id' => $this->otherFaculty->id, 'audience_topic_id' => $this->otherFaculty->id]);
         $draft = $this->event('Still a draft', ['status' => 'draft', 'published_at' => null]);
-        $surprise = $this->event('Surprise later', ['is_hidden' => true, 'reveal_at' => now()->addDay()]);
+        $surprise = $this->event('Surprise', ['is_hidden' => true]);
 
         $this->actingAs($this->student)->get("/events/{$visible->id}")
             ->assertOk()
@@ -249,7 +250,7 @@ class EventCatalogTest extends TopicTestCase
         }
         $this->actingAs($this->student)->get('/events/999999')->assertNotFound();
 
-        // Staff of the owning topic may open their draft and their unrevealed surprise.
+        // Staff of the owning topic may open their draft and their surprise event.
         $this->actingAs($this->teacher)->get("/events/{$draft->id}")->assertOk();
         $this->actingAs($this->teacher)->get("/events/{$surprise->id}")
             ->assertInertia(fn (Assert $page) => $page->where('event.is_surprise', true));
@@ -261,7 +262,7 @@ class EventCatalogTest extends TopicTestCase
             $this->event('A'),
             $this->event('B', ['status' => 'on_hold']),
             $this->event('C', ['owning_topic_id' => $this->otherFaculty->id, 'audience_topic_id' => $this->otherFaculty->id]),
-            $this->event('D', ['is_hidden' => true, 'reveal_at' => now()->addDay()]),
+            $this->event('D', ['is_hidden' => true]),
             $this->event('E', ['audience_topic_id' => null]),
         ]);
 

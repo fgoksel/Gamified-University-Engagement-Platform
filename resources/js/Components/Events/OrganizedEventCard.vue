@@ -67,7 +67,7 @@ function post(action) {
                         class="inline-flex items-center gap-1 rounded-full bg-surface-muted px-2.5 py-0.5 text-xs font-medium text-fg-muted"
                     >
                         <EyeOff class="size-3.5" />
-                        Surprise · revealed {{ event.reveal_at }}
+                        Surprise event
                     </span>
                 </div>
                 <h2 class="mt-2 text-lg font-semibold text-fg">
@@ -93,7 +93,11 @@ function post(action) {
                     Applicants
                 </Link>
                 <Link
-                    v-if="event.can_credit && event.status === 'published'"
+                    v-if="
+                        event.can_credit &&
+                        !event.is_hidden &&
+                        event.status === 'published'
+                    "
                     :href="`/events/${event.id}/scan`"
                     class="inline-flex min-h-9 items-center justify-center rounded-control border border-line bg-surface px-3 text-sm font-medium text-fg hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                 >

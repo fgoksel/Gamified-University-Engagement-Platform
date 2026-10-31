@@ -192,9 +192,9 @@ class EventController extends Controller
             'applications_open_at' => $data['applications_open_at'] ?? null,
             'application_deadline' => $data['application_deadline'],
             'completion_deadline' => $data['completion_deadline'],
+            // A surprise event stays hidden and has no QR codes: it is credited by import (Task #86).
             'is_hidden' => $hidden,
-            'reveal_at' => $hidden ? $data['reveal_at'] : null,
-            'qr_enabled' => (bool) ($data['qr_enabled'] ?? false),
+            'qr_enabled' => ! $hidden && (bool) ($data['qr_enabled'] ?? false),
             'status' => $publish ? Event::STATUS_PUBLISHED : Event::STATUS_DRAFT,
             'published_at' => $publish ? now() : null,
         ]);

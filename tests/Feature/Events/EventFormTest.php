@@ -169,20 +169,22 @@ class EventFormTest extends TopicTestCase
             ->assertSessionHasErrors(['event_ends_at', 'application_deadline', 'completion_deadline']);
     }
 
-    public function test_a_surprise_event_needs_a_reveal_time_before_it_starts(): void
+    public function test_a_surprise_event_is_saved_hidden_with_no_reveal_time_and_no_qr_codes(): void
     {
-        $this->actingAs($this->teacher)
-            ->post('/events', $this->valid(['is_hidden' => true, 'reveal_at' => null]))
-            ->assertSessionHasErrors('reveal_at');
-
+        // Nothing is revealed (Task #86), so no reveal time is asked for, and one that an old
+        // page still sends is ignored. Its points are given by import, so QR codes stay off.
         $this->actingAs($this->teacher)
             ->post('/events', $this->valid([
                 'is_hidden' => true,
                 'reveal_at' => now()->addDays(3)->format('Y-m-d\TH:i'),
+                'qr_enabled' => true,
             ]))
             ->assertSessionHasNoErrors();
 
-        $this->assertTrue(Event::sole()->is_hidden);
+        $event = Event::sole();
+        $this->assertTrue($event->is_hidden);
+        $this->assertNull($event->reveal_at);
+        $this->assertFalse($event->qr_enabled);
     }
 
     public function test_an_inactive_tag_cannot_be_used(): void

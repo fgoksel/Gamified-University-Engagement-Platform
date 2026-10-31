@@ -52,7 +52,6 @@ const form = useForm({
     application_deadline: props.event?.application_deadline ?? "",
     completion_deadline: props.event?.completion_deadline ?? "",
     is_hidden: props.event?.is_hidden ?? false,
-    reveal_at: props.event?.reveal_at ?? "",
     qr_enabled: props.event?.qr_enabled ?? false,
 });
 
@@ -87,7 +86,8 @@ function submit(action) {
     form.transform((data) => ({
         ...data,
         audience_topic_id: data.audience_topic_id || null,
-        reveal_at: data.is_hidden ? data.reveal_at : null,
+        // A surprise event has no QR codes: its points are given by import.
+        qr_enabled: data.is_hidden ? false : data.qr_enabled,
     })).submit(props.method, props.url, {
         preserveScroll: true,
         onFinish: () => {
@@ -436,13 +436,17 @@ const selectClass = (field) => [
                 <input
                     v-model="form.qr_enabled"
                     type="checkbox"
-                    :disabled="readonly"
+                    :disabled="readonly || form.is_hidden"
                     class="mt-0.5"
                 />
                 <span>
                     Use QR codes for attendance
                     <span class="block text-fg-muted">
-                        Students scan a code to confirm they took part.
+                        {{
+                            form.is_hidden
+                                ? "A surprise event has no QR codes."
+                                : "Students scan a code to confirm they took part."
+                        }}
                     </span>
                 </span>
             </label>
@@ -459,22 +463,11 @@ const selectClass = (field) => [
                     <span class="block text-fg-muted">
                         {{
                             locks.is_hidden ||
-                            "Hidden from students until the reveal time."
+                            "Students never see it and cannot apply. Its points are given by importing a list of students."
                         }}
                     </span>
                 </span>
             </label>
-
-            <div v-if="form.is_hidden" class="sm:max-w-xs">
-                <TextField
-                    v-model="form.reveal_at"
-                    label="Reveal at"
-                    type="datetime-local"
-                    :disabled="lockedField('reveal_at')"
-                    :hint="locks.reveal_at ?? ''"
-                    :error="form.errors.reveal_at"
-                />
-            </div>
         </fieldset>
 
         <!-- Actions -->
