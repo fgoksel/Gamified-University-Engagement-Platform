@@ -211,9 +211,9 @@ class Sprint2DemoSeeder extends Seeder
 
         $this->event($ivan, $databases, 'Exam Preparation', [
             'title' => 'Surprise SQL Quiz',
-            'description' => 'A hidden surprise event: staff see it now, students only once it is revealed.',
+            'description' => 'A surprise event: students never see it, and its points are given by importing a list of students.',
             'is_hidden' => true,
-            'reveal_at' => now()->addDay(),
+            'qr_enabled' => false,
         ], startsIn: '+2 days');
     }
 

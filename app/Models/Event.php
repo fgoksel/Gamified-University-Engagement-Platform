@@ -48,6 +48,7 @@ class Event extends Model
         'cancelled_at',
         'cancellation_reason',
         'is_hidden',
+        // No longer used (Task #86): a surprise event is never revealed to students.
         'reveal_at',
         'qr_enabled',
     ];
@@ -130,18 +131,6 @@ class Event extends Model
     public function isPublished(): bool
     {
         return $this->status === self::STATUS_PUBLISHED;
-    }
-
-    /**
-     * Whether the event is announced right now: a surprise event is not until revealed.
-     */
-    public function isRevealed(): bool
-    {
-        if (! $this->is_hidden) {
-            return true;
-        }
-
-        return $this->reveal_at !== null && $this->reveal_at->isPast();
     }
 
     /**

@@ -46,6 +46,10 @@ class QrTokenService
             throw new EventActionRefused('forbidden', 'You cannot manage QR codes for this event.', 403);
         }
 
+        if ($event->is_hidden) {
+            throw new EventActionRefused('surprise', 'A surprise event has no QR codes: its points are given only by import.', 409);
+        }
+
         if (! $event->qr_enabled) {
             throw new EventActionRefused('qr_disabled', 'QR codes are not enabled for this event.');
         }

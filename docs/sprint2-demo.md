@@ -61,7 +61,7 @@ Both roles are ordinary topic roles (Topics → Roles); a title gives no power, 
 | Query Optimisation Seminar | A | Draft |
 | Database Careers Evening | A | On hold; Anna applied |
 | Lab Safety Briefing | A | Cancelled ("The lab is being renovated.") |
-| Surprise SQL Quiz | A | Hidden, revealed tomorrow |
+| Surprise SQL Quiz | A | Hidden from students for good; its points are given by importing a list |
 | Campus 5K Run | B | **Running now**; Erik and Fanni accepted; Erik credited |
 | Athletics Championship | B | Open; Fanni accepted |
 

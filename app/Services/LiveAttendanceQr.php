@@ -95,6 +95,10 @@ class LiveAttendanceQr
     {
         $this->authorise($actor, $event);
 
+        if ($event->is_hidden) {
+            throw new EventActionRefused('surprise', 'A surprise event has no check-in: its points are given only by import.', 409);
+        }
+
         if (! $event->qr_enabled) {
             throw new EventActionRefused('qr_disabled', 'QR codes are not enabled for this event.');
         }

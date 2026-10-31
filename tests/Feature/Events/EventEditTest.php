@@ -250,15 +250,23 @@ class EventEditTest extends EventTestCase
         $this->save($this->organiser, $event, ['completion_deadline' => $fmt($event->event_ends_at->copy()->subHour())])->assertSessionHasErrors('completion_deadline');
     }
 
-    public function test_the_surprise_setting_is_locked_and_the_reveal_time_follows_the_rules(): void
+    public function test_the_surprise_setting_is_locked_and_a_surprise_event_has_no_reveal_time_or_qr_codes(): void
     {
-        $event = $this->upcoming(['is_hidden' => true, 'reveal_at' => now()->addDays(2)->startOfHour()]);
+        $event = $this->upcoming(['is_hidden' => true, 'qr_enabled' => false]);
 
+        // It cannot be made visible once published (Task #86).
         $this->save($this->organiser, $event, ['is_hidden' => false])->assertSessionHasErrors('is_hidden');
-        $this->save($this->organiser, $event, ['reveal_at' => now()->addDays(9)->format('Y-m-d\TH:i')])->assertSessionHasErrors('reveal_at');
-        $this->save($this->organiser, $event, ['reveal_at' => now()->addDays(3)->startOfHour()->format('Y-m-d\TH:i')])->assertSessionHasNoErrors();
 
-        $this->assertTrue($event->refresh()->reveal_at->gt(now()->addDays(2)->addHours(12)));
+        // A page opened before the reveal time went away may still send one: it is ignored.
+        $this->save($this->organiser, $event, ['title' => 'Still a surprise', 'reveal_at' => now()->addDays(3)->format('Y-m-d\TH:i')])->assertSessionHasNoErrors();
+        $event->refresh();
+        $this->assertSame('Still a surprise', $event->title);
+        $this->assertTrue($event->is_hidden);
+        $this->assertNull($event->reveal_at);
+
+        // Its points are given by import, so QR codes cannot be switched on for it.
+        $this->save($this->organiser, $event, ['qr_enabled' => true])->assertSessionHasNoErrors();
+        $this->assertFalse($event->refresh()->qr_enabled);
     }
 
     public function test_a_held_event_can_be_edited_but_completed_and_cancelled_ones_cannot(): void

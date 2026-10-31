@@ -287,30 +287,19 @@ class CapacityGuardTest extends TopicTestCase
         $this->service->apply($student, $event);
     }
 
-    public function test_cannot_apply_to_unrevealed_surprise_event(): void
+    public function test_cannot_apply_to_a_surprise_event(): void
     {
-        $event = $this->createEvent([
-            'is_hidden' => true,
-            'reveal_at' => now()->addHours(2),
-        ]);
-        $student = $this->createAudienceStudent('STU001');
-
-        $this->expectException(ValidationException::class);
-        $this->expectExceptionMessage('This surprise event has not been revealed yet.');
-
-        $this->service->apply($student, $event);
-    }
-
-    public function test_can_apply_to_revealed_surprise_event(): void
-    {
+        // A surprise event is never revealed (Task #86), also when an old reveal time has passed.
         $event = $this->createEvent([
             'is_hidden' => true,
             'reveal_at' => now()->subMinute(),
         ]);
         $student = $this->createAudienceStudent('STU001');
 
-        $app = $this->service->apply($student, $event);
-        $this->assertSame(EventApplication::ACCEPTED, $app->status);
+        $this->expectException(ValidationException::class);
+        $this->expectExceptionMessage('This event is not open for applications.');
+
+        $this->service->apply($student, $event);
     }
 
     public function test_cannot_apply_if_not_in_audience_scope(): void
@@ -411,22 +400,6 @@ class CapacityGuardTest extends TopicTestCase
         $this->expectExceptionMessage('A valid Neptun code is required to apply to events.');
 
         $this->service->apply($student, $event);
-    }
-
-    public function test_revealed_surprise_event_bypasses_application_deadline_before_start(): void
-    {
-        // Event where application deadline passed, but it is a revealed surprise event (D02)
-        $event = $this->createEvent([
-            'is_hidden' => true,
-            'reveal_at' => now()->subHour(),
-            'application_deadline' => now()->subMinutes(30),
-            'event_starts_at' => now()->addHour(),
-        ]);
-        $student = $this->createAudienceStudent('STU001');
-
-        $application = $this->service->apply($student, $event);
-
-        $this->assertSame(EventApplication::ACCEPTED, $application->status);
     }
 
     public function test_cannot_apply_when_topic_is_archived(): void
