@@ -6,7 +6,6 @@ use App\Enums\UserRole;
 use App\Models\Event;
 use App\Models\EventApplication;
 use App\Models\EventApplicationTransition;
-use App\Models\QrToken;
 use App\Models\Semester;
 use App\Models\Topic;
 use App\Models\TopicTag;
@@ -155,10 +154,10 @@ class Sprint2DemoSeeder extends Seeder
             $applications->apply($this->people[$key], $hackathon);
         }
 
-        // Running now: credit by passport and poster; a second credit is refused.
+        // Running now: credit by passport and by a printed slip (Task #84); a second credit is refused.
         $lab = $this->event($ivan, $databases, 'Tutoring', [
             'title' => 'Indexing Lab',
-            'description' => 'Running right now. Demo: Bence is already credited; credit Anna by her QR passport, and let Dani scan the poster.',
+            'description' => 'Running right now. Demo: Bence is already credited; credit Anna by her QR passport, and let Dani scan a printed slip.',
             'location' => 'Computer Lab 1, Informatics Building',
             'capacity' => 10,
             'points_value' => 20,
@@ -167,7 +166,7 @@ class Sprint2DemoSeeder extends Seeder
             $this->accept($lab, $this->people[$key]);
         }
         $ledger->credit($lab, $this->people['bence'], $ivan, PointLedger::PASSPORT);
-        app(QrTokenService::class)->issue($ivan, $lab, QrToken::POSTER);
+        app(QrTokenService::class)->makeSlips($ivan, $lab, 4);
 
         // Last week: points already earned, so the totals and tooltips are not empty.
         $lecture = $this->event($ivan, $databases, 'Exam Preparation', [

@@ -50,7 +50,7 @@ phone. The address is long and random and nobody is told about it, but treat it 
    The scanner asks for camera access: allow it.
 
 4. **Check it works:** on the phone open *Scan QR code*. The camera view opens. Scan a QR code shown on the
-   laptop, for example an event poster from *QR codes*.
+   laptop, for example the live code from *Show attendance QR*, or a slip from a batch on *QR slips*.
 
 ## After the demo
 
@@ -74,7 +74,7 @@ usual. Requests to http://localhost:8081 are unchanged.
 ## The address changes every time
 
 The free tunnel gets a new address at every start. A QR code made on one day contains the address the page
-was opened from, so a **printed** poster or slip from a past demo does not open from a phone's normal camera
+was opened from, so a **printed** slip from a past demo does not open from a phone's normal camera
 on another day. What works:
 
 - **Scan inside the app.** The scanner under *Scan QR code* reads the code from the link, so it works

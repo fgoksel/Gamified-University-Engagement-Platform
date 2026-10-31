@@ -35,4 +35,12 @@ class QrRedemption extends Model
     {
         return $this->belongsTo(User::class, 'student_id');
     }
+
+    /**
+     * The ledger row the claim wrote, which keeps the points as they were credited.
+     */
+    public function pointTransaction(): BelongsTo
+    {
+        return $this->belongsTo(PointTransaction::class);
+    }
 }

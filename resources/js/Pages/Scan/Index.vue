@@ -27,7 +27,7 @@ const videoRef = ref(null);
 const cameraError = ref(null);
 const cameraActive = ref(false);
 const processing = ref(false);
-const result = ref(null); // { type: 'success'|'progress'|'error', title, message }
+const result = ref(null); // { type: 'success'|'error', title, message }
 const pending = ref(props.code); // a code waiting for the student to confirm
 let reader = null;
 let lastText = "";
@@ -65,20 +65,13 @@ async function redeem(text) {
         pending.value = null;
 
         if (response.ok) {
-            result.value =
-                data.outcome === "credited"
-                    ? {
-                          type: "success",
-                          title: `${data.points} points credited`,
-                          message: data.event,
-                          points: data.points,
-                          category: data.category,
-                      }
-                    : {
-                          type: "progress",
-                          title: `Part ${data.step} of ${data.total_steps} recorded`,
-                          message: `${data.message} (${data.event})`,
-                      };
+            result.value = {
+                type: "success",
+                title: `${data.points} points credited`,
+                message: data.event,
+                points: data.points,
+                category: data.category,
+            };
         } else {
             result.value = {
                 type: "error",
@@ -204,9 +197,7 @@ onUnmounted(stopCamera);
                 :class="
                     result.type === 'error'
                         ? 'bg-danger-soft text-danger-fg'
-                        : result.type === 'progress'
-                          ? 'bg-warning-soft text-warning-fg'
-                          : 'bg-success-soft text-success-fg'
+                        : 'bg-success-soft text-success-fg'
                 "
             >
                 <AlertCircle v-if="result.type === 'error'" class="size-6" />

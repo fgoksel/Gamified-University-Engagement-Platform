@@ -3,6 +3,7 @@
 namespace Tests\Feature\Events;
 
 use App\Enums\Capability;
+use App\Models\QrToken;
 use App\Services\QrImage;
 use App\Services\QrTokenService;
 use BaconQrCode\Common\ErrorCorrectionLevel;
@@ -64,9 +65,10 @@ class QrImageTest extends EventTestCase
     {
         $organiser = $this->staff([Capability::PointsCredit, Capability::QrCodesManage]);
 
-        $issued = $this->actingAs($organiser)->postJson("/events/{$this->event->id}/qr-tokens", ['type' => 'poster'])
+        $issued = $this->actingAs($organiser)->postJson("/events/{$this->event->id}/qr-tokens", ['type' => 'slip'])
             ->assertCreated()
-            ->assertJsonStructure(['id', 'type', 'url', 'svg', 'png']);
+            ->assertJsonStructure(['id', 'type', 'url', 'svg', 'png'])
+            ->assertJsonPath('type', 'slip');
 
         $this->actingAs($organiser)->get($issued->json('svg'))
             ->assertOk()->assertHeader('Content-Type', 'image/svg+xml');
@@ -82,7 +84,7 @@ class QrImageTest extends EventTestCase
 
         $creditOnly = $this->staff([Capability::PointsCredit]);
         $this->actingAs($creditOnly)->get("/events/{$this->event->id}/qr-tokens/{$token->id}/image.svg")->assertRedirect('/');
-        $this->actingAs($creditOnly)->postJson("/events/{$this->event->id}/qr-tokens", ['type' => 'poster'])->assertForbidden();
+        $this->actingAs($creditOnly)->postJson("/events/{$this->event->id}/qr-tokens", ['type' => 'slip'])->assertForbidden();
         $this->actingAs($this->student())->get("/events/{$this->event->id}/qr-tokens/{$token->id}/image.svg")->assertNotFound();
         $this->actingAs($organiser)->get("/events/{$otherEvent->id}/qr-tokens/{$token->id}/image.svg")->assertNotFound();
 
@@ -95,7 +97,11 @@ class QrImageTest extends EventTestCase
         $organiser = $this->staff([Capability::PointsCredit, Capability::QrCodesManage]);
 
         $this->actingAs($organiser)->postJson("/events/{$this->event->id}/qr-tokens", ['type' => 'sticker'])->assertUnprocessable();
-        $this->actingAs($organiser)->postJson("/events/{$this->event->id}/qr-tokens", ['type' => 'poster', 'total_steps' => 99])->assertUnprocessable();
-        $this->actingAs($organiser)->postJson("/events/{$this->event->id}/qr-tokens", ['type' => 'poster', 'step_number' => 1])->assertUnprocessable();
+        // Posters and the parts of a task are no longer made (Task #84): only single-use slips.
+        $this->actingAs($organiser)->postJson("/events/{$this->event->id}/qr-tokens", ['type' => 'poster'])
+            ->assertUnprocessable()->assertJsonPath('errors.type.0', 'Only printed single-use slips can be made.');
+        $this->actingAs($organiser)->postJson("/events/{$this->event->id}/qr-tokens", ['type' => 'slip', 'total_steps' => 3])->assertUnprocessable();
+        $this->actingAs($organiser)->postJson("/events/{$this->event->id}/qr-tokens", ['type' => 'slip', 'step_number' => 1])->assertUnprocessable();
+        $this->assertSame(0, QrToken::count());
     }
 }
