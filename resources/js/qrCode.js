@@ -1,4 +1,4 @@
-// What a student's scan or paste may contain: the whole link stored in the QR
+// What a student's scan may contain: the whole link stored in the QR
 // image (".../qr/redeem/<token>.<signature>") or just "<token>.<signature>".
 // The server checks the signature, so this only finds the code in the text.
 export function extractCode(text) {

@@ -10,7 +10,6 @@ import {
 } from "@lucide/vue";
 import { BrowserQRCodeReader } from "@zxing/library";
 import Btn from "../../Components/Topics/Btn.vue";
-import TextField from "../../Components/TextField.vue";
 import { extractCode } from "../../qrCode.js";
 import { categoryDot, categoryLabel } from "../../categoryColors.js";
 
@@ -30,7 +29,6 @@ const cameraActive = ref(false);
 const processing = ref(false);
 const result = ref(null); // { type: 'success'|'progress'|'error', title, message }
 const pending = ref(props.code); // a code waiting for the student to confirm
-const typed = ref("");
 let reader = null;
 let lastText = "";
 let lastTime = 0;
@@ -113,7 +111,8 @@ async function startCamera() {
         const devices = await reader.listVideoInputDevices();
 
         if (devices.length === 0) {
-            cameraError.value = "No camera was found on this device.";
+            cameraError.value =
+                "No camera was found on this device. Sign in on another device to scan.";
             return;
         }
 
@@ -142,7 +141,7 @@ async function startCamera() {
     } catch {
         cameraActive.value = false;
         cameraError.value =
-            "The camera could not be used. Allow camera access in your browser (it needs a secure https page), or type the code below.";
+            "The camera could not be used. Allow camera access in your browser (it needs a secure https page), or sign in on another device.";
     }
 }
 
@@ -154,7 +153,6 @@ function stopCamera() {
 function scanAnother() {
     result.value = null;
     pending.value = null;
-    typed.value = "";
     lastText = "";
     // The video element is shown again on the next tick.
     setTimeout(startCamera, 0);
@@ -307,26 +305,6 @@ onUnmounted(stopCamera);
             <p class="text-center text-sm text-fg-muted">
                 Point the camera at the QR code shown at the event.
             </p>
-
-            <!-- Fallback when the camera cannot be used -->
-            <form
-                class="space-y-3 rounded-card border border-line bg-surface p-4"
-                @submit.prevent="redeem(typed)"
-            >
-                <TextField
-                    v-model="typed"
-                    label="Or type or paste the code"
-                    hint="The code or the link under the QR image."
-                />
-                <Btn
-                    type="submit"
-                    :loading="processing"
-                    :disabled="typed.trim() === ''"
-                    data-test="send-code"
-                >
-                    Send code
-                </Btn>
-            </form>
         </template>
     </div>
 </template>

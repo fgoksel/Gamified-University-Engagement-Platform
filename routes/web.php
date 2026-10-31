@@ -104,9 +104,6 @@ Route::middleware('auth')->group(function () {
                 ->name('events.scan');
             Route::post('/events/{event}/credit', [EventCreditController::class, 'credit'])
                 ->name('events.credit');
-            // Checklist mode: credit every ticked student in one request (Task #42)
-            Route::post('/events/{event}/credit/bulk', [EventCreditController::class, 'creditMany'])
-                ->name('events.credit.bulk');
 
             // Organizer: give an event's points to an imported list of students (Task #85).
             // EventPolicy::credit is checked in the controller, like the routes above.

@@ -23,7 +23,7 @@ use Tests\Feature\Topics\TopicTestCase;
 /**
  * Task #67: the Sprint 2 integration run, end to end through the same routes
  * the pages use. Organizer -> event -> application -> attendance -> points, by
- * manual and by QR crediting, across two branches of one university:
+ * QR crediting, across two branches of one university:
  *
  *   University
  *   ├── Faculty of Informatics  (branch A, organiser Ivan)
@@ -147,6 +147,16 @@ class Sprint2JourneyTest extends TopicTestCase
         $this->travelTo($event->event_starts_at->copy()->addMinutes(15));
     }
 
+    /**
+     * The organiser scans a student's QR passport (Tasks #43, #52).
+     */
+    private function scanPassport(User $organiser, string $student, Event $event): TestResponse
+    {
+        return $this->actingAs($organiser)->postJson("/events/{$event->id}/credit", [
+            'identifier' => app(QrPassport::class)->issue($this->students[$student]),
+        ]);
+    }
+
     private function posterCode(User $organiser, Event $event): string
     {
         $url = $this->actingAs($organiser)
@@ -172,7 +182,7 @@ class Sprint2JourneyTest extends TopicTestCase
         $response->assertRedirect('/')->assertSessionHas('error', 'You do not have permission to view this page.');
     }
 
-    public function test_fcfs_journey_with_waitlist_promotion_and_manual_crediting(): void
+    public function test_fcfs_journey_with_waitlist_promotion_and_passport_crediting(): void
     {
         Notification::fake();
         $event = $this->publish($this->ivan, $this->databases, ['capacity' => 2]);
@@ -195,25 +205,20 @@ class Sprint2JourneyTest extends TopicTestCase
             fn ($n) => $n->decision === EventApplicationDecisionNotification::PROMOTED);
 
         // Attendance cannot be credited before the event starts.
-        $this->actingAs($this->ivan)
-            ->postJson("/events/{$event->id}/credit/bulk", ['student_ids' => [$this->students['Bence']->id]])
+        $this->scanPassport($this->ivan, 'Bence', $event)
             ->assertStatus(422)
             ->assertJsonPath('errors.event.0', 'The event has not started yet.');
 
-        // At the event, the organiser ticks everyone on the checklist (Task #42).
+        // At the event, the organiser scans the passport of everyone who shows up.
         $this->startEvent($event);
-        $response = $this->actingAs($this->ivan)->postJson("/events/{$event->id}/credit/bulk", [
-            'student_ids' => [$this->students['Bence']->id, $this->students['Csilla']->id, $this->students['Dani']->id, $this->students['Anna']->id],
-        ])->assertOk();
-
-        $this->assertEqualsCanonicalizing([$this->students['Bence']->id, $this->students['Csilla']->id], $response->json('credited'));
+        $this->scanPassport($this->ivan, 'Bence', $event)->assertOk()->assertJsonPath('status', 'credited');
+        $this->scanPassport($this->ivan, 'Csilla', $event)->assertOk()->assertJsonPath('status', 'credited')->assertJsonPath('credited_count', 2);
         // Dani is still waitlisted and Anna withdrew: neither is credited.
-        $this->assertArrayHasKey($this->students['Dani']->id, $response->json('refused'));
-        $this->assertArrayHasKey($this->students['Anna']->id, $response->json('refused'));
-        $this->assertSame(2, $response->json('credited_count'));
+        $this->scanPassport($this->ivan, 'Dani', $event)->assertOk()->assertJsonPath('status', 'not_accepted');
+        $this->scanPassport($this->ivan, 'Anna', $event)->assertOk()->assertJsonPath('status', 'not_accepted');
 
         $this->assertSame([15, 15, 0, 0], [$this->points('Bence'), $this->points('Csilla'), $this->points('Dani'), $this->points('Anna')]);
-        $this->assertSame(PointLedger::MANUAL, PointTransaction::query()->where('student_id', $this->students['Bence']->id)->value('source'));
+        $this->assertSame(PointLedger::PASSPORT, PointTransaction::query()->where('student_id', $this->students['Bence']->id)->value('source'));
 
         // The organiser's page shows both as credited.
         $this->actingAs($this->ivan)->get("/events/{$event->id}/scan")->assertOk()
@@ -300,8 +305,7 @@ class Sprint2JourneyTest extends TopicTestCase
         $this->assertSame(['published', 'accepted'], [$sportEvent->fresh()->status, $sportApplication->fresh()->status]);
 
         $this->startEvent($sportEvent);
-        $this->actingAs($this->ivan)->postJson("/events/{$sportEvent->id}/credit/bulk", ['student_ids' => [$this->students['Erik']->id]])->assertForbidden();
-        $this->actingAs($this->ivan)->postJson("/events/{$sportEvent->id}/credit", ['identifier' => 'ERI123', 'source' => 'manual'])->assertForbidden();
+        $this->scanPassport($this->ivan, 'Erik', $sportEvent)->assertForbidden();
         $this->travelBack();
 
         // An Informatics student cannot see or apply to a Sport event, and the reverse.
@@ -316,8 +320,7 @@ class Sprint2JourneyTest extends TopicTestCase
         $this->actingAs($this->students['Anna'])->postJson('/qr/redeem', ['code' => $code])->assertForbidden();
 
         // Inside her own branch, Sara can do all of it.
-        $this->actingAs($this->sara)->postJson("/events/{$sportEvent->id}/credit/bulk", ['student_ids' => [$this->students['Erik']->id]])
-            ->assertOk()->assertJsonPath('credited', [$this->students['Erik']->id]);
+        $this->scanPassport($this->sara, 'Erik', $sportEvent)->assertOk()->assertJsonPath('status', 'credited');
 
         $this->assertSame(1, PointTransaction::count());
         $this->assertSame(0, EventApplication::query()->where('event_id', $sportEvent->id)->where('student_id', $this->students['Anna']->id)->count());
@@ -360,16 +363,10 @@ class Sprint2JourneyTest extends TopicTestCase
         $this->apply('Anna', $event);
         $this->startEvent($event);
 
-        $this->actingAs($this->ivan)->postJson("/events/{$event->id}/credit", ['identifier' => 'ANN123', 'source' => 'manual'])
-            ->assertJsonPath('status', 'credited');
+        $this->scanPassport($this->ivan, 'Anna', $event)->assertJsonPath('status', 'credited');
 
-        // Manual again, checklist, passport, poster and slip: all refused.
-        $this->actingAs($this->ivan)->postJson("/events/{$event->id}/credit", ['identifier' => 'ANN123', 'source' => 'manual'])
-            ->assertJsonPath('status', 'already_credited');
-        $this->actingAs($this->ivan)->postJson("/events/{$event->id}/credit/bulk", ['student_ids' => [$this->students['Anna']->id]])
-            ->assertJsonPath('credited', []);
-        $this->actingAs($this->ivan)->postJson("/events/{$event->id}/credit", ['identifier' => app(QrPassport::class)->issue($this->students['Anna'])])
-            ->assertJsonPath('status', 'already_credited');
+        // The passport again, the poster and the slip: all refused.
+        $this->scanPassport($this->ivan, 'Anna', $event)->assertJsonPath('status', 'already_credited');
         $poster = $this->posterCode($this->ivan, $event);
         $this->actingAs($this->students['Anna'])->postJson('/qr/redeem', ['code' => $poster])
             ->assertStatus(409)->assertJsonPath('reason', 'already_credited');
@@ -387,7 +384,7 @@ class Sprint2JourneyTest extends TopicTestCase
         $event = $this->publish($this->ivan, $this->databases, ['capacity' => 5]);
         $this->apply('Anna', $event);
         $this->startEvent($event);
-        $this->actingAs($this->ivan)->postJson("/events/{$event->id}/credit", ['identifier' => 'ANN123', 'source' => 'manual']);
+        $this->scanPassport($this->ivan, 'Anna', $event)->assertJsonPath('status', 'credited');
         $credit = PointTransaction::query()->firstOrFail();
 
         $this->assertThrows(fn () => $credit->update(['points' => 500]), LogicException::class);
@@ -419,13 +416,11 @@ class Sprint2JourneyTest extends TopicTestCase
         $this->actingAs($this->students['Bence'])->postJson("/events/{$event->id}/apply")->assertStatus(422);
         $this->actingAs($this->students['Bence'])->get("/events/{$event->id}")->assertNotFound();
         $this->startEvent($event);
-        $this->actingAs($this->ivan)->postJson("/events/{$event->id}/credit/bulk", ['student_ids' => [$this->students['Anna']->id]])
-            ->assertForbidden();
+        $this->scanPassport($this->ivan, 'Anna', $event)->assertForbidden();
         $this->assertSame(0, PointTransaction::count());
 
         // Restoring the topic brings the event back exactly as it was.
         $this->actingAs($lead)->post("/topics/{$this->databases->id}/restore")->assertSessionHas('success');
-        $this->actingAs($this->ivan)->postJson("/events/{$event->id}/credit/bulk", ['student_ids' => [$this->students['Anna']->id]])
-            ->assertOk()->assertJsonPath('credited', [$this->students['Anna']->id]);
+        $this->scanPassport($this->ivan, 'Anna', $event)->assertOk()->assertJsonPath('status', 'credited');
     }
 }
