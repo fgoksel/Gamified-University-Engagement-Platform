@@ -157,7 +157,7 @@ const selectClass = (field) => [
                 v-model="form.title"
                 label="Title"
                 required
-                :disabled="readonly"
+                :disabled="lockedField('title')"
                 :error="form.errors.title"
             />
 
@@ -174,7 +174,7 @@ const selectClass = (field) => [
                     v-model="form.description"
                     rows="5"
                     required
-                    :disabled="readonly"
+                    :disabled="lockedField('description')"
                     :aria-invalid="form.errors.description ? 'true' : undefined"
                     :class="selectClass('description')"
                 ></textarea>
@@ -244,7 +244,7 @@ const selectClass = (field) => [
                 v-model="form.location"
                 label="Location"
                 optional
-                :disabled="readonly"
+                :disabled="lockedField('location')"
                 hint="A room or an address. Students see it on the event."
                 :error="form.errors.location"
             />
@@ -321,7 +321,7 @@ const selectClass = (field) => [
                     label="Places"
                     required
                     type="number"
-                    :disabled="readonly"
+                    :disabled="lockedField('capacity')"
                     :hint="
                         editing && minimumCapacity > 1
                             ? `At least ${minimumCapacity}: that many students are already accepted.`
@@ -412,7 +412,7 @@ const selectClass = (field) => [
                     label="Ends"
                     required
                     type="datetime-local"
-                    :disabled="readonly"
+                    :disabled="lockedField('event_ends_at')"
                     :error="form.errors.event_ends_at"
                 />
                 <TextField
@@ -431,7 +431,7 @@ const selectClass = (field) => [
                     label="Points can be given until"
                     required
                     type="datetime-local"
-                    :disabled="readonly"
+                    :disabled="lockedField('completion_deadline')"
                     hint="At or after the end."
                     :error="form.errors.completion_deadline"
                 />
@@ -450,7 +450,7 @@ const selectClass = (field) => [
                 <input
                     v-model="form.qr_enabled"
                     type="checkbox"
-                    :disabled="readonly || form.is_hidden"
+                    :disabled="lockedField('qr_enabled') || form.is_hidden"
                     class="mt-0.5"
                 />
                 <span>
