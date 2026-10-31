@@ -85,7 +85,7 @@ class PointLedgerTest extends TopicTestCase
     {
         $student = $this->accepted();
 
-        $row = $this->ledger()->credit($this->event, $student, $this->organiser, PointLedger::MANUAL);
+        $row = $this->ledger()->credit($this->event, $student, $this->organiser, PointLedger::PASSPORT);
 
         $this->assertSame(10, $row->points);
         $this->assertSame('credit', $row->type);
@@ -100,7 +100,7 @@ class PointLedgerTest extends TopicTestCase
     public function test_a_later_category_change_never_rewrites_history(): void
     {
         $student = $this->accepted();
-        $this->ledger()->credit($this->event, $student, $this->organiser, PointLedger::MANUAL);
+        $this->ledger()->credit($this->event, $student, $this->organiser, PointLedger::PASSPORT);
 
         $this->event->update(['category' => 'sports']);
 
@@ -110,8 +110,9 @@ class PointLedgerTest extends TopicTestCase
     public function test_a_second_credit_for_the_same_student_and_event_is_refused_whatever_the_route(): void
     {
         $student = $this->accepted();
-        $this->ledger()->credit($this->event, $student, $this->organiser, PointLedger::MANUAL);
+        $this->ledger()->credit($this->event, $student, $this->organiser, PointLedger::PASSPORT);
 
+        // MANUAL stays in the list: rows written before Task #83 still block a second credit.
         foreach ([PointLedger::MANUAL, PointLedger::PASSPORT, PointLedger::QR_POSTER, PointLedger::QR_SLIP, PointLedger::MILESTONE] as $source) {
             $this->refused(fn () => $this->ledger()->credit($this->event, $student, $this->organiser, $source), 'already_credited');
         }
@@ -122,12 +123,12 @@ class PointLedgerTest extends TopicTestCase
     public function test_the_database_guard_catches_a_credit_that_slips_past_the_application_check(): void
     {
         $student = $this->accepted();
-        $this->ledger()->credit($this->event, $student, $this->organiser, PointLedger::MANUAL);
+        $this->ledger()->credit($this->event, $student, $this->organiser, PointLedger::PASSPORT);
 
         // Simulate a lost race: the application row does not yet show the credit.
         EventApplication::where('student_id', $student->id)->update(['scored_at' => null]);
 
-        $this->refused(fn () => $this->ledger()->credit($this->event, $student, $this->organiser, PointLedger::MANUAL), 'already_credited');
+        $this->refused(fn () => $this->ledger()->credit($this->event, $student, $this->organiser, PointLedger::PASSPORT), 'already_credited');
         $this->assertSame(1, PointTransaction::count());
     }
 
@@ -135,7 +136,7 @@ class PointLedgerTest extends TopicTestCase
     {
         $tutor = $this->accepted();
 
-        $this->refused(fn () => $this->ledger()->credit($this->event, $tutor, $tutor, PointLedger::MANUAL), 'self_credit');
+        $this->refused(fn () => $this->ledger()->credit($this->event, $tutor, $tutor, PointLedger::PASSPORT), 'self_credit');
         $this->assertSame(0, PointTransaction::count());
     }
 
@@ -143,11 +144,11 @@ class PointLedgerTest extends TopicTestCase
     {
         foreach (['pending', 'waitlisted', 'rejected', 'withdrawn'] as $status) {
             $student = $this->accepted(status: $status);
-            $this->refused(fn () => $this->ledger()->credit($this->event, $student, $this->organiser, PointLedger::MANUAL), 'not_registered');
+            $this->refused(fn () => $this->ledger()->credit($this->event, $student, $this->organiser, PointLedger::PASSPORT), 'not_registered');
         }
 
         $stranger = $this->makeUser(UserRole::Student);
-        $this->refused(fn () => $this->ledger()->credit($this->event, $stranger, $this->organiser, PointLedger::MANUAL), 'not_registered');
+        $this->refused(fn () => $this->ledger()->credit($this->event, $stranger, $this->organiser, PointLedger::PASSPORT), 'not_registered');
         $this->assertSame(0, PointTransaction::count());
     }
 
@@ -164,16 +165,16 @@ class PointLedgerTest extends TopicTestCase
             $event = $this->makeEvent($changes);
             $student = $this->accepted($event);
 
-            $this->refused(fn () => $this->ledger()->credit($event, $student, $this->organiser, PointLedger::MANUAL), $reason);
+            $this->refused(fn () => $this->ledger()->credit($event, $student, $this->organiser, PointLedger::PASSPORT), $reason);
         }
 
         $draft = $this->makeEvent(['status' => 'draft']);
         $student = $this->accepted($draft);
-        $this->refused(fn () => $this->ledger()->credit($draft, $student, $this->organiser, PointLedger::MANUAL), 'inactive');
+        $this->refused(fn () => $this->ledger()->credit($draft, $student, $this->organiser, PointLedger::PASSPORT), 'inactive');
 
         $completed = $this->makeEvent(['status' => 'completed']);
         $student = $this->accepted($completed);
-        $this->assertSame(10, $this->ledger()->credit($completed, $student, $this->organiser, PointLedger::MANUAL)->points);
+        $this->assertSame(10, $this->ledger()->credit($completed, $student, $this->organiser, PointLedger::PASSPORT)->points);
     }
 
     public function test_an_archived_topic_freezes_crediting(): void
@@ -181,7 +182,7 @@ class PointLedgerTest extends TopicTestCase
         $student = $this->accepted();
         app(TopicService::class)->archive($this->admin, $this->faculty);
 
-        $this->refused(fn () => $this->ledger()->credit($this->event, $student, $this->organiser, PointLedger::MANUAL), 'topic_archived');
+        $this->refused(fn () => $this->ledger()->credit($this->event, $student, $this->organiser, PointLedger::PASSPORT), 'topic_archived');
     }
 
     public function test_an_inactive_student_cannot_be_credited(): void
@@ -189,7 +190,7 @@ class PointLedgerTest extends TopicTestCase
         $student = $this->accepted();
         $student->forceFill(['status' => 'inactive'])->save();
 
-        $this->refused(fn () => $this->ledger()->credit($this->event, $student, $this->organiser, PointLedger::MANUAL), 'student_inactive');
+        $this->refused(fn () => $this->ledger()->credit($this->event, $student, $this->organiser, PointLedger::PASSPORT), 'student_inactive');
     }
 
     public function test_totals_are_summed_per_category_and_semester_from_the_ledger(): void
@@ -197,8 +198,8 @@ class PointLedgerTest extends TopicTestCase
         $student = $this->accepted();
         $sports = $this->makeEvent(['category' => 'sports', 'points_value' => 5]);
         EventApplication::create(['event_id' => $sports->id, 'student_id' => $student->id, 'status' => 'accepted', 'applied_at' => now()]);
-        $this->ledger()->credit($this->event, $student, $this->organiser, PointLedger::MANUAL);
-        $this->ledger()->credit($sports, $student, $this->organiser, PointLedger::MANUAL);
+        $this->ledger()->credit($this->event, $student, $this->organiser, PointLedger::PASSPORT);
+        $this->ledger()->credit($sports, $student, $this->organiser, PointLedger::PASSPORT);
 
         $totals = $this->ledger()->totals($student);
         $this->assertSame(15, $totals['total']);
@@ -212,7 +213,7 @@ class PointLedgerTest extends TopicTestCase
     public function test_a_system_admin_can_reverse_a_credit_once_and_the_original_stays(): void
     {
         $student = $this->accepted();
-        $credit = $this->ledger()->credit($this->event, $student, $this->organiser, PointLedger::MANUAL);
+        $credit = $this->ledger()->credit($this->event, $student, $this->organiser, PointLedger::PASSPORT);
 
         $reversal = $this->ledger()->reverse($credit, $this->admin, 'Entered by mistake');
 
@@ -226,13 +227,13 @@ class PointLedgerTest extends TopicTestCase
         $this->refused(fn () => $this->ledger()->reverse($credit, $this->admin, 'Again'), 'already_reversed');
         $this->refused(fn () => $this->ledger()->reverse($reversal, $this->admin, 'Reverse the reversal'), 'not_a_credit');
         // The base credit is still on record, so the student cannot be credited a second time either.
-        $this->refused(fn () => $this->ledger()->credit($this->event, $student, $this->organiser, PointLedger::MANUAL), 'already_credited');
+        $this->refused(fn () => $this->ledger()->credit($this->event, $student, $this->organiser, PointLedger::PASSPORT), 'already_credited');
     }
 
     public function test_only_a_system_admin_with_a_reason_can_reverse_and_never_in_a_closed_semester(): void
     {
         $student = $this->accepted();
-        $credit = $this->ledger()->credit($this->event, $student, $this->organiser, PointLedger::MANUAL);
+        $credit = $this->ledger()->credit($this->event, $student, $this->organiser, PointLedger::PASSPORT);
 
         $this->refused(fn () => $this->ledger()->reverse($credit, $this->organiser, 'Nope'), 'forbidden');
         $this->refused(fn () => $this->ledger()->reverse($credit, $this->admin, '  '), 'reason_required');
@@ -245,7 +246,7 @@ class PointLedgerTest extends TopicTestCase
     public function test_ledger_rows_cannot_be_changed_or_deleted(): void
     {
         $student = $this->accepted();
-        $row = $this->ledger()->credit($this->event, $student, $this->organiser, PointLedger::MANUAL);
+        $row = $this->ledger()->credit($this->event, $student, $this->organiser, PointLedger::PASSPORT);
 
         foreach ([fn () => $row->update(['points' => 99]), fn () => $row->delete(), fn () => $row->forceFill(['category' => 'sports'])->save()] as $change) {
             try {

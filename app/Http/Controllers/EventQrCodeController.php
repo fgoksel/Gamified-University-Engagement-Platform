@@ -174,6 +174,7 @@ class EventQrCodeController extends Controller
     private function refusalFor(Event $event): ?string
     {
         return match (true) {
+            $event->is_hidden => 'A surprise event has no QR codes: its points are given only by import.',
             ! $event->qr_enabled => 'QR attendance is switched off for this event. Turn it on in the event to make codes.',
             $event->status === Event::STATUS_DRAFT => 'Publish the event first, then make its QR codes.',
             $event->isOnHold() => 'This event is on hold. Restore it to make QR codes.',

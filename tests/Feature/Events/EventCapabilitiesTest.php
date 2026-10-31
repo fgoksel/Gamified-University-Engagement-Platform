@@ -184,7 +184,7 @@ class EventCapabilitiesTest extends TopicTestCase
         }
     }
 
-    public function test_students_see_published_revealed_events_of_their_audience_only(): void
+    public function test_students_see_published_events_of_their_audience_only(): void
     {
         $student = $this->student();
         $this->assign($student, $this->role('Student', [Capability::View, Capability::EventsView, Capability::EventsApply]), $this->course);
@@ -193,8 +193,9 @@ class EventCapabilitiesTest extends TopicTestCase
 
         $this->assertFalse($this->can($student, 'view', $this->makeEvent(['status' => 'draft'])), 'draft');
         $this->assertFalse($this->can($student, 'view', $this->makeEvent(['status' => 'on_hold'])), 'on hold');
+        // A surprise event is never announced to students (Task #86), whatever an old reveal time says.
         $this->assertFalse($this->can($student, 'view', $this->makeEvent(['is_hidden' => true])), 'hidden');
-        $this->assertTrue($this->can($student, 'view', $this->makeEvent(['is_hidden' => true, 'reveal_at' => now()->subMinute()])), 'revealed');
+        $this->assertFalse($this->can($student, 'view', $this->makeEvent(['is_hidden' => true, 'reveal_at' => now()->subMinute()])), 'old reveal time');
         $this->assertFalse($this->can($student, 'view', $this->makeEvent(['audience_topic_id' => null])), 'invitation only');
         $this->assertFalse($this->can($student, 'view', $this->makeEvent(['audience_topic_id' => $this->topic('Elsewhere')->id])), 'other audience');
     }

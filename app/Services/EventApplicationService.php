@@ -283,9 +283,11 @@ class EventApplicationService
             ]);
         }
 
-        if ($event->is_hidden && ($event->reveal_at === null || now()->lt($event->reveal_at))) {
+        // A surprise event takes no applications (Task #86). Students never see it, so the
+        // answer is the one any event that is not open gives and says nothing about it.
+        if ($event->is_hidden) {
             throw ValidationException::withMessages([
-                'event' => 'This surprise event has not been revealed yet.',
+                'event' => 'This event is not open for applications.',
             ]);
         }
 
@@ -298,8 +300,7 @@ class EventApplicationService
             ]);
         }
 
-        // Hidden surprise events bypass standard application deadline (D02)
-        if (! $event->is_hidden && $event->application_deadline !== null && now()->gt($event->application_deadline)) {
+        if ($event->application_deadline !== null && now()->gt($event->application_deadline)) {
             throw ValidationException::withMessages([
                 'event' => 'The application deadline for this event has passed.',
             ]);

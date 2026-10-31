@@ -53,7 +53,6 @@ class UpdateEventRequest extends FormRequest
             'application_deadline' => ['required', 'date'],
             'completion_deadline' => ['required', 'date'],
             'is_hidden' => ['boolean'],
-            'reveal_at' => ['nullable', 'date'],
             'qr_enabled' => ['boolean'],
         ];
     }

@@ -222,7 +222,7 @@ class EventPointsImportTest extends EventTestCase
 
     public function test_a_surprise_event_is_credited_without_any_application(): void
     {
-        $surprise = $this->makeEvent(['is_hidden' => true, 'reveal_at' => now()->addMonth()]);
+        $surprise = $this->makeEvent(['is_hidden' => true]);
         $student = $this->member('SURP01');
 
         $this->give($this->csv('Neptun Code', 'SURP01'), $surprise)->assertOk()->assertJsonCount(1, 'credited');
@@ -424,24 +424,27 @@ class EventPointsImportTest extends EventTestCase
             'title' => 'Grade 5 in Programming 1',
             'points_value' => 20,
             'is_hidden' => true,
-            'reveal_at' => now()->addMonth(),
         ]);
 
         $this->give($this->csv('Neptun Code', 'ANNA01'))->assertOk();
         $this->give($this->csv('Neptun Code', 'ANNA01'), $surprise)->assertOk();
 
         $feed = app(NotificationFeed::class);
-        $shown = $anna->notifications()->get()->map(fn ($notification) => $feed->present($notification))->keyBy('title');
+        $shown = fn () => $anna->notifications()->get()->map(fn ($notification) => $feed->present($notification))->keyBy('title');
 
         $this->assertSame(
             "The organizer gave you the points of {$this->event->title}. They count under Academic.",
-            $shown['You received 10 points']['body'],
+            $shown()['You received 10 points']['body'],
         );
-        $this->assertSame("/events/{$this->event->id}", $shown['You received 10 points']['link']);
+        $this->assertSame("/events/{$this->event->id}", $shown()['You received 10 points']['link']);
 
-        // The surprise event stays hidden from her for now, so there is nothing to open yet.
-        $this->assertSame('The organizer gave you the points of Grade 5 in Programming 1. They count under Academic.', $shown['You received 20 points']['body']);
-        $this->assertNull($shown['You received 20 points']['link']);
+        // The surprise event was hidden from her until now: its points make it hers to open (Task #86).
+        $this->assertSame('The organizer gave you the points of Grade 5 in Programming 1. They count under Academic.', $shown()['You received 20 points']['body']);
+        $this->assertSame("/events/{$surprise->id}", $shown()['You received 20 points']['link']);
+
+        // It is frozen like any other event while it is on hold, and then there is nothing to open.
+        $surprise->update(['status' => Event::STATUS_ON_HOLD]);
+        $this->assertNull($shown()['You received 20 points']['link']);
     }
 
     private function assertRefused(string $reason, callable $action): void

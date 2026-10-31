@@ -129,7 +129,6 @@ class OrganizedEvents
             'points' => $event->points_value,
             'application_type' => $event->application_type,
             'is_hidden' => $event->is_hidden,
-            'reveal_at' => $event->reveal_at?->format('j M, H:i'),
             'qr_enabled' => $event->qr_enabled,
             'cancellation_reason' => $event->cancellation_reason,
             // An event with applicants is never deleted; it can be cancelled instead.

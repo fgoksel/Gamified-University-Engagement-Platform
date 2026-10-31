@@ -7,14 +7,10 @@ import {
     ArrowLeft,
     Camera,
     CheckCircle2,
-    ListFilter,
     RotateCw,
-    Search,
-    UserCheck,
 } from "@lucide/vue";
 import { BrowserQRCodeReader } from "@zxing/library";
 import Btn from "../../Components/Topics/Btn.vue";
-import StatusChip from "../../Components/StatusChip.vue";
 import { categoryDot } from "../../categoryColors.js";
 
 // Organizer: QR Passport scanner & point crediting (UC-1.7, Task #43)
@@ -23,10 +19,8 @@ defineOptions({ layout: { title: "Attendance scanner" } });
 const props = defineProps({
     event: { type: Object, required: true },
     stats: { type: Object, required: true },
-    students: { type: Array, default: () => [] },
 });
 
-const mode = ref("camera"); // 'camera' | 'manual'
 const videoRef = ref(null);
 const videoDevices = ref([]);
 const selectedDeviceId = ref(null);
@@ -35,12 +29,8 @@ const cameraError = ref(null);
 const processing = ref(false);
 
 const feedback = ref(null); // { type: 'success'|'warning'|'error', title: '', message: '' }
-const studentList = ref([...props.students]);
 const creditedCount = ref(props.stats.credited_count || 0);
 
-const searchQuery = ref("");
-const selectedIds = ref([]);
-const bulkProcessing = ref(false);
 let codeReader = null;
 let lastScannedRaw = "";
 let lastScannedTime = 0;
@@ -51,16 +41,6 @@ const progressPercent = computed(() => {
     return Math.min(
         100,
         Math.round((creditedCount.value / acceptedCount.value) * 100),
-    );
-});
-
-const filteredStudents = computed(() => {
-    const q = searchQuery.value.trim().toLowerCase();
-    if (!q) return studentList.value;
-    return studentList.value.filter(
-        (s) =>
-            s.name.toLowerCase().includes(q) ||
-            (s.neptun_code && s.neptun_code.toLowerCase().includes(q)),
     );
 });
 
@@ -180,10 +160,10 @@ function onScanResult(rawText) {
     lastScannedRaw = rawText;
     lastScannedTime = now;
 
-    submitCredit(rawText, "passport");
+    submitCredit(rawText);
 }
 
-async function submitCredit(identifier, source = "passport") {
+async function submitCredit(identifier) {
     if (processing.value) return;
     processing.value = true;
 
@@ -198,7 +178,7 @@ async function submitCredit(identifier, source = "passport") {
                         .querySelector('meta[name="csrf-token"]')
                         ?.getAttribute("content") || "",
             },
-            body: JSON.stringify({ identifier, source }),
+            body: JSON.stringify({ identifier }),
         });
 
         const data = await response.json();
@@ -212,15 +192,6 @@ async function submitCredit(identifier, source = "passport") {
                 student: data.student,
             };
 
-            // Update local student list & count
-            if (data.student && data.student.id) {
-                const target = studentList.value.find(
-                    (s) => s.id === data.student.id,
-                );
-                if (target) {
-                    target.is_credited = true;
-                }
-            }
             if (data.credited_count !== undefined) {
                 creditedCount.value = data.credited_count;
             } else {
@@ -271,115 +242,11 @@ async function submitCredit(identifier, source = "passport") {
     }
 }
 
-const selectableStudents = computed(() =>
-    filteredStudents.value.filter((s) => !s.is_credited),
-);
-const allSelected = computed(
-    () =>
-        selectableStudents.value.length > 0 &&
-        selectableStudents.value.every((s) => selectedIds.value.includes(s.id)),
-);
-
-function toggleAll() {
-    if (allSelected.value) {
-        const visible = selectableStudents.value.map((s) => s.id);
-        selectedIds.value = selectedIds.value.filter(
-            (id) => !visible.includes(id),
-        );
-    } else {
-        selectedIds.value = [
-            ...new Set([
-                ...selectedIds.value,
-                ...selectableStudents.value.map((s) => s.id),
-            ]),
-        ];
-    }
-}
-
-// Checklist mode (Task #42): credit every ticked student in one request.
-async function creditSelected() {
-    if (bulkProcessing.value || selectedIds.value.length === 0) return;
-    bulkProcessing.value = true;
-
-    try {
-        const response = await fetch(`/events/${props.event.id}/credit/bulk`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                Accept: "application/json",
-                "X-CSRF-TOKEN":
-                    document
-                        .querySelector('meta[name="csrf-token"]')
-                        ?.getAttribute("content") || "",
-            },
-            body: JSON.stringify({ student_ids: selectedIds.value }),
-        });
-        const data = await response.json();
-
-        if (!response.ok) {
-            feedback.value = {
-                type: "error",
-                title: "Crediting refused",
-                message:
-                    data.errors?.event?.[0] ||
-                    data.message ||
-                    "Could not credit the selected students.",
-            };
-            return;
-        }
-
-        for (const id of data.credited) {
-            const target = studentList.value.find((s) => s.id === id);
-            if (target) target.is_credited = true;
-        }
-        creditedCount.value = data.credited_count;
-        selectedIds.value = selectedIds.value.filter(
-            (id) => !data.credited.includes(id),
-        );
-
-        const refused = Object.keys(data.refused).length;
-        feedback.value = {
-            type: refused === 0 ? "success" : "warning",
-            title: `${data.credited.length} student${data.credited.length === 1 ? "" : "s"} credited`,
-            message:
-                refused === 0
-                    ? `Each received ${props.event.points_value} points.`
-                    : `${refused} could not be credited: ${Object.values(data.refused).join(" ")}`,
-        };
-    } catch (err) {
-        feedback.value = {
-            type: "error",
-            title: "Connection Error",
-            message: "Failed to communicate with the server. Please try again.",
-        };
-    } finally {
-        bulkProcessing.value = false;
-    }
-}
-
-function handleManualCredit(student) {
-    if (student.is_credited || processing.value) return;
-    submitCredit(student.neptun_code || String(student.id), "manual");
-}
-
-onMounted(() => {
-    if (mode.value === "camera") {
-        initCamera();
-    }
-});
+onMounted(initCamera);
 
 onUnmounted(() => {
     stopCamera();
 });
-
-function setMode(newMode) {
-    mode.value = newMode;
-    if (newMode === "camera") {
-        initCamera();
-    } else {
-        stopCamera();
-    }
-}
 </script>
 
 <template>
@@ -446,38 +313,6 @@ function setMode(newMode) {
                     :style="{ width: `${progressPercent}%` }"
                 ></div>
             </div>
-
-            <!-- Mode Selector Tabs -->
-            <div class="flex items-center border-t border-line pt-3 gap-2">
-                <button
-                    type="button"
-                    class="inline-flex items-center gap-2 px-3 py-1.5 rounded-control text-sm font-medium transition"
-                    :class="
-                        mode === 'camera'
-                            ? 'bg-primary text-on-primary font-semibold'
-                            : 'text-fg-muted hover:text-fg hover:bg-surface-muted'
-                    "
-                    data-test="mode-camera"
-                    @click="setMode('camera')"
-                >
-                    <Camera class="size-4" />
-                    Scan QR Passport
-                </button>
-                <button
-                    type="button"
-                    class="inline-flex items-center gap-2 px-3 py-1.5 rounded-control text-sm font-medium transition"
-                    :class="
-                        mode === 'manual'
-                            ? 'bg-primary text-on-primary font-semibold'
-                            : 'text-fg-muted hover:text-fg hover:bg-surface-muted'
-                    "
-                    data-test="mode-manual"
-                    @click="setMode('manual')"
-                >
-                    <ListFilter class="size-4" />
-                    Manual List (Fallback)
-                </button>
-            </div>
         </div>
 
         <!-- Live Scan Feedback Banner -->
@@ -527,7 +362,7 @@ function setMode(newMode) {
         </div>
 
         <!-- CAMERA SCANNER VIEW -->
-        <div v-show="mode === 'camera'" class="space-y-4">
+        <div class="space-y-4">
             <!-- Camera Viewfinder Box -->
             <div
                 class="relative rounded-card border border-line bg-black overflow-hidden flex flex-col items-center justify-center min-h-[360px] sm:min-h-[440px]"
@@ -584,10 +419,7 @@ function setMode(newMode) {
                         {{ cameraError }}
                     </p>
                     <div class="flex gap-2 pt-2">
-                        <Btn variant="primary" @click="setMode('manual')">
-                            Switch to Manual Search
-                        </Btn>
-                        <Btn variant="quiet" @click="initCamera">
+                        <Btn variant="primary" @click="initCamera">
                             Retry Camera
                         </Btn>
                     </div>
@@ -628,130 +460,6 @@ function setMode(newMode) {
                         }}
                     </option>
                 </select>
-            </div>
-        </div>
-
-        <!-- MANUAL LIST / FALLBACK VIEW -->
-        <div v-show="mode === 'manual'" class="space-y-4">
-            <!-- Search Input Box -->
-            <div class="relative">
-                <Search
-                    class="size-4 text-fg-muted absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
-                />
-                <input
-                    v-model="searchQuery"
-                    type="text"
-                    placeholder="Search accepted student by name or Neptun code..."
-                    class="w-full pl-9 pr-4 py-2.5 rounded-control border border-line bg-surface text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
-                    data-test="manual-search"
-                />
-            </div>
-
-            <!-- Student Table -->
-            <div
-                class="rounded-card border border-line bg-surface overflow-hidden"
-            >
-                <div
-                    v-if="filteredStudents.length === 0"
-                    class="p-8 text-center text-sm text-fg-muted"
-                >
-                    No accepted students match your search.
-                </div>
-
-                <table v-else class="w-full text-left text-sm">
-                    <thead
-                        class="bg-surface-muted text-xs text-fg-muted uppercase"
-                    >
-                        <tr>
-                            <th class="px-4 py-3 w-10">
-                                <input
-                                    type="checkbox"
-                                    :checked="allSelected"
-                                    :disabled="selectableStudents.length === 0"
-                                    aria-label="Select all students not yet credited"
-                                    data-test="select-all"
-                                    @change="toggleAll"
-                                />
-                            </th>
-                            <th class="px-4 py-3 font-medium">Student</th>
-                            <th class="px-4 py-3 font-medium">Neptun</th>
-                            <th class="px-4 py-3 font-medium">Status</th>
-                            <th class="px-4 py-3 font-medium text-right">
-                                Action
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-line">
-                        <tr
-                            v-for="student in filteredStudents"
-                            :key="student.id"
-                            class="hover:bg-surface-muted/50 transition"
-                        >
-                            <td class="px-4 py-3">
-                                <input
-                                    v-model="selectedIds"
-                                    type="checkbox"
-                                    :value="student.id"
-                                    :disabled="student.is_credited"
-                                    :aria-label="`Select ${student.name}`"
-                                    data-test="select-student"
-                                />
-                            </td>
-                            <td class="px-4 py-3 font-medium text-fg">
-                                {{ student.name }}
-                            </td>
-                            <td
-                                class="px-4 py-3 text-fg-muted font-mono text-xs"
-                            >
-                                {{ student.neptun_code || "—" }}
-                            </td>
-                            <td class="px-4 py-3">
-                                <StatusChip
-                                    v-if="student.is_credited"
-                                    tone="success"
-                                    :icon="CheckCircle2"
-                                >
-                                    Credited
-                                </StatusChip>
-                                <StatusChip v-else tone="info">
-                                    Accepted
-                                </StatusChip>
-                            </td>
-                            <td class="px-4 py-3 text-right">
-                                <Btn
-                                    v-if="!student.is_credited"
-                                    variant="primary"
-                                    size="sm"
-                                    :loading="processing"
-                                    data-test="credit-btn"
-                                    @click="handleManualCredit(student)"
-                                >
-                                    <UserCheck class="size-3.5" />
-                                    Award {{ event.points_value }} pts
-                                </Btn>
-                                <span
-                                    v-else
-                                    class="text-xs text-fg-muted italic"
-                                >
-                                    Done
-                                </span>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="flex justify-end">
-                <Btn
-                    variant="primary"
-                    :loading="bulkProcessing"
-                    :disabled="selectedIds.length === 0"
-                    data-test="credit-selected"
-                    @click="creditSelected"
-                >
-                    <UserCheck class="size-4" />
-                    Credit selected ({{ selectedIds.length }})
-                </Btn>
             </div>
         </div>
     </div>
