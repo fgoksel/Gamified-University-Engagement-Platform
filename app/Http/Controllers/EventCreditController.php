@@ -6,7 +6,6 @@ use App\Models\Event;
 use App\Models\EventApplication;
 use App\Models\PointTransaction;
 use App\Services\EventCreditService;
-use App\Services\PointLedger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -26,28 +25,15 @@ class EventCreditController extends Controller
     {
         abort_unless($request->user()->can('credit', $event), 403);
 
-        $acceptedApplications = EventApplication::query()
+        $acceptedCount = EventApplication::query()
             ->where('event_id', $event->id)
             ->where('status', EventApplication::ACCEPTED)
-            ->with('student:id,name,neptun_code')
-            ->orderBy('applied_at')
-            ->get();
+            ->count();
 
-        $creditedStudentIds = PointTransaction::query()
+        $creditedCount = PointTransaction::query()
             ->where('event_id', $event->id)
             ->where('type', PointTransaction::CREDIT)
-            ->pluck('student_id')
-            ->all();
-
-        $students = $acceptedApplications->map(function (EventApplication $app) use ($creditedStudentIds) {
-            return [
-                'id' => $app->student_id,
-                'name' => $app->student?->name ?? 'Unknown Student',
-                'neptun_code' => $app->student?->neptun_code,
-                'is_credited' => in_array($app->student_id, $creditedStudentIds, true),
-                'scored_at' => $app->scored_at?->toIso8601String(),
-            ];
-        });
+            ->count();
 
         return Inertia::render('Events/Scan', [
             'event' => [
@@ -65,15 +51,15 @@ class EventCreditController extends Controller
                 ] : null,
             ],
             'stats' => [
-                'accepted_count' => $acceptedApplications->count(),
-                'credited_count' => count($creditedStudentIds),
+                'accepted_count' => $acceptedCount,
+                'credited_count' => $creditedCount,
             ],
-            'students' => $students,
         ]);
     }
 
     /**
-     * Credit points to a student via QR Passport scan or manual entry.
+     * Credit points to the student whose QR passport was scanned. Nothing else is accepted:
+     * no typed code and no pick from a list (Task #83).
      */
     public function credit(Request $request, Event $event): JsonResponse
     {
@@ -81,49 +67,8 @@ class EventCreditController extends Controller
 
         $data = $request->validate([
             'identifier' => ['required', 'string'],
-            'source' => ['sometimes', 'string', 'in:passport,manual'],
         ]);
 
-        $source = $data['source'] ?? 'passport';
-        $result = $this->service->credit($request->user(), $event, $data['identifier'], $source);
-
-        return response()->json($result);
-    }
-
-    /**
-     * Credit several ticked students at once: the checklist mode of the crediting tab (UC-1.7).
-     * Each student goes through the same checks as a single credit, so one refusal
-     * never stops the others and nobody is credited twice.
-     */
-    public function creditMany(Request $request, Event $event): JsonResponse
-    {
-        abort_unless($request->user()->can('credit', $event), 403);
-
-        $data = $request->validate([
-            'student_ids' => ['required', 'array', 'min:1', 'max:500'],
-            'student_ids.*' => ['integer', 'distinct'],
-        ]);
-
-        $credited = [];
-        $refused = [];
-
-        foreach ($data['student_ids'] as $studentId) {
-            $result = $this->service->credit($request->user(), $event, (int) $studentId, PointLedger::MANUAL);
-
-            if ($result['status'] === 'credited') {
-                $credited[] = (int) $studentId;
-            } else {
-                $refused[(int) $studentId] = $result['message'];
-            }
-        }
-
-        return response()->json([
-            'credited' => $credited,
-            'refused' => $refused,
-            'credited_count' => PointTransaction::query()
-                ->where('event_id', $event->id)
-                ->where('type', PointTransaction::CREDIT)
-                ->count(),
-        ]);
+        return response()->json($this->service->credit($request->user(), $event, $data['identifier']));
     }
 }

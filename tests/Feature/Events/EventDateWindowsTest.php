@@ -247,7 +247,7 @@ class EventDateWindowsTest extends TopicTestCase
         $student = $this->student('LATE02');
         $this->apply($student, $event);
 
-        $row = app(PointLedger::class)->credit($event, $student, $this->organiser, PointLedger::MANUAL);
+        $row = app(PointLedger::class)->credit($event, $student, $this->organiser, PointLedger::PASSPORT);
 
         $this->assertSame($event->points_value, $row->points);
     }

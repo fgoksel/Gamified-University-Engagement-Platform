@@ -193,7 +193,7 @@ class EventEditTest extends EventTestCase
         $student = $this->student();
         $this->accepted($student, $event);
         $event->update(['event_starts_at' => now()->subHour(), 'event_ends_at' => now()->addHour(), 'application_deadline' => now()->subDay()]);
-        app(PointLedger::class)->credit($event, $student, $this->organiser, PointLedger::MANUAL);
+        app(PointLedger::class)->credit($event, $student, $this->organiser, PointLedger::PASSPORT);
         $other = TopicTag::create(['name' => 'Chess', 'category' => 'sports', 'is_active' => true]);
 
         $this->save($this->organiser, $event, ['points_value' => 99])->assertSessionHasErrors('points_value');

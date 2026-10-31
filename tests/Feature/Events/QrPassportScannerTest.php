@@ -25,8 +25,9 @@ use Tests\Feature\Topics\TopicTestCase;
  * - Single-award ledger invariant (D06)
  * - Anti-Self-Dealing guardrail: organizers cannot credit themselves (D04)
  * - Verification of accepted application status (UC-1.7)
- * - Manual Neptun search fallback for cracked screens (Meeting Q13)
  * - Event lifecycle guards (draft, on hold, cancelled)
+ *
+ * Only a signed QR passport credits (Task #83); NoManualCreditTest covers what is refused.
  */
 class QrPassportScannerTest extends TopicTestCase
 {
@@ -105,6 +106,12 @@ class QrPassportScannerTest extends TopicTestCase
         return $student;
     }
 
+    /** What the student's "My QR passport" page shows (Task #52). */
+    private function passportOf(User $student): string
+    {
+        return app(QrPassport::class)->issue($student);
+    }
+
     private function makeAcceptedApplication(Event $event, User $student): EventApplication
     {
         return EventApplication::create([
@@ -140,11 +147,7 @@ class QrPassportScannerTest extends TopicTestCase
                 ->where('accepted_count', 1)
                 ->where('credited_count', 0)
             )
-            ->has('students', 1)
-            ->where('students.0.id', $student->id)
-            ->where('students.0.name', 'Alice')
-            ->where('students.0.neptun_code', 'NEP001')
-            ->where('students.0.is_credited', false)
+            ->missing('students')
         );
     }
 
@@ -160,7 +163,7 @@ class QrPassportScannerTest extends TopicTestCase
             ->assertSessionHas('error');
 
         $this->actingAs($student)
-            ->postJson("/events/{$event->id}/credit", ['identifier' => $student->neptun_code])
+            ->postJson("/events/{$event->id}/credit", ['identifier' => $this->passportOf($student)])
             ->assertForbidden();
 
         // 2. Teacher on another course without capability here is redirected from web page, forbidden on JSON API
@@ -170,7 +173,7 @@ class QrPassportScannerTest extends TopicTestCase
             ->assertSessionHas('error');
 
         $this->actingAs($this->otherTeacher)
-            ->postJson("/events/{$event->id}/credit", ['identifier' => $student->neptun_code])
+            ->postJson("/events/{$event->id}/credit", ['identifier' => $this->passportOf($student)])
             ->assertForbidden();
     }
 
@@ -190,7 +193,7 @@ class QrPassportScannerTest extends TopicTestCase
             ->assertOk();
 
         $response = $this->actingAs($facultyLead)
-            ->postJson("/events/{$event->id}/credit", ['identifier' => 'DEANSTU']);
+            ->postJson("/events/{$event->id}/credit", ['identifier' => $this->passportOf($student)]);
 
         $response->assertOk()
             ->assertJson([
@@ -210,7 +213,7 @@ class QrPassportScannerTest extends TopicTestCase
         $student = $this->makeStudent('ADMSTU', 'Admin Student');
         $this->makeAcceptedApplication($event, $student);
 
-        $result = app(EventCreditService::class)->credit($this->admin, $event, 'ADMSTU');
+        $result = app(EventCreditService::class)->credit($this->admin, $event, $this->passportOf($student));
 
         $this->assertSame('credited', $result['status']);
         $this->assertSame(15, $result['points']);
@@ -222,13 +225,9 @@ class QrPassportScannerTest extends TopicTestCase
         $student = $this->makeStudent('NEP101', 'Bob Martin');
         $application = $this->makeAcceptedApplication($event, $student);
 
-        // What the student's "My QR passport" page shows (Task #52).
-        $passport = app(QrPassport::class)->issue($student);
-
         $response = $this->actingAs($this->teacher)
             ->postJson("/events/{$event->id}/credit", [
-                'identifier' => $passport,
-                'source' => 'passport',
+                'identifier' => $this->passportOf($student),
             ]);
 
         $response->assertOk()
@@ -261,84 +260,6 @@ class QrPassportScannerTest extends TopicTestCase
         $this->assertNotNull($application->completed_at);
     }
 
-    public function test_scanning_accepted_student_via_neptun_code(): void
-    {
-        $event = $this->makeEvent();
-        $student = $this->makeStudent('NEP202', 'Charlie');
-        $this->makeAcceptedApplication($event, $student);
-
-        $response = $this->actingAs($this->teacher)
-            ->postJson("/events/{$event->id}/credit", [
-                'identifier' => 'nep202', // case-insensitive
-            ]);
-
-        $response->assertOk()
-            ->assertJson([
-                'status' => 'credited',
-                'points' => 15,
-                'student' => [
-                    'id' => $student->id,
-                    'name' => 'Charlie',
-                    'neptun_code' => 'NEP202',
-                ],
-            ]);
-
-        $this->assertDatabaseHas('point_transactions', [
-            'student_id' => $student->id,
-            'event_id' => $event->id,
-            'points' => 15,
-        ]);
-    }
-
-    public function test_a_json_payload_may_name_a_neptun_code_but_not_an_id(): void
-    {
-        $event = $this->makeEvent();
-        $student = $this->makeStudent('NEP303', 'Diana');
-        $this->makeAcceptedApplication($event, $student);
-
-        // An id can be made up by anyone, so it is not accepted from a scan (Task #52).
-        $this->actingAs($this->teacher)
-            ->postJson("/events/{$event->id}/credit", ['identifier' => json_encode(['student_id' => $student->id])])
-            ->assertOk()
-            ->assertJson(['status' => 'not_found']);
-
-        $this->actingAs($this->teacher)
-            ->postJson("/events/{$event->id}/credit", ['identifier' => json_encode(['neptun_code' => 'nep303'])])
-            ->assertOk()
-            ->assertJson([
-                'status' => 'credited',
-                'points' => 15,
-                'student' => [
-                    'id' => $student->id,
-                ],
-            ]);
-    }
-
-    public function test_manual_search_fallback_credits_with_source_manual(): void
-    {
-        $event = $this->makeEvent();
-        $student = $this->makeStudent('NEP404', 'Edward');
-        $this->makeAcceptedApplication($event, $student);
-
-        $response = $this->actingAs($this->teacher)
-            ->postJson("/events/{$event->id}/credit", [
-                'identifier' => (string) $student->id,
-                'source' => 'manual',
-            ]);
-
-        $response->assertOk()
-            ->assertJson([
-                'status' => 'credited',
-                'points' => 15,
-            ]);
-
-        $this->assertDatabaseHas('point_transactions', [
-            'student_id' => $student->id,
-            'event_id' => $event->id,
-            'source' => 'manual',
-        ]);
-    }
-
     public function test_scanning_same_student_twice_is_rejected_as_already_credited(): void
     {
         $event = $this->makeEvent();
@@ -347,12 +268,12 @@ class QrPassportScannerTest extends TopicTestCase
 
         // First scan
         $first = $this->actingAs($this->teacher)
-            ->postJson("/events/{$event->id}/credit", ['identifier' => 'NEP505']);
+            ->postJson("/events/{$event->id}/credit", ['identifier' => $this->passportOf($student)]);
         $first->assertOk()->assertJson(['status' => 'credited']);
 
         // Second scan
         $second = $this->actingAs($this->teacher)
-            ->postJson("/events/{$event->id}/credit", ['identifier' => 'NEP505']);
+            ->postJson("/events/{$event->id}/credit", ['identifier' => $this->passportOf($student)]);
 
         $second->assertOk()
             ->assertJson([
@@ -372,13 +293,12 @@ class QrPassportScannerTest extends TopicTestCase
     {
         $event = $this->makeEvent();
 
-        // Give teacher a Neptun code and an accepted application
-        $this->teacher->update(['neptun_code' => 'TEACH1']);
+        // Give teacher an accepted application and let them scan their own passport
         $this->makeAcceptedApplication($event, $this->teacher);
 
         $response = $this->actingAs($this->teacher)
             ->postJson("/events/{$event->id}/credit", [
-                'identifier' => 'TEACH1',
+                'identifier' => $this->passportOf($this->teacher),
             ]);
 
         $response->assertOk()
@@ -402,7 +322,7 @@ class QrPassportScannerTest extends TopicTestCase
         $unregistered = $this->makeStudent('UNREG1', 'Unregistered User');
 
         $res1 = $this->actingAs($this->teacher)
-            ->postJson("/events/{$event->id}/credit", ['identifier' => 'UNREG1']);
+            ->postJson("/events/{$event->id}/credit", ['identifier' => $this->passportOf($unregistered)]);
 
         $res1->assertOk()
             ->assertJson([
@@ -420,7 +340,7 @@ class QrPassportScannerTest extends TopicTestCase
         ]);
 
         $res2 = $this->actingAs($this->teacher)
-            ->postJson("/events/{$event->id}/credit", ['identifier' => 'WAIT01']);
+            ->postJson("/events/{$event->id}/credit", ['identifier' => $this->passportOf($waitlistedStudent)]);
 
         $res2->assertOk()
             ->assertJson([
@@ -439,7 +359,7 @@ class QrPassportScannerTest extends TopicTestCase
         ]);
 
         $res3 = $this->actingAs($this->teacher)
-            ->postJson("/events/{$event->id}/credit", ['identifier' => 'WITH01']);
+            ->postJson("/events/{$event->id}/credit", ['identifier' => $this->passportOf($withdrawnStudent)]);
 
         $res3->assertOk()
             ->assertJson([
@@ -458,7 +378,7 @@ class QrPassportScannerTest extends TopicTestCase
         $this->makeAcceptedApplication($draftEvent, $student);
 
         $this->actingAs($this->teacher)
-            ->postJson("/events/{$draftEvent->id}/credit", ['identifier' => 'STU999'])
+            ->postJson("/events/{$draftEvent->id}/credit", ['identifier' => $this->passportOf($student)])
             ->assertStatus(422)
             ->assertJsonValidationErrors(['event']);
 
@@ -467,7 +387,7 @@ class QrPassportScannerTest extends TopicTestCase
         $this->makeAcceptedApplication($onHoldEvent, $student);
 
         $this->actingAs($this->teacher)
-            ->postJson("/events/{$onHoldEvent->id}/credit", ['identifier' => 'STU999'])
+            ->postJson("/events/{$onHoldEvent->id}/credit", ['identifier' => $this->passportOf($student)])
             ->assertStatus(422)
             ->assertJsonValidationErrors(['event']);
 
@@ -476,26 +396,42 @@ class QrPassportScannerTest extends TopicTestCase
         $this->makeAcceptedApplication($cancelledEvent, $student);
 
         $this->actingAs($this->teacher)
-            ->postJson("/events/{$cancelledEvent->id}/credit", ['identifier' => 'STU999'])
+            ->postJson("/events/{$cancelledEvent->id}/credit", ['identifier' => $this->passportOf($student)])
             ->assertStatus(422)
             ->assertJsonValidationErrors(['event']);
     }
 
-    public function test_scanning_nonexistent_student_returns_not_found(): void
+    public function test_the_passport_of_an_account_that_does_not_exist_is_refused(): void
+    {
+        $event = $this->makeEvent();
+        // Correctly signed, but nobody has this id.
+        $passport = $this->passportOf((new User)->forceFill(['id' => 999999]));
+
+        $this->actingAs($this->teacher)
+            ->postJson("/events/{$event->id}/credit", ['identifier' => $passport])
+            ->assertOk()
+            ->assertJson([
+                'status' => 'passport_invalid',
+                'message' => 'This QR passport is not valid.',
+            ]);
+
+        $this->assertSame(0, PointTransaction::query()->count());
+    }
+
+    public function test_text_that_is_not_a_passport_is_refused_with_a_clear_message(): void
     {
         $event = $this->makeEvent();
 
-        $response = $this->actingAs($this->teacher)
-            ->postJson("/events/{$event->id}/credit", ['identifier' => 'NONEXISTENT']);
-
-        $response->assertOk()
+        $this->actingAs($this->teacher)
+            ->postJson("/events/{$event->id}/credit", ['identifier' => 'NONEXISTENT'])
+            ->assertOk()
             ->assertJson([
-                'status' => 'not_found',
-                'message' => 'No student found matching the scanned QR code or input.',
+                'status' => 'passport_invalid',
+                'message' => 'This is not a QR passport. Ask the student to show the one on their "My QR passport" page.',
             ]);
     }
 
-    public function test_scanner_page_lists_students_with_credited_status(): void
+    public function test_scanner_page_counts_the_students_credited_so_far(): void
     {
         $event = $this->makeEvent();
         $student1 = $this->makeStudent('S111', 'Student One');
@@ -506,7 +442,8 @@ class QrPassportScannerTest extends TopicTestCase
 
         // Credit student1
         $this->actingAs($this->teacher)
-            ->postJson("/events/{$event->id}/credit", ['identifier' => 'S111']);
+            ->postJson("/events/{$event->id}/credit", ['identifier' => $this->passportOf($student1)])
+            ->assertJson(['status' => 'credited']);
 
         // Visit scan page
         $response = $this->actingAs($this->teacher)
@@ -517,10 +454,7 @@ class QrPassportScannerTest extends TopicTestCase
             ->component('Events/Scan')
             ->where('stats.accepted_count', 2)
             ->where('stats.credited_count', 1)
-            ->where('students.0.neptun_code', 'S111')
-            ->where('students.0.is_credited', true)
-            ->where('students.1.neptun_code', 'S222')
-            ->where('students.1.is_credited', false)
+            ->missing('students')
         );
     }
 
@@ -534,7 +468,7 @@ class QrPassportScannerTest extends TopicTestCase
         $this->makeAcceptedApplication($futureEvent, $student);
 
         $this->actingAs($this->teacher)
-            ->postJson("/events/{$futureEvent->id}/credit", ['identifier' => 'FUT01'])
+            ->postJson("/events/{$futureEvent->id}/credit", ['identifier' => $this->passportOf($student)])
             ->assertStatus(422)
             ->assertJsonValidationErrors(['event']);
     }
@@ -550,7 +484,7 @@ class QrPassportScannerTest extends TopicTestCase
         $this->makeAcceptedApplication($expiredEvent, $student);
 
         $this->actingAs($this->teacher)
-            ->postJson("/events/{$expiredEvent->id}/credit", ['identifier' => 'EXP01'])
+            ->postJson("/events/{$expiredEvent->id}/credit", ['identifier' => $this->passportOf($student)])
             ->assertStatus(422)
             ->assertJsonValidationErrors(['event']);
     }

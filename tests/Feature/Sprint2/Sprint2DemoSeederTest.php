@@ -122,8 +122,7 @@ class Sprint2DemoSeederTest extends TestCase
         $this->seedDemo();
         Notification::fake();
         $applications = app(EventApplicationService::class);
-        $ledger = app(PointLedger::class);
-        [$ivan, $anna, $csilla, $dani, $eszter] = array_map(fn ($key) => $this->person($key), ['ivan', 'anna', 'csilla', 'dani', 'eszter']);
+        [$ivan, $anna, $bence, $dani, $eszter] = array_map(fn ($key) => $this->person($key), ['ivan', 'anna', 'bence', 'dani', 'eszter']);
 
         // 1. Two branches: Ivan and Anna cannot reach the Sport event; Sara's own students can.
         $run = $this->event('Campus 5K Run');
@@ -155,9 +154,8 @@ class Sprint2DemoSeederTest extends TestCase
         $applications->withdraw($anna, $joins);
         $this->assertSame(['Anna Nagy' => 'withdrawn', 'Bence Tóth' => 'accepted', 'Csilla Varga' => 'accepted', 'Eszter Kiss' => 'waitlisted'], $this->applications('SQL Joins Workshop'));
 
-        // 4. Crediting at the running lab: checklist, passport and poster.
+        // 4. Crediting at the running lab: passport and poster.
         $lab = $this->event('Indexing Lab');
-        $this->assertSame(20, $ledger->credit($lab, $csilla, $ivan, PointLedger::MANUAL)->points);
         $this->actingAs($ivan)->postJson("/events/{$lab->id}/credit", ['identifier' => app(QrPassport::class)->issue($anna)])
             ->assertJsonPath('status', 'credited');
         $qr = app(QrTokenService::class);
@@ -165,10 +163,10 @@ class Sprint2DemoSeederTest extends TestCase
         $this->assertSame('credited', $qr->redeem($dani, $poster)['outcome']);
 
         // 5. No double credit: Bence was credited when the data was seeded.
-        $this->actingAs($ivan)->postJson("/events/{$lab->id}/credit", ['identifier' => 'BENC02', 'source' => 'manual'])
+        $this->actingAs($ivan)->postJson("/events/{$lab->id}/credit", ['identifier' => app(QrPassport::class)->issue($bence)])
             ->assertJsonPath('status', 'already_credited');
         $this->assertThrows(fn () => $qr->redeem($dani, $poster), EventActionRefused::class);
-        $this->assertSame(4, $lab->pointTransactions()->count());
+        $this->assertSame(3, $lab->pointTransactions()->count());
 
         // 6. Restoring the event on hold tells Anna.
         $this->actingAs($ivan)->post('/events/'.$this->event('Database Careers Evening')->id.'/restore')->assertSessionHas('success');
