@@ -66,7 +66,7 @@ onBeforeUnmount(() => {
             </Link>
             <button
                 type="button"
-                class="rounded-control p-2 text-fg hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-ring"
+                class="inline-flex size-11 items-center justify-center rounded-control text-fg hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-ring"
                 aria-label="Open menu"
                 :aria-expanded="mobileMenuOpen"
                 @click="mobileMenuOpen = true"
@@ -90,7 +90,7 @@ onBeforeUnmount(() => {
                     <AppLogo />
                     <button
                         type="button"
-                        class="rounded-control p-2 text-fg hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-ring"
+                        class="inline-flex size-11 items-center justify-center rounded-control text-fg hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-ring"
                         aria-label="Close menu"
                         @click="closeMobileMenu"
                     >

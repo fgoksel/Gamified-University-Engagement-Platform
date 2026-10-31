@@ -9,7 +9,7 @@ const { selectedArea, clearSelection } = useSubjectAreaFilter();
 <template>
     <div
         v-if="selectedArea"
-        class="inline-flex items-center gap-2 rounded-full border border-line bg-surface py-1 pr-1 pl-3 text-sm text-fg"
+        class="inline-flex min-h-11 items-center gap-2 rounded-full border border-line bg-surface py-1 pr-1 pl-3 text-sm text-fg"
     >
         <FolderTree class="size-4 text-fg-muted" :stroke-width="1.75" />
         <span>
