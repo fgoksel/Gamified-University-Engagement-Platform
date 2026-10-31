@@ -59,12 +59,14 @@ function submit() {
             <TextField
                 v-model="form.title"
                 label="Name"
+                required
                 :error="form.errors.title"
                 data-autofocus
             />
             <TextField
                 v-model="form.code"
-                label="Code (optional)"
+                label="Code"
+                optional
                 hint="A short reference such as BMEINFO101. It does not change how the topic behaves."
                 :error="form.errors.code"
             />
@@ -73,7 +75,10 @@ function submit() {
                 <label
                     for="topic-description"
                     class="block text-sm font-medium text-fg"
-                    >Description (optional)</label
+                    >Description
+                    <span class="font-normal text-fg-muted"
+                        >(optional)</span
+                    ></label
                 >
                 <textarea
                     id="topic-description"
