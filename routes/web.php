@@ -148,12 +148,14 @@ Route::middleware('auth')->group(function () {
             Route::get('/events/{event}/checkin/status', [EventCheckinController::class, 'status'])
                 ->whereNumber('event')->middleware('permission:events.view')->name('events.checkin.status');
 
-            // The organiser's QR page: make, print (posters and slips) and revoke codes (Task #44).
+            // The organiser's QR page: make, print and withdraw printed single-use slips (Tasks #44, #84).
+            // A batch prints on its own; "earlier" is the slips made before batches.
             Route::prefix('events/{event}/qr-codes')->whereNumber('event')->name('events.qr-codes.')->group(function () {
                 Route::get('/', [EventQrCodeController::class, 'index'])->name('index');
                 Route::post('/', [EventQrCodeController::class, 'store'])->name('store');
                 Route::post('/{token}/revoke', [EventQrCodeController::class, 'revoke'])->whereNumber('token')->name('revoke');
-                Route::get('/print/{type}', [EventQrCodeController::class, 'print'])->whereIn('type', ['poster', 'slip'])->name('print');
+                Route::get('/print/{batch}', [EventQrCodeController::class, 'print'])
+                    ->where('batch', '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|earlier')->name('print');
             });
 
             // Edit an event after it was created (Task #68, UC-1.3). EventPolicy::update checks

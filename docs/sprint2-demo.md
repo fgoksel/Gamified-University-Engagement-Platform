@@ -56,7 +56,7 @@ Both roles are ordinary topic roles (Topics → Roles); a title gives no power, 
 |---|---|---|
 | SQL Joins Workshop | A | First come first served, 2 places: Anna and Bence accepted, Csilla waitlisted |
 | Database Design Hackathon | A | Selection mode, 2 places, 4 pending: Anna, Bence, Dániel, Eszter |
-| Indexing Lab | A | **Running now**; Anna, Bence, Csilla, Dániel accepted; Bence already credited; a poster QR exists |
+| Indexing Lab | A | **Running now**; Anna, Bence, Csilla, Dániel accepted; Bence already credited; a batch of 4 printed QR slips exists |
 | Intro to SQL Lecture | A | Completed last week; Anna, Bence, Csilla, Eszter credited 10 points |
 | Query Optimisation Seminar | A | Draft |
 | Database Careers Evening | A | On hold; Anna applied |
@@ -108,8 +108,9 @@ All at the running **Indexing Lab** (20 points):
 1. **Teacher scans the student (QR passport):** Anna opens *My QR passport* (it changes every
    minute, so a screenshot stops working). Ivan opens *Indexing Lab → Scan attendance* and points the
    scanner camera at it. *Points credited to Anna Nagy (+20 pts).* Bence already shows as credited.
-2. **Student scans the event (poster):** Ivan opens *Indexing Lab → QR codes* and prints or shows the
-   poster. **Dániel** opens *Scan QR code* and points his camera at it: *20 points credited.*
+2. **Student scans a printed slip (Task #84):** Ivan opens *Indexing Lab → QR slips* and prints batch 1.
+   **Dániel** opens *Scan QR code* and points his camera at one slip: *20 points credited.* The slip log
+   on *QR slips* now shows Dániel, his Neptun code and the slip's number.
 3. Anna, Bence and Dániel now have their points; the lecture of last week already gave 10 points to
    Anna, Bence, Csilla and Eszter. There is no typed code and no list to tick (Task #83).
 
@@ -117,7 +118,8 @@ All at the running **Indexing Lab** (20 points):
 
 1. Ivan scans **Bence**'s QR passport again: *"Points have already been credited to Bence Tóth
    for this event."*
-2. Dániel scans the same poster again: refused. A paper slip works once in total.
+2. Dániel scans the same slip again: *"You have already used this slip."* Csilla scans it: *"This slip has
+   already been used. Each slip works only once."*
 3. The ledger only ever grows: a row is never edited or deleted. A mistake is corrected by a System
    Admin with a negative *reversal* row that points back at the original.
 
