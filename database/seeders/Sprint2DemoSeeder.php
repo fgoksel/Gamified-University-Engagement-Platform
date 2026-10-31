@@ -155,10 +155,10 @@ class Sprint2DemoSeeder extends Seeder
             $applications->apply($this->people[$key], $hackathon);
         }
 
-        // Running now: credit by checklist, passport and poster; a second credit is refused.
+        // Running now: credit by passport and poster; a second credit is refused.
         $lab = $this->event($ivan, $databases, 'Tutoring', [
             'title' => 'Indexing Lab',
-            'description' => 'Running right now. Demo: Bence is already credited; credit Csilla by checklist, Anna by her QR passport, and let Dani scan the poster.',
+            'description' => 'Running right now. Demo: Bence is already credited; credit Anna by her QR passport, and let Dani scan the poster.',
             'location' => 'Computer Lab 1, Informatics Building',
             'capacity' => 10,
             'points_value' => 20,
@@ -166,7 +166,7 @@ class Sprint2DemoSeeder extends Seeder
         foreach (['anna', 'bence', 'csilla', 'dani'] as $key) {
             $this->accept($lab, $this->people[$key]);
         }
-        $ledger->credit($lab, $this->people['bence'], $ivan, PointLedger::MANUAL);
+        $ledger->credit($lab, $this->people['bence'], $ivan, PointLedger::PASSPORT);
         app(QrTokenService::class)->issue($ivan, $lab, QrToken::POSTER);
 
         // Last week: points already earned, so the totals and tooltips are not empty.
@@ -180,7 +180,7 @@ class Sprint2DemoSeeder extends Seeder
         ], startsIn: '-7 days');
         foreach (['anna', 'bence', 'csilla', 'eszter'] as $key) {
             $this->accept($lecture, $this->people[$key]);
-            $ledger->credit($lecture, $this->people[$key], $ivan, PointLedger::MANUAL);
+            $ledger->credit($lecture, $this->people[$key], $ivan, PointLedger::PASSPORT);
         }
 
         // Every other state of the lifecycle, to show on "Organized by me".
@@ -231,7 +231,7 @@ class Sprint2DemoSeeder extends Seeder
         ], startsIn: '-20 minutes');
         $this->accept($run, $this->people['erik']);
         $this->accept($run, $this->people['fanni']);
-        app(PointLedger::class)->credit($run, $this->people['erik'], $sara, PointLedger::MANUAL);
+        app(PointLedger::class)->credit($run, $this->people['erik'], $sara, PointLedger::PASSPORT);
 
         $championship = $this->event($sara, $athletics, 'University Championship', [
             'title' => 'Athletics Championship',

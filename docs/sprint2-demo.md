@@ -2,8 +2,8 @@
 
 A click-by-click script for the supervisor demo. It shows each acceptance criterion of #67
 (two branches with refused cross-branch actions, no overbooking, no double credit and waitlist
-promotion), and the full run organiser → event → application → attendance → points, credited both
-by hand and by QR code. Every step below is also checked automatically by
+promotion), and the full run organiser → event → application → attendance → points, credited
+by QR code. Every step below is also checked automatically by
 `tests/Feature/Sprint2/Sprint2DemoSeederTest.php`, and the same journeys run end to end in
 `tests/Feature/Sprint2/Sprint2JourneyTest.php`.
 
@@ -101,24 +101,21 @@ Both roles are ordinary topic roles (Topics → Roles); a title gives no power, 
 2. **Csilla**, first in line, moves up to *Accepted* by herself and is told *"A place opened up: you
    are in"* (bell icon, Notifications page and Mailpit). Eszter is still waitlisted.
 
-### Step 5: attendance and points, by hand and by QR code (UC-1.7, UC-1.8, UC-2.3)
+### Step 5: attendance and points, by QR code (UC-1.7, UC-1.8, UC-2.3)
 
 All at the running **Indexing Lab** (20 points):
 
-1. **Checklist (manual):** Ivan opens *Indexing Lab → Scan attendance*, switches to the list, ticks
-   **Csilla** and presses *Credit selected*. Bence already shows as credited.
-2. **Teacher scans the student (QR passport):** Anna opens *My QR passport* (it changes every
-   minute, so a screenshot stops working). Ivan points the scanner camera at it, or types `ANNA01`.
-   *Points credited to Anna Nagy (+20 pts).*
-3. **Student scans the event (poster):** Ivan opens *Indexing Lab → QR codes* and prints or shows the
-   poster. **Dániel** opens *Scan QR code* and points his camera at it, or pastes the link under the
-   image: *20 points credited.*
-4. Anna, Bence, Csilla and Dániel now have their points; the lecture of last week adds 10 to the
-   first three.
+1. **Teacher scans the student (QR passport):** Anna opens *My QR passport* (it changes every
+   minute, so a screenshot stops working). Ivan opens *Indexing Lab → Scan attendance* and points the
+   scanner camera at it. *Points credited to Anna Nagy (+20 pts).* Bence already shows as credited.
+2. **Student scans the event (poster):** Ivan opens *Indexing Lab → QR codes* and prints or shows the
+   poster. **Dániel** opens *Scan QR code* and points his camera at it: *20 points credited.*
+3. Anna, Bence and Dániel now have their points; the lecture of last week already gave 10 points to
+   Anna, Bence, Csilla and Eszter. There is no typed code and no list to tick (Task #83).
 
 ### Step 6: no double credit (acceptance criterion)
 
-1. Ivan credits **Bence** again (type `BENC02`): *"Points have already been credited to Bence Tóth
+1. Ivan scans **Bence**'s QR passport again: *"Points have already been credited to Bence Tóth
    for this event."*
 2. Dániel scans the same poster again: refused. A paper slip works once in total.
 3. The ledger only ever grows: a row is never edited or deleted. A mistake is corrected by a System

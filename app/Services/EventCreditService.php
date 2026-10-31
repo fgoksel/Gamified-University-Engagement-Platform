@@ -12,6 +12,10 @@ use Illuminate\Validation\ValidationException;
 /**
  * Handles attendance verification and point crediting for events (Task #43, UC-1.7).
  *
+ * The only thing it credits from is a scanned QR passport (Task #52). A typed code, a
+ * Neptun code, an id or a pick from a list is refused: a missed scan is solved by
+ * extending the points period, not by crediting by hand (Task #83).
+ *
  * Delegates core crediting invariants to PointLedger::credit():
  * - Anti-Self-Dealing guardrail: organizers cannot credit themselves (D04)
  * - Candidate eligibility: participant must hold an ACCEPTED application (UC-1.7)
@@ -26,13 +30,13 @@ class EventCreditService
     ) {}
 
     /**
-     * Credit attendance points to a student for an event.
+     * Credit attendance points to the student whose QR passport was scanned.
      *
      * @return array{status: string, message: string, points?: int, student: array{id: int, name: string, neptun_code: ?string}, credited_count?: int}
      *
      * @throws AuthorizationException|ValidationException
      */
-    public function credit(User $actor, Event $event, int|string|User $identifier, string $source = PointLedger::PASSPORT): array
+    public function credit(User $actor, Event $event, string $passport): array
     {
         // 1. Authorization: Actor must have points.credit capability on owning topic
         if (! $actor->can('credit', $event)) {
@@ -46,38 +50,28 @@ class EventCreditService
             ]);
         }
 
-        // 3. Resolve Student. A scanned passport must be signed and still valid (Task #52).
-        if (is_string($identifier) && $this->passports->looksLikePassport($identifier)) {
-            ['student' => $student, 'problem' => $problem] = $this->passports->resolve($identifier);
-
-            if ($problem !== null) {
-                return [
-                    'status' => $problem === 'expired' ? 'passport_expired' : 'passport_invalid',
-                    'message' => $problem === 'expired'
-                        ? 'This QR passport has expired. Ask the student to open their passport again.'
-                        : 'This QR passport is not valid.',
-                    'student' => ['id' => 0, 'name' => 'Unknown Student', 'neptun_code' => null],
-                ];
-            }
-        } else {
-            $student = $this->resolveStudent($identifier, $source);
+        // 3. Resolve the student. The passport must be signed and still valid (Task #52).
+        if (! $this->passports->looksLikePassport($passport)) {
+            return $this->unknownStudent(
+                'passport_invalid',
+                'This is not a QR passport. Ask the student to show the one on their "My QR passport" page.',
+            );
         }
 
-        if (! $student) {
-            return [
-                'status' => 'not_found',
-                'message' => 'No student found matching the scanned QR code or input.',
-                'student' => [
-                    'id' => 0,
-                    'name' => 'Unknown Student',
-                    'neptun_code' => null,
-                ],
-            ];
+        ['student' => $student, 'problem' => $problem] = $this->passports->resolve($passport);
+
+        if ($problem !== null) {
+            return $this->unknownStudent(
+                $problem === 'expired' ? 'passport_expired' : 'passport_invalid',
+                $problem === 'expired'
+                    ? 'This QR passport has expired. Ask the student to open their passport again.'
+                    : 'This QR passport is not valid.',
+            );
         }
 
         // 4. Delegate to PointLedger::credit()
         try {
-            $transaction = $this->ledger->credit($event, $student, $actor, $source);
+            $transaction = $this->ledger->credit($event, $student, $actor, PointLedger::PASSPORT);
 
             $totalCredited = PointTransaction::query()
                 ->where('event_id', $event->id)
@@ -116,48 +110,16 @@ class EventCreditService
     }
 
     /**
-     * Resolves a student from what the organiser typed or picked (Task #43).
+     * The answer when the scanned text names no student.
      *
-     * Accepted: a Neptun code (typed by an organiser who sees the student), or,
-     * for "manual" only, the id of a student picked from the scanner's own list.
-     * Codes that anyone could make up are refused: unsigned passport links
-     * (/qr/passport/{id}), JSON with an id, or a bare id from the camera. A real
-     * passport is a signed, short-lived code (QrPassport, Task #52).
+     * @return array{status: string, message: string, student: array{id: int, name: string, neptun_code: ?string}}
      */
-    public function resolveStudent(int|string|User $identifier, string $source = PointLedger::PASSPORT): ?User
+    private function unknownStudent(string $status, string $message): array
     {
-        if ($identifier instanceof User) {
-            return $identifier;
-        }
-
-        $manual = $source === 'manual';
-
-        if (is_int($identifier)) {
-            return $manual ? User::query()->find($identifier) : null;
-        }
-
-        $raw = trim($identifier);
-
-        if ($raw === '' || str_contains($raw, '/qr/passport/')) {
-            return null;
-        }
-
-        // JSON payloads may name a Neptun code, never an id.
-        if (str_starts_with($raw, '{') && str_ends_with($raw, '}')) {
-            $data = json_decode($raw, true);
-            $neptun = is_array($data) ? ($data['neptun_code'] ?? $data['neptun'] ?? null) : null;
-
-            return is_string($neptun) && $neptun !== ''
-                ? User::query()->where('neptun_code', strtoupper($neptun))->first()
-                : null;
-        }
-
-        // A bare id: only when the organiser picked the student from the list.
-        if (ctype_digit($raw)) {
-            return $manual ? User::query()->find((int) $raw) : null;
-        }
-
-        // Otherwise a Neptun code (case-insensitive)
-        return User::query()->where('neptun_code', strtoupper($raw))->first();
+        return [
+            'status' => $status,
+            'message' => $message,
+            'student' => ['id' => 0, 'name' => 'Unknown Student', 'neptun_code' => null],
+        ];
     }
 }

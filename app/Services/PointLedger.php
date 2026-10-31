@@ -18,14 +18,15 @@ use Illuminate\Support\Facades\DB;
  * The only way points are written. A student's points are the sum of their
  * ledger rows; there is no balance column to drift out of step.
  *
- * Every route that credits points (the manual list, a passport scan, a poster
- * or slip QR code, a finished milestone task) ends up in credit(), and an
+ * Every route that credits points (a passport scan, a poster or slip QR code,
+ * the live QR code, a finished milestone task) ends up in credit(), and an
  * imported list in creditImported() (Task #85), so they all share the same
  * checks and the same database guard: one base credit per student and event,
  * whichever route wins a race.
  */
 class PointLedger
 {
+    /** Written by the organiser's tick list, which is gone (Task #83). Kept so the old rows stay readable. */
     public const MANUAL = 'manual';
 
     public const PASSPORT = 'passport';
