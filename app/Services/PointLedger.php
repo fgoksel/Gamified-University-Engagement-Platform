@@ -74,7 +74,8 @@ class PointLedger
     }
 
     /**
-     * Write the base credit of an accepted participant.
+     * Write the base credit of an accepted participant. Never for a surprise event: that
+     * one is credited only by import (Task #86, 26 Oct, Q8), so no scan, code or list works.
      *
      * $creditedBy is the person who authorised it: the organiser, or the issuer
      * of the QR code. Nobody can credit themselves.
@@ -83,6 +84,10 @@ class PointLedger
      */
     public function credit(Event $event, User $student, User $creditedBy, string $source): PointTransaction
     {
+        if ($event->is_hidden) {
+            throw new EventActionRefused('import_only', 'This is a surprise event: its points are given only by import.', 409);
+        }
+
         return $this->write($event, $student, $creditedBy, $source, function (?EventApplication $application) use ($student) {
             if ($application === null || ! $application->isAccepted()) {
                 throw new EventActionRefused('not_registered', "{$student->name} is not registered or selected for this event.", 403);

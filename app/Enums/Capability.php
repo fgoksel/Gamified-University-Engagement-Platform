@@ -86,7 +86,7 @@ enum Capability: string
             self::EventsView => 'Browse the published, visible events announced to this branch.',
             self::EventsApply => 'Apply for the published events announced to this branch.',
             self::EventsCreate => 'Create events and edit their drafts under this topic.',
-            self::EventsManage => 'Edit, publish, reveal, put on hold, cancel or delete the events under this topic and everything below it.',
+            self::EventsManage => 'Edit, publish, put on hold, cancel or delete the events under this topic and everything below it.',
             self::ApplicationsManage => 'Review, accept, waitlist or reject the applicants of events that use organiser selection.',
             self::PointsCredit => 'Confirm attendance and credit the points of an event to its accepted participants.',
             self::QrCodesManage => 'Create, configure and print the QR codes of the events under this topic.',

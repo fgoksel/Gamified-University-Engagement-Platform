@@ -84,9 +84,6 @@ const placesText = computed(() => {
                 >
                     <Sparkles class="size-3.5" />
                     Surprise event
-                    <template v-if="event.reveal_at">
-                        · revealed {{ event.reveal_at }}</template
-                    >
                 </span>
                 <span
                     v-if="event.status !== 'published'"
@@ -95,7 +92,7 @@ const placesText = computed(() => {
                     {{ event.status.replace("_", " ") }}
                 </span>
                 <span
-                    v-else-if="!event.is_open"
+                    v-else-if="!event.is_open && !event.is_surprise"
                     class="rounded-full bg-surface-muted px-2.5 py-0.5 text-fg-muted"
                 >
                     Applications closed
@@ -136,7 +133,7 @@ const placesText = computed(() => {
                         {{ event.starts }} – {{ event.ends_full }}
                     </dd>
                 </div>
-                <div>
+                <div v-if="!event.is_surprise">
                     <dt class="flex items-start gap-2 text-fg-muted">
                         <Clock class="mt-0.5 size-4 shrink-0" />
                         Applications close
@@ -169,7 +166,7 @@ const placesText = computed(() => {
                         Invited students only
                     </dd>
                 </div>
-                <div>
+                <div v-if="!event.is_surprise">
                     <dt class="flex items-start gap-2 text-fg-muted">
                         <Users class="mt-0.5 size-4 shrink-0" />
                         Places

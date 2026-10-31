@@ -21,10 +21,11 @@ use Illuminate\Support\Facades\DB;
  * The query follows EventPolicy::view so the list never shows more than the
  * policy allows:
  *   - announced to an audience topic where the person is assigned with events.view
- *     (and, for a surprise event, already revealed), or
- *   - owned at a topic where the person is event staff (staff see surprises early).
+ *     (a surprise event is never announced, Task #86), or
+ *   - owned at a topic where the person is event staff (staff see surprise events).
  * Drafts, events on hold and cancelled events never appear here; organisers
- * find those under "Organized by me". The detail page uses the policy itself.
+ * find those under "Organized by me". The detail page uses the policy itself, so it
+ * also opens for the students a surprise event gave points to.
  */
 class EventCatalog
 {
@@ -75,9 +76,7 @@ class EventCatalog
                     ->whereIn('audience_topic_id', $audience)
                     // Frozen while its own topic is archived (Task #66), like EventPolicy::view.
                     ->whereIn('owning_topic_id', Topic::query()->notArchived()->select('topics.id'))
-                    ->where(fn (Builder $q) => $q
-                        ->where('is_hidden', false)
-                        ->orWhere('reveal_at', '<=', now())))
+                    ->where('is_hidden', false))
                 ->orWhereIn('owning_topic_id', $staff));
     }
 
@@ -219,7 +218,6 @@ class EventCatalog
             'applications_open_full' => $event->applicationsOpenFrom()?->format('D j M Y, H:i'),
             'applications_close_full' => $event->application_deadline->format('D j M Y, H:i'),
             'completion_deadline' => $event->completion_deadline->format('D j M Y, H:i'),
-            'reveal_at' => $event->reveal_at?->format('D j M Y, H:i'),
         ];
     }
 
@@ -250,7 +248,7 @@ class EventCatalog
             'application_type' => $event->application_type,
             'points' => $event->points_value,
             'qr_enabled' => $event->qr_enabled,
-            // A surprise event is shown to staff before it is revealed.
+            // Only staff and the students it gave points to ever see a surprise event.
             'is_surprise' => $event->is_hidden,
             'is_open' => $open,
             'my_status' => $myStatus,
@@ -273,12 +271,16 @@ class EventCatalog
      */
     private function isOpen(Event $event): bool
     {
+        // A surprise event takes no applications (Task #86).
+        if ($event->is_hidden) {
+            return false;
+        }
+
         // Applications run in their own window, which may reach into the event (Task #78).
         if (now()->lt($event->applicationsOpenFrom() ?? now()) || now()->gt($event->event_ends_at)) {
             return false;
         }
 
-        // A revealed surprise event skips the application deadline (Decision Record D02).
-        return $event->is_hidden || now()->lte($event->application_deadline);
+        return now()->lte($event->application_deadline);
     }
 }

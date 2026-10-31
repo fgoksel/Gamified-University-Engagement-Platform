@@ -45,7 +45,6 @@ class StoreEventRequest extends FormRequest
             'application_deadline' => ['required', 'date', 'after:now', 'before_or_equal:event_ends_at'],
             'completion_deadline' => ['required', 'date', 'after_or_equal:event_ends_at'],
             'is_hidden' => ['boolean'],
-            'reveal_at' => ['nullable', 'required_if:is_hidden,true', 'date', 'after:now', 'before_or_equal:event_starts_at'],
             'qr_enabled' => ['boolean'],
         ];
     }
@@ -100,8 +99,6 @@ class StoreEventRequest extends FormRequest
             'applications_open_at.before' => 'Applications must open before they close.',
             'application_deadline.before_or_equal' => 'Applications must close before the event ends.',
             'completion_deadline.after_or_equal' => 'The completion deadline cannot be before the event ends.',
-            'reveal_at.required_if' => 'Choose when a hidden event is revealed.',
-            'reveal_at.before_or_equal' => 'A hidden event must be revealed before it starts.',
         ];
     }
 
