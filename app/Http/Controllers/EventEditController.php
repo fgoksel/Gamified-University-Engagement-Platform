@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\UpdateEventRequest;
 use App\Models\Event;
 use App\Models\EventApplication;
+use App\Models\EventEdit;
 use App\Models\Topic;
 use App\Models\TopicTag;
 use App\Services\EventEditor;
@@ -24,6 +25,9 @@ use Inertia\Response;
  */
 class EventEditController extends Controller
 {
+    /** How many edits the page lists; the table keeps them all. */
+    private const HISTORY_LIMIT = 20;
+
     public function edit(Request $request, Event $event, EventEditor $editor, EventPlacement $placement): Response
     {
         $this->authorise($request, $event);
@@ -74,6 +78,17 @@ class EventEditController extends Controller
                 'qr' => $gate->allows('manageQr', $event) && $event->qr_enabled,
             ],
             'applications' => $event->applications()->where('status', '!=', EventApplication::WITHDRAWN)->count(),
+            // Who changed what and when (Task #76), newest first. The page names the fields.
+            'history' => $event->edits()
+                ->with('actor:id,name')
+                ->limit(self::HISTORY_LIMIT)
+                ->get()
+                ->map(fn (EventEdit $edit) => [
+                    'id' => $edit->id,
+                    'at' => $edit->created_at->format('D j M Y, H:i'),
+                    'by' => $edit->actor?->name,
+                    'fields' => array_keys($edit->changes),
+                ]),
         ]);
     }
 

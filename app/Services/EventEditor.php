@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Event;
 use App\Models\EventApplication;
+use App\Models\EventEdit;
 use App\Models\PointTransaction;
 use App\Models\Topic;
 use App\Models\TopicTag;
@@ -24,7 +25,12 @@ use Illuminate\Validation\ValidationException;
  *
  *   draft              everything
  *   published/on hold  text, dates and options, with the locks below
- *   completed/cancelled  nothing (history stays as it is)
+ *   completed          only the points end date (Task #76): a student who missed the scan
+ *                      asks the organiser, who extends it by editing the event (26 Oct, Q4)
+ *   cancelled          nothing (history stays as it is)
+ *
+ * Every save that changes something is logged in event_edits (Task #76): who, when, and
+ * each changed field's old and new value.
  *
  * Locks of a published or held event:
  *   managed-from topic           always (authority would move under the people running it)
@@ -44,7 +50,14 @@ use Illuminate\Validation\ValidationException;
 class EventEditor
 {
     /** @var list<string> */
-    public const EDITABLE = [Event::STATUS_DRAFT, Event::STATUS_PUBLISHED, Event::STATUS_ON_HOLD];
+    public const EDITABLE = [Event::STATUS_DRAFT, Event::STATUS_PUBLISHED, Event::STATUS_ON_HOLD, Event::STATUS_COMPLETED];
+
+    /** The fields of the form. A completed event keeps all of them but the points end date. */
+    public const FIELDS = [
+        'title', 'description', 'location', 'topic_tag_id', 'owning_topic_id', 'audience_topic_id',
+        'capacity', 'application_type', 'points_value', 'event_starts_at', 'event_ends_at',
+        'applications_open_at', 'application_deadline', 'completion_deadline', 'is_hidden', 'qr_enabled',
+    ];
 
     public function __construct(private EventPlacement $placement) {}
 
@@ -70,6 +83,13 @@ class EventEditor
     {
         if ($event->status === Event::STATUS_DRAFT) {
             return [];
+        }
+
+        if ($event->status === Event::STATUS_COMPLETED) {
+            return collect(self::FIELDS)
+                ->reject(fn (string $field) => $field === 'completion_deadline')
+                ->mapWithKeys(fn (string $field) => [$field => 'The event is completed, so only "Points can be given until" can change.'])
+                ->all();
         }
 
         $locks = [
@@ -119,9 +139,7 @@ class EventEditor
 
             if (! $this->isEditable($locked)) {
                 throw ValidationException::withMessages([
-                    'event' => $locked->status === Event::STATUS_CANCELLED
-                        ? 'A cancelled event cannot be changed.'
-                        : 'A completed event cannot be changed.',
+                    'event' => 'A cancelled event cannot be changed.',
                 ]);
             }
 
@@ -131,24 +149,41 @@ class EventEditor
                 ]);
             }
 
-            $attributes = $this->attributes($actor, $locked, $data, $this->locks($locked));
+            if ($locked->status === Event::STATUS_COMPLETED) {
+                // Only the points end date moves; nobody needs to hear about it but the student who asked.
+                $attributes = $this->completedAttributes($locked, $data);
+            } else {
+                $attributes = $this->attributes($actor, $locked, $data, $this->locks($locked));
 
-            $minute = fn (CarbonInterface $time) => $time->copy()->startOfMinute();
-            $draft = $locked->status === Event::STATUS_DRAFT;
-            $changedTime = ! $draft
-                && ($minute($attributes['event_starts_at'])->ne($minute($locked->event_starts_at))
-                    || $minute($attributes['event_ends_at'])->ne($minute($locked->event_ends_at)));
-            // Set, changed or removed: applicants may have to go somewhere else.
-            $changedLocation = ! $draft && $attributes['location'] !== $locked->location;
+                $minute = fn (CarbonInterface $time) => $time->copy()->startOfMinute();
+                $draft = $locked->status === Event::STATUS_DRAFT;
+                $changedTime = ! $draft
+                    && ($minute($attributes['event_starts_at'])->ne($minute($locked->event_starts_at))
+                        || $minute($attributes['event_ends_at'])->ne($minute($locked->event_ends_at)));
+                // Set, changed or removed: applicants may have to go somewhere else.
+                $changedLocation = ! $draft && $attributes['location'] !== $locked->location;
 
-            $change = match (true) {
-                $changedTime && $changedLocation => EventStatusChangedNotification::RESCHEDULED_AND_RELOCATED,
-                $changedTime => EventStatusChangedNotification::RESCHEDULED,
-                $changedLocation => EventStatusChangedNotification::RELOCATED,
-                default => null,
-            };
+                $change = match (true) {
+                    $changedTime && $changedLocation => EventStatusChangedNotification::RESCHEDULED_AND_RELOCATED,
+                    $changedTime => EventStatusChangedNotification::RESCHEDULED,
+                    $changedLocation => EventStatusChangedNotification::RELOCATED,
+                    default => null,
+                };
+            }
+
+            // Worked out before saving, while the old values are still there (Task #76).
+            $changes = $this->changes($locked, $attributes);
 
             $locked->update($attributes);
+
+            if ($changes !== []) {
+                EventEdit::create([
+                    'event_id' => $locked->id,
+                    'actor_id' => $actor->id,
+                    'changes' => $changes,
+                    'created_at' => now(),
+                ]);
+            }
 
             return $locked;
         });
@@ -158,6 +193,97 @@ class EventEditor
         }
 
         return $updated;
+    }
+
+    /**
+     * A completed event (Task #76): only the points end date may move, so a student who missed
+     * the scan can still get the points. Every other field must come back as it is stored.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array{completion_deadline: CarbonInterface}
+     *
+     * @throws ValidationException
+     */
+    private function completedAttributes(Event $event, array $data): array
+    {
+        $errors = [];
+
+        foreach ($this->locks($event) as $field => $reason) {
+            // A page opened before a field existed leaves it out: nothing was changed there.
+            if (array_key_exists($field, $data) && $this->differs($event->{$field}, $data[$field])) {
+                $errors[$field] = $reason;
+            }
+        }
+
+        $completeBy = Carbon::parse($data['completion_deadline']);
+
+        if ($completeBy->lt($event->event_ends_at)) {
+            $errors['completion_deadline'] = 'The completion deadline cannot be before the event ends.';
+        }
+
+        if ($errors !== []) {
+            throw ValidationException::withMessages($errors);
+        }
+
+        return ['completion_deadline' => $completeBy];
+    }
+
+    /**
+     * Each field that the save changes, as {field: {old, new}} (Task #76). Dates count by the
+     * minute, like the form, so seconds stored by other routes never show up as an edit.
+     *
+     * @param  array<string, mixed>  $attributes
+     * @return array<string, array{old: mixed, new: mixed}>
+     */
+    private function changes(Event $event, array $attributes): array
+    {
+        $changes = [];
+
+        foreach ($attributes as $field => $new) {
+            $old = $event->{$field};
+
+            if ($this->differs($old, $new)) {
+                $changes[$field] = ['old' => $this->plain($old), 'new' => $this->plain($new)];
+            }
+        }
+
+        return $changes;
+    }
+
+    /**
+     * Whether a stored value and a submitted or new one differ. Dates by the minute, empty
+     * text as no value, numbers and booleans by value.
+     */
+    private function differs(mixed $stored, mixed $value): bool
+    {
+        if ($stored instanceof CarbonInterface || $value instanceof CarbonInterface) {
+            if (blank($stored) || blank($value)) {
+                return blank($stored) !== blank($value);
+            }
+
+            return ! Carbon::parse($stored)->startOfMinute()->equalTo(Carbon::parse($value)->startOfMinute());
+        }
+
+        if (is_bool($stored)) {
+            return $stored !== filter_var($value, FILTER_VALIDATE_BOOLEAN);
+        }
+
+        $stored = is_string($stored) ? trim($stored) : $stored;
+        $value = is_string($value) ? trim($value) : $value;
+
+        if (blank($stored) || blank($value)) {
+            return blank($stored) !== blank($value);
+        }
+
+        return (string) $stored !== (string) $value;
+    }
+
+    /**
+     * A value as the log keeps it: dates to the minute, everything else as it is.
+     */
+    private function plain(mixed $value): mixed
+    {
+        return $value instanceof CarbonInterface ? $value->format('Y-m-d H:i') : $value;
     }
 
     /**
