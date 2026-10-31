@@ -3,6 +3,7 @@ import { computed } from "vue";
 import {
     Building2,
     CalendarClock,
+    ListChecks,
     MapPin,
     QrCode,
     Sparkles,
@@ -12,6 +13,7 @@ import {
 import { Link } from "@inertiajs/vue3";
 import StatusChip from "../StatusChip.vue";
 import { categoryDot } from "../../categoryColors.js";
+import { applicationType, myStatus, places } from "../../eventWords.js";
 
 // One event in "All events" (Task #40). The Apply button (Task #49) goes in
 // the "actions" slot.
@@ -19,23 +21,8 @@ const props = defineProps({
     event: { type: Object, required: true },
 });
 
-const myStatusLabel = {
-    pending: "You applied · waiting for the organiser",
-    accepted: "You have a place",
-    waitlisted: "You are on the waitlist",
-    rejected: "Your application was not accepted",
-    withdrawn: "You withdrew",
-};
-
-const placesText = computed(() => {
-    const e = props.event;
-    if (e.application_type === "teacher_select") {
-        return `${e.capacity} places · organiser selects`;
-    }
-    return e.places_left > 0
-        ? `${e.places_left} of ${e.capacity} places left`
-        : "Full · waitlist open";
-});
+// The student's own status in plain words (Task #94)
+const status = computed(() => myStatus(props.event));
 </script>
 
 <template>
@@ -54,9 +41,6 @@ const placesText = computed(() => {
             </span>
             <StatusChip v-if="event.is_surprise" tone="info" :icon="Sparkles">
                 Surprise event
-            </StatusChip>
-            <StatusChip v-if="event.already_applied" tone="info">
-                Already applied
             </StatusChip>
             <StatusChip v-if="!event.is_open" tone="neutral">
                 Applications closed
@@ -113,7 +97,12 @@ const placesText = computed(() => {
             <div class="flex items-start gap-2">
                 <dt class="sr-only">Places</dt>
                 <Users class="mt-0.5 size-4 shrink-0 text-fg-muted" />
-                <dd class="text-fg">{{ placesText }}</dd>
+                <dd class="text-fg">{{ places(event) }}</dd>
+            </div>
+            <div class="flex items-start gap-2">
+                <dt class="sr-only">How places are given</dt>
+                <ListChecks class="mt-0.5 size-4 shrink-0 text-fg-muted" />
+                <dd class="text-fg">{{ applicationType(event) }}</dd>
             </div>
             <div class="flex items-start gap-2">
                 <dt class="sr-only">Points</dt>
@@ -133,9 +122,9 @@ const placesText = computed(() => {
         <div
             class="mt-auto flex flex-wrap items-center justify-between gap-3 pt-5"
         >
-            <p v-if="event.my_status" class="text-sm font-medium text-link">
-                {{ myStatusLabel[event.my_status] }}
-            </p>
+            <StatusChip v-if="status" :tone="status.tone">
+                {{ status.text }}
+            </StatusChip>
             <div class="relative z-10 ml-auto">
                 <slot name="actions" :event="event" />
             </div>

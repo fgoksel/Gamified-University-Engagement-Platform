@@ -187,13 +187,16 @@ class EventCatalog
 
         $page = $query->paginate(self::PER_PAGE)->withQueryString();
 
-        // The person's own application on each event shown, in one query.
+        // The person's own application on each event shown, and their waitlist places, in one query each.
+        $eventIds = $page->getCollection()->pluck('id');
         $mine = EventApplication::query()
             ->where('student_id', $user->id)
-            ->whereIn('event_id', $page->getCollection()->pluck('id'))
-            ->pluck('status', 'event_id');
+            ->whereIn('event_id', $eventIds)
+            ->get()
+            ->keyBy('event_id');
+        $positions = $this->applications->waitlistPositions($user, $eventIds);
 
-        return $page->through(fn (Event $event) => $this->present($user, $event, $mine[$event->id] ?? null));
+        return $page->through(fn (Event $event) => $this->present($user, $event, $mine[$event->id] ?? null, $positions[$event->id] ?? null));
     }
 
     /**
@@ -209,10 +212,11 @@ class EventCatalog
         $mine = EventApplication::query()
             ->where('event_id', $event->id)
             ->where('student_id', $user->id)
-            ->value('status');
+            ->first();
+        $positions = $this->applications->waitlistPositions($user, [$event->id]);
 
         return [
-            ...$this->present($user, $event, $mine),
+            ...$this->present($user, $event, $mine, $positions[$event->id] ?? null),
             'status' => $event->status,
             'ends_full' => $event->event_ends_at->format('D j M Y, H:i'),
             'applications_open_full' => $event->applicationsOpenFrom()?->format('D j M Y, H:i'),
@@ -226,9 +230,11 @@ class EventCatalog
      *
      * @return array<string, mixed>
      */
-    private function present(User $user, Event $event, ?string $myStatus): array
+    private function present(User $user, Event $event, ?EventApplication $mine, ?int $waitlistPosition): array
     {
         $open = $this->isOpen($event);
+        // An undone application (Task #94) counts as never sent.
+        $myStatus = $mine && ! $mine->isUndone() ? $mine->status : null;
 
         return [
             'id' => $event->id,
@@ -252,6 +258,12 @@ class EventCatalog
             'is_surprise' => $event->is_hidden,
             'is_open' => $open,
             'my_status' => $myStatus,
+            // 1 = next in line (Task #94); null unless the person is waitlisted.
+            'waitlist_position' => $myStatus === EventApplication::WAITLISTED ? $waitlistPosition : null,
+            // Undo stays possible until this moment (Task #94), also after a reload; the server checks it again.
+            'undo_until' => $this->undoUntil($mine),
+            // Students may leave an event until it starts (EventApplicationService::withdraw).
+            'has_started' => now()->gte($event->event_starts_at),
             // Already applied (UC-2.3): an open application blocks applying again.
             'already_applied' => in_array($myStatus, [EventApplication::PENDING, EventApplication::ACCEPTED, EventApplication::WAITLISTED], true),
             // Used by the Apply button (Task #49): exactly the server's own checks.
@@ -264,6 +276,24 @@ class EventCatalog
             // has a place at that overlaps this one.
             'overlaps_with' => $canApply ? $this->applications->conflictingEvent($user, $event)?->title : null,
         ];
+    }
+
+    /**
+     * When the student's own active application can no longer be undone, or null
+     * when it cannot be undone at all (Task #94).
+     */
+    private function undoUntil(?EventApplication $mine): ?string
+    {
+        if (! $mine
+            || ! in_array($mine->status, [EventApplication::PENDING, EventApplication::ACCEPTED, EventApplication::WAITLISTED], true)
+            || $mine->isCredited()
+            || $mine->applied_at === null) {
+            return null;
+        }
+
+        $until = $mine->applied_at->copy()->addSeconds(EventApplication::UNDO_SECONDS);
+
+        return $until->isFuture() ? $until->toIso8601String() : null;
     }
 
     /**

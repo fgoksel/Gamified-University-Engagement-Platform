@@ -19,6 +19,7 @@ import StatusChip from "../../Components/StatusChip.vue";
 import Modal from "../../Components/Topics/Modal.vue";
 import Btn from "../../Components/Topics/Btn.vue";
 import { categoryDot } from "../../categoryColors.js";
+import { applyLabels, myStatus } from "../../eventWords.js";
 
 // Student: events I applied to (UC-2.3, Task #50)
 defineOptions({ layout: { title: "My events" } });
@@ -68,6 +69,30 @@ const filteredApplications = computed(() => {
     }
     return props.applications;
 });
+
+// Icon next to the student's status
+const statusIcon = {
+    accepted: CheckCircle2,
+    waitlisted: Users,
+    pending: Clock,
+    withdrawn: RotateCcw,
+    rejected: XCircle,
+};
+
+// "3 Nov, 14:00" for the short sentences under each event
+function shortDateTime(isoString) {
+    if (!isoString) return "";
+    const date = new Date(isoString);
+    const day = date.toLocaleDateString(undefined, {
+        day: "numeric",
+        month: "short",
+    });
+    const time = date.toLocaleTimeString(undefined, {
+        hour: "2-digit",
+        minute: "2-digit",
+    });
+    return `${day}, ${time}`;
+}
 
 function formatDateTime(isoString) {
     if (!isoString) return "";
@@ -294,41 +319,13 @@ function reapply(app) {
                             +{{ app.event.points_value }} pts Credited
                         </StatusChip>
 
-                        <!-- Application Status -->
+                        <!-- Application Status, in plain words (Task #94) -->
                         <StatusChip
-                            v-if="app.status === 'accepted'"
-                            tone="success"
-                            :icon="CheckCircle2"
+                            v-if="myStatus(app)"
+                            :tone="myStatus(app).tone"
+                            :icon="statusIcon[app.status]"
                         >
-                            Accepted
-                        </StatusChip>
-                        <StatusChip
-                            v-else-if="app.status === 'waitlisted'"
-                            tone="info"
-                            :icon="Users"
-                        >
-                            Waitlisted
-                        </StatusChip>
-                        <StatusChip
-                            v-else-if="app.status === 'pending'"
-                            tone="warning"
-                            :icon="Clock"
-                        >
-                            Under Review
-                        </StatusChip>
-                        <StatusChip
-                            v-else-if="app.status === 'withdrawn'"
-                            tone="neutral"
-                            :icon="RotateCcw"
-                        >
-                            Withdrawn
-                        </StatusChip>
-                        <StatusChip
-                            v-else-if="app.status === 'rejected'"
-                            tone="neutral"
-                            :icon="XCircle"
-                        >
-                            Rejected
+                            {{ myStatus(app).text }}
                         </StatusChip>
 
                         <!-- Event Lifecycle status if non-standard -->
@@ -393,25 +390,22 @@ function reapply(app) {
                 >
                     <div class="text-xs text-fg-muted">
                         <span v-if="app.withdrawn_at">
-                            Withdrawn on {{ formatDateTime(app.withdrawn_at) }}
+                            You left on {{ shortDateTime(app.withdrawn_at) }}.
                         </span>
                         <span v-else-if="app.status === 'waitlisted'">
-                            Applied on
-                            {{ formatDateTime(app.applied_at) }} &bull; You will
-                            be notified if a seat opens.
+                            Applied on {{ shortDateTime(app.applied_at) }} ·
+                            you'll get a message if a place opens.
                         </span>
                         <span v-else-if="app.status === 'pending'">
-                            Applied on
-                            {{ formatDateTime(app.applied_at) }} &bull; Teacher
-                            review pending.
+                            Applied on {{ shortDateTime(app.applied_at) }} · the
+                            organiser will choose and let you know.
                         </span>
                         <span v-else-if="app.status === 'accepted'">
-                            Applied on
-                            {{ formatDateTime(app.applied_at) }} &bull;
-                            Confirmed participant.
+                            Applied on {{ shortDateTime(app.applied_at) }} ·
+                            your place is confirmed.
                         </span>
                         <span v-else-if="app.status === 'rejected'">
-                            Application was not selected by the organizer.
+                            The organiser chose other students this time.
                         </span>
                     </div>
 
@@ -431,14 +425,14 @@ function reapply(app) {
                             v-if="app.can_reapply"
                             type="button"
                             :disabled="reapplyingId === app.id"
-                            class="inline-flex items-center gap-1.5 rounded-control bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-50 transition cursor-pointer"
+                            class="inline-flex min-h-11 items-center gap-1.5 rounded-control bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-50 transition cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                             @click="reapply(app)"
                         >
                             <RotateCcw class="size-3.5" />
                             {{
                                 reapplyingId === app.id
-                                    ? "Submitting..."
-                                    : "Re-apply"
+                                    ? "Sending…"
+                                    : applyLabels.again
                             }}
                         </button>
                     </div>

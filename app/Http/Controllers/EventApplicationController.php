@@ -32,10 +32,10 @@ class EventApplicationController extends Controller
         $application = $service->apply($request->user(), $event);
 
         $message = match ($application->status) {
-            EventApplication::ACCEPTED => 'Your application has been accepted!',
-            EventApplication::WAITLISTED => 'The event is at capacity. You have been placed on the waitlist.',
-            EventApplication::PENDING => 'Your application has been registered; the teacher will decide on selection soon.',
-            default => 'Application submitted.',
+            EventApplication::ACCEPTED => "You're in!",
+            EventApplication::WAITLISTED => "The event is full, so you're on the waitlist. We'll tell you if a place opens.",
+            EventApplication::PENDING => "You've applied. The organiser will choose and let you know.",
+            default => "You've applied.",
         };
 
         if ($request->wantsJson()) {
@@ -56,7 +56,7 @@ class EventApplicationController extends Controller
     {
         $application = $service->withdraw($request->user(), $event);
 
-        $message = 'You have successfully withdrawn from the event.';
+        $message = "You've left the event.";
 
         if ($request->wantsJson()) {
             return response()->json([
@@ -64,6 +64,22 @@ class EventApplicationController extends Controller
                 'message' => $message,
                 'application' => $application,
             ]);
+        }
+
+        return back()->with('success', $message);
+    }
+
+    /**
+     * Undo an application straight after sending it (Task #94).
+     */
+    public function undo(Request $request, Event $event, EventApplicationService $service): RedirectResponse|JsonResponse
+    {
+        $service->undo($request->user(), $event);
+
+        $message = 'Application undone';
+
+        if ($request->wantsJson()) {
+            return response()->json(['message' => $message]);
         }
 
         return back()->with('success', $message);
