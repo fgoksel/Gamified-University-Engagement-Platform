@@ -121,7 +121,6 @@ function submit() {
             <TextField
                 v-model="form.name"
                 label="Role name"
-                required
                 hint="Any title you like. A name never gives extra power."
                 :error="form.errors.name"
                 data-autofocus
@@ -131,10 +130,7 @@ function submit() {
                 <label
                     for="role-description"
                     class="block text-sm font-medium text-fg"
-                    >Description
-                    <span class="font-normal text-fg-muted"
-                        >(optional)</span
-                    ></label
+                    >Description (optional)</label
                 >
                 <textarea
                     id="role-description"

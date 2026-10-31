@@ -2,7 +2,6 @@
 import { ref } from "vue";
 import { Clock, Plus, Tag, CheckCircle2, XCircle } from "@lucide/vue";
 import EmptyState from "../../Components/EmptyState.vue";
-import StatusChip from "../../Components/StatusChip.vue";
 import TopicTagRequestModal from "../../Components/TopicTagRequestModal.vue";
 import { categoryDot } from "../../categoryColors.js";
 
@@ -106,27 +105,27 @@ function formatDate(isoString) {
 
                     <!-- Status badge -->
                     <div class="shrink-0">
-                        <StatusChip
+                        <span
                             v-if="req.status === 'pending'"
-                            tone="warning"
-                            :icon="Clock"
+                            class="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 px-3 py-1 text-xs font-semibold text-amber-700 dark:text-amber-400 border border-amber-500/20"
                         >
+                            <Clock class="size-3.5" />
                             Pending Review
-                        </StatusChip>
-                        <StatusChip
+                        </span>
+                        <span
                             v-else-if="req.status === 'approved'"
-                            tone="success"
-                            :icon="CheckCircle2"
+                            class="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400 border border-emerald-500/20"
                         >
+                            <CheckCircle2 class="size-3.5" />
                             Approved
-                        </StatusChip>
-                        <StatusChip
+                        </span>
+                        <span
                             v-else-if="req.status === 'rejected'"
-                            tone="neutral"
-                            :icon="XCircle"
+                            class="inline-flex items-center gap-1.5 rounded-full bg-rose-500/10 px-3 py-1 text-xs font-semibold text-rose-700 dark:text-rose-400 border border-rose-500/20"
                         >
+                            <XCircle class="size-3.5" />
                             Rejected
-                        </StatusChip>
+                        </span>
                     </div>
                 </div>
 

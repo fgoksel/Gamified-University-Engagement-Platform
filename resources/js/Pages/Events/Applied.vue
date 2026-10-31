@@ -15,7 +15,6 @@ import {
     XCircle,
 } from "@lucide/vue";
 import EmptyState from "../../Components/EmptyState.vue";
-import StatusChip from "../../Components/StatusChip.vue";
 import Modal from "../../Components/Topics/Modal.vue";
 import Btn from "../../Components/Topics/Btn.vue";
 import { categoryDot } from "../../categoryColors.js";
@@ -160,10 +159,10 @@ function reapply(app) {
         >
             <button
                 type="button"
-                class="min-h-11 pb-3 border-b-2 transition"
+                class="pb-3 border-b-2 transition"
                 :class="
                     currentTab === 'all'
-                        ? 'border-primary text-link font-semibold'
+                        ? 'border-primary text-primary font-semibold'
                         : 'border-transparent text-fg-muted hover:text-fg'
                 "
                 @click="currentTab = 'all'"
@@ -172,10 +171,10 @@ function reapply(app) {
             </button>
             <button
                 type="button"
-                class="min-h-11 pb-3 border-b-2 transition"
+                class="pb-3 border-b-2 transition"
                 :class="
                     currentTab === 'active'
-                        ? 'border-primary text-link font-semibold'
+                        ? 'border-primary text-primary font-semibold'
                         : 'border-transparent text-fg-muted hover:text-fg'
                 "
                 @click="currentTab = 'active'"
@@ -184,10 +183,10 @@ function reapply(app) {
             </button>
             <button
                 type="button"
-                class="min-h-11 pb-3 border-b-2 transition"
+                class="pb-3 border-b-2 transition"
                 :class="
                     currentTab === 'history'
-                        ? 'border-primary text-link font-semibold'
+                        ? 'border-primary text-primary font-semibold'
                         : 'border-transparent text-fg-muted hover:text-fg'
                 "
                 @click="currentTab = 'history'"
@@ -286,64 +285,64 @@ function reapply(app) {
                     <!-- Status Badges -->
                     <div class="flex flex-wrap items-center gap-2">
                         <!-- Points Credited -->
-                        <StatusChip
+                        <span
                             v-if="app.is_credited"
-                            tone="success"
-                            :icon="Sparkles"
+                            class="inline-flex items-center gap-1 rounded-full bg-success-soft px-2.5 py-0.5 text-xs font-semibold text-success-fg"
                         >
+                            <Sparkles class="size-3.5" />
                             +{{ app.event.points_value }} pts Credited
-                        </StatusChip>
+                        </span>
 
                         <!-- Application Status -->
-                        <StatusChip
+                        <span
                             v-if="app.status === 'accepted'"
-                            tone="success"
-                            :icon="CheckCircle2"
+                            class="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400"
                         >
+                            <CheckCircle2 class="size-3.5" />
                             Accepted
-                        </StatusChip>
-                        <StatusChip
+                        </span>
+                        <span
                             v-else-if="app.status === 'waitlisted'"
-                            tone="info"
-                            :icon="Users"
+                            class="inline-flex items-center gap-1 rounded-full bg-indigo-500/10 px-2.5 py-0.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400"
                         >
+                            <Users class="size-3.5" />
                             Waitlisted
-                        </StatusChip>
-                        <StatusChip
+                        </span>
+                        <span
                             v-else-if="app.status === 'pending'"
-                            tone="warning"
-                            :icon="Clock"
+                            class="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-semibold text-amber-600 dark:text-amber-400"
                         >
+                            <Clock class="size-3.5" />
                             Under Review
-                        </StatusChip>
-                        <StatusChip
+                        </span>
+                        <span
                             v-else-if="app.status === 'withdrawn'"
-                            tone="neutral"
-                            :icon="RotateCcw"
+                            class="inline-flex items-center gap-1 rounded-full bg-slate-500/10 px-2.5 py-0.5 text-xs font-semibold text-slate-600 dark:text-slate-400"
                         >
+                            <RotateCcw class="size-3.5" />
                             Withdrawn
-                        </StatusChip>
-                        <StatusChip
+                        </span>
+                        <span
                             v-else-if="app.status === 'rejected'"
-                            tone="neutral"
-                            :icon="XCircle"
+                            class="inline-flex items-center gap-1 rounded-full bg-rose-500/10 px-2.5 py-0.5 text-xs font-semibold text-rose-600 dark:text-rose-400"
                         >
+                            <XCircle class="size-3.5" />
                             Rejected
-                        </StatusChip>
+                        </span>
 
                         <!-- Event Lifecycle status if non-standard -->
-                        <StatusChip
+                        <span
                             v-if="app.event.status === 'on_hold'"
-                            tone="warning"
+                            class="inline-flex items-center rounded-full bg-warning-soft px-2.5 py-0.5 text-xs font-semibold text-warning-fg"
                         >
                             On hold
-                        </StatusChip>
-                        <StatusChip
+                        </span>
+                        <span
                             v-else-if="app.event.status === 'cancelled'"
-                            tone="danger"
+                            class="inline-flex items-center rounded-full bg-danger-soft px-2.5 py-0.5 text-xs font-semibold text-danger-fg"
                         >
                             Cancelled
-                        </StatusChip>
+                        </span>
                     </div>
                 </div>
 
@@ -420,7 +419,7 @@ function reapply(app) {
                         <button
                             v-if="app.can_withdraw"
                             type="button"
-                            class="inline-flex min-h-11 items-center gap-1.5 rounded-control border border-red-300 dark:border-red-900/50 bg-surface px-3 py-1.5 text-xs font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 focus-visible:outline-2 focus-visible:outline-red-500 transition cursor-pointer"
+                            class="inline-flex items-center gap-1.5 rounded-control border border-red-300 dark:border-red-900/50 bg-surface px-3 py-1.5 text-xs font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 focus-visible:outline-2 focus-visible:outline-red-500 transition cursor-pointer"
                             @click="promptWithdrawal(app)"
                         >
                             Withdraw
