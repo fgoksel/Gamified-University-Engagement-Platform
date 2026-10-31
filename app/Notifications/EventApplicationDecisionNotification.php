@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Models\EventApplication;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -39,7 +40,37 @@ class EventApplicationDecisionNotification extends Notification implements Shoul
         public readonly string $decision,
         public readonly int $eventId,
         public readonly string $eventTitle,
+        // Set when the message waits until the undo minute is over (Task #94)
+        public readonly ?int $applicationId = null,
+        // The application time it belongs to: applying again after an undo sends its own message
+        public readonly ?string $appliedAt = null,
     ) {}
+
+    /**
+     * A "you have a place" or "you are on the waitlist" message is sent only after the
+     * student could still undo (Task #94). By then the application may have changed:
+     * undone, left, or promoted from the waitlist (which sends its own message).
+     * Send it only if the application still says what the message says, and was not
+     * sent again in the meantime (that new application has its own message).
+     */
+    public function shouldSend(object $notifiable, string $channel): bool
+    {
+        $expected = match ($this->decision) {
+            self::CONFIRMED => EventApplication::ACCEPTED,
+            self::WAITLISTED => EventApplication::WAITLISTED,
+            default => null,
+        };
+
+        if ($this->applicationId === null || $expected === null) {
+            return true;
+        }
+
+        $application = EventApplication::query()->find($this->applicationId);
+
+        return $application !== null
+            && $application->status === $expected
+            && ($this->appliedAt === null || $application->applied_at?->toIso8601String() === $this->appliedAt);
+    }
 
     /**
      * @return array<int, string>

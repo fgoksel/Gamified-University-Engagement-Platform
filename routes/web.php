@@ -83,6 +83,11 @@ Route::middleware('auth')->group(function () {
                 ->middleware('permission:events.apply')
                 ->name('events.apply');
 
+            // Student undo straight after applying (Task #94)
+            Route::post('/events/{event}/apply/undo', [EventApplicationController::class, 'undo'])
+                ->middleware('permission:events.apply')
+                ->name('events.apply.undo');
+
             // Student withdraw from an event (Task #50, UC-2.3)
             Route::post('/events/{event}/withdraw', [EventApplicationController::class, 'withdraw'])
                 ->middleware('permission:events.apply')

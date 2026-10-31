@@ -84,12 +84,15 @@ class EventApplicationService
                 $decidedAt = null;
             }
 
+            $wasUndone = $existing?->isUndone() ?? false;
+
             if ($existing) {
                 $existing->update([
                     'status' => $toStatus,
                     'applied_at' => now(),
                     'decided_at' => $decidedAt,
                     'withdrawn_at' => null,
+                    'undone_at' => null,
                 ]);
                 $application = $existing;
             } else {
@@ -107,9 +110,11 @@ class EventApplicationService
                 'from_status' => $fromStatus,
                 'to_status' => $toStatus,
                 'actor_id' => $student->id,
-                'reason' => $fromStatus === EventApplication::WITHDRAWN
-                    ? 'Re-applied after withdrawal'
-                    : 'Initial application',
+                'reason' => match (true) {
+                    $wasUndone => 'Applied again after undo',
+                    $fromStatus === EventApplication::WITHDRAWN => 'Re-applied after withdrawal',
+                    default => 'Initial application',
+                },
                 'created_at' => now(),
             ]);
 
@@ -123,8 +128,18 @@ class EventApplicationService
             default => null,
         };
 
+        // Sent once the undo minute is over (Task #94), and skipped if the student undid or left by then.
         if ($decision !== null) {
-            $student->notify(new EventApplicationDecisionNotification($decision, $event->id, $event->title));
+            $student->notify(
+                (new EventApplicationDecisionNotification(
+                    $decision,
+                    $event->id,
+                    $event->title,
+                    $application->id,
+                    $application->applied_at?->toIso8601String(),
+                ))
+                    ->delay(now()->addSeconds(EventApplication::UNDO_SECONDS))
+            );
         }
 
         return $application;
@@ -140,9 +155,32 @@ class EventApplicationService
      */
     public function withdraw(User $student, Event $event): EventApplication
     {
+        return $this->leave($student, $event, undo: false);
+    }
+
+    /**
+     * Take back an application straight after sending it (Task #94). Allowed only within
+     * EventApplication::UNDO_SECONDS of applying and before any points were credited.
+     * It runs like a withdrawal (a freed place still goes to the waitlist), but the
+     * application is marked undone, so the student screens show it as never sent.
+     *
+     * @throws ValidationException
+     */
+    public function undo(User $student, Event $event): EventApplication
+    {
+        return $this->leave($student, $event, undo: true);
+    }
+
+    /**
+     * Withdrawal and undo share one transaction, so the waitlist promotion is the same.
+     *
+     * @throws ValidationException
+     */
+    private function leave(User $student, Event $event, bool $undo): EventApplication
+    {
         $promoted = null;
 
-        $application = DB::transaction(function () use ($student, $event, &$promoted) {
+        $application = DB::transaction(function () use ($student, $event, $undo, &$promoted) {
             /** @var Event $lockedEvent */
             $lockedEvent = Event::query()->whereKey($event->id)->lockForUpdate()->firstOrFail();
 
@@ -153,9 +191,22 @@ class EventApplicationService
                 ->lockForUpdate()
                 ->first();
 
-            if (! $application) {
+            if (! $application || ($undo && $application->status === EventApplication::WITHDRAWN)) {
                 throw ValidationException::withMessages([
-                    'event' => 'You do not have an application for this event.',
+                    'event' => $undo
+                        ? 'You have no application to undo.'
+                        : 'You do not have an application for this event.',
+                ]);
+            }
+
+            if ($undo && (
+                $application->status === EventApplication::REJECTED
+                || $application->isCredited()
+                || $application->applied_at === null
+                || $application->applied_at->lt(now()->subSeconds(EventApplication::UNDO_SECONDS))
+            )) {
+                throw ValidationException::withMessages([
+                    'event' => "It's too late to undo. You can leave the event from My events.",
                 ]);
             }
 
@@ -177,7 +228,8 @@ class EventApplicationService
                 ]);
             }
 
-            if (now()->gt($lockedEvent->event_starts_at)) {
+            // Undo is only possible in the first minute, so it is not blocked once the event runs.
+            if (! $undo && now()->gt($lockedEvent->event_starts_at)) {
                 throw ValidationException::withMessages([
                     'event' => 'You cannot withdraw from an event that has already started.',
                 ]);
@@ -185,17 +237,16 @@ class EventApplicationService
 
             $fromStatus = $application->status;
 
-            $application->update([
-                'status' => EventApplication::WITHDRAWN,
-                'withdrawn_at' => now(),
-            ]);
+            $application->update($undo
+                ? ['status' => EventApplication::WITHDRAWN, 'withdrawn_at' => null, 'undone_at' => now()]
+                : ['status' => EventApplication::WITHDRAWN, 'withdrawn_at' => now()]);
 
             EventApplicationTransition::create([
                 'event_application_id' => $application->id,
                 'from_status' => $fromStatus,
                 'to_status' => EventApplication::WITHDRAWN,
                 'actor_id' => $student->id,
-                'reason' => 'Student withdrawal',
+                'reason' => $undo ? 'Undone by the student' : 'Student withdrawal',
                 'created_at' => now(),
             ]);
 
@@ -213,7 +264,9 @@ class EventApplicationService
                 $nextWaitlisted = EventApplication::query()
                     ->where('event_id', $lockedEvent->id)
                     ->where('status', EventApplication::WAITLISTED)
+                    // applied_at has one-second precision: the id breaks a tie, like waitlistPositions().
                     ->orderBy('applied_at')
+                    ->orderBy('id')
                     ->lockForUpdate()
                     ->first();
 
@@ -247,6 +300,43 @@ class EventApplicationService
         ));
 
         return $application;
+    }
+
+    /**
+     * The student's place in the queue of each event where they are waitlisted
+     * (Task #94): 1 = next in line, the same order the promotion above uses.
+     * One query for all the events, keyed by event id.
+     *
+     * @param  iterable<int>|null  $eventIds  null = every event
+     * @return array<int, int>
+     */
+    public function waitlistPositions(User $student, ?iterable $eventIds = null): array
+    {
+        $ids = $eventIds === null ? null : collect($eventIds)->values()->all();
+
+        if ($ids === []) {
+            return [];
+        }
+
+        return DB::table('event_applications as mine')
+            ->leftJoin('event_applications as ahead', function ($join) {
+                $join->on('ahead.event_id', '=', 'mine.event_id')
+                    ->where('ahead.status', EventApplication::WAITLISTED)
+                    // Ahead: applied earlier, or in the same second with a lower id (the promotion's order).
+                    ->where(fn ($ahead) => $ahead
+                        ->whereColumn('ahead.applied_at', '<', 'mine.applied_at')
+                        ->orWhere(fn ($tie) => $tie
+                            ->whereColumn('ahead.applied_at', '=', 'mine.applied_at')
+                            ->whereColumn('ahead.id', '<', 'mine.id')));
+            })
+            ->where('mine.student_id', $student->id)
+            ->where('mine.status', EventApplication::WAITLISTED)
+            ->when($ids !== null, fn ($q) => $q->whereIn('mine.event_id', $ids))
+            ->groupBy('mine.event_id')
+            ->selectRaw('mine.event_id, count(ahead.id) + 1 as position')
+            ->pluck('position', 'event_id')
+            ->map(fn ($position) => (int) $position)
+            ->all();
     }
 
     /**

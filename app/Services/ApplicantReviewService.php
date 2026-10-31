@@ -66,6 +66,8 @@ class ApplicantReviewService
     {
         $applications = EventApplication::query()
             ->where('event_id', $event->id)
+            // Undone straight after applying (Task #94): the organiser never needs to see it.
+            ->whereNull('undone_at')
             ->with('student:id,name,neptun_code')
             ->orderBy('applied_at')
             ->orderBy('id')

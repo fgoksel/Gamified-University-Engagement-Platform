@@ -56,7 +56,7 @@ class NotificationFeed
                 ],
                 EventApplicationDecisionNotification::REMOVED => [
                     "You were removed from the selection for {$event}",
-                    'Your application is pending again, so the organizer may select you later.',
+                    'Your application is still open, so the organiser may still choose you later.',
                     '/my-events',
                 ],
                 EventApplicationDecisionNotification::CONFIRMED => [
