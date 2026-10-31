@@ -6,18 +6,12 @@
 // Takes an event from the catalog (my_status) or an application from My events (status).
 export function myStatus(item) {
     const status = "my_status" in item ? item.my_status : item.status;
-    const position = item.waitlist_position;
 
     switch (status) {
         case "accepted":
             return { text: "You're in", tone: "success" };
         case "waitlisted":
-            return {
-                text: position
-                    ? `You're number ${position} on the waitlist`
-                    : "You're on the waitlist",
-                tone: "info",
-            };
+            return { text: "You're on the waitlist", tone: "info" };
         case "pending":
             return {
                 text: "Applied · the organiser will choose",
