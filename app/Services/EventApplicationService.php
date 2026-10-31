@@ -206,7 +206,7 @@ class EventApplicationService
                 || $application->applied_at->lt(now()->subSeconds(EventApplication::UNDO_SECONDS))
             )) {
                 throw ValidationException::withMessages([
-                    'event' => "It's too late to undo. You can withdraw from My events.",
+                    'event' => "It's too late to undo. You can leave the event from My events.",
                 ]);
             }
 
@@ -264,7 +264,9 @@ class EventApplicationService
                 $nextWaitlisted = EventApplication::query()
                     ->where('event_id', $lockedEvent->id)
                     ->where('status', EventApplication::WAITLISTED)
+                    // applied_at has one-second precision: the id breaks a tie, like waitlistPositions().
                     ->orderBy('applied_at')
+                    ->orderBy('id')
                     ->lockForUpdate()
                     ->first();
 
@@ -320,7 +322,12 @@ class EventApplicationService
             ->leftJoin('event_applications as ahead', function ($join) {
                 $join->on('ahead.event_id', '=', 'mine.event_id')
                     ->where('ahead.status', EventApplication::WAITLISTED)
-                    ->whereColumn('ahead.applied_at', '<', 'mine.applied_at');
+                    // Ahead: applied earlier, or in the same second with a lower id (the promotion's order).
+                    ->where(fn ($ahead) => $ahead
+                        ->whereColumn('ahead.applied_at', '<', 'mine.applied_at')
+                        ->orWhere(fn ($tie) => $tie
+                            ->whereColumn('ahead.applied_at', '=', 'mine.applied_at')
+                            ->whereColumn('ahead.id', '<', 'mine.id')));
             })
             ->where('mine.student_id', $student->id)
             ->where('mine.status', EventApplication::WAITLISTED)

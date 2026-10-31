@@ -167,7 +167,7 @@ const showActions = computed(
                         {{ places(event) }}
                     </dd>
                 </div>
-                <div>
+                <div v-if="!event.is_surprise">
                     <dt class="flex items-start gap-2 text-fg-muted">
                         <ListChecks class="mt-0.5 size-4 shrink-0" />
                         How places are given

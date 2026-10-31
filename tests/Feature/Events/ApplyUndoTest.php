@@ -119,7 +119,7 @@ class ApplyUndoTest extends TopicTestCase
         $this->travel(61)->seconds();
 
         $this->actingAs($student)->post("/events/{$event->id}/apply/undo")
-            ->assertSessionHasErrors(['event' => "It's too late to undo. You can withdraw from My events."]);
+            ->assertSessionHasErrors(['event' => "It's too late to undo. You can leave the event from My events."]);
         $this->assertSame(EventApplication::ACCEPTED, EventApplication::where('student_id', $student->id)->value('status'));
     }
 
@@ -131,7 +131,7 @@ class ApplyUndoTest extends TopicTestCase
         EventApplication::where('student_id', $student->id)->update(['scored_at' => now()]);
 
         $this->actingAs($student)->post("/events/{$event->id}/apply/undo")
-            ->assertSessionHasErrors(['event' => "It's too late to undo. You can withdraw from My events."]);
+            ->assertSessionHasErrors(['event' => "It's too late to undo. You can leave the event from My events."]);
         $this->assertSame(EventApplication::ACCEPTED, EventApplication::where('student_id', $student->id)->value('status'));
     }
 
@@ -354,6 +354,46 @@ class ApplyUndoTest extends TopicTestCase
         // The first in the queue is next in line; an accepted student has no position.
         $this->actingAs($waiting[0])->get('/events')
             ->assertInertia(fn (Assert $page) => $page->where('events.data.0.waitlist_position', 1));
+    }
+
+    public function test_students_who_join_the_waitlist_in_the_same_second_get_different_places_in_line(): void
+    {
+        // applied_at has one-second precision; the id decides, the same way the promotion does.
+        $event = $this->event(['capacity' => 1]);
+        $this->actingAs($this->student('TIE000'))->post("/events/{$event->id}/apply");
+        $this->travel(1)->seconds();
+        $first = $this->student('TIE001');
+        $second = $this->student('TIE002');
+        $this->freezeTime(function () use ($event, $first, $second) {
+            $this->actingAs($first)->post("/events/{$event->id}/apply");
+            $this->actingAs($second)->post("/events/{$event->id}/apply");
+        });
+
+        $this->actingAs($first)->get("/events/{$event->id}")
+            ->assertInertia(fn (Assert $page) => $page->where('event.waitlist_position', 1));
+        $this->actingAs($second)->get("/events/{$event->id}")
+            ->assertInertia(fn (Assert $page) => $page->where('event.waitlist_position', 2));
+    }
+
+    public function test_the_first_in_line_is_promoted_when_two_joined_in_the_same_second(): void
+    {
+        $event = $this->event(['capacity' => 1]);
+        $accepted = $this->student('TIE100');
+        $this->actingAs($accepted)->post("/events/{$event->id}/apply");
+        $this->travel(2)->minutes();
+        $first = $this->student('TIE101');
+        $second = $this->student('TIE102');
+        $this->freezeTime(function () use ($event, $first, $second) {
+            $this->actingAs($first)->post("/events/{$event->id}/apply");
+            $this->actingAs($second)->post("/events/{$event->id}/apply");
+        });
+        // Make the tie certain: both applied in the same second, so only the id can decide.
+        EventApplication::whereIn('student_id', [$first->id, $second->id])->update(['applied_at' => now()->startOfSecond()]);
+
+        $this->actingAs($accepted)->post("/events/{$event->id}/withdraw")->assertSessionHasNoErrors();
+
+        $this->assertSame(EventApplication::ACCEPTED, EventApplication::where('student_id', $first->id)->value('status'));
+        $this->assertSame(EventApplication::WAITLISTED, EventApplication::where('student_id', $second->id)->value('status'));
     }
 
     public function test_the_waitlist_positions_take_one_query_for_the_whole_list(): void

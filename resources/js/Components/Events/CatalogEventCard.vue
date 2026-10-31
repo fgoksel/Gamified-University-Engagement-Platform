@@ -99,7 +99,7 @@ const status = computed(() => myStatus(props.event));
                 <Users class="mt-0.5 size-4 shrink-0 text-fg-muted" />
                 <dd class="text-fg">{{ places(event) }}</dd>
             </div>
-            <div class="flex items-start gap-2">
+            <div v-if="!event.is_surprise" class="flex items-start gap-2">
                 <dt class="sr-only">How places are given</dt>
                 <ListChecks class="mt-0.5 size-4 shrink-0 text-fg-muted" />
                 <dd class="text-fg">{{ applicationType(event) }}</dd>

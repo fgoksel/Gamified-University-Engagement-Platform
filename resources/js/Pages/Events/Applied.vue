@@ -19,7 +19,12 @@ import StatusChip from "../../Components/StatusChip.vue";
 import Modal from "../../Components/Topics/Modal.vue";
 import Btn from "../../Components/Topics/Btn.vue";
 import { categoryDot } from "../../categoryColors.js";
-import { applyLabels, myStatus } from "../../eventWords.js";
+import {
+    actionWords,
+    applyLabels,
+    leaveText,
+    myStatus,
+} from "../../eventWords.js";
 
 // Student: events I applied to (UC-2.3, Task #50)
 defineOptions({ layout: { title: "My events" } });
@@ -410,15 +415,13 @@ function reapply(app) {
                     </div>
 
                     <div class="flex items-center gap-2">
-                        <!-- Withdraw button -->
-                        <button
+                        <!-- Leave event: the same words as on the event cards (Task #94) -->
+                        <Btn
                             v-if="app.can_withdraw"
-                            type="button"
-                            class="inline-flex min-h-11 items-center gap-1.5 rounded-control border border-red-300 dark:border-red-900/50 bg-surface px-3 py-1.5 text-xs font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 focus-visible:outline-2 focus-visible:outline-red-500 transition cursor-pointer"
                             @click="promptWithdrawal(app)"
                         >
-                            Withdraw
-                        </button>
+                            {{ actionWords.leave }}
+                        </Btn>
 
                         <!-- Re-apply button -->
                         <button
@@ -440,67 +443,27 @@ function reapply(app) {
             </div>
         </div>
 
-        <!-- Withdrawal Confirmation Dialog -->
+        <!-- Leave event dialog: the same as on the event cards (ApplyAction) -->
         <Modal
             v-if="withdrawingApp"
-            title="Withdraw from Event"
+            :title="actionWords.leaveTitle"
             :busy="isWithdrawing"
-            danger
             @close="cancelWithdrawal"
         >
-            <div class="space-y-4">
-                <p class="text-sm text-fg">
-                    Are you sure you want to withdraw from
-                    <span class="font-semibold">{{
-                        withdrawingApp.event.title
-                    }}</span
-                    >?
-                </p>
-
-                <div
-                    v-if="withdrawingApp.event.application_type === 'fcfs'"
-                    class="rounded-control bg-surface-muted p-3 text-xs text-fg-muted space-y-1"
-                >
-                    <p class="font-medium text-fg">Important Notice:</p>
-                    <p>
-                        Your seat will be vacated immediately. If other students
-                        are waiting on the waitlist, the next student will be
-                        automatically promoted to fill the vacancy.
-                    </p>
-                    <p>
-                        You may re-apply before the deadline, but you will be
-                        placed at the end of the queue.
-                    </p>
-                </div>
-                <div
-                    v-else
-                    class="rounded-control bg-surface-muted p-3 text-xs text-fg-muted space-y-1"
-                >
-                    <p class="font-medium text-fg">Important Notice:</p>
-                    <p>
-                        Your application will be withdrawn. You may re-apply
-                        before the deadline if you change your mind.
-                    </p>
-                </div>
-            </div>
-
+            <p class="text-sm text-fg">
+                {{ leaveText({ my_status: withdrawingApp.status }) }}
+            </p>
             <template #footer>
-                <div class="flex justify-end gap-3">
-                    <Btn
-                        variant="quiet"
-                        :disabled="isWithdrawing"
-                        @click="cancelWithdrawal"
-                    >
-                        Keep Application
-                    </Btn>
-                    <Btn
-                        variant="destructive"
-                        :loading="isWithdrawing"
-                        @click="confirmWithdrawal"
-                    >
-                        Yes, withdraw
-                    </Btn>
-                </div>
+                <Btn :disabled="isWithdrawing" @click="cancelWithdrawal">
+                    {{ actionWords.stay }}
+                </Btn>
+                <Btn
+                    variant="danger"
+                    :loading="isWithdrawing"
+                    @click="confirmWithdrawal"
+                >
+                    {{ actionWords.leave }}
+                </Btn>
             </template>
         </Modal>
     </div>
