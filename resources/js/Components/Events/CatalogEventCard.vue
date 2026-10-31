@@ -10,6 +10,7 @@ import {
     Users,
 } from "@lucide/vue";
 import { Link } from "@inertiajs/vue3";
+import StatusChip from "../StatusChip.vue";
 import { categoryDot } from "../../categoryColors.js";
 
 // One event in "All events" (Task #40). The Apply button (Task #49) goes in
@@ -51,25 +52,15 @@ const placesText = computed(() => {
                 />
                 {{ event.tag ?? event.category }}
             </span>
-            <span
-                v-if="event.is_surprise"
-                class="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-brand-800 dark:text-brand-300 font-medium"
-            >
-                <Sparkles class="size-3.5" />
+            <StatusChip v-if="event.is_surprise" tone="info" :icon="Sparkles">
                 Surprise event
-            </span>
-            <span
-                v-if="event.already_applied"
-                class="rounded-full bg-primary/10 px-2.5 py-0.5 text-brand-800 dark:text-brand-300 font-medium"
-            >
+            </StatusChip>
+            <StatusChip v-if="event.already_applied" tone="info">
                 Already applied
-            </span>
-            <span
-                v-if="!event.is_open"
-                class="rounded-full bg-surface-muted px-2.5 py-0.5 text-fg-muted"
-            >
+            </StatusChip>
+            <StatusChip v-if="!event.is_open" tone="neutral">
                 Applications closed
-            </span>
+            </StatusChip>
         </div>
 
         <h2 class="mt-3 text-base font-semibold text-fg">

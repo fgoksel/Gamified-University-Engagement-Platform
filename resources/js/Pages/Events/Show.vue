@@ -14,7 +14,9 @@ import {
 } from "@lucide/vue";
 import ApplyAction from "../../Components/Events/ApplyAction.vue";
 import CheckinBanner from "../../Components/Events/CheckinBanner.vue";
+import StatusChip from "../../Components/StatusChip.vue";
 import { categoryDot } from "../../categoryColors.js";
+import { eventStatusTone } from "../../eventStatus.js";
 
 // One event's detail page, also reached by its direct URL (Task #40),
 // with the Apply button (Task #49).
@@ -78,28 +80,26 @@ const placesText = computed(() => {
                     />
                     {{ event.tag ?? event.category }}
                 </span>
-                <span
+                <StatusChip
                     v-if="event.is_surprise"
-                    class="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-brand-800 dark:text-brand-300 font-medium"
+                    tone="info"
+                    :icon="Sparkles"
                 >
-                    <Sparkles class="size-3.5" />
                     Surprise event
                     <template v-if="event.reveal_at">
                         · revealed {{ event.reveal_at }}</template
                     >
-                </span>
-                <span
+                </StatusChip>
+                <StatusChip
                     v-if="event.status !== 'published'"
-                    class="rounded-full bg-surface-muted px-2.5 py-0.5 text-fg-muted capitalize"
+                    :tone="eventStatusTone[event.status] ?? 'neutral'"
+                    class="capitalize"
                 >
                     {{ event.status.replace("_", " ") }}
-                </span>
-                <span
-                    v-else-if="!event.is_open"
-                    class="rounded-full bg-surface-muted px-2.5 py-0.5 text-fg-muted"
-                >
+                </StatusChip>
+                <StatusChip v-else-if="!event.is_open" tone="neutral">
                     Applications closed
-                </span>
+                </StatusChip>
             </div>
 
             <h2 class="mt-3 text-2xl font-semibold text-fg">
@@ -110,12 +110,9 @@ const placesText = computed(() => {
                 v-if="event.my_status"
                 class="mt-2 flex flex-wrap items-center gap-2 text-sm font-medium text-primary"
             >
-                <span
-                    v-if="event.already_applied"
-                    class="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs text-brand-800 dark:text-brand-300 font-medium"
-                >
+                <StatusChip v-if="event.already_applied" tone="info">
                     Already applied
-                </span>
+                </StatusChip>
                 {{ myStatusLabel[event.my_status] }}
             </p>
 

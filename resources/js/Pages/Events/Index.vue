@@ -132,7 +132,7 @@ function pageLabel(label) {
                     <span class="font-medium text-fg">Topic or branch</span>
                     <select
                         :value="filters.topic ?? ''"
-                        class="mt-1 block w-full rounded-control border border-line bg-surface px-3 py-2 text-fg focus:outline-2 focus:outline-offset-0 focus:outline-ring"
+                        class="mt-1 block min-h-11 w-full rounded-control border border-line bg-surface px-3 py-2 text-fg focus:outline-2 focus:outline-offset-0 focus:outline-ring"
                         @change="
                             visit({
                                 topic: $event.target.value || null,

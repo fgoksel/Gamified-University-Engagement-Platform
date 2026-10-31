@@ -165,7 +165,7 @@ function formatDateTime(iso) {
             <select
                 id="applicant-filter"
                 v-model="filter"
-                class="rounded-control border border-line bg-surface px-3 py-2 text-sm"
+                class="min-h-11 rounded-control border border-line bg-surface px-3 py-2 text-sm"
             >
                 <option value="all">All students</option>
                 <option value="selected">Selected students</option>

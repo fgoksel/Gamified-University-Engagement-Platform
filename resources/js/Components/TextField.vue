@@ -10,6 +10,10 @@ const props = defineProps({
     autocomplete: { type: String, default: "" },
     // Shown but not editable, e.g. a field that is locked for now
     disabled: { type: Boolean, default: false },
+    // The backend needs a value: native "required" and a red asterisk
+    required: { type: Boolean, default: false },
+    // May stay empty: "(optional)" after the label
+    optional: { type: Boolean, default: false },
 });
 
 const model = defineModel({ type: String, default: "" });
@@ -33,6 +37,12 @@ const describedBy = computed(() => {
     <div>
         <label :for="id" class="block text-sm font-medium text-fg">
             {{ label }}
+            <span v-if="required" class="text-danger-fg" aria-hidden="true"
+                >*</span
+            >
+            <span v-else-if="optional" class="font-normal text-fg-muted"
+                >(optional)</span
+            >
         </label>
 
         <div class="relative mt-1.5">
@@ -42,6 +52,7 @@ const describedBy = computed(() => {
                 :type="inputType"
                 :autocomplete="autocomplete || undefined"
                 :disabled="disabled"
+                :required="required"
                 :aria-invalid="error ? 'true' : undefined"
                 :aria-describedby="describedBy"
                 class="block min-h-11 w-full rounded-control border bg-surface px-3 py-2 text-fg placeholder:text-fg-muted focus:outline-2 focus:outline-offset-0 focus:outline-ring disabled:cursor-not-allowed disabled:bg-surface-muted disabled:text-fg-muted"

@@ -14,6 +14,7 @@ import {
 } from "@lucide/vue";
 import { BrowserQRCodeReader } from "@zxing/library";
 import Btn from "../../Components/Topics/Btn.vue";
+import StatusChip from "../../Components/StatusChip.vue";
 import { categoryDot } from "../../categoryColors.js";
 
 // Organizer: QR Passport scanner & point crediting (UC-1.7, Task #43)
@@ -613,7 +614,7 @@ function setMode(newMode) {
                 <select
                     id="camera-select"
                     v-model="selectedDeviceId"
-                    class="rounded-control border border-line bg-surface px-2.5 py-1 text-xs"
+                    class="min-h-11 rounded-control border border-line bg-surface px-2.5 py-1 text-xs"
                     @change="switchCamera(selectedDeviceId)"
                 >
                     <option
@@ -705,19 +706,16 @@ function setMode(newMode) {
                                 {{ student.neptun_code || "—" }}
                             </td>
                             <td class="px-4 py-3">
-                                <span
+                                <StatusChip
                                     v-if="student.is_credited"
-                                    class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300"
+                                    tone="success"
+                                    :icon="CheckCircle2"
                                 >
-                                    <CheckCircle2 class="size-3.5" />
                                     Credited
-                                </span>
-                                <span
-                                    v-else
-                                    class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-800 dark:bg-sky-950/40 dark:text-sky-300"
-                                >
+                                </StatusChip>
+                                <StatusChip v-else tone="info">
                                     Accepted
-                                </span>
+                                </StatusChip>
                             </td>
                             <td class="px-4 py-3 text-right">
                                 <Btn
