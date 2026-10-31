@@ -57,7 +57,7 @@ function post(action) {
                         tone="info"
                         :icon="EyeOff"
                     >
-                        Surprise · revealed {{ event.reveal_at }}
+                        Surprise event
                     </StatusChip>
                 </div>
                 <h2 class="mt-2 text-lg font-semibold text-fg">
@@ -83,7 +83,11 @@ function post(action) {
                     Applicants
                 </Link>
                 <Link
-                    v-if="event.can_credit && event.status === 'published'"
+                    v-if="
+                        event.can_credit &&
+                        !event.is_hidden &&
+                        event.status === 'published'
+                    "
                     :href="`/events/${event.id}/scan`"
                     class="inline-flex min-h-9 items-center justify-center rounded-control border border-line bg-surface px-3 text-sm font-medium text-fg hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                 >
@@ -100,6 +104,20 @@ function post(action) {
                 >
                     QR codes
                 </Link>
+                <!-- Task #81: opens check-in and shows the live code full-screen. A completed
+                     event takes check-ins until its points end date, like the import below. -->
+                <Btn
+                    v-if="
+                        event.can_qr &&
+                        event.qr_enabled &&
+                        ['published', 'completed'].includes(event.status)
+                    "
+                    small
+                    data-test="attendance-qr"
+                    @click="post('checkin/screen')"
+                >
+                    Show attendance QR
+                </Btn>
                 <!-- Task #85: a completed event takes points until its points end date. -->
                 <Link
                     v-if="

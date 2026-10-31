@@ -11,7 +11,9 @@ defineProps({
     <div
         class="flex min-h-screen flex-col items-center justify-center bg-canvas px-4 py-10 text-fg"
     >
-        <AppLogo class="mb-8" />
+        <header class="mb-8">
+            <AppLogo />
+        </header>
 
         <main
             class="w-full max-w-sm rounded-card border border-line bg-surface p-6 shadow-card sm:p-8"

@@ -7,6 +7,7 @@ import {
     CalendarCheck,
     CheckCircle2,
     Clock,
+    IdCard,
     RotateCcw,
     Sparkles,
     Tag,
@@ -133,13 +134,23 @@ function reapply(app) {
                 Track your event applications, waitlist positions, and credited
                 attendance points.
             </p>
-            <Link
-                href="/events"
-                class="inline-flex items-center gap-2 rounded-control border border-line bg-surface px-3 py-2 text-sm font-medium text-fg hover:bg-surface-muted transition"
-            >
-                <Calendar class="size-4" />
-                Browse Events
-            </Link>
+            <div class="flex flex-wrap gap-2">
+                <!-- One tap to the passport from My events (Task #93) -->
+                <Link
+                    href="/passport"
+                    class="inline-flex min-h-11 items-center gap-2 rounded-control border border-line bg-surface px-3 py-2 text-sm font-medium text-fg hover:bg-surface-muted transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                >
+                    <IdCard class="size-4" />
+                    My QR passport
+                </Link>
+                <Link
+                    href="/events"
+                    class="inline-flex items-center gap-2 rounded-control border border-line bg-surface px-3 py-2 text-sm font-medium text-fg hover:bg-surface-muted transition"
+                >
+                    <Calendar class="size-4" />
+                    Browse Events
+                </Link>
+            </div>
         </div>
 
         <!-- Filter tabs -->

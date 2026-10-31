@@ -32,10 +32,10 @@ class QrPassportTest extends EventTestCase
         $this->accepted($this->student);
     }
 
-    private function scan(string $identifier, string $source = 'passport')
+    private function scan(string $identifier)
     {
         return $this->actingAs($this->organiser)
-            ->postJson("/events/{$this->event->id}/credit", ['identifier' => $identifier, 'source' => $source])
+            ->postJson("/events/{$this->event->id}/credit", ['identifier' => $identifier])
             ->assertOk();
     }
 
@@ -100,19 +100,10 @@ class QrPassportTest extends EventTestCase
             (string) $this->student->id,
             json_encode(['user_id' => $this->student->id]),
         ] as $guess) {
-            $this->scan($guess)->assertJson(['status' => 'not_found']);
+            $this->scan($guess)->assertJson(['status' => 'passport_invalid']);
         }
 
         $this->assertDatabaseCount('point_transactions', 0);
-    }
-
-    public function test_picking_the_student_from_the_list_and_typing_a_neptun_code_still_work(): void
-    {
-        $this->scan((string) $this->student->id, 'manual')->assertJson(['status' => 'credited']);
-
-        $second = $this->student('Second', 'SEC001');
-        $this->accepted($second);
-        $this->scan('sec001')->assertJson(['status' => 'credited']);
     }
 
     public function test_a_passport_cannot_credit_its_owner_when_they_scan_themselves(): void

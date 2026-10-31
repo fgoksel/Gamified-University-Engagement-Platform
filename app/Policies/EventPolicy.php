@@ -4,6 +4,7 @@ namespace App\Policies;
 
 use App\Enums\Capability;
 use App\Models\Event;
+use App\Models\PointTransaction;
 use App\Models\User;
 use App\Services\TopicAccess;
 
@@ -49,12 +50,13 @@ class EventPolicy
     }
 
     /**
-     * Seeing the event: staff always; everybody else once it is published, revealed,
-     * not on hold, and announced to an audience node they are assigned to.
+     * Seeing the event: staff always; everybody else once it is published, not on hold,
+     * and announced to an audience node they are assigned to. A surprise event is never
+     * announced (Task #86); the students it gave points to may open it afterwards.
      */
     public function view(User $user, Event $event): bool
     {
-        return $this->staff($user, $event) || $this->announcedTo($user, $event);
+        return $this->staff($user, $event) || $this->announcedTo($user, $event) || $this->creditedFor($user, $event);
     }
 
     public function apply(User $user, Event $event): bool
@@ -113,13 +115,36 @@ class EventPolicy
         return $this->access->canView($user, $topic) && $this->access->can($user, $capability, $topic);
     }
 
+    /**
+     * A student whose points came from a surprise event learns of it then (26 Oct, Q8): they
+     * may open the event, under the same freezes as any other event. It is still never
+     * announced, so it is not in the catalog and they cannot apply or scan.
+     */
+    private function creditedFor(User $user, Event $event): bool
+    {
+        if (! $event->is_hidden || $event->status === Event::STATUS_DRAFT || $event->isOnHold()) {
+            return false;
+        }
+
+        if ($event->owningTopic === null || $this->access->isHidden($event->owningTopic)) {
+            return false;
+        }
+
+        return PointTransaction::query()
+            ->where('event_id', $event->id)
+            ->where('student_id', $user->id)
+            ->where('type', PointTransaction::CREDIT)
+            ->exists();
+    }
+
     private function announcedTo(User $user, Event $event): bool
     {
         if ($event->audience_topic_id === null || $event->status === Event::STATUS_DRAFT) {
             return false;
         }
 
-        if ($event->isOnHold() || ! $event->isRevealed()) {
+        // A surprise event stays hidden from students (Task #86).
+        if ($event->isOnHold() || $event->is_hidden) {
             return false;
         }
 

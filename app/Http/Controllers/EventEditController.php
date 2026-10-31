@@ -54,7 +54,6 @@ class EventEditController extends Controller
                 'application_deadline' => $event->application_deadline->format('Y-m-d\TH:i'),
                 'completion_deadline' => $event->completion_deadline->format('Y-m-d\TH:i'),
                 'is_hidden' => $event->is_hidden,
-                'reveal_at' => $event->reveal_at?->format('Y-m-d\TH:i'),
                 'qr_enabled' => $event->qr_enabled,
             ],
             'editable' => $editable,
@@ -70,7 +69,8 @@ class EventEditController extends Controller
             // The other two tabs, shown only to people who may use them.
             'tabs' => [
                 'applicants' => $gate->allows('manageApplicants', $event),
-                'credit' => $gate->allows('credit', $event),
+                // A surprise event has nothing to scan: its points are given by import (Task #86).
+                'credit' => $gate->allows('credit', $event) && ! $event->is_hidden,
                 'qr' => $gate->allows('manageQr', $event) && $event->qr_enabled,
             ],
             'applications' => $event->applications()->where('status', '!=', EventApplication::WITHDRAWN)->count(),

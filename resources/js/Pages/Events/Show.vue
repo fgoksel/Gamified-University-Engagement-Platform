@@ -86,9 +86,6 @@ const placesText = computed(() => {
                     :icon="Sparkles"
                 >
                     Surprise event
-                    <template v-if="event.reveal_at">
-                        · revealed {{ event.reveal_at }}</template
-                    >
                 </StatusChip>
                 <StatusChip
                     v-if="event.status !== 'published'"
@@ -97,7 +94,10 @@ const placesText = computed(() => {
                 >
                     {{ event.status.replace("_", " ") }}
                 </StatusChip>
-                <StatusChip v-else-if="!event.is_open" tone="neutral">
+                <StatusChip
+                    v-else-if="!event.is_open && !event.is_surprise"
+                    tone="neutral"
+                >
                     Applications closed
                 </StatusChip>
             </div>
@@ -133,7 +133,7 @@ const placesText = computed(() => {
                         {{ event.starts }} – {{ event.ends_full }}
                     </dd>
                 </div>
-                <div>
+                <div v-if="!event.is_surprise">
                     <dt class="flex items-start gap-2 text-fg-muted">
                         <Clock class="mt-0.5 size-4 shrink-0" />
                         Applications close
@@ -166,7 +166,7 @@ const placesText = computed(() => {
                         Invited students only
                     </dd>
                 </div>
-                <div>
+                <div v-if="!event.is_surprise">
                     <dt class="flex items-start gap-2 text-fg-muted">
                         <Users class="mt-0.5 size-4 shrink-0" />
                         Places

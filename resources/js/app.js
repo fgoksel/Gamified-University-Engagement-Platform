@@ -6,6 +6,7 @@ import AppLayout from "./Layouts/AppLayout.vue";
 import AuthLayout from "./Layouts/AuthLayout.vue";
 import GuestLayout from "./Layouts/GuestLayout.vue";
 import PrintLayout from "./Layouts/PrintLayout.vue";
+import ScreenLayout from "./Layouts/ScreenLayout.vue";
 
 createInertiaApp({
     resolve: (name) => {
@@ -14,10 +15,12 @@ createInertiaApp({
     },
     // Every page gets a layout automatically:
     // Pages/Public/ use GuestLayout, Pages/Auth/ (login, passwords) use
-    // AuthLayout, Pages/Print/ (sheets to print) use PrintLayout, all others
-    // use AppLayout.
+    // AuthLayout, Pages/Print/ (sheets to print) use PrintLayout, Pages/Screen/
+    // (a projector or a phone held up) use ScreenLayout, all others use
+    // AppLayout.
     layout: (name) => {
         if (name.startsWith("Print/")) return PrintLayout;
+        if (name.startsWith("Screen/")) return ScreenLayout;
         if (name.startsWith("Public/")) return GuestLayout;
         if (name.startsWith("Auth/")) return AuthLayout;
         return AppLayout;

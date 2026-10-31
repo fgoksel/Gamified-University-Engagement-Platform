@@ -32,7 +32,7 @@ use Illuminate\Validation\ValidationException;
  *   how students get a place     once anybody has applied
  *   points and the tag           once anybody was credited (everyone gets the same points)
  *   start                        once the event has started
- *   surprise setting             always; the reveal time only until it is revealed
+ *   surprise setting             always (it stays hidden, and its points are given by import)
  * Places can never drop below the students already accepted.
  *
  * Students who still have an application are told when the time or the location
@@ -91,10 +91,6 @@ class EventEditor
 
         if ($event->event_starts_at->isPast()) {
             $locks['event_starts_at'] = 'The event has started, so its start cannot move.';
-        }
-
-        if (! $event->is_hidden || $event->isRevealed()) {
-            $locks['reveal_at'] = 'The event is already visible, so there is no reveal time to change.';
         }
 
         return $locks;
@@ -263,20 +259,6 @@ class EventEditor
         }
 
         $hidden = $keeps('is_hidden', (bool) ($data['is_hidden'] ?? false)) ? $event->is_hidden : (bool) ($data['is_hidden'] ?? false);
-        $revealAt = $event->reveal_at;
-        if ($hidden && ! $keeps('reveal_at', $data['reveal_at'] ?? null)) {
-            $revealAt = isset($data['reveal_at']) ? $date('reveal_at') : null;
-
-            if ($revealAt === null) {
-                $errors['reveal_at'] = 'Choose when a hidden event is revealed.';
-            } elseif ($revealAt->lte(now())) {
-                $errors['reveal_at'] = 'The reveal time must be in the future.';
-            } elseif ($revealAt->gt($starts)) {
-                $errors['reveal_at'] = 'A hidden event must be revealed before it starts.';
-            }
-        } elseif (! $hidden) {
-            $revealAt = null;
-        }
 
         if ($errors !== []) {
             throw ValidationException::withMessages($errors);
@@ -305,8 +287,8 @@ class EventEditor
             'application_deadline' => $applyBy,
             'completion_deadline' => $completeBy,
             'is_hidden' => $hidden,
-            'reveal_at' => $revealAt,
-            'qr_enabled' => (bool) ($data['qr_enabled'] ?? false),
+            // A surprise event has no QR codes: it is credited by import (Task #86).
+            'qr_enabled' => ! $hidden && (bool) ($data['qr_enabled'] ?? false),
         ];
     }
 

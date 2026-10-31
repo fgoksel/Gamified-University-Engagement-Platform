@@ -104,9 +104,6 @@ Route::middleware('auth')->group(function () {
                 ->name('events.scan');
             Route::post('/events/{event}/credit', [EventCreditController::class, 'credit'])
                 ->name('events.credit');
-            // Checklist mode: credit every ticked student in one request (Task #42)
-            Route::post('/events/{event}/credit/bulk', [EventCreditController::class, 'creditMany'])
-                ->name('events.credit.bulk');
 
             // Organizer: give an event's points to an imported list of students (Task #85).
             // EventPolicy::credit is checked in the controller, like the routes above.
@@ -142,6 +139,11 @@ Route::middleware('auth')->group(function () {
                 Route::post('/pause', [EventCheckinController::class, 'pause'])->name('pause');
                 Route::post('/stop', [EventCheckinController::class, 'stop'])->name('stop');
                 Route::get('/image.svg', [EventCheckinController::class, 'image'])->name('image');
+
+                // The organiser's full-screen "Show attendance QR" view (Task #81), and the card's button
+                // that opens check-in and goes there.
+                Route::get('/screen', [EventCheckinController::class, 'screen'])->name('screen');
+                Route::post('/screen', [EventCheckinController::class, 'openScreen'])->name('screen.open');
             });
             Route::get('/events/{event}/checkin/status', [EventCheckinController::class, 'status'])
                 ->whereNumber('event')->middleware('permission:events.view')->name('events.checkin.status');
