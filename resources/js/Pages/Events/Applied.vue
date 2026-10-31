@@ -151,7 +151,7 @@ function reapply(app) {
                 class="pb-3 border-b-2 transition"
                 :class="
                     currentTab === 'all'
-                        ? 'border-primary text-primary font-semibold'
+                        ? 'border-primary text-link font-semibold'
                         : 'border-transparent text-fg-muted hover:text-fg'
                 "
                 @click="currentTab = 'all'"
@@ -163,7 +163,7 @@ function reapply(app) {
                 class="pb-3 border-b-2 transition"
                 :class="
                     currentTab === 'active'
-                        ? 'border-primary text-primary font-semibold'
+                        ? 'border-primary text-link font-semibold'
                         : 'border-transparent text-fg-muted hover:text-fg'
                 "
                 @click="currentTab = 'active'"
@@ -175,7 +175,7 @@ function reapply(app) {
                 class="pb-3 border-b-2 transition"
                 :class="
                     currentTab === 'history'
-                        ? 'border-primary text-primary font-semibold'
+                        ? 'border-primary text-link font-semibold'
                         : 'border-transparent text-fg-muted hover:text-fg'
                 "
                 @click="currentTab = 'history'"
@@ -285,21 +285,21 @@ function reapply(app) {
                         <!-- Application Status -->
                         <span
                             v-if="app.status === 'accepted'"
-                            class="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400"
+                            class="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-semibold text-emerald-800 dark:text-emerald-300"
                         >
                             <CheckCircle2 class="size-3.5" />
                             Accepted
                         </span>
                         <span
                             v-else-if="app.status === 'waitlisted'"
-                            class="inline-flex items-center gap-1 rounded-full bg-indigo-500/10 px-2.5 py-0.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400"
+                            class="inline-flex items-center gap-1 rounded-full bg-indigo-500/10 px-2.5 py-0.5 text-xs font-semibold text-indigo-900 dark:text-indigo-300"
                         >
                             <Users class="size-3.5" />
                             Waitlisted
                         </span>
                         <span
                             v-else-if="app.status === 'pending'"
-                            class="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-semibold text-amber-600 dark:text-amber-400"
+                            class="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-semibold text-amber-900 dark:text-amber-300"
                         >
                             <Clock class="size-3.5" />
                             Under Review

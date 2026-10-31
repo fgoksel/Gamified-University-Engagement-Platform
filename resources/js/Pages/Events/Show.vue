@@ -80,7 +80,7 @@ const placesText = computed(() => {
                 </span>
                 <span
                     v-if="event.is_surprise"
-                    class="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-primary"
+                    class="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-brand-800 dark:text-brand-300 font-medium"
                 >
                     <Sparkles class="size-3.5" />
                     Surprise event
@@ -112,7 +112,7 @@ const placesText = computed(() => {
             >
                 <span
                     v-if="event.already_applied"
-                    class="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs"
+                    class="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs text-brand-800 dark:text-brand-300 font-medium"
                 >
                     Already applied
                 </span>

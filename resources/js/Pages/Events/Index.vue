@@ -181,7 +181,7 @@ function pageLabel(label) {
                     v-for="cat in categories"
                     :key="cat.label"
                     type="button"
-                    class="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-sm"
+                    class="inline-flex min-h-11 items-center gap-2 rounded-full border px-3 py-1.5 text-sm"
                     :class="
                         (filters.category ?? null) === cat.value
                             ? 'border-primary bg-primary/10 text-fg'

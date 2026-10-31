@@ -44,7 +44,7 @@ const describedBy = computed(() => {
                 :disabled="disabled"
                 :aria-invalid="error ? 'true' : undefined"
                 :aria-describedby="describedBy"
-                class="block w-full rounded-control border bg-surface px-3 py-2 text-fg placeholder:text-fg-muted focus:outline-2 focus:outline-offset-0 focus:outline-ring disabled:cursor-not-allowed disabled:bg-surface-muted disabled:text-fg-muted"
+                class="block min-h-11 w-full rounded-control border bg-surface px-3 py-2 text-fg placeholder:text-fg-muted focus:outline-2 focus:outline-offset-0 focus:outline-ring disabled:cursor-not-allowed disabled:bg-surface-muted disabled:text-fg-muted"
                 :class="[
                     error ? 'border-danger' : 'border-line',
                     isPassword ? 'pr-10' : '',
