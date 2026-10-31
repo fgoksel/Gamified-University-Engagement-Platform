@@ -1,11 +1,11 @@
 <script setup>
 import { onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { Link, usePage } from "@inertiajs/vue3";
-import { Menu, QrCode, X } from "@lucide/vue";
+import { Menu, X } from "@lucide/vue";
 import AppLogo from "../Components/AppLogo.vue";
 import FlashToast from "../Components/FlashToast.vue";
+import MobileBottomBar from "../Components/MobileBottomBar.vue";
 import SidebarContent from "../Components/SidebarContent.vue";
-import { useRole } from "../composables/useRole.js";
 
 defineProps({
     title: { type: String, default: "" },
@@ -14,7 +14,6 @@ defineProps({
 });
 
 const page = usePage();
-const { isStudent } = useRole();
 const mobileMenuOpen = ref(false);
 
 function closeMobileMenu() {
@@ -121,14 +120,7 @@ onBeforeUnmount(() => {
         <!-- Pop-up for success messages -->
         <FlashToast />
 
-        <!-- QR shortcut for students: always within thumb reach on phones -->
-        <Link
-            v-if="isStudent"
-            href="/scan"
-            class="fixed right-5 bottom-5 z-30 flex size-16 items-center justify-center rounded-full bg-fg text-canvas shadow-popover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring lg:hidden"
-            aria-label="Scan QR code"
-        >
-            <QrCode class="size-7" :stroke-width="1.75" />
-        </Link>
+        <!-- Mobile bottom navigation bar (Task #93, shows below 1024px, <nav aria-label="Main">) -->
+        <MobileBottomBar />
     </div>
 </template>
