@@ -64,7 +64,6 @@ function isActive(href) {
                         ? (page.props.notifications?.[item.badge] ?? 0)
                         : 0
                 "
-                :class="item.framed ? 'mt-4 border border-line' : ''"
             >
                 {{ item.label }}
             </NavLink>

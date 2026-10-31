@@ -1,12 +1,11 @@
 <script setup>
 import { onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { Link, usePage } from "@inertiajs/vue3";
-import { Menu, QrCode, X } from "@lucide/vue";
+import { Menu, X } from "@lucide/vue";
 import AppLogo from "../Components/AppLogo.vue";
 import FlashToast from "../Components/FlashToast.vue";
 import MobileBottomBar from "../Components/MobileBottomBar.vue";
 import SidebarContent from "../Components/SidebarContent.vue";
-import { useRole } from "../composables/useRole.js";
 
 defineProps({
     title: { type: String, default: "" },
@@ -15,7 +14,6 @@ defineProps({
 });
 
 const page = usePage();
-const { isStudent } = useRole();
 const mobileMenuOpen = ref(false);
 
 function closeMobileMenu() {
@@ -122,7 +120,7 @@ onBeforeUnmount(() => {
         <!-- Pop-up for success messages -->
         <FlashToast />
 
-        <!-- Mobile bottom navigation bar (Task #93, shows below 768px, <nav aria-label="Main">) -->
+        <!-- Mobile bottom navigation bar (Task #93, shows below 1024px, <nav aria-label="Main">) -->
         <MobileBottomBar />
     </div>
 </template>
