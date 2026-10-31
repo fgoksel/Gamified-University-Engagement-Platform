@@ -142,6 +142,11 @@ Route::middleware('auth')->group(function () {
                 Route::post('/pause', [EventCheckinController::class, 'pause'])->name('pause');
                 Route::post('/stop', [EventCheckinController::class, 'stop'])->name('stop');
                 Route::get('/image.svg', [EventCheckinController::class, 'image'])->name('image');
+
+                // The organiser's full-screen "Show attendance QR" view (Task #81), and the card's button
+                // that opens check-in and goes there.
+                Route::get('/screen', [EventCheckinController::class, 'screen'])->name('screen');
+                Route::post('/screen', [EventCheckinController::class, 'openScreen'])->name('screen.open');
             });
             Route::get('/events/{event}/checkin/status', [EventCheckinController::class, 'status'])
                 ->whereNumber('event')->middleware('permission:events.view')->name('events.checkin.status');

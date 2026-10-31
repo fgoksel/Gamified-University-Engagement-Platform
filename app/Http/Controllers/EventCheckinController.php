@@ -7,9 +7,12 @@ use App\Models\Event;
 use App\Services\LiveAttendanceQr;
 use App\Services\QrImage;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Gate;
+use Inertia\Inertia;
+use Inertia\Response as InertiaResponse;
 
 /**
  * Live attendance check-in (Task #80): the organiser opens, pauses and stops the code that
@@ -71,6 +74,43 @@ class EventCheckinController extends Controller
     }
 
     /**
+     * The organiser's "Show attendance QR" screen (Task #81): the code full-screen for a projector or
+     * a phone, its countdown, the live counter, pause and stop. Opening the page shows no code by
+     * itself; the code appears when the organiser presses "Show attendance QR".
+     */
+    public function screen(Request $request, Event $event, LiveAttendanceQr $live): InertiaResponse
+    {
+        $this->authoriseScreen($request, $event);
+
+        return Inertia::render('Screen/AttendanceQr', [
+            'event' => [
+                'id' => $event->id,
+                'title' => $event->title,
+                'points' => $event->points_value,
+                'starts' => $event->event_starts_at->format('D j M Y, H:i'),
+            ],
+            'checkin' => $live->state($request->user(), $event),
+        ]);
+    }
+
+    /**
+     * "Show attendance QR" on the organiser's event card (Task #81): open check-in, or show the code
+     * again after a pause, and go to the screen.
+     */
+    public function openScreen(Request $request, Event $event, LiveAttendanceQr $live): RedirectResponse
+    {
+        $this->authoriseScreen($request, $event);
+
+        try {
+            $live->open($request->user(), $event);
+        } catch (EventActionRefused $refused) {
+            return back()->with('error', $refused->getMessage());
+        }
+
+        return redirect()->route('events.checkin.screen', $event);
+    }
+
+    /**
      * For the student's event page: is check-in open right now, and are they accepted.
      */
     public function status(Request $request, Event $event, LiveAttendanceQr $live): JsonResponse
@@ -78,6 +118,18 @@ class EventCheckinController extends Controller
         abort_unless(Gate::forUser($request->user())->allows('view', $event), 404);
 
         return response()->json($live->statusFor($request->user(), $event))->header('Cache-Control', 'private, no-store');
+    }
+
+    /**
+     * Same rule as the QR codes page: other people's events are "not found", staff without the QR
+     * capability are refused.
+     */
+    private function authoriseScreen(Request $request, Event $event): void
+    {
+        $gate = Gate::forUser($request->user());
+
+        abort_unless($gate->allows('staff', $event), 404);
+        abort_unless($gate->allows('manageQr', $event), 403);
     }
 
     private function respond(callable $action): JsonResponse
