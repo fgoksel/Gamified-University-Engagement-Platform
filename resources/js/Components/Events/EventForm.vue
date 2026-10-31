@@ -132,7 +132,7 @@ onBeforeUnmount(() => {
 });
 
 const selectClass = (field) => [
-    "mt-1.5 block w-full rounded-control border bg-surface px-3 py-2 text-fg focus:outline-2 focus:outline-offset-0 focus:outline-ring disabled:cursor-not-allowed disabled:bg-surface-muted disabled:text-fg-muted",
+    "mt-1.5 block min-h-11 w-full rounded-control border bg-surface px-3 py-2 text-fg focus:outline-2 focus:outline-offset-0 focus:outline-ring disabled:cursor-not-allowed disabled:bg-surface-muted disabled:text-fg-muted",
     form.errors[field] ? "border-danger" : "border-line",
 ];
 </script>
@@ -156,6 +156,7 @@ const selectClass = (field) => [
             <TextField
                 v-model="form.title"
                 label="Title"
+                required
                 :disabled="readonly"
                 :error="form.errors.title"
             />
@@ -166,11 +167,13 @@ const selectClass = (field) => [
                     class="block text-sm font-medium text-fg"
                 >
                     Description
+                    <span class="text-danger-fg" aria-hidden="true">*</span>
                 </label>
                 <textarea
                     :id="`${id}-description`"
                     v-model="form.description"
                     rows="5"
+                    required
                     :disabled="readonly"
                     :aria-invalid="form.errors.description ? 'true' : undefined"
                     :class="selectClass('description')"
@@ -189,10 +192,12 @@ const selectClass = (field) => [
                     class="block text-sm font-medium text-fg"
                 >
                     Topic tag
+                    <span class="text-danger-fg" aria-hidden="true">*</span>
                 </label>
                 <select
                     :id="`${id}-tag`"
                     v-model="form.topic_tag_id"
+                    required
                     :disabled="lockedField('topic_tag_id')"
                     :class="selectClass('topic_tag_id')"
                 >
@@ -237,7 +242,8 @@ const selectClass = (field) => [
             <!-- Task #77: free text; no room booking or clash check. -->
             <TextField
                 v-model="form.location"
-                label="Location (optional)"
+                label="Location"
+                optional
                 :disabled="readonly"
                 hint="A room or an address. Students see it on the event."
                 :error="form.errors.location"
@@ -249,10 +255,12 @@ const selectClass = (field) => [
                     class="block text-sm font-medium text-fg"
                 >
                     Managed from
+                    <span class="text-danger-fg" aria-hidden="true">*</span>
                 </label>
                 <select
                     :id="`${id}-owning`"
                     v-model="form.owning_topic_id"
+                    required
                     :disabled="lockedField('owning_topic_id')"
                     :class="selectClass('owning_topic_id')"
                 >
@@ -311,6 +319,7 @@ const selectClass = (field) => [
                 <TextField
                     v-model="form.capacity"
                     label="Places"
+                    required
                     type="number"
                     :disabled="readonly"
                     :hint="
@@ -323,6 +332,7 @@ const selectClass = (field) => [
                 <TextField
                     v-model="form.points_value"
                     label="Points"
+                    required
                     type="number"
                     :disabled="lockedField('points_value')"
                     :hint="locks.points_value ?? ''"
@@ -391,6 +401,7 @@ const selectClass = (field) => [
                 <TextField
                     v-model="form.event_starts_at"
                     label="Starts"
+                    required
                     type="datetime-local"
                     :disabled="lockedField('event_starts_at')"
                     :hint="locks.event_starts_at ?? ''"
@@ -399,6 +410,7 @@ const selectClass = (field) => [
                 <TextField
                     v-model="form.event_ends_at"
                     label="Ends"
+                    required
                     type="datetime-local"
                     :disabled="readonly"
                     :error="form.errors.event_ends_at"
@@ -406,6 +418,7 @@ const selectClass = (field) => [
                 <TextField
                     v-model="form.application_deadline"
                     label="Applications close"
+                    required
                     type="datetime-local"
                     :disabled="lockedField('application_deadline')"
                     :hint="
@@ -416,6 +429,7 @@ const selectClass = (field) => [
                 <TextField
                     v-model="form.completion_deadline"
                     label="Points can be given until"
+                    required
                     type="datetime-local"
                     :disabled="readonly"
                     hint="At or after the end."
