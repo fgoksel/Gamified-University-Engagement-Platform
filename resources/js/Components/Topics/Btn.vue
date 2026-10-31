@@ -27,7 +27,7 @@ const styles = {
         class="inline-flex items-center justify-center gap-2 rounded-control font-medium focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-60"
         :class="[
             styles[variant],
-            small ? 'min-h-11 px-3 text-sm' : 'min-h-11 px-4 text-sm',
+            small ? 'min-h-9 px-3 text-sm' : 'min-h-11 px-4 text-sm',
         ]"
     >
         <LoaderCircle

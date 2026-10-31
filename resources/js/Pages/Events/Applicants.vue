@@ -127,7 +127,7 @@ function formatDateTime(iso) {
     <div class="space-y-5">
         <Link
             href="/my-events"
-            class="inline-flex min-h-11 items-center gap-1.5 text-sm text-fg-muted hover:text-fg focus-visible:outline-2 focus-visible:outline-ring rounded-control"
+            class="inline-flex items-center gap-1.5 text-sm text-fg-muted hover:text-fg"
         >
             <ArrowLeft class="size-4" /> Back to my events
         </Link>
@@ -165,7 +165,7 @@ function formatDateTime(iso) {
             <select
                 id="applicant-filter"
                 v-model="filter"
-                class="min-h-11 rounded-control border border-line bg-surface px-3 py-2 text-sm"
+                class="rounded-control border border-line bg-surface px-3 py-2 text-sm"
             >
                 <option value="all">All students</option>
                 <option value="selected">Selected students</option>

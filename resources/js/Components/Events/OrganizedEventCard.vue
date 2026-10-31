@@ -10,8 +10,6 @@ import {
     Users,
 } from "@lucide/vue";
 import Btn from "../Topics/Btn.vue";
-import StatusChip from "../StatusChip.vue";
-import { eventStatusTone } from "../../eventStatus.js";
 import { categoryDot } from "../../categoryColors.js";
 
 // One event on "Organized by me" (Task #37) with the actions its status allows.
@@ -27,6 +25,15 @@ const statusLabel = {
     on_hold: "On hold",
     completed: "Completed",
     cancelled: "Cancelled",
+};
+
+const statusClass = {
+    draft: "bg-surface-muted text-fg-muted",
+    published: "bg-primary/10 text-primary",
+    on_hold:
+        "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200",
+    completed: "bg-surface-muted text-fg",
+    cancelled: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200",
 };
 
 const isOpen = computed(() =>
@@ -49,16 +56,19 @@ function post(action) {
         <div class="flex flex-wrap items-start justify-between gap-3">
             <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
-                    <StatusChip :tone="eventStatusTone[event.status]">
-                        {{ statusLabel[event.status] }}
-                    </StatusChip>
-                    <StatusChip
-                        v-if="event.is_hidden"
-                        tone="info"
-                        :icon="EyeOff"
+                    <span
+                        class="rounded-full px-2.5 py-0.5 text-xs font-medium"
+                        :class="statusClass[event.status]"
                     >
+                        {{ statusLabel[event.status] }}
+                    </span>
+                    <span
+                        v-if="event.is_hidden"
+                        class="inline-flex items-center gap-1 rounded-full bg-surface-muted px-2.5 py-0.5 text-xs font-medium text-fg-muted"
+                    >
+                        <EyeOff class="size-3.5" />
                         Surprise event
-                    </StatusChip>
+                    </span>
                 </div>
                 <h2 class="mt-2 text-lg font-semibold text-fg">
                     {{ event.title }}
