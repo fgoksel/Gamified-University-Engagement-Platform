@@ -307,7 +307,7 @@ class StudentWithdrawalTest extends TopicTestCase
         $this->travelTo(now()->addDays(2));
 
         $this->expectException(ValidationException::class);
-        $this->expectExceptionMessage('You cannot withdraw from an event that has already started.');
+        $this->expectExceptionMessage("The event has started, so you can't leave it any more.");
 
         $this->service->withdraw($student, $event);
     }
@@ -322,7 +322,7 @@ class StudentWithdrawalTest extends TopicTestCase
         $app->update(['scored_at' => now()]);
 
         $this->expectException(ValidationException::class);
-        $this->expectExceptionMessage('You cannot withdraw from an event that has already been credited.');
+        $this->expectExceptionMessage('You already have the points for this event, so you cannot leave it.');
 
         $this->service->withdraw($student, $event);
     }
@@ -336,7 +336,7 @@ class StudentWithdrawalTest extends TopicTestCase
         $this->service->withdraw($student, $event);
 
         $this->expectException(ValidationException::class);
-        $this->expectExceptionMessage('You have already withdrawn from this event.');
+        $this->expectExceptionMessage('You have already left this event.');
 
         $this->service->withdraw($student, $event);
     }
@@ -350,7 +350,7 @@ class StudentWithdrawalTest extends TopicTestCase
         $app->update(['status' => EventApplication::REJECTED, 'decided_at' => now()]);
 
         $this->expectException(ValidationException::class);
-        $this->expectExceptionMessage('You cannot withdraw a rejected application.');
+        $this->expectExceptionMessage('You were not selected for this event, so there is nothing to leave.');
 
         $this->service->withdraw($student, $event);
     }

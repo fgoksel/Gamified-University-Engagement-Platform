@@ -8,7 +8,6 @@ use App\Models\Event;
 use App\Models\EventApplication;
 use App\Models\Semester;
 use App\Models\TopicTag;
-use App\Services\EventApplicationService;
 use App\Services\EventCatalog;
 use App\Services\EventPlacement;
 use App\Services\OrganizedEvents;
@@ -57,7 +56,7 @@ class EventController extends Controller
      * "My events": a teacher sees the events they organize (UC-1.3),
      * a student sees the events they applied to (UC-2.3).
      */
-    public function mine(Request $request, OrganizedEvents $organized, EventApplicationService $service): Response
+    public function mine(Request $request, OrganizedEvents $organized): Response
     {
         if ($request->user()->hasRole(UserRole::Teacher)) {
             $filter = in_array($request->query('filter'), OrganizedEvents::FILTERS, true)
@@ -72,7 +71,6 @@ class EventController extends Controller
         }
 
         $now = now();
-        $positions = $service->waitlistPositions($request->user());
         $applications = EventApplication::query()
             ->where('student_id', $request->user()->id)
             // Undone straight after applying (Task #94): not part of the history.
@@ -83,13 +81,12 @@ class EventController extends Controller
             ])
             ->orderByDesc('applied_at')
             ->get()
-            ->map(function (EventApplication $app) use ($now, $positions) {
+            ->map(function (EventApplication $app) use ($now) {
                 $event = $app->event;
 
                 return [
                     'id' => $app->id,
                     'status' => $app->status,
-                    'waitlist_position' => $app->status === EventApplication::WAITLISTED ? ($positions[$app->event_id] ?? null) : null,
                     'applied_at' => $app->applied_at?->toIso8601String(),
                     'decided_at' => $app->decided_at?->toIso8601String(),
                     'withdrawn_at' => $app->withdrawn_at?->toIso8601String(),

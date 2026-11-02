@@ -187,16 +187,14 @@ class EventCatalog
 
         $page = $query->paginate(self::PER_PAGE)->withQueryString();
 
-        // The person's own application on each event shown, and their waitlist places, in one query each.
-        $eventIds = $page->getCollection()->pluck('id');
+        // The person's own application on each event shown, in one query.
         $mine = EventApplication::query()
             ->where('student_id', $user->id)
-            ->whereIn('event_id', $eventIds)
+            ->whereIn('event_id', $page->getCollection()->pluck('id'))
             ->get()
             ->keyBy('event_id');
-        $positions = $this->applications->waitlistPositions($user, $eventIds);
 
-        return $page->through(fn (Event $event) => $this->present($user, $event, $mine[$event->id] ?? null, $positions[$event->id] ?? null));
+        return $page->through(fn (Event $event) => $this->present($user, $event, $mine[$event->id] ?? null));
     }
 
     /**
@@ -213,10 +211,9 @@ class EventCatalog
             ->where('event_id', $event->id)
             ->where('student_id', $user->id)
             ->first();
-        $positions = $this->applications->waitlistPositions($user, [$event->id]);
 
         return [
-            ...$this->present($user, $event, $mine, $positions[$event->id] ?? null),
+            ...$this->present($user, $event, $mine),
             'status' => $event->status,
             'ends_full' => $event->event_ends_at->format('D j M Y, H:i'),
             'applications_open_full' => $event->applicationsOpenFrom()?->format('D j M Y, H:i'),
@@ -230,7 +227,7 @@ class EventCatalog
      *
      * @return array<string, mixed>
      */
-    private function present(User $user, Event $event, ?EventApplication $mine, ?int $waitlistPosition): array
+    private function present(User $user, Event $event, ?EventApplication $mine): array
     {
         $open = $this->isOpen($event);
         // An undone application (Task #94) counts as never sent.
@@ -258,8 +255,6 @@ class EventCatalog
             'is_surprise' => $event->is_hidden,
             'is_open' => $open,
             'my_status' => $myStatus,
-            // 1 = next in line (Task #94); null unless the person is waitlisted.
-            'waitlist_position' => $myStatus === EventApplication::WAITLISTED ? $waitlistPosition : null,
             // Undo stays possible until this moment (Task #94), also after a reload; the server checks it again.
             'undo_until' => $this->undoUntil($mine),
             // Students may leave an event until it starts (EventApplicationService::withdraw).

@@ -78,11 +78,14 @@ export const actionWords = {
     applyAnyway: "Apply anyway",
 };
 
-// What happens when the student leaves, by their status
+// What happens when the student leaves, by their status and how places are given.
+// Only first come, first served events pass a freed place to the waitlist.
 export function leaveText(event) {
     switch (event.my_status) {
         case "accepted":
-            return "Your place will go to the next student on the waitlist.";
+            return event.application_type === "fcfs"
+                ? "Your place will go to the next student on the waitlist."
+                : "You will lose your place.";
         case "waitlisted":
             return "You will lose your place on the waitlist.";
         default:

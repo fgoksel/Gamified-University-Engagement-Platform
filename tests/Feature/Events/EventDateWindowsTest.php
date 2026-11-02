@@ -279,7 +279,7 @@ class EventDateWindowsTest extends TopicTestCase
         $other = $this->student('WTH002');
         $this->apply($other, $running);
         $this->actingAs($other)->post("/events/{$running->id}/withdraw")
-            ->assertSessionHasErrors(['event' => 'You cannot withdraw from an event that has already started.']);
+            ->assertSessionHasErrors(['event' => "The event has started, so you can't leave it any more."]);
     }
 
     public function test_points_start_with_the_event_and_end_when_the_organiser_says(): void

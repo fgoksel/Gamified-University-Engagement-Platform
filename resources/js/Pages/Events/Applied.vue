@@ -451,7 +451,12 @@ function reapply(app) {
             @close="cancelWithdrawal"
         >
             <p class="text-sm text-fg">
-                {{ leaveText({ my_status: withdrawingApp.status }) }}
+                {{
+                    leaveText({
+                        my_status: withdrawingApp.status,
+                        application_type: withdrawingApp.event.application_type,
+                    })
+                }}
             </p>
             <template #footer>
                 <Btn :disabled="isWithdrawing" @click="cancelWithdrawal">

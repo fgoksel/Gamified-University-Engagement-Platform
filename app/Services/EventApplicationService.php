@@ -212,26 +212,26 @@ class EventApplicationService
 
             if ($application->status === EventApplication::WITHDRAWN) {
                 throw ValidationException::withMessages([
-                    'event' => 'You have already withdrawn from this event.',
+                    'event' => 'You have already left this event.',
                 ]);
             }
 
             if ($application->status === EventApplication::REJECTED) {
                 throw ValidationException::withMessages([
-                    'event' => 'You cannot withdraw a rejected application.',
+                    'event' => 'You were not selected for this event, so there is nothing to leave.',
                 ]);
             }
 
             if ($application->isCredited()) {
                 throw ValidationException::withMessages([
-                    'event' => 'You cannot withdraw from an event that has already been credited.',
+                    'event' => 'You already have the points for this event, so you cannot leave it.',
                 ]);
             }
 
             // Undo is only possible in the first minute, so it is not blocked once the event runs.
             if (! $undo && now()->gt($lockedEvent->event_starts_at)) {
                 throw ValidationException::withMessages([
-                    'event' => 'You cannot withdraw from an event that has already started.',
+                    'event' => 'The event has started, so you can\'t leave it any more.',
                 ]);
             }
 
@@ -264,7 +264,7 @@ class EventApplicationService
                 $nextWaitlisted = EventApplication::query()
                     ->where('event_id', $lockedEvent->id)
                     ->where('status', EventApplication::WAITLISTED)
-                    // applied_at has one-second precision: the id breaks a tie, like waitlistPositions().
+                    // applied_at has one-second precision: the id breaks a tie, so the first in line is clear.
                     ->orderBy('applied_at')
                     ->orderBy('id')
                     ->lockForUpdate()
@@ -300,43 +300,6 @@ class EventApplicationService
         ));
 
         return $application;
-    }
-
-    /**
-     * The student's place in the queue of each event where they are waitlisted
-     * (Task #94): 1 = next in line, the same order the promotion above uses.
-     * One query for all the events, keyed by event id.
-     *
-     * @param  iterable<int>|null  $eventIds  null = every event
-     * @return array<int, int>
-     */
-    public function waitlistPositions(User $student, ?iterable $eventIds = null): array
-    {
-        $ids = $eventIds === null ? null : collect($eventIds)->values()->all();
-
-        if ($ids === []) {
-            return [];
-        }
-
-        return DB::table('event_applications as mine')
-            ->leftJoin('event_applications as ahead', function ($join) {
-                $join->on('ahead.event_id', '=', 'mine.event_id')
-                    ->where('ahead.status', EventApplication::WAITLISTED)
-                    // Ahead: applied earlier, or in the same second with a lower id (the promotion's order).
-                    ->where(fn ($ahead) => $ahead
-                        ->whereColumn('ahead.applied_at', '<', 'mine.applied_at')
-                        ->orWhere(fn ($tie) => $tie
-                            ->whereColumn('ahead.applied_at', '=', 'mine.applied_at')
-                            ->whereColumn('ahead.id', '<', 'mine.id')));
-            })
-            ->where('mine.student_id', $student->id)
-            ->where('mine.status', EventApplication::WAITLISTED)
-            ->when($ids !== null, fn ($q) => $q->whereIn('mine.event_id', $ids))
-            ->groupBy('mine.event_id')
-            ->selectRaw('mine.event_id, count(ahead.id) + 1 as position')
-            ->pluck('position', 'event_id')
-            ->map(fn ($position) => (int) $position)
-            ->all();
     }
 
     /**

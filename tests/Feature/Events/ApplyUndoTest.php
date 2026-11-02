@@ -12,7 +12,6 @@ use App\Models\Topic;
 use App\Models\User;
 use App\Notifications\EventApplicationDecisionNotification;
 use App\Services\ApplicantReviewService;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\Feature\Topics\TopicTestCase;
@@ -253,7 +252,7 @@ class ApplyUndoTest extends TopicTestCase
         $this->actingAs($student)->get("/events/{$event->id}")
             ->assertInertia(fn (Assert $page) => $page->where('event.has_started', true));
         $this->actingAs($student)->post("/events/{$event->id}/withdraw")
-            ->assertSessionHasErrors(['event' => 'You cannot withdraw from an event that has already started.']);
+            ->assertSessionHasErrors(['event' => "The event has started, so you can't leave it any more."]);
         $this->assertSame(EventApplication::ACCEPTED, EventApplication::where('student_id', $student->id)->value('status'));
     }
 
@@ -329,52 +328,6 @@ class ApplyUndoTest extends TopicTestCase
         $this->assertSame([$kept->id], $listed);
     }
 
-    public function test_waitlisted_students_see_their_place_in_the_queue_on_every_page(): void
-    {
-        $event = $this->event(['capacity' => 1]);
-        $this->actingAs($this->student('WL0000'))->post("/events/{$event->id}/apply");
-
-        $waiting = [];
-        foreach (['WL0001', 'WL0002', 'WL0003'] as $neptun) {
-            $this->travel(1)->seconds();
-            $waiting[] = $student = $this->student($neptun);
-            $this->actingAs($student)->post("/events/{$event->id}/apply");
-        }
-        $third = $waiting[2];
-
-        $this->actingAs($third)->get('/events')
-            ->assertInertia(fn (Assert $page) => $page
-                ->where('events.data.0.my_status', 'waitlisted')
-                ->where('events.data.0.waitlist_position', 3));
-        $this->actingAs($third)->get("/events/{$event->id}")
-            ->assertInertia(fn (Assert $page) => $page->where('event.waitlist_position', 3));
-        $this->actingAs($third)->get('/my-events')
-            ->assertInertia(fn (Assert $page) => $page->where('applications.0.waitlist_position', 3));
-
-        // The first in the queue is next in line; an accepted student has no position.
-        $this->actingAs($waiting[0])->get('/events')
-            ->assertInertia(fn (Assert $page) => $page->where('events.data.0.waitlist_position', 1));
-    }
-
-    public function test_students_who_join_the_waitlist_in_the_same_second_get_different_places_in_line(): void
-    {
-        // applied_at has one-second precision; the id decides, the same way the promotion does.
-        $event = $this->event(['capacity' => 1]);
-        $this->actingAs($this->student('TIE000'))->post("/events/{$event->id}/apply");
-        $this->travel(1)->seconds();
-        $first = $this->student('TIE001');
-        $second = $this->student('TIE002');
-        $this->freezeTime(function () use ($event, $first, $second) {
-            $this->actingAs($first)->post("/events/{$event->id}/apply");
-            $this->actingAs($second)->post("/events/{$event->id}/apply");
-        });
-
-        $this->actingAs($first)->get("/events/{$event->id}")
-            ->assertInertia(fn (Assert $page) => $page->where('event.waitlist_position', 1));
-        $this->actingAs($second)->get("/events/{$event->id}")
-            ->assertInertia(fn (Assert $page) => $page->where('event.waitlist_position', 2));
-    }
-
     public function test_the_first_in_line_is_promoted_when_two_joined_in_the_same_second(): void
     {
         $event = $this->event(['capacity' => 1]);
@@ -394,24 +347,5 @@ class ApplyUndoTest extends TopicTestCase
 
         $this->assertSame(EventApplication::ACCEPTED, EventApplication::where('student_id', $first->id)->value('status'));
         $this->assertSame(EventApplication::WAITLISTED, EventApplication::where('student_id', $second->id)->value('status'));
-    }
-
-    public function test_the_waitlist_positions_take_one_query_for_the_whole_list(): void
-    {
-        $student = $this->student('WL0100');
-        foreach (range(1, 4) as $i) {
-            $event = $this->event(['capacity' => 1, 'title' => "Full event {$i}"]);
-            $this->actingAs($this->student("WLA00{$i}"))->post("/events/{$event->id}/apply");
-            $this->actingAs($student)->post("/events/{$event->id}/apply");
-        }
-
-        DB::flushQueryLog();
-        DB::enableQueryLog();
-        $this->actingAs($student)->get('/events')
-            ->assertInertia(fn (Assert $page) => $page->where('events.data.0.waitlist_position', 1));
-        $queries = collect(DB::getQueryLog())->filter(fn ($q) => str_contains($q['query'], '"ahead"'));
-        DB::disableQueryLog();
-
-        $this->assertCount(1, $queries);
     }
 }
