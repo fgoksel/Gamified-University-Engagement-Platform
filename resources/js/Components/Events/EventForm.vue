@@ -6,7 +6,8 @@ import { categoryDot } from "../../categoryColors.js";
 
 // The Event Form (Task #38). Used by Events/Create and by the edit page (Task #68):
 // pass "event" to fill it, and "url" / "method" to say where it saves. When editing,
-// "locks" holds the fields that cannot change now (field -> reason), "readonly" shows
+// "locks" holds the fields that cannot change now (field -> reason; an empty reason when
+// the page explains it once, as for an event that is over), "readonly" shows
 // an event that can no longer be changed, and Save stays off until something changed.
 const props = defineProps({
     // Owning topics, each with the audiences it allows: [{ id, title, audiences: [{ id, title }] }]
@@ -22,7 +23,7 @@ const props = defineProps({
 });
 
 const editing = computed(() => props.event !== null);
-const lockedField = (field) => props.readonly || Boolean(props.locks[field]);
+const lockedField = (field) => props.readonly || field in props.locks;
 const draft = computed(() => props.event?.status === "draft");
 
 const id = useId();

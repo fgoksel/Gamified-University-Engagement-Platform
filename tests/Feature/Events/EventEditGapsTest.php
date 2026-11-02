@@ -176,12 +176,69 @@ class EventEditGapsTest extends EventTestCase
         $this->assertTrue($event->refresh()->completion_deadline->isPast());
     }
 
-    public function test_a_completed_event_shows_edit_on_the_organised_list(): void
+    public function test_a_completed_event_shows_edit_on_the_past_tab(): void
     {
         $this->completed();
 
-        $this->actingAs($this->organiser)->get('/my-events?filter=completed')
-            ->assertInertia(fn (Assert $page) => $page->where('events.0.can_edit', true));
+        $this->actingAs($this->organiser)->get('/my-events?filter=past')
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('events', 1)
+                ->where('events.0.title', 'Last week')
+                ->where('events.0.status', Event::STATUS_COMPLETED)
+                ->where('events.0.can_edit', true));
+    }
+
+    /** Over but never marked completed: a real event after it ends (the Past tab's rule). */
+    private function ended(): Event
+    {
+        return $this->makeEvent([
+            'title' => 'Ended, still published',
+            'status' => Event::STATUS_PUBLISHED,
+            'topic_tag_id' => $this->tag->id,
+            'event_starts_at' => now()->subDays(3)->startOfHour(),
+            'event_ends_at' => now()->subDays(3)->startOfHour()->addHours(2),
+            'application_deadline' => now()->subDays(4)->startOfHour(),
+            'completion_deadline' => now()->subDay()->startOfHour(),
+        ]);
+    }
+
+    public function test_a_published_event_that_has_ended_counts_as_over(): void
+    {
+        $event = $this->ended();
+
+        $this->actingAs($this->organiser)->get("/events/{$event->id}/edit")
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('editable', true)
+                ->where('over', true)
+                ->has('locks.title')
+                ->has('locks.location')
+                ->has('locks.capacity')
+                ->has('locks.event_ends_at')
+                ->has('locks.application_deadline')
+                ->has('locks.qr_enabled')
+                ->missing('locks.completion_deadline'));
+
+        $this->save($this->organiser, $event, ['title' => 'Renamed', 'capacity' => 99])
+            ->assertSessionHasErrors(['title', 'capacity']);
+        $this->assertSame('Ended, still published', $event->refresh()->title);
+
+        $this->save($this->organiser, $event, ['completion_deadline' => now()->addDays(2)->format('Y-m-d\TH:i')])
+            ->assertSessionHasNoErrors();
+        $this->assertTrue($event->refresh()->completion_deadline->isFuture());
+        $this->assertSame(Event::STATUS_PUBLISHED, $event->status);
+
+        $this->actingAs($this->organiser)->get('/my-events?filter=past')
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('events.0.title', 'Ended, still published')
+                ->where('events.0.can_edit', true));
+    }
+
+    public function test_an_event_that_has_not_ended_is_not_over(): void
+    {
+        $event = $this->upcoming();
+
+        $this->actingAs($this->organiser)->get("/events/{$event->id}/edit")
+            ->assertInertia(fn (Assert $page) => $page->where('over', false)->missing('locks.title'));
     }
 
     public function test_an_edit_is_logged_with_who_when_and_what(): void
@@ -243,8 +300,10 @@ class EventEditGapsTest extends EventTestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->has('history', 2)
                 ->where('history.0.by', 'Olga Organiser')
-                ->where('history.0.fields', ['capacity', 'completion_deadline'])
-                ->where('history.1.fields', ['title']));
+                ->where('history.0.changes.0', ['field' => 'capacity', 'old' => '30', 'new' => '25'])
+                ->where('history.0.changes.1.field', 'completion_deadline')
+                ->where('history.1.changes', [['field' => 'title', 'old' => 'SQL Workshop', 'new' => 'First change']])
+                ->where('historyTotal', 2));
     }
 
     public function test_an_event_with_no_edits_has_an_empty_history(): void
@@ -253,5 +312,38 @@ class EventEditGapsTest extends EventTestCase
 
         $this->actingAs($this->organiser)->get("/events/{$event->id}/edit")
             ->assertInertia(fn (Assert $page) => $page->has('history', 0));
+    }
+
+    public function test_the_history_shows_names_and_words_not_ids(): void
+    {
+        $event = $this->upcoming(['qr_enabled' => false]);
+        $other = TopicTag::create(['name' => 'Chess', 'category' => 'sports', 'is_active' => true]);
+
+        $this->save($this->organiser, $event, ['topic_tag_id' => $other->id, 'qr_enabled' => true, 'application_type' => 'teacher_select']);
+
+        $this->actingAs($this->organiser)->get("/events/{$event->id}/edit")
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('history.0.changes', fn ($changes) => collect($changes)->keyBy('field')->only(['topic_tag_id', 'qr_enabled', 'application_type'])->map(fn ($c) => [$c['old'], $c['new']])->all() === [
+                    'topic_tag_id' => ['SQL', 'Chess'],
+                    'application_type' => ['First come, first served', 'The organiser chooses'],
+                    'qr_enabled' => ['No', 'Yes'],
+                ])
+                ->where('history.0.changes', fn ($changes) => collect($changes)->doesntContain('field', 'category')));
+    }
+
+    public function test_the_page_says_when_only_the_last_20_edits_are_shown(): void
+    {
+        $event = $this->upcoming();
+
+        foreach (range(1, 21) as $i) {
+            $this->save($this->organiser, $event, ['title' => "Title {$i}"])->assertSessionHasNoErrors();
+        }
+
+        $this->actingAs($this->organiser)->get("/events/{$event->id}/edit")
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('history', 20)
+                ->where('historyTotal', 21)
+                ->where('historyLimit', 20)
+                ->where('history.0.changes.0.new', 'Title 21'));
     }
 }

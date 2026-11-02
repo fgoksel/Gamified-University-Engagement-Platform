@@ -12,6 +12,7 @@ use App\Services\EventEditor;
 use App\Services\EventPlacement;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -78,17 +79,12 @@ class EventEditController extends Controller
                 'qr' => $gate->allows('manageQr', $event) && $event->qr_enabled,
             ],
             'applications' => $event->applications()->where('status', '!=', EventApplication::WITHDRAWN)->count(),
-            // Who changed what and when (Task #76), newest first. The page names the fields.
-            'history' => $event->edits()
-                ->with('actor:id,name')
-                ->limit(self::HISTORY_LIMIT)
-                ->get()
-                ->map(fn (EventEdit $edit) => [
-                    'id' => $edit->id,
-                    'at' => $edit->created_at->format('D j M Y, H:i'),
-                    'by' => $edit->actor?->name,
-                    'fields' => array_keys($edit->changes),
-                ]),
+            // Over (completed, or published and ended): only the points end date can change (Task #76).
+            'over' => $editable && $editor->isOver($event),
+            // Who changed what and when (Task #76), newest first, with each value as the page shows it.
+            'history' => $this->history($event),
+            'historyTotal' => $event->edits()->count(),
+            'historyLimit' => self::HISTORY_LIMIT,
         ]);
     }
 
@@ -100,6 +96,59 @@ class EventEditController extends Controller
         $editor->update($request->user(), $event, $data, $data['version'] ?? null);
 
         return redirect()->route('events.edit', $event)->with('success', 'The event is saved.');
+    }
+
+    /**
+     * The newest edits, each field with its old and new value in words: names instead of ids,
+     * "Yes" and "No", dates as on the event page.
+     *
+     * @return list<array{id: int, at: string, by: ?string, changes: list<array{field: string, old: string, new: string}>}>
+     */
+    private function history(Event $event): array
+    {
+        $edits = $event->edits()->with('actor:id,name')->limit(self::HISTORY_LIMIT)->get();
+        // Every id that any of these edits mentions, old or new, for one lookup each.
+        $ids = fn (string ...$fields) => $edits
+            ->flatMap(fn (EventEdit $edit) => collect($fields)
+                ->flatMap(fn (string $field) => array_values($edit->changes[$field] ?? [])))
+            ->filter()
+            ->unique()
+            ->values();
+        $topics = Topic::query()->whereIn('id', $ids('owning_topic_id', 'audience_topic_id'))->pluck('title', 'id');
+        $tags = TopicTag::query()->whereIn('id', $ids('topic_tag_id'))->pluck('name', 'id');
+
+        $words = function (string $field, mixed $value) use ($topics, $tags): string {
+            if ($value === null || $value === '') {
+                return '(none)';
+            }
+
+            return match ($field) {
+                'owning_topic_id', 'audience_topic_id' => $topics[$value] ?? '(removed)',
+                'topic_tag_id' => $tags[$value] ?? '(removed)',
+                'application_type' => $value === 'teacher_select' ? 'The organiser chooses' : 'First come, first served',
+                'is_hidden', 'qr_enabled' => $value ? 'Yes' : 'No',
+                'event_starts_at', 'event_ends_at', 'applications_open_at', 'application_deadline', 'completion_deadline' => Carbon::parse($value)->format('D j M Y, H:i'),
+                // Long text: the log keeps it all, the page only says that it changed.
+                'description' => 'changed',
+                default => (string) $value,
+            };
+        };
+
+        return $edits->map(fn (EventEdit $edit) => [
+            'id' => $edit->id,
+            'at' => $edit->created_at->format('D j M Y, H:i'),
+            'by' => $edit->actor?->name,
+            'changes' => collect($edit->changes)
+                // The category follows the tag, so the tag line says it all.
+                ->except('category')
+                ->map(fn (array $change, string $field) => [
+                    'field' => $field,
+                    'old' => $words($field, $change['old'] ?? null),
+                    'new' => $words($field, $change['new'] ?? null),
+                ])
+                ->values()
+                ->all(),
+        ])->all();
     }
 
     /**

@@ -25,8 +25,9 @@ use Illuminate\Validation\ValidationException;
  *
  *   draft              everything
  *   published/on hold  text, dates and options, with the locks below
- *   completed          only the points end date (Task #76): a student who missed the scan
- *                      asks the organiser, who extends it by editing the event (26 Oct, Q4)
+ *   over               only the points end date (Task #76): a student who missed the scan
+ *                      asks the organiser, who extends it by editing the event (26 Oct, Q4).
+ *                      "Over" is the Past tab's rule: completed, or published and ended.
  *   cancelled          nothing (history stays as it is)
  *
  * Every save that changes something is logged in event_edits (Task #76): who, when, and
@@ -61,6 +62,17 @@ class EventEditor
 
     public function __construct(private EventPlacement $placement) {}
 
+    /**
+     * The event is over (Task #76): marked completed, or published and already ended. The same
+     * rule as the "Past" tab of Organized by me (OrganizedEvents). Only the points end date of
+     * such an event may change.
+     */
+    public function isOver(Event $event): bool
+    {
+        return $event->status === Event::STATUS_COMPLETED
+            || ($event->status === Event::STATUS_PUBLISHED && $event->event_ends_at->isPast());
+    }
+
     public function isEditable(Event $event): bool
     {
         return in_array($event->status, self::EDITABLE, true);
@@ -85,10 +97,11 @@ class EventEditor
             return [];
         }
 
-        if ($event->status === Event::STATUS_COMPLETED) {
+        // The page explains it once above the form, so the fields carry no hint of their own.
+        if ($this->isOver($event)) {
             return collect(self::FIELDS)
                 ->reject(fn (string $field) => $field === 'completion_deadline')
-                ->mapWithKeys(fn (string $field) => [$field => 'The event is completed, so only "Points can be given until" can change.'])
+                ->mapWithKeys(fn (string $field) => [$field => ''])
                 ->all();
         }
 
@@ -149,7 +162,7 @@ class EventEditor
                 ]);
             }
 
-            if ($locked->status === Event::STATUS_COMPLETED) {
+            if ($this->isOver($locked)) {
                 // Only the points end date moves; nobody needs to hear about it but the student who asked.
                 $attributes = $this->completedAttributes($locked, $data);
             } else {
@@ -196,7 +209,7 @@ class EventEditor
     }
 
     /**
-     * A completed event (Task #76): only the points end date may move, so a student who missed
+     * An event that is over (Task #76): only the points end date may move, so a student who missed
      * the scan can still get the points. Every other field must come back as it is stored.
      *
      * @param  array<string, mixed>  $data
@@ -208,10 +221,10 @@ class EventEditor
     {
         $errors = [];
 
-        foreach ($this->locks($event) as $field => $reason) {
+        foreach (array_keys($this->locks($event)) as $field) {
             // A page opened before a field existed leaves it out: nothing was changed there.
             if (array_key_exists($field, $data) && $this->differs($event->{$field}, $data[$field])) {
-                $errors[$field] = $reason;
+                $errors[$field] = 'The event is over, so only "Points can be given until" can change.';
             }
         }
 

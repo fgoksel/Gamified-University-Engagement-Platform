@@ -23,6 +23,10 @@ defineProps({
     applications: { type: Number, default: 0 },
     // Who changed what and when, newest first (Task #76)
     history: { type: Array, default: () => [] },
+    historyTotal: { type: Number, default: 0 },
+    historyLimit: { type: Number, default: 20 },
+    // Over (completed, or published and ended): only the points end date can change
+    over: { type: Boolean, default: false },
 });
 
 // The names the form uses, so the history reads like the page (Task #76)
@@ -31,7 +35,6 @@ const fieldLabel = {
     description: "Description",
     location: "Location",
     topic_tag_id: "Topic tag",
-    category: "Category",
     owning_topic_id: "Managed from",
     audience_topic_id: "Open to",
     capacity: "Places",
@@ -45,24 +48,6 @@ const fieldLabel = {
     is_hidden: "Surprise event",
     qr_enabled: "QR attendance",
 };
-
-const fieldNames = (fields) =>
-    fields.map((field) => fieldLabel[field] ?? field).join(", ");
-
-const statusLabel = {
-    draft: "Draft",
-    published: "Published",
-    on_hold: "On hold",
-    completed: "Completed",
-    cancelled: "Cancelled",
-};
-
-const tabClass = (active) => [
-    "inline-flex items-center border-b-2 px-3 py-2 text-sm font-medium focus-visible:outline-2 focus-visible:outline-ring",
-    active
-        ? "border-primary text-fg"
-        : "border-transparent text-fg-muted hover:text-fg",
-];
 </script>
 
 <template>
@@ -122,12 +107,12 @@ const tabClass = (active) => [
         </p>
 
         <p
-            v-if="editable && event.status === 'completed'"
+            v-if="over"
             class="rounded-control bg-surface-muted px-3 py-2 text-sm text-fg-muted"
             data-test="completed-note"
         >
-            This event is completed. Only "Points can be given until" can
-            change, for example to give a student who missed the scan more time.
+            This event is over. Only "Points can be given until" can change, for
+            example to give a student who missed the scan more time.
         </p>
 
         <!-- Remounted after every save, so the form starts clean with the saved values -->
@@ -162,12 +147,40 @@ const tabClass = (active) => [
                     class="py-2 first:pt-0 last:pb-0"
                 >
                     <span class="text-fg">
-                        {{ edit.by ?? "Someone" }} changed
-                        {{ fieldNames(edit.fields) }}
+                        {{ edit.by ?? "Someone" }}
+                        <span class="text-fg-muted">· {{ edit.at }}</span>
                     </span>
-                    <span class="block text-fg-muted">{{ edit.at }}</span>
+                    <ul class="mt-1 space-y-0.5">
+                        <li
+                            v-for="change in edit.changes"
+                            :key="change.field"
+                            class="text-fg-muted"
+                        >
+                            <span class="text-fg">{{
+                                fieldLabel[change.field] ?? change.field
+                            }}</span
+                            >:
+                            <template v-if="change.field === 'description'">
+                                changed
+                            </template>
+                            <template v-else>
+                                {{ change.old }}
+                                <span aria-hidden="true">→</span>
+                                <span class="sr-only">to</span>
+                                {{ change.new }}
+                            </template>
+                        </li>
+                    </ul>
                 </li>
             </ul>
+            <p
+                v-if="historyTotal > history.length"
+                class="mt-3 text-sm text-fg-muted"
+                data-test="history-more"
+            >
+                Showing the last {{ historyLimit }} of {{ historyTotal }}
+                changes.
+            </p>
         </section>
     </div>
 </template>
