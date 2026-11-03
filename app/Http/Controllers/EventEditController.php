@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Http\Requests\UpdateEventRequest;
 use App\Models\Event;
 use App\Models\EventApplication;
-use App\Models\Topic;
 use App\Models\TopicTag;
 use App\Services\EventEditor;
 use App\Services\EventPlacement;
@@ -103,25 +102,14 @@ class EventEditController extends Controller
      * Where the event may be managed from. A published event keeps its topic; a draft may
      * move to any topic where the person may create events.
      *
-     * @return list<array{id: int, title: string, can_publish: bool, audiences: list<array{id: int, title: string}>}>
+     * @return list<array<string, mixed>>
      */
     private function topicOptions(Request $request, Event $event, EventPlacement $placement): array
     {
         $options = $event->status === Event::STATUS_DRAFT ? $placement->formOptions($request->user()) : [];
 
         if (collect($options)->doesntContain('id', $event->owning_topic_id)) {
-            $titles = Topic::query()
-                ->whereIn('id', $placement->audienceIds($event->owningTopic))
-                ->pluck('title', 'id');
-
-            $options[] = [
-                'id' => $event->owning_topic_id,
-                'title' => $event->owningTopic->title,
-                'can_publish' => true,
-                'audiences' => collect($placement->audienceIds($event->owningTopic))
-                    ->map(fn (int $id) => ['id' => $id, 'title' => (string) $titles[$id]])
-                    ->all(),
-            ];
+            $options[] = $placement->option($event->owningTopic, true);
         }
 
         return $options;
