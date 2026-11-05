@@ -8,6 +8,7 @@ use App\Models\Topic;
 use App\Services\AreaLeaderboards;
 use App\Services\LeaderboardStandings;
 use App\Services\OwnLeaderboards;
+use App\Services\RankingExplorer;
 use App\Services\TopicAccess;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -31,11 +32,24 @@ class AreaLeaderboardController extends Controller
     ) {}
 
     /**
-     * "My leaderboard" (Task #54): the person's own points and rank, and the leaderboards they may see.
+     * "My leaderboard" (Task #54): the person's own points and rank, and the leaderboards they
+     * may see. "Where am I?" (Task #56) reads its choice from the address: an area the person
+     * may not open looks exactly like one that does not exist.
      */
-    public function index(Request $request, OwnLeaderboards $own): Response
+    public function index(Request $request, OwnLeaderboards $own, RankingExplorer $rankings): Response
     {
-        return Inertia::render('Leaderboards/Index', $own->for($request->user()));
+        $user = $request->user();
+        $area = null;
+
+        if ($request->filled('area')) {
+            $area = Topic::find($request->integer('area'));
+            abort_unless($area !== null && $this->access->canView($user, $area), 404);
+        }
+
+        return Inertia::render('Leaderboards/Index', [
+            ...$own->for($user),
+            'rankings' => $rankings->for($user, $area, $request->string('category')->toString(), $request->integer('tag'), max(1, $request->integer('page', 1))),
+        ]);
     }
 
     public function show(Request $request, Leaderboard $leaderboard): Response
