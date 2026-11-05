@@ -67,7 +67,7 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('login', fn (Request $request) => Limit::perMinute(5)
             ->by(Str::lower((string) $request->input('email')).'|'.$request->ip()));
 
-        // Per student, not per address: a whole lecture hall scans the same poster over one Wi-Fi.
+        // Per student, not per address: a whole lecture hall scans the same live code over one Wi-Fi.
         RateLimiter::for('qr-redeem', fn (Request $request) => Limit::perMinute(60)
             ->by($request->user()?->id ?? $request->ip()));
     }
