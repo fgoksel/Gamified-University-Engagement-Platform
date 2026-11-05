@@ -35,6 +35,7 @@ const fieldLabel = {
     description: "Description",
     location: "Location",
     topic_tag_id: "Topic tag",
+    category: "Category",
     owning_topic_id: "Managed from",
     audience_topic_id: "Open to",
     capacity: "Places",
@@ -48,6 +49,21 @@ const fieldLabel = {
     is_hidden: "Surprise event",
     qr_enabled: "QR attendance",
 };
+
+const statusLabel = {
+    draft: "Draft",
+    published: "Published",
+    on_hold: "On hold",
+    completed: "Completed",
+    cancelled: "Cancelled",
+};
+
+const tabClass = (active) => [
+    "inline-flex items-center border-b-2 px-3 py-2 text-sm font-medium focus-visible:outline-2 focus-visible:outline-ring",
+    active
+        ? "border-primary text-fg"
+        : "border-transparent text-fg-muted hover:text-fg",
+];
 </script>
 
 <template>
