@@ -82,9 +82,11 @@ class EventCatalog
 
     /**
      * The events of a topic and everything below it that this person may see (Task #73),
-     * the same rule as EventPolicy::view in one query: staff see every event of their
-     * topics, everybody else what is announced to them. A surprise event is for staff only,
-     * so the students it gave points to open it from their points, not from here.
+     * in one query. Staff see every event of their topics. Everybody else sees what is
+     * announced to them, as in EventPolicy::view, once it really went out: published and
+     * completed events, and cancelled ones only if they had been published, so a draft that
+     * was dropped never shows. A surprise event is for staff only, so the students it gave
+     * points to open it from their points, not from here.
      *
      * @return Builder<Event>
      */
@@ -96,8 +98,10 @@ class EventCatalog
                 ->whereIn('owning_topic_id', $this->organized->staffTopicIds($user))
                 ->orWhere(fn (Builder $q) => $q
                     ->whereIn('audience_topic_id', $this->audienceTopicIds($user))
-                    ->whereNotIn('status', [Event::STATUS_DRAFT, Event::STATUS_ON_HOLD])
-                    ->where('is_hidden', false)));
+                    ->where('is_hidden', false)
+                    ->where(fn (Builder $q) => $q
+                        ->whereIn('status', [Event::STATUS_PUBLISHED, Event::STATUS_COMPLETED])
+                        ->orWhere(fn (Builder $q) => $q->where('status', Event::STATUS_CANCELLED)->whereNotNull('published_at')))));
     }
 
     /**

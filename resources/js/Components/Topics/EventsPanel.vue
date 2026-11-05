@@ -123,13 +123,7 @@ function goTo(page) {
             v-else
             class="rounded-card border border-dashed border-line px-4 py-6 text-center text-sm text-fg-muted"
         >
-            <p>
-                {{
-                    events.when === "past"
-                        ? "No past events in this area."
-                        : "No events in this area yet."
-                }}
-            </p>
+            <p>{{ events.empty_message }}</p>
             <CreateEventLink
                 v-if="can.create_event"
                 class="mt-3"

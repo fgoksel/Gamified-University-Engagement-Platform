@@ -197,7 +197,7 @@ class TopicBrowser
      * Upcoming and running ones soonest first, past ones newest first. "path" is where the
      * event belongs, seen from the selected topic; empty when it belongs to that topic.
      *
-     * @return array{items: list<array<string, mixed>>, when: string, total: int, page: int, last_page: int, per_page: int}
+     * @return array{items: list<array<string, mixed>>, when: string, empty_message: ?string, total: int, page: int, last_page: int, per_page: int}
      */
     public function events(User $user, Topic $topic, string $when, int $page): array
     {
@@ -227,11 +227,24 @@ class TopicBrowser
                 'can_open' => $canOpen,
             ])->values()->all(),
             'when' => $when,
+            'empty_message' => $paginator->total() > 0 ? null : $this->noEventsMessage($user, $topic, $when),
             'total' => $paginator->total(),
             'page' => $paginator->currentPage(),
             'last_page' => $paginator->lastPage(),
             'per_page' => $paginator->perPage(),
         ];
+    }
+
+    /**
+     * What the Events tab says when the chosen filter lists nothing.
+     */
+    private function noEventsMessage(User $user, Topic $topic, string $when): string
+    {
+        if (! $this->catalog->inBranch($user, $topic)->exists()) {
+            return 'No events in this area yet.';
+        }
+
+        return $when === 'past' ? 'No past events in this area.' : 'No upcoming events in this area.';
     }
 
     /**

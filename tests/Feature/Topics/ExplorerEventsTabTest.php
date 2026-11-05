@@ -155,6 +155,94 @@ class ExplorerEventsTabTest extends TopicTestCase
         $this->assertEqualsCanonicalizing(['Announced', 'Cancelled', 'To the course'], $this->titles($student, $this->course));
     }
 
+    public function test_a_student_sees_an_event_that_was_published_before_it_was_cancelled(): void
+    {
+        $this->event($this->course, 'Called off', ['status' => Event::STATUS_CANCELLED, 'published_at' => now()->subDay()]);
+
+        $this->actingAs($this->student($this->course))->get("/topics/{$this->course->id}?tab=events")
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('selected.events.items.0.title', 'Called off')
+                ->where('selected.events.items.0.status', Event::STATUS_CANCELLED));
+    }
+
+    public function test_a_student_does_not_see_an_event_cancelled_as_a_draft(): void
+    {
+        $this->event($this->course, 'Dropped draft', ['status' => Event::STATUS_CANCELLED, 'published_at' => null]);
+
+        $this->assertSame([], $this->titles($this->student($this->course), $this->course));
+    }
+
+    public function test_a_student_does_not_see_an_event_on_hold_even_if_it_was_published(): void
+    {
+        $this->event($this->course, 'Paused', ['status' => Event::STATUS_ON_HOLD, 'published_at' => now()->subDay()]);
+
+        $this->assertSame([], $this->titles($this->student($this->course), $this->course));
+    }
+
+    public function test_cancelling_keeps_the_published_date_so_students_still_see_the_event(): void
+    {
+        $event = $this->event($this->course, 'Called off', ['published_at' => now()->subDay()]);
+        $manager = $this->teacher($this->course, Capability::EventsManage);
+
+        $this->actingAs($manager)->post("/events/{$event->id}/cancel", ['reason' => 'The room flooded.'])->assertSessionHasNoErrors();
+
+        $this->assertSame(Event::STATUS_CANCELLED, $event->fresh()->status);
+        $this->assertNotNull($event->fresh()->published_at);
+        $this->assertSame(['Called off'], $this->titles($this->student($this->course), $this->course));
+    }
+
+    public function test_a_student_and_a_manager_see_the_right_events_of_one_area(): void
+    {
+        $past = ['event_starts_at' => now()->subDays(3), 'event_ends_at' => now()->subDays(3)->addHour()];
+        $this->event($this->course, 'Upcoming');
+        $this->event($this->course, 'Past', $past);
+        $this->event($this->course, 'Called off', ['status' => Event::STATUS_CANCELLED, 'published_at' => now()->subDay()]);
+        $this->event($this->course, 'Dropped draft', ['status' => Event::STATUS_CANCELLED, 'published_at' => null]);
+        $student = $this->student($this->course);
+        $manager = $this->teacher($this->course, Capability::EventsManage);
+
+        $this->assertEqualsCanonicalizing(['Upcoming', 'Called off'], $this->titles($student, $this->course));
+        $this->assertSame(['Past'], $this->titles($student, $this->course, 'past'));
+
+        $this->assertEqualsCanonicalizing(['Upcoming', 'Called off', 'Dropped draft'], $this->titles($manager, $this->course));
+        $this->assertSame(['Past'], $this->titles($manager, $this->course, 'past'));
+    }
+
+    public function test_an_area_with_no_events_says_so_under_both_filters(): void
+    {
+        $student = $this->student($this->course);
+
+        foreach (['upcoming', 'past'] as $when) {
+            $this->assertSame('No events in this area yet.', app(TopicBrowser::class)->events($student, $this->course, $when, 1)['empty_message']);
+        }
+    }
+
+    public function test_upcoming_is_empty_but_there_are_past_events(): void
+    {
+        $this->event($this->course, 'Past', ['event_starts_at' => now()->subDays(3), 'event_ends_at' => now()->subDays(3)->addHour()]);
+        $teacher = $this->teacher($this->course, Capability::EventsManage);
+
+        $this->assertSame('No upcoming events in this area.', app(TopicBrowser::class)->events($teacher, $this->course, 'upcoming', 1)['empty_message']);
+    }
+
+    public function test_past_is_empty_but_there_are_upcoming_events(): void
+    {
+        $this->event($this->course, 'Upcoming');
+        $teacher = $this->teacher($this->course, Capability::EventsManage);
+
+        $events = app(TopicBrowser::class)->events($teacher, $this->course, 'past', 1);
+        $this->assertSame('No past events in this area.', $events['empty_message']);
+
+        $this->assertNull(app(TopicBrowser::class)->events($teacher, $this->course, 'upcoming', 1)['empty_message']);
+    }
+
+    public function test_an_event_the_viewer_may_not_see_does_not_count_for_the_message(): void
+    {
+        $this->event($this->course, 'Draft', ['status' => Event::STATUS_DRAFT, 'published_at' => null]);
+
+        $this->assertSame('No events in this area yet.', app(TopicBrowser::class)->events($this->student($this->course), $this->course, 'upcoming', 1)['empty_message']);
+    }
+
     public function test_a_surprise_event_shows_only_to_its_managers(): void
     {
         $this->event($this->course, 'Surprise', ['is_hidden' => true]);

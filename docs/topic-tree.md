@@ -1,5 +1,7 @@
 # Topics: the abstract topic tree (Sprint 1)
 
+In the interface this is called an area; in the code it is still Topic.
+
 This document records what was built, why, how the old faculty tree was carried over, and what is
 deliberately left for later. It is the decision record for review; nothing here claims team or
 supervisor approval.
