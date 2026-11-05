@@ -86,8 +86,10 @@ Both roles are ordinary topic roles (Topics → Roles); a title gives no power, 
 
 ### Step 3: no overbooking (acceptance criterion)
 
-1. As **Eszter**, open *SQL Joins Workshop* (2 places, both taken) and apply: *"The event is at
-   capacity. You have been placed on the waitlist."* Her *My events* shows *Waitlisted*.
+1. As **Eszter**, open *SQL Joins Workshop* (2 places, both taken) and apply: *"The event is full,
+   so you're on the waitlist. We'll tell you if a place opens."* Her *My events* shows *You're on
+   the waitlist*. The "you have a place" or "you're on the waitlist" message (bell icon and
+   Mailpit) arrives about a minute later, once the time to undo is over (Task #94).
 2. The second-to-last and last places are given out under a database lock, so two students
    applying at the same moment never both get the last place.
 3. Selection mode: as Ivan, open *Database Design Hackathon → Applicants* and tick three students for
@@ -97,7 +99,7 @@ Both roles are ordinary topic roles (Topics → Roles); a title gives no power, 
 
 ### Step 4: waitlist promotion (acceptance criterion)
 
-1. As **Anna**, open *My events → SQL Joins Workshop* and withdraw.
+1. As **Anna**, open *My events → SQL Joins Workshop* and choose *Leave event*.
 2. **Csilla**, first in line, moves up to *Accepted* by herself and is told *"A place opened up: you
    are in"* (bell icon, Notifications page and Mailpit). Eszter is still waitlisted.
 

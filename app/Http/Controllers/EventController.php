@@ -73,6 +73,8 @@ class EventController extends Controller
         $now = now();
         $applications = EventApplication::query()
             ->where('student_id', $request->user()->id)
+            // Undone straight after applying (Task #94): not part of the history.
+            ->whereNull('undone_at')
             ->with([
                 'event.owningTopic:id,title,code',
                 'event.topicTag:id,name,category',
