@@ -12,9 +12,9 @@ use Illuminate\Database\Eloquent\Builder;
 /**
  * The student's home page (Task #92, 26 Oct, section 4): points this semester in the four
  * categories, the next event they have a place at, events open for applications and their
- * recent points. Each part is one query (plus one eligibility check per offered event), and
- * every rule comes from where it already lives: the ledger for points, the catalog for what
- * the student may see, the application service for who may apply.
+ * recent points. Each part is one query (open events add eligibility checks, stopping once
+ * OPEN_LIMIT pass), and every rule comes from where it already lives: the ledger for points,
+ * the catalog for what the student may see, the application service for who may apply.
  */
 class StudentHome
 {
@@ -111,12 +111,16 @@ class StudentHome
             ->limit(self::OPEN_LIMIT * 4)
             ->get();
 
+        // lazy(): stop checking eligibility once OPEN_LIMIT events pass, instead of checking
+        // every candidate first (a plain Collection filter runs over all of them).
         return $candidates
+            ->lazy()
             ->filter(fn (Event $event) => $this->applications->mayApply($student, $event))
             ->take(self::OPEN_LIMIT)
             ->map(fn (Event $event) => [
                 ...$this->summary($event),
                 'application_type' => $event->application_type,
+                'capacity' => $event->capacity,
                 'places_left' => max(0, $event->capacity - (int) $event->accepted_count),
                 'applications_close' => $event->application_deadline->format('D j M, H:i'),
             ])

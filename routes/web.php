@@ -62,7 +62,8 @@ Route::middleware('auth')->group(function () {
 
     // Everything below needs a permanent password first.
     Route::middleware('password.changed')->group(function () {
-        // Home page = Leaderboard (UC-1.2, UC-2.2). No role check here on purpose:
+        // Home page: students get their home page (Task #92), teachers the Leaderboard
+        // (UC-1.2) until #54/#89. No role check here on purpose:
         // refused visits are redirected to "/", so it must open for every user.
         Route::get('/', [LeaderboardController::class, 'index'])->name('home');
 

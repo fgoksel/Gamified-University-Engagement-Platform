@@ -12,6 +12,7 @@ use App\Models\Topic;
 use App\Models\TopicTag;
 use App\Models\User;
 use App\Services\PointLedger;
+use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\Feature\Topics\TopicTestCase;
 
@@ -289,5 +290,29 @@ class StudentHomeTest extends TopicTestCase
             ->where('points.total', 0)
             ->where('next', null)
             ->has('recent', 0));
+    }
+
+    public function test_more_open_events_do_not_add_queries(): void
+    {
+        $queries = function (): int {
+            $this->home()->assertOk(); // warm-up, so caches don't skew the count
+            DB::flushQueryLog();
+            DB::enableQueryLog();
+            $this->home()->assertOk();
+            DB::disableQueryLog();
+
+            return count(DB::getQueryLog());
+        };
+
+        foreach (range(1, 3) as $day) {
+            $this->event(['event_starts_at' => now()->addDays($day + 1), 'event_ends_at' => now()->addDays($day + 1)->addHour()]);
+        }
+        $three = $queries();
+
+        foreach (range(4, 15) as $day) {
+            $this->event(['event_starts_at' => now()->addDays($day + 1), 'event_ends_at' => now()->addDays($day + 1)->addHour()]);
+        }
+
+        $this->assertSame($three, $queries());
     }
 }
