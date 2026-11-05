@@ -157,10 +157,10 @@ class Sprint2JourneyTest extends TopicTestCase
         ]);
     }
 
-    private function posterCode(User $organiser, Event $event): string
+    private function slipCode(User $organiser, Event $event): string
     {
         $url = $this->actingAs($organiser)
-            ->postJson("/events/{$event->id}/qr-tokens", ['type' => 'poster'])
+            ->postJson("/events/{$event->id}/qr-tokens", ['type' => 'slip'])
             ->assertCreated()
             ->json('url');
 
@@ -225,7 +225,7 @@ class Sprint2JourneyTest extends TopicTestCase
             ->assertInertia(fn ($page) => $page->where('stats.credited_count', 2)->where('stats.accepted_count', 2));
     }
 
-    public function test_selection_journey_with_qr_passport_and_poster_crediting(): void
+    public function test_selection_journey_with_qr_passport_and_slip_crediting(): void
     {
         Notification::fake();
         $event = $this->publish($this->ivan, $this->databases, ['application_type' => 'teacher_select', 'capacity' => 2]);
@@ -260,12 +260,12 @@ class Sprint2JourneyTest extends TopicTestCase
         $this->actingAs($this->ivan)->postJson("/events/{$event->id}/credit", ['identifier' => $passport])
             ->assertOk()->assertJsonPath('status', 'credited');
 
-        // Student scans the event: Bence scans the poster on the wall (Tasks #45, #51).
-        $code = $this->posterCode($this->ivan, $event);
+        // Student scans the event: Bence scans a printed slip (Tasks #45, #51, #84).
+        $code = $this->slipCode($this->ivan, $event);
         $this->actingAs($this->students['Bence'])->postJson('/qr/redeem', ['code' => $code])
             ->assertOk()->assertJsonPath('outcome', 'credited')->assertJsonPath('points', 15);
 
-        // Csilla was rejected: the poster gives her nothing, and neither does her passport.
+        // Csilla was rejected: the slip gives her nothing, and neither does her passport.
         $this->actingAs($this->students['Csilla'])->postJson('/qr/redeem', ['code' => $code])
             ->assertForbidden()->assertJsonPath('reason', 'not_registered');
         $this->actingAs($this->ivan)
@@ -273,7 +273,7 @@ class Sprint2JourneyTest extends TopicTestCase
             ->assertOk()->assertJsonPath('status', 'not_accepted');
 
         $this->assertSame(
-            ['passport', 'qr_poster'],
+            ['passport', 'qr_slip'],
             PointTransaction::query()->where('event_id', $event->id)->orderBy('id')->pluck('source')->all()
         );
         $this->assertSame([15, 15, 0], [$this->points('Anna'), $this->points('Bence'), $this->points('Csilla')]);
@@ -301,7 +301,7 @@ class Sprint2JourneyTest extends TopicTestCase
         $this->assertRefused($this->actingAs($this->ivan)->post("/events/{$sportEvent->id}/cancel", ['reason' => 'x']));
         $this->assertRefused($this->actingAs($this->ivan)->get("/events/{$sportEvent->id}/scan"));
         // The QR endpoint does not even say that an event it hides exists.
-        $this->actingAs($this->ivan)->postJson("/events/{$sportEvent->id}/qr-tokens", ['type' => 'poster'])->assertNotFound();
+        $this->actingAs($this->ivan)->postJson("/events/{$sportEvent->id}/qr-tokens", ['type' => 'slip'])->assertNotFound();
         $this->assertSame(['published', 'accepted'], [$sportEvent->fresh()->status, $sportApplication->fresh()->status]);
 
         $this->startEvent($sportEvent);
@@ -314,9 +314,9 @@ class Sprint2JourneyTest extends TopicTestCase
         $this->actingAs($this->students['Anna'])->postJson("/events/{$sportEvent->id}/apply")->assertStatus(422);
         $this->actingAs($this->students['Erik'])->postJson("/events/{$informaticsEvent->id}/apply")->assertStatus(422);
 
-        // Sara's QR poster gives an Informatics student nothing.
+        // Sara's printed slip gives an Informatics student nothing.
         $this->startEvent($sportEvent);
-        $code = $this->posterCode($this->sara, $sportEvent);
+        $code = $this->slipCode($this->sara, $sportEvent);
         $this->actingAs($this->students['Anna'])->postJson('/qr/redeem', ['code' => $code])->assertForbidden();
 
         // Inside her own branch, Sara can do all of it.
@@ -365,14 +365,10 @@ class Sprint2JourneyTest extends TopicTestCase
 
         $this->scanPassport($this->ivan, 'Anna', $event)->assertJsonPath('status', 'credited');
 
-        // The passport again, the poster and the slip: all refused.
+        // The passport again and a printed slip: both refused.
         $this->scanPassport($this->ivan, 'Anna', $event)->assertJsonPath('status', 'already_credited');
-        $poster = $this->posterCode($this->ivan, $event);
-        $this->actingAs($this->students['Anna'])->postJson('/qr/redeem', ['code' => $poster])
-            ->assertStatus(409)->assertJsonPath('reason', 'already_credited');
-
-        $slip = $this->actingAs($this->ivan)->postJson("/events/{$event->id}/qr-tokens", ['type' => 'slip'])->json('url');
-        $this->actingAs($this->students['Anna'])->postJson('/qr/redeem', ['code' => substr($slip, strrpos($slip, '/') + 1)])
+        $slip = $this->slipCode($this->ivan, $event);
+        $this->actingAs($this->students['Anna'])->postJson('/qr/redeem', ['code' => $slip])
             ->assertStatus(409)->assertJsonPath('reason', 'already_credited');
 
         $this->assertSame(1, PointTransaction::query()->where('event_id', $event->id)->count());

@@ -126,8 +126,8 @@ class SurpriseEventTest extends EventTestCase
             ->assertOk()
             ->assertJson(['status' => 'error', 'message' => 'This is a surprise event: its points are given only by import.']);
 
-        // Posters, slips and the live code cannot even be made, and the QR page says why.
-        $this->actingAs($this->organiser)->postJson("/events/{$this->surprise->id}/qr-tokens", ['type' => 'poster'])
+        // Slips and the live code cannot even be made, and the QR page says why.
+        $this->actingAs($this->organiser)->postJson("/events/{$this->surprise->id}/qr-tokens", ['type' => 'slip'])
             ->assertStatus(409)->assertJsonPath('reason', 'surprise');
         $this->actingAs($this->organiser)->postJson("/events/{$this->surprise->id}/checkin/open")
             ->assertStatus(409)->assertJsonPath('reason', 'surprise');

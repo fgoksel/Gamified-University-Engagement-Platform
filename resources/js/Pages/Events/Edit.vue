@@ -81,7 +81,7 @@ const tabClass = (active) => [
                 :href="`/events/${event.id}/qr-codes`"
                 :class="tabClass(false)"
             >
-                QR codes
+                QR slips
             </Link>
         </nav>
 
