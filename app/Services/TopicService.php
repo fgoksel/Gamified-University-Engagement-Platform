@@ -191,6 +191,7 @@ class TopicService
             $topic->save();
 
             TopicAudit::record($actor, 'topic.moved', $topic->id, 'topic', $topic->id, $before, $this->snapshot($topic->refresh()));
+            app(PointCalculationService::class)->forgetAllAreas();
             $this->access->flush();
 
             return $topic;
