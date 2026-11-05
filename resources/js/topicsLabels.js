@@ -18,6 +18,14 @@ export const capabilityLabels = {
     "applications.manage": "Manage applicants",
     "points.credit": "Credit points",
     "qr_codes.manage": "Manage event QR codes",
+    "leaderboards.manage": "Manage leaderboards",
+};
+
+// What a leaderboard can show to tell students apart (Task #89).
+export const leaderboardColumnLabels = {
+    neptun_code: "Neptun code",
+    first_name: "First name",
+    last_name: "Last name",
 };
 
 export function capabilityLabel(value) {

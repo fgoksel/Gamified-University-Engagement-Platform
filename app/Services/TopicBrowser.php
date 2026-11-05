@@ -111,6 +111,7 @@ class TopicBrowser
             'end' => $has(Capability::AccessEnd),
             'import' => $has(Capability::AccessImport),
             'define_roles' => $has(Capability::DefineRoles),
+            'manage_leaderboards' => $has(Capability::LeaderboardsManage),
         ];
     }
 

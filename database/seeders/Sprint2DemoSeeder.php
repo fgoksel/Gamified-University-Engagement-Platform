@@ -100,8 +100,8 @@ class Sprint2DemoSeeder extends Seeder
         $roles = app(RoleService::class);
         $organiser = $roles->create($admin, null, [
             'name' => 'Event organiser',
-            'description' => 'Runs the events of a branch: creates and publishes them, selects applicants, credits points and prints QR codes.',
-            'capabilities' => ['topic.view', 'access.view', 'events.view', 'events.create', 'events.manage', 'applications.manage', 'points.credit', 'qr_codes.manage'],
+            'description' => 'Runs the events of a branch: creates and publishes them, selects applicants, credits points and prints QR codes. Also makes the leaderboards of the branch.',
+            'capabilities' => ['topic.view', 'access.view', 'events.view', 'events.create', 'events.manage', 'applications.manage', 'points.credit', 'qr_codes.manage', 'leaderboards.manage'],
         ]);
         $student = $roles->create($admin, null, [
             'name' => 'Event student',
