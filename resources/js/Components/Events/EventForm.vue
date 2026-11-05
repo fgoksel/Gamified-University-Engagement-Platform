@@ -7,7 +7,8 @@ import { categoryDot } from "../../categoryColors.js";
 
 // The Event Form (Task #38). Used by Events/Create and by the edit page (Task #68):
 // pass "event" to fill it, and "url" / "method" to say where it saves. When editing,
-// "locks" holds the fields that cannot change now (field -> reason), "readonly" shows
+// "locks" holds the fields that cannot change now (field -> reason; an empty reason when
+// the page explains it once, as for an event that is over), "readonly" shows
 // an event that can no longer be changed, and Save stays off until something changed.
 const props = defineProps({
     // Owning topics with their path in the tree and the audiences they allow (Task #74):
@@ -24,7 +25,7 @@ const props = defineProps({
 });
 
 const editing = computed(() => props.event !== null);
-const lockedField = (field) => props.readonly || Boolean(props.locks[field]);
+const lockedField = (field) => props.readonly || field in props.locks;
 const draft = computed(() => props.event?.status === "draft");
 
 const id = useId();
@@ -185,7 +186,7 @@ const selectClass = (field) => [
                 v-model="form.title"
                 label="Title"
                 required
-                :disabled="readonly"
+                :disabled="lockedField('title')"
                 :error="form.errors.title"
             />
 
@@ -202,7 +203,7 @@ const selectClass = (field) => [
                     v-model="form.description"
                     rows="5"
                     required
-                    :disabled="readonly"
+                    :disabled="lockedField('description')"
                     :aria-invalid="form.errors.description ? 'true' : undefined"
                     :class="selectClass('description')"
                 ></textarea>
@@ -272,7 +273,7 @@ const selectClass = (field) => [
                 v-model="form.location"
                 label="Location"
                 optional
-                :disabled="readonly"
+                :disabled="lockedField('location')"
                 hint="A room or an address. Students see it on the event."
                 :error="form.errors.location"
             />
@@ -442,7 +443,7 @@ const selectClass = (field) => [
                     label="Places"
                     required
                     type="number"
-                    :disabled="readonly"
+                    :disabled="lockedField('capacity')"
                     :hint="
                         editing && minimumCapacity > 1
                             ? `At least ${minimumCapacity}: that many students are already accepted.`
@@ -533,7 +534,7 @@ const selectClass = (field) => [
                     label="Ends"
                     required
                     type="datetime-local"
-                    :disabled="readonly"
+                    :disabled="lockedField('event_ends_at')"
                     :error="form.errors.event_ends_at"
                 />
                 <TextField
@@ -568,7 +569,7 @@ const selectClass = (field) => [
                     label="Points can be given until"
                     required
                     type="datetime-local"
-                    :disabled="readonly"
+                    :disabled="lockedField('completion_deadline')"
                     hint="At or after the end. Points start when the event starts."
                     :error="form.errors.completion_deadline"
                 />
@@ -596,7 +597,7 @@ const selectClass = (field) => [
                 <input
                     v-model="form.qr_enabled"
                     type="checkbox"
-                    :disabled="readonly || form.is_hidden"
+                    :disabled="lockedField('qr_enabled') || form.is_hidden"
                     class="mt-0.5"
                 />
                 <span>

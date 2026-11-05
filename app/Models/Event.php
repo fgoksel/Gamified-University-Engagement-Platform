@@ -119,6 +119,12 @@ class Event extends Model
         return $this->hasMany(QrToken::class);
     }
 
+    /** Who changed the event, when and what (Task #76), newest first. */
+    public function edits(): HasMany
+    {
+        return $this->hasMany(EventEdit::class)->latest('created_at')->latest('id');
+    }
+
     /**
      * When applications open: the date the organiser chose, or the moment of publishing for an
      * event without one (Task #78).

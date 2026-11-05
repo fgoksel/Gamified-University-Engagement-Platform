@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Leaderboard;
 use App\Models\RoleAssignment;
 use App\Models\RoleDefinition;
 use App\Models\Topic;
@@ -299,6 +300,11 @@ class TopicService
 
         if ($topic->course_id !== null) {
             $blockers[] = 'It is linked to a course that the enrolment import uses.';
+        }
+
+        $leaderboards = Leaderboard::query()->where('topic_id', $topic->id)->count();
+        if ($leaderboards > 0) {
+            $blockers[] = "{$leaderboards} leaderboard(s) are made for it.";
         }
 
         // Events keep their history, so a topic they use is never deleted (Task #66).

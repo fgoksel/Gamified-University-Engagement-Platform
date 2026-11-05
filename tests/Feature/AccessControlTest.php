@@ -115,7 +115,7 @@ class AccessControlTest extends TestCase
         $this->actingAs($this->userWithRole(UserRole::Student))->getJson('/_rbac/controller')->assertForbidden();
     }
 
-    public function test_a_refused_visit_goes_back_to_the_leaderboard_with_the_spec_message(): void
+    public function test_a_refused_visit_goes_back_to_the_home_page_with_the_spec_message(): void
     {
         $student = $this->userWithRole(UserRole::Student);
 
@@ -123,9 +123,10 @@ class AccessControlTest extends TestCase
             ->assertRedirect('/')
             ->assertSessionHas('error', self::MESSAGE);
 
+        // A student's start page is their home page (Task #92); it shows the message too.
         $this->actingAs($student)->followingRedirects()->get('/admin')
             ->assertInertia(fn (Assert $page) => $page
-                ->component('Leaderboard/Index')
+                ->component('Home')
                 ->where('flash.error', self::MESSAGE));
     }
 

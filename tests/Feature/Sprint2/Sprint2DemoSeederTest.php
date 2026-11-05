@@ -104,7 +104,10 @@ class Sprint2DemoSeederTest extends TestCase
         $lab = $this->event('Indexing Lab');
         $this->assertTrue($lab->event_starts_at->isPast() && $lab->event_ends_at->isFuture(), 'The lab must be running at demo time.');
         $this->assertNull(app(PointLedger::class)->refusalFor($lab));
-        $this->assertSame(1, $lab->qrTokens()->where('type', QrToken::POSTER)->count());
+        // A batch of printed slips (Task #84), not a poster.
+        $this->assertSame(4, $lab->qrTokens()->slips()->count());
+        $this->assertSame(1, $lab->qrTokens()->distinct()->count('batch'));
+        $this->assertSame(0, $lab->qrTokens()->where('type', QrToken::POSTER)->count());
 
         $ledger = app(PointLedger::class);
         $this->assertSame(
@@ -154,18 +157,18 @@ class Sprint2DemoSeederTest extends TestCase
         $applications->withdraw($anna, $joins);
         $this->assertSame(['Anna Nagy' => 'withdrawn', 'Bence Tóth' => 'accepted', 'Csilla Varga' => 'accepted', 'Eszter Kiss' => 'waitlisted'], $this->applications('SQL Joins Workshop'));
 
-        // 4. Crediting at the running lab: passport and poster.
+        // 4. Crediting at the running lab: passport and a printed slip.
         $lab = $this->event('Indexing Lab');
         $this->actingAs($ivan)->postJson("/events/{$lab->id}/credit", ['identifier' => app(QrPassport::class)->issue($anna)])
             ->assertJsonPath('status', 'credited');
         $qr = app(QrTokenService::class);
-        $poster = $qr->payload($lab->qrTokens()->firstOrFail());
-        $this->assertSame('credited', $qr->redeem($dani, $poster)['outcome']);
+        $slip = $qr->payload($lab->qrTokens()->firstOrFail());
+        $this->assertSame('credited', $qr->redeem($dani, $slip)['outcome']);
 
         // 5. No double credit: Bence was credited when the data was seeded.
         $this->actingAs($ivan)->postJson("/events/{$lab->id}/credit", ['identifier' => app(QrPassport::class)->issue($bence)])
             ->assertJsonPath('status', 'already_credited');
-        $this->assertThrows(fn () => $qr->redeem($dani, $poster), EventActionRefused::class);
+        $this->assertThrows(fn () => $qr->redeem($dani, $slip), EventActionRefused::class);
         $this->assertSame(3, $lab->pointTransactions()->count());
 
         // 6. Restoring the event on hold tells Anna.

@@ -73,9 +73,9 @@ class TopicDemoSeeder extends Seeder
         // Example roles. "Admin" is deliberately view-only: a title gives no power.
         $lead = $roles->create($admin, null, [
             'name' => 'Branch lead',
-            'description' => 'Runs a branch: organises topics, gives roles inside it and runs its events.',
-            'capabilities' => ['topic.view', 'topic.create', 'topic.edit', 'topic.organise', 'topic.archive', 'access.view', 'access.assign', 'access.end', 'access.import', 'role.define', 'events.view', 'events.apply', 'events.create', 'events.manage', 'applications.manage', 'points.credit', 'qr_codes.manage'],
-            'delegable' => ['topic.view', 'topic.create', 'topic.edit', 'topic.organise', 'topic.archive', 'access.view', 'access.assign', 'access.end', 'access.import', 'events.view', 'events.apply', 'events.create', 'applications.manage', 'points.credit'],
+            'description' => 'Runs a branch: organises topics, gives roles inside it and runs its events and leaderboards.',
+            'capabilities' => ['topic.view', 'topic.create', 'topic.edit', 'topic.organise', 'topic.archive', 'access.view', 'access.assign', 'access.end', 'access.import', 'role.define', 'events.view', 'events.apply', 'events.create', 'events.manage', 'applications.manage', 'points.credit', 'qr_codes.manage', 'leaderboards.manage'],
+            'delegable' => ['topic.view', 'topic.create', 'topic.edit', 'topic.organise', 'topic.archive', 'access.view', 'access.assign', 'access.end', 'access.import', 'events.view', 'events.apply', 'events.create', 'applications.manage', 'points.credit', 'leaderboards.manage'],
         ]);
         $manager = $roles->create($admin, null, [
             'name' => 'Branch manager',

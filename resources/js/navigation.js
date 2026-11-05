@@ -6,6 +6,7 @@ import {
     IdCard,
     QrCode,
     ShieldCheck,
+    Trophy,
     UserRound,
 } from "@lucide/vue";
 
@@ -24,6 +25,11 @@ const organizedByMe = {
     label: "Organized by me",
     href: "/my-events",
     icon: IdCard,
+};
+const leaderboards = {
+    label: "Leaderboards",
+    href: "/leaderboards",
+    icon: Trophy,
 };
 const notifications = {
     label: "Notifications",
@@ -57,6 +63,7 @@ export const navigation = {
                 { label: "Tag requests", href: "/topic-tag-requests" },
             ],
         },
+        leaderboards,
         topics,
         topicRoles,
         notifications,
@@ -74,6 +81,7 @@ export const navigation = {
                 { label: "My QR passport", href: "/passport" },
             ],
         },
+        leaderboards,
         profile,
         notifications,
         topics,

@@ -56,7 +56,7 @@ class NotificationFeed
                 ],
                 EventApplicationDecisionNotification::REMOVED => [
                     "You were removed from the selection for {$event}",
-                    'Your application is pending again, so the organizer may select you later.',
+                    'Your application is still open, so the organiser may still choose you later.',
                     '/my-events',
                 ],
                 EventApplicationDecisionNotification::CONFIRMED => [
@@ -97,22 +97,22 @@ class NotificationFeed
                 ],
                 EventStatusChangedNotification::RESTORED => [
                     "{$event} is back",
-                    'You keep your place. Check the date; if it no longer suits you, you can withdraw.',
+                    'You keep your place. Check the date; if it no longer suits you, you can leave the event.',
                     '/my-events',
                 ],
                 EventStatusChangedNotification::RESCHEDULED => [
                     "The time of {$event} changed",
-                    'You keep your place. Check the new date; if it no longer suits you, you can withdraw.',
+                    'You keep your place. Check the new date; if it no longer suits you, you can leave the event.',
                     '/my-events',
                 ],
                 EventStatusChangedNotification::RELOCATED => [
                     "The location of {$event} changed",
-                    "{$where} You keep your place; if it no longer suits you, you can withdraw.",
+                    "{$where} You keep your place; if it no longer suits you, you can leave the event.",
                     '/my-events',
                 ],
                 EventStatusChangedNotification::RESCHEDULED_AND_RELOCATED => [
                     "The time and location of {$event} changed",
-                    "{$where} You keep your place. Check the new date; if it no longer suits you, you can withdraw.",
+                    "{$where} You keep your place. Check the new date; if it no longer suits you, you can leave the event.",
                     '/my-events',
                 ],
                 default => ['Update on an event you applied to', $event, '/my-events'],

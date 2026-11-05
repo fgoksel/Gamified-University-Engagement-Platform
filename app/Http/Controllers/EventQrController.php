@@ -16,6 +16,7 @@ use Illuminate\Validation\Rule;
 /**
  * Making, drawing and revoking the QR codes of an event (UC-1.8).
  * Needs the QR capability at the event's topic; creating the event is not enough.
+ * Since Task #84 the only code made here is a printed single-use slip.
  */
 class EventQrController extends Controller
 {
@@ -24,19 +25,19 @@ class EventQrController extends Controller
         $this->authorise($request, $event);
 
         $data = $request->validate([
-            'type' => ['required', Rule::in([QrToken::POSTER, QrToken::SLIP])],
-            'step_number' => ['nullable', 'integer', 'min:1', 'max:'.QrTokenService::MAX_STEPS],
-            'total_steps' => ['nullable', 'integer', 'min:2', 'max:'.QrTokenService::MAX_STEPS],
+            'type' => ['sometimes', Rule::in([QrToken::SLIP])],
+            // Posters and the parts of a task are gone (Task #84).
+            'step_number' => ['prohibited'],
+            'total_steps' => ['prohibited'],
             'expires_at' => ['nullable', 'date', 'after:now'],
+        ], [
+            'type.in' => 'Only printed single-use slips can be made.',
         ]);
 
         try {
             $token = $qr->issue(
                 $request->user(),
                 $event,
-                $data['type'],
-                $data['step_number'] ?? null,
-                $data['total_steps'] ?? null,
                 isset($data['expires_at']) ? now()->parse($data['expires_at']) : null,
             );
         } catch (EventActionRefused $refused) {
@@ -46,8 +47,6 @@ class EventQrController extends Controller
         return response()->json([
             'id' => $token->id,
             'type' => $token->type,
-            'step_number' => $token->step_number,
-            'total_steps' => $token->total_steps,
             'expires_at' => $token->expires_at?->toIso8601String(),
             'url' => $qr->url($token),
             'svg' => route('events.qr.image', [$event, $token, 'svg']),

@@ -22,6 +22,7 @@ import MoveDialog from "../../Components/Topics/MoveDialog.vue";
 import ArchiveDialog from "../../Components/Topics/ArchiveDialog.vue";
 import DeleteTopicDialog from "../../Components/Topics/DeleteTopicDialog.vue";
 import AccessPanel from "../../Components/Topics/AccessPanel.vue";
+import LeaderboardsPanel from "../../Components/Topics/LeaderboardsPanel.vue";
 import { api, debounce } from "../../topicsApi.js";
 import { plural } from "../../topicsLabels.js";
 
@@ -583,6 +584,22 @@ const branchRange = computed(() => {
                         >
                             Access
                         </Link>
+                        <Link
+                            :href="`/topics/${selected.id}?tab=leaderboards`"
+                            :only="only"
+                            preserve-state
+                            class="-mb-px min-h-11 shrink-0 border-b-2 px-3 py-2.5 text-sm font-medium focus-visible:outline-2 focus-visible:outline-ring"
+                            :class="
+                                tab === 'leaderboards'
+                                    ? 'border-primary text-fg'
+                                    : 'border-transparent text-fg-muted hover:text-fg'
+                            "
+                            :aria-current="
+                                tab === 'leaderboards' ? 'page' : undefined
+                            "
+                        >
+                            Leaderboards
+                        </Link>
                     </nav>
 
                     <!-- Access -->
@@ -591,6 +608,16 @@ const branchRange = computed(() => {
                         :topic="selected"
                         :access="selected.access"
                         :counts="selected.counts"
+                        :can="selected.can"
+                    />
+
+                    <!-- Leaderboards (Task #89) -->
+                    <LeaderboardsPanel
+                        v-else-if="
+                            tab === 'leaderboards' && selected.leaderboards
+                        "
+                        :topic="selected"
+                        :leaderboards="selected.leaderboards"
                         :can="selected.can"
                     />
 

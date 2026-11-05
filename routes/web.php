@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\ImportController;
 use App\Http\Controllers\Admin\TopicTagRequestController as AdminTopicTagRequestController;
 use App\Http\Controllers\AppearanceController;
 use App\Http\Controllers\ApplicantController;
+use App\Http\Controllers\AreaLeaderboardController;
 use App\Http\Controllers\Auth\ChangePasswordController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
@@ -51,6 +52,11 @@ Route::middleware('guest')->group(function () {
 Route::get('/auth/activate/{token}', [SetPasswordController::class, 'create'])->name('password.setup');
 Route::post('/auth/set-password', [SetPasswordController::class, 'store'])->name('password.setup.store');
 
+// Task #89: what the hall screen (#56) reads, without login. Published leaderboards only.
+Route::get('/hall/leaderboards', [AreaLeaderboardController::class, 'hall'])
+    ->middleware('throttle:60,1')
+    ->name('hall.leaderboards');
+
 Route::middleware('auth')->group(function () {
     Route::get('/password/change', [ChangePasswordController::class, 'edit'])->name('password.change');
     Route::put('/password/change', [ChangePasswordController::class, 'update'])->name('password.change.update');
@@ -62,7 +68,8 @@ Route::middleware('auth')->group(function () {
 
     // Everything below needs a permanent password first.
     Route::middleware('password.changed')->group(function () {
-        // Home page = Leaderboard (UC-1.2, UC-2.2). No role check here on purpose:
+        // Home page: students get their home page (Task #92), teachers the Leaderboard
+        // (UC-1.2) until #54/#89. No role check here on purpose:
         // refused visits are redirected to "/", so it must open for every user.
         Route::get('/', [LeaderboardController::class, 'index'])->name('home');
 
@@ -82,6 +89,11 @@ Route::middleware('auth')->group(function () {
             Route::post('/events/{event}/apply', [EventApplicationController::class, 'store'])
                 ->middleware('permission:events.apply')
                 ->name('events.apply');
+
+            // Student undo straight after applying (Task #94)
+            Route::post('/events/{event}/apply/undo', [EventApplicationController::class, 'undo'])
+                ->middleware('permission:events.apply')
+                ->name('events.apply.undo');
 
             // Student withdraw from an event (Task #50, UC-2.3)
             Route::post('/events/{event}/withdraw', [EventApplicationController::class, 'withdraw'])
@@ -148,12 +160,14 @@ Route::middleware('auth')->group(function () {
             Route::get('/events/{event}/checkin/status', [EventCheckinController::class, 'status'])
                 ->whereNumber('event')->middleware('permission:events.view')->name('events.checkin.status');
 
-            // The organiser's QR page: make, print (posters and slips) and revoke codes (Task #44).
+            // The organiser's QR page: make, print and withdraw printed single-use slips (Tasks #44, #84).
+            // A batch prints on its own; "earlier" is the slips made before batches.
             Route::prefix('events/{event}/qr-codes')->whereNumber('event')->name('events.qr-codes.')->group(function () {
                 Route::get('/', [EventQrCodeController::class, 'index'])->name('index');
                 Route::post('/', [EventQrCodeController::class, 'store'])->name('store');
                 Route::post('/{token}/revoke', [EventQrCodeController::class, 'revoke'])->whereNumber('token')->name('revoke');
-                Route::get('/print/{type}', [EventQrCodeController::class, 'print'])->whereIn('type', ['poster', 'slip'])->name('print');
+                Route::get('/print/{batch}', [EventQrCodeController::class, 'print'])
+                    ->where('batch', '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|earlier')->name('print');
             });
 
             // Edit an event after it was created (Task #68, UC-1.3). EventPolicy::update checks
@@ -243,6 +257,19 @@ Route::middleware('auth')->group(function () {
             Route::post('/{topic}/assignments', [RoleAssignmentController::class, 'store'])->whereNumber('topic')->name('assignments.store');
             // Task #72: give a role to a list of students from a file of Neptun codes.
             Route::post('/{topic}/imports', [TopicImportController::class, 'store'])->whereNumber('topic')->name('imports.store');
+            // Task #89: a new leaderboard for this topic.
+            Route::post('/{topic}/leaderboards', [AreaLeaderboardController::class, 'store'])->whereNumber('topic')->name('leaderboards.store');
+        });
+
+        // Area leaderboards (Task #89). Open to every signed-in account: AreaLeaderboards decides
+        // per leaderboard and per topic, like the Topics routes above.
+        Route::prefix('leaderboards')->name('leaderboards.')->group(function () {
+            Route::get('/', [AreaLeaderboardController::class, 'index'])->name('index');
+            Route::get('/{leaderboard}', [AreaLeaderboardController::class, 'show'])->whereNumber('leaderboard')->name('show');
+            Route::put('/{leaderboard}', [AreaLeaderboardController::class, 'update'])->whereNumber('leaderboard')->name('update');
+            Route::post('/{leaderboard}/publish', [AreaLeaderboardController::class, 'publish'])->whereNumber('leaderboard')->name('publish');
+            Route::post('/{leaderboard}/unpublish', [AreaLeaderboardController::class, 'unpublish'])->whereNumber('leaderboard')->name('unpublish');
+            Route::delete('/{leaderboard}', [AreaLeaderboardController::class, 'destroy'])->whereNumber('leaderboard')->name('destroy');
         });
 
         // The previous "My courses" pages now live in Topics.

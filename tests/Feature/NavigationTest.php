@@ -42,7 +42,7 @@ class NavigationTest extends TestCase
             'teacher profile' => [UserRole::Teacher, '/profile', 'Profile/Edit'],
             'teacher topics' => [UserRole::Teacher, '/topics?start=1', 'Topics/Explorer'],
             'student topics' => [UserRole::Student, '/topics?start=1', 'Topics/Explorer'],
-            'student leaderboard' => [UserRole::Student, '/', 'Leaderboard/Index'],
+            'student home' => [UserRole::Student, '/', 'Home'],
             'student all events' => [UserRole::Student, '/events', 'Events/Index'],
             'student my events' => [UserRole::Student, '/my-events', 'Events/Applied'],
             'student profile' => [UserRole::Student, '/profile', 'Profile/Edit'],

@@ -318,9 +318,9 @@ class EventLocationTest extends EventTestCase
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->where('notifications.data.0.title', 'The time and location of SQL Workshop changed')
-                ->where('notifications.data.0.body', 'The location was removed. You keep your place. Check the new date; if it no longer suits you, you can withdraw.')
+                ->where('notifications.data.0.body', 'The location was removed. You keep your place. Check the new date; if it no longer suits you, you can leave the event.')
                 ->where('notifications.data.1.title', 'The location of SQL Workshop changed')
-                ->where('notifications.data.1.body', 'It now takes place at Aula Magna. You keep your place; if it no longer suits you, you can withdraw.')
+                ->where('notifications.data.1.body', 'It now takes place at Aula Magna. You keep your place; if it no longer suits you, you can leave the event.')
                 ->where('notifications.data.1.link', '/my-events'));
     }
 
