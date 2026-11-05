@@ -42,13 +42,13 @@ function setArchived(role, archived) {
             class="inline-flex items-center gap-1 text-sm text-fg-muted hover:text-fg hover:underline"
         >
             <ArrowLeft class="size-4" :stroke-width="1.75" aria-hidden="true" />
-            Back to topics
+            Back to areas
         </Link>
 
         <div class="flex flex-wrap items-start justify-between gap-3">
             <p class="max-w-2xl text-sm text-fg-muted">
                 A role is a name plus a set of things people can do. Roles are
-                reusable: give the same role to many people at different topics.
+                reusable: give the same role to many people at different areas.
                 The name is just a label; only the ticked abilities count.
             </p>
             <Btn variant="primary" @click="editing = 'new'">
@@ -58,7 +58,7 @@ function setArchived(role, archived) {
         </div>
 
         <EmptyState v-if="roles.length === 0" title="No roles yet">
-            Create the first role, then give it to people on a topic. A fresh
+            Create the first role, then give it to people in an area. A fresh
             installation starts without any predefined roles.
         </EmptyState>
 
@@ -135,7 +135,7 @@ function setArchived(role, archived) {
             <p class="text-sm text-fg">
                 <strong>{{ archiving.name }}</strong> can no longer be given to
                 new people. The {{ archiving.active_assignments }} active
-                assignment(s) stay as they are: nobody loses access, and topics
+                assignment(s) stay as they are: nobody loses access, and areas
                 are untouched. You can restore the role at any time.
             </p>
             <template #footer>

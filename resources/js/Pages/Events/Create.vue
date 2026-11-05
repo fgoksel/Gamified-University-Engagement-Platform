@@ -31,7 +31,7 @@ defineProps({
             :icon="CalendarPlus"
             title="You cannot create events yet"
         >
-            You need a role on a topic that allows creating events there.
+            You need a role in an area that allows creating events there.
         </EmptyState>
 
         <EventForm

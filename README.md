@@ -61,14 +61,14 @@ On Windows PowerShell, use `copy .env.example .env` for step 1.
 
 The passwords above are for local development only. Never reuse them on a server.
 
-## Topics (the abstract topic tree)
+## Areas (the abstract area tree)
 
-**Topics** is a generic tree that people organise themselves, with reusable roles that are given at a topic and
+**Areas** is a generic tree that people organise themselves, with reusable roles that are given in an area and
 apply to everything below it. There is no required faculty, course or other level, and a fresh installation starts with
-no topics and no organisational roles. Architecture, the migration mapping from the old faculty tree, the rules and what
+no areas and no organisational roles. Architecture, the migration mapping from the old faculty tree, the rules and what
 is deferred are in [docs/topic-tree.md](docs/topic-tree.md).
 
-- The explorer is at http://localhost:8081/topics (System Admins also find **Topics** and **Topic roles** in the admin panel).
+- The explorer is at http://localhost:8081/topics (System Admins also find **Areas** and **Area roles** in the admin panel).
   System Admins appoint, remove and replace System Admins on **System admins** in the admin panel.
 - The nesting limit is `TOPICS_MAX_DEPTH` (default 32).
 - **Demo data (optional, never part of the normal seeders):** to try the explorer with example topics, roles and accounts
@@ -97,10 +97,10 @@ is deferred are in [docs/topic-tree.md](docs/topic-tree.md).
 
 ## Course and lab enrolment imports
 
-In **Faculties → Courses → Import Enrolments**, select the course topic or an active
+In **Faculties → Courses → Import Enrolments**, select the course area or an active
 descendant (such as Lab Group B) as the **Import destination**. Upload a CSV containing
 only that group's students, with `Neptun Code,Course Code,Course Name` columns.
-The source course filters the CSV rows; choosing a lab does not change the course's topic link.
+The source course filters the CSV rows; choosing a lab does not change the course's area link.
 
 Students receive membership at the destination and only the additional ancestor/descendant
 nodes explicitly ticked. Selecting a lab does not automatically add its parent course or
@@ -108,8 +108,8 @@ sibling labs. Changing the destination clears the optional selections. Reimporti
 existing memberships and does not duplicate active assignments.
 
 The enrolment API accepts `course_id` with `target_topic_id` for this targeted import.
-The target must be the linked course topic or an active descendant. Existing bulk imports
-without those fields continue to use each CSV course's linked topic. Target-only requests
+The target must be the linked course area or an active descendant. Existing bulk imports
+without those fields continue to use each CSV course's linked area. Target-only requests
 retain their existing exact-linked-course filtering. Queued jobs revalidate the destination
 when processing starts, so a moved or archived lab is refused with an import-failure notification.
 

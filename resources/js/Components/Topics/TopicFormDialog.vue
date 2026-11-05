@@ -22,8 +22,8 @@ const form = useForm({
 });
 
 const heading = computed(() => {
-    if (props.mode === "edit") return "Edit topic";
-    return props.parent ? "New topic" : "New top-level topic";
+    if (props.mode === "edit") return "Edit area";
+    return props.parent ? "New area" : "New top-level area";
 });
 
 const url = computed(() => {
@@ -48,11 +48,11 @@ function submit() {
                 <template v-if="parent">
                     Adding under
                     <strong class="text-fg">{{ parent.title }}</strong
-                    >. People with access to it get access to the new topic too.
+                    >. People with access to it get access to the new area too.
                 </template>
                 <template v-else>
-                    A top-level topic has no parent. You organise what goes
-                    below it, and give people roles on it.
+                    A top-level area has no parent. You organise what goes below
+                    it, and give people roles on it.
                 </template>
             </p>
 
@@ -67,7 +67,7 @@ function submit() {
                 v-model="form.code"
                 label="Code"
                 optional
-                hint="A short reference such as BMEINFO101. It does not change how the topic behaves."
+                hint="A short reference such as BMEINFO101. It does not change how the area behaves."
                 :error="form.errors.code"
             />
 
@@ -109,7 +109,7 @@ function submit() {
                 variant="primary"
                 :loading="form.processing"
             >
-                {{ mode === "edit" ? "Save topic" : "Create topic" }}
+                {{ mode === "edit" ? "Save area" : "Create area" }}
             </Btn>
         </template>
     </Modal>

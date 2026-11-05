@@ -16,7 +16,7 @@ defineProps({
 <template>
     <div class="space-y-4">
         <p class="text-sm text-fg-muted">
-            Published leaderboards, and those of the topics you belong to.
+            Published leaderboards, and those of the areas you belong to.
         </p>
 
         <ul
@@ -55,7 +55,7 @@ defineProps({
         </ul>
 
         <EmptyState v-else :icon="Trophy" title="No leaderboards for you yet">
-            When a topic you belong to makes a leaderboard, or one is published,
+            When an area you belong to makes a leaderboard, or one is published,
             it appears here.
         </EmptyState>
     </div>

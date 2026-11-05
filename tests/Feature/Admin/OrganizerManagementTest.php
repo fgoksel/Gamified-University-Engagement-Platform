@@ -520,7 +520,7 @@ class OrganizerManagementTest extends TestCase
             ->test(OrganizerManagement::class)
             ->mountTableAction('deactivate', $organizer);
 
-        $this->assertStringContainsString('1 active topic role(s)', (string) $page->instance()->getMountedAction()->getModalDescription());
+        $this->assertStringContainsString('1 active area role(s)', (string) $page->instance()->getMountedAction()->getModalDescription());
 
         $page->callMountedTableAction()->assertHasNoTableActionErrors();
 

@@ -73,7 +73,7 @@ const groups = computed(() => [
                 ><strong v-else class="font-medium text-fg">{{
                     leaderboard.topic.title
                 }}</strong>
-                and in all topics below it.
+                and in all areas below it.
             </p>
             <p v-if="standings.total" class="text-sm text-fg">
                 <template v-if="standings.you">

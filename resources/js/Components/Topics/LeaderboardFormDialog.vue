@@ -48,8 +48,8 @@ function submit() {
             >
                 It counts the points from every event in
                 <strong class="text-fg">{{ topic.title }}</strong> and in all
-                topics below it. To rank a smaller set, make the leaderboard on
-                a topic lower down.
+                areas below it. To rank a smaller set, make the leaderboard on
+                an area lower down.
             </p>
 
             <TextField

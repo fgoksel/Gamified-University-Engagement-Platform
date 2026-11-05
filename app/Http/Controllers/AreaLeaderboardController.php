@@ -150,7 +150,7 @@ class AreaLeaderboardController extends Controller
             'show_last_name' => ['sometimes', 'boolean'],
         ], [
             'name.required' => 'Give the leaderboard a name.',
-            'name.unique' => 'This topic already has a leaderboard with that name.',
+            'name.unique' => 'This area already has a leaderboard with that name.',
         ]);
 
         $data = [

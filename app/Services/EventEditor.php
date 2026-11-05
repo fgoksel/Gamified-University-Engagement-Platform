@@ -106,7 +106,7 @@ class EventEditor
         }
 
         $locks = [
-            'owning_topic_id' => 'The topic that manages an event cannot change once it is published.',
+            'owning_topic_id' => 'The area that manages an event cannot change once it is published.',
             'is_hidden' => 'The surprise setting cannot change once the event is published.',
         ];
 
@@ -339,14 +339,14 @@ class EventEditor
         $owning = Topic::find($owningId);
 
         if ($owning === null || (! isset($locks['owning_topic_id']) && $owningId !== $event->owning_topic_id && ! $this->placement->mayOwn($actor, $owning))) {
-            $errors['owning_topic_id'] ??= 'You cannot manage events at this topic.';
+            $errors['owning_topic_id'] ??= 'You cannot manage events in this area.';
         }
 
         $audienceId = $data['audience_topic_id'] ?? null;
         if ($keeps('audience_topic_id', $audienceId)) {
             $audienceId = $event->audience_topic_id;
         } elseif ($audienceId !== null && $owning !== null && ! in_array((int) $audienceId, $this->placement->audienceIds($owning), true)) {
-            $errors['audience_topic_id'] = 'The audience must be the owning topic or a topic above it.';
+            $errors['audience_topic_id'] = 'The audience must be the owning area or an area above it.';
         }
 
         $type = $keeps('application_type', $data['application_type']) ? $event->application_type : $data['application_type'];

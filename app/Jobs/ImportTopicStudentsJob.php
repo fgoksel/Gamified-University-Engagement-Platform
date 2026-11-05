@@ -114,7 +114,7 @@ class ImportTopicStudentsJob extends ImportCsvJob
         $this->importer = User::find($this->adminId);
 
         if ($this->topic === null) {
-            throw new InvalidArgumentException('The topic was archived or deleted, so nothing was imported.');
+            throw new InvalidArgumentException('The area was archived or deleted, so nothing was imported.');
         }
 
         if ($this->role === null || $this->importer === null) {

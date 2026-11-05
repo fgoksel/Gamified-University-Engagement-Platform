@@ -72,8 +72,8 @@ function submit() {
                 class="rounded-control bg-info-soft px-3 py-2 text-sm text-info-fg"
             >
                 The role is given at <strong>{{ topic.title }}</strong> and also
-                applies to every topic below it. It does not give access to the
-                parent or to sibling topics.
+                applies to every area below it. It does not give access to the
+                parent or to sibling areas.
             </p>
 
             <div>

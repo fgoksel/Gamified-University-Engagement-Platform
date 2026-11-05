@@ -39,7 +39,7 @@ const notifications = {
 };
 const profile = { label: "Profile", href: "/profile", icon: UserRound };
 const topics = {
-    label: "Topics",
+    label: "Areas",
     href: "/topics",
     icon: FolderTree,
     needs: "available",

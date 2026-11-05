@@ -101,7 +101,7 @@ class EventCatalog
     }
 
     /**
-     * The topics offered in the "Topic or branch" filter: every topic the person
+     * The topics offered in the "Area or branch" filter: every topic the person
      * can see events in, in tree order. Picking one shows the events run or
      * announced anywhere in that branch.
      *

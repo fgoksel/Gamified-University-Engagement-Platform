@@ -409,7 +409,7 @@ class CapacityGuardTest extends TopicTestCase
         $student = $this->createAudienceStudent('STU001');
 
         $this->expectException(ValidationException::class);
-        $this->expectExceptionMessage('Applications are frozen because this topic is archived.');
+        $this->expectExceptionMessage('Applications are frozen because this area is archived.');
 
         $this->service->apply($student, $event);
     }

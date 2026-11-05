@@ -296,7 +296,7 @@ const selectClass = (field) => [
                     :disabled="lockedField('owning_topic_id')"
                     :class="selectClass('owning_topic_id')"
                 >
-                    <option value="" disabled>Choose a topic…</option>
+                    <option value="" disabled>Choose an area…</option>
                     <option v-for="t in topics" :key="t.id" :value="t.id">
                         {{ pathText(t.path) || t.title }}
                     </option>
@@ -304,7 +304,7 @@ const selectClass = (field) => [
                 <!-- The full path of the chosen topic (Task #74) -->
                 <nav
                     v-if="owning?.path?.length"
-                    aria-label="Path of the chosen topic"
+                    aria-label="Path of the chosen area"
                     class="mt-2"
                     data-test="owning-path"
                 >
@@ -337,7 +337,7 @@ const selectClass = (field) => [
                 <p v-else class="mt-1.5 text-sm text-fg-muted">
                     {{
                         locks.owning_topic_id ||
-                        "The topic whose staff manage this event."
+                        "The area whose staff manage this event."
                     }}
                 </p>
             </div>
@@ -432,7 +432,7 @@ const selectClass = (field) => [
                     <template v-else-if="audience">
                         {{ studentsText(audience.students) }} will see this
                         event: the students assigned to {{ audience.title }}
-                        itself, not to the topics below it.
+                        itself, not to the areas below it.
                     </template>
                     <template v-else-if="owning">
                         Only students you invite will see this event.
@@ -670,7 +670,7 @@ const selectClass = (field) => [
         <template v-else>
             <p v-if="!canPublish" class="text-sm text-fg-muted">
                 You can save this event as a draft. Someone who may manage
-                events at this topic publishes it.
+                events in this area publishes it.
             </p>
             <div class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
                 <button
