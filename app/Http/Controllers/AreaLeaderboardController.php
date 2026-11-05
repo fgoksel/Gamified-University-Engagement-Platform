@@ -6,6 +6,7 @@ use App\Models\Leaderboard;
 use App\Models\Topic;
 use App\Services\AreaLeaderboards;
 use App\Services\LeaderboardStandings;
+use App\Services\OwnLeaderboards;
 use App\Services\TopicAccess;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -28,14 +29,12 @@ class AreaLeaderboardController extends Controller
         private LeaderboardStandings $standings,
     ) {}
 
-    public function index(Request $request): Response
+    /**
+     * "My leaderboard" (Task #54): the person's own points and rank, and the leaderboards they may see.
+     */
+    public function index(Request $request, OwnLeaderboards $own): Response
     {
-        return Inertia::render('Leaderboards/Index', [
-            'leaderboards' => $this->boards->openTo($request->user())
-                ->map(fn (Leaderboard $board) => $this->boards->summary($board))
-                ->values()
-                ->all(),
-        ]);
+        return Inertia::render('Leaderboards/Index', $own->for($request->user()));
     }
 
     public function show(Request $request, Leaderboard $leaderboard): Response

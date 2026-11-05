@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\UserRole;
+use App\Services\OwnLeaderboards;
 use App\Services\StudentHome;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -11,12 +12,12 @@ use Symfony\Component\HttpFoundation\Response as HttpResponse;
 
 /**
  * The start page "/". Students get their home page (Task #92): points this semester, the next
- * event, events open for applications and recent points. Teachers keep the Leaderboard
- * (UC-1.2) until the leaderboard tasks (#54, #89) fill it.
+ * event, events open for applications and recent points. Everyone else gets their own
+ * leaderboard (Task #54, UC-1.2): the leaderboards they may see.
  */
 class LeaderboardController extends Controller
 {
-    public function index(Request $request, StudentHome $home): Response|HttpResponse
+    public function index(Request $request, StudentHome $home, OwnLeaderboards $own): Response|HttpResponse
     {
         $user = $request->user();
 
@@ -32,6 +33,6 @@ class LeaderboardController extends Controller
             ]);
         }
 
-        return Inertia::render('Leaderboard/Index');
+        return Inertia::render('Leaderboard/Index', $own->for($user));
     }
 }

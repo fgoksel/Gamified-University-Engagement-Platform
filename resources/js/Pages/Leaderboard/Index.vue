@@ -1,12 +1,17 @@
 <script setup>
 import { usePage } from "@inertiajs/vue3";
-import { Trophy } from "@lucide/vue";
 import AlertMessage from "../../Components/AlertMessage.vue";
-import EmptyState from "../../Components/EmptyState.vue";
-import SubjectAreaFilterChip from "../../Components/SubjectAreaFilterChip.vue";
+import OwnLeaderboards from "../../Components/Leaderboards/OwnLeaderboards.vue";
 
-// Home page of teachers and students (UC-1.2, UC-2.2).
-defineOptions({ layout: { title: "Leaderboard" } });
+// Start page of everyone who is not a student (UC-1.2): their own leaderboard (Task #54).
+// Students start on their home page and open the same content from "Leaderboards".
+defineOptions({ layout: { title: "Leaderboards" } });
+
+defineProps({
+    isStudent: { type: Boolean, default: false },
+    points: { type: Object, default: null },
+    leaderboards: { type: Array, default: () => [] },
+});
 
 const page = usePage();
 </script>
@@ -18,11 +23,10 @@ const page = usePage();
             {{ page.props.flash.error }}
         </AlertMessage>
 
-        <!-- Teachers: subject area picked in the sidebar -->
-        <SubjectAreaFilterChip />
-
-        <EmptyState :icon="Trophy" title="No rankings yet">
-            Student rankings for the current semester will appear here.
-        </EmptyState>
+        <OwnLeaderboards
+            :is-student="isStudent"
+            :points="points"
+            :leaderboards="leaderboards"
+        />
     </div>
 </template>

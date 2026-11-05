@@ -1,4 +1,26 @@
-# Leaderboards: point calculation and cache (Task #55)
+# Leaderboards: my leaderboard and the point calculation (Tasks #54 and #55)
+
+## My leaderboard (Task #54)
+
+Everyone who is signed in sees their own leaderboard, in the menu under **Leaderboards**
+(`/leaderboards`). Teachers also start there (`/`); students start on their home page.
+
+- **A student** sees *Your points*: the total and the four categories, added up from the whole
+  ledger with no period (L3). Below that, every leaderboard open to them, each with their rank
+  ("You are number 2 of 4"), their points there per category, and how many students are listed.
+  A student with no points in the area of a board is told they are not on it yet.
+- **A teacher** earns no points. They see the leaderboards open to them and how many students
+  each lists.
+- **Which leaderboards:** the published ones, and the area-only ones of the topics the person can
+  open (`AreaLeaderboards::openTo()`, L4). Nobody sees a leaderboard they may not see. On this
+  page a student only gets their own row; the other students appear on the full leaderboard, as
+  that leaderboard's settings allow (#89).
+- Each board opens the full leaderboard (`/leaderboards/{id}`): the top 10 and the places around
+  the student (L5).
+
+The data comes from `App\Services\OwnLeaderboards`; the page is `Components/Leaderboards/OwnLeaderboards.vue`.
+
+## Point calculation and cache (Task #55)
 
 `App\Services\PointCalculationService` is the one place that adds points up from the ledger:
 
