@@ -351,7 +351,7 @@ class CapacityGuardTest extends TopicTestCase
             ->assertStatus(201)
             ->assertJson([
                 'status' => 'accepted',
-                'message' => 'Your application has been accepted!',
+                'message' => "You're in!",
             ]);
 
         // Student 2 applies via JSON -> 201 waitlisted
@@ -360,7 +360,7 @@ class CapacityGuardTest extends TopicTestCase
             ->assertStatus(201)
             ->assertJson([
                 'status' => 'waitlisted',
-                'message' => 'The event is at capacity. You have been placed on the waitlist.',
+                'message' => "The event is full, so you're on the waitlist. We'll tell you if a place opens.",
             ]);
 
         $this->assertSame('accepted', $response1->json('application.status'));

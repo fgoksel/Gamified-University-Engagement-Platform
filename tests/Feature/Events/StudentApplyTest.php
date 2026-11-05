@@ -79,7 +79,7 @@ class StudentApplyTest extends TopicTestCase
         $this->actingAs($student)->from('/events')
             ->post("/events/{$event->id}/apply")
             ->assertRedirect('/events')
-            ->assertSessionHas('success', 'Your application has been accepted!');
+            ->assertSessionHas('success', "You're in!");
 
         $this->actingAs($student)->get('/events')
             ->assertInertia(fn (Assert $page) => $page
@@ -98,7 +98,7 @@ class StudentApplyTest extends TopicTestCase
             ->assertInertia(fn (Assert $page) => $page->where('events.data.0.places_left', 0)->where('events.data.0.can_apply', true));
 
         $this->actingAs($second)->post("/events/{$event->id}/apply")
-            ->assertSessionHas('success', 'The event is at capacity. You have been placed on the waitlist.');
+            ->assertSessionHas('success', "The event is full, so you're on the waitlist. We'll tell you if a place opens.");
         $this->assertSame(EventApplication::WAITLISTED, EventApplication::where('student_id', $second->id)->value('status'));
     }
 

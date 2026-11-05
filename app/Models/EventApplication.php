@@ -18,6 +18,9 @@ class EventApplication extends Model
 
     public const WITHDRAWN = 'withdrawn';
 
+    /** How long after applying the student may still undo (Task #94). */
+    public const UNDO_SECONDS = 60;
+
     protected $fillable = [
         'event_id',
         'student_id',
@@ -26,6 +29,7 @@ class EventApplication extends Model
         'decided_by_id',
         'decided_at',
         'withdrawn_at',
+        'undone_at',
         'completed_at',
         'scored_at',
     ];
@@ -39,6 +43,7 @@ class EventApplication extends Model
             'applied_at' => 'datetime',
             'decided_at' => 'datetime',
             'withdrawn_at' => 'datetime',
+            'undone_at' => 'datetime',
             'completed_at' => 'datetime',
             'scored_at' => 'datetime',
         ];
@@ -62,6 +67,12 @@ class EventApplication extends Model
     public function isCredited(): bool
     {
         return $this->scored_at !== null;
+    }
+
+    /** Undone straight after applying (Task #94): the student screens treat it as never applied. */
+    public function isUndone(): bool
+    {
+        return $this->status === self::WITHDRAWN && $this->undone_at !== null;
     }
 
     public function transitions(): HasMany

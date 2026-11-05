@@ -6,6 +6,7 @@ import {
     Building2,
     CalendarClock,
     Clock,
+    ListChecks,
     MapPin,
     QrCode,
     Sparkles,
@@ -17,6 +18,8 @@ import CheckinBanner from "../../Components/Events/CheckinBanner.vue";
 import StatusChip from "../../Components/StatusChip.vue";
 import { categoryDot } from "../../categoryColors.js";
 import { eventStatusTone } from "../../eventStatus.js";
+import { useRole } from "../../composables/useRole.js";
+import { applicationType, myStatus, places } from "../../eventWords.js";
 
 // One event's detail page, also reached by its direct URL (Task #40),
 // with the Apply button (Task #49).
@@ -27,23 +30,18 @@ const props = defineProps({
     event: { type: Object, required: true },
 });
 
-const myStatusLabel = {
-    pending: "You applied · waiting for the organiser",
-    accepted: "You have a place",
-    waitlisted: "You are on the waitlist",
-    rejected: "Your application was not accepted",
-    withdrawn: "You withdrew",
-};
+// The student's own status in plain words (Task #94)
+const status = computed(() => myStatus(props.event));
 
-const placesText = computed(() => {
-    const e = props.event;
-    if (e.application_type === "teacher_select") {
-        return `${e.capacity} places · the organiser selects who takes part`;
-    }
-    return e.places_left > 0
-        ? `${e.places_left} of ${e.capacity} places left · first come, first served`
-        : `Full (${e.capacity} places) · waitlist open`;
-});
+// Students always get the action area (Apply, Undo, Leave event, Apply again),
+// except after a rejection, when there is nothing left to do.
+const { isStudent } = useRole();
+const showActions = computed(
+    () =>
+        isStudent.value &&
+        (props.event.can_apply ||
+            (props.event.my_status && props.event.my_status !== "rejected")),
+);
 </script>
 
 <template>
@@ -106,14 +104,8 @@ const placesText = computed(() => {
                 {{ event.title }}
             </h2>
 
-            <p
-                v-if="event.my_status"
-                class="mt-2 flex flex-wrap items-center gap-2 text-sm font-medium text-link"
-            >
-                <StatusChip v-if="event.already_applied" tone="info">
-                    Already applied
-                </StatusChip>
-                {{ myStatusLabel[event.my_status] }}
+            <p v-if="status" class="mt-2">
+                <StatusChip :tone="status.tone">{{ status.text }}</StatusChip>
             </p>
 
             <p class="mt-4 text-sm whitespace-pre-line text-fg">
@@ -172,7 +164,16 @@ const placesText = computed(() => {
                         Places
                     </dt>
                     <dd class="pl-6 text-fg">
-                        {{ placesText }}
+                        {{ places(event) }}
+                    </dd>
+                </div>
+                <div v-if="!event.is_surprise">
+                    <dt class="flex items-start gap-2 text-fg-muted">
+                        <ListChecks class="mt-0.5 size-4 shrink-0" />
+                        How places are given
+                    </dt>
+                    <dd class="pl-6 text-fg">
+                        {{ applicationType(event) }}
                     </dd>
                 </div>
                 <div>
@@ -195,7 +196,7 @@ const placesText = computed(() => {
             </dl>
 
             <div
-                v-if="event.can_apply"
+                v-if="showActions"
                 class="mt-6 flex justify-end border-t border-line pt-6"
             >
                 <ApplyAction :event="event" />
