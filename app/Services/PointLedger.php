@@ -89,9 +89,15 @@ class PointLedger
             throw new EventActionRefused('import_only', 'This is a surprise event: its points are given only by import.', 409);
         }
 
-        return $this->write($event, $student, $creditedBy, $source, function (?EventApplication $application) use ($student) {
+        return $this->write($event, $student, $creditedBy, $source, function (?EventApplication $application) use ($event, $student) {
             if ($application === null || ! $application->isAccepted()) {
                 throw new EventActionRefused('not_registered', "{$student->name} is not registered or selected for this event.", 403);
+            }
+
+            if ($this->leftTheArea($event, $student)) {
+                $area = $this->importArea($event);
+
+                throw new EventActionRefused('left_area', "{$student->name} is no longer assigned to {$area->title}, so this event gives them no points.", 403);
             }
         });
     }
@@ -135,6 +141,30 @@ class PointLedger
     public function importArea(Event $event): Topic
     {
         return $event->audienceTopic ?? $event->owningTopic;
+    }
+
+    /**
+     * Points only go to students assigned to the area (26 Oct, fairs; Task #90). Applying needs
+     * a role there, so an accepted application without one means the role has ended since: the
+     * student was taken off the booth or the course. A role anywhere from the topic that runs the
+     * event up to the one it is announced to counts, because an audience can widen after people
+     * applied (Task #64). Someone who never held such a role on that path applied before the rule
+     * of Task #71 and is left alone.
+     */
+    private function leftTheArea(Event $event, User $student): bool
+    {
+        $lineage = $this->access->lineage($event->owningTopic);
+        $audience = array_search($event->audience_topic_id, $lineage, true);
+        $path = $audience === false ? [$event->owning_topic_id, $event->audience_topic_id] : array_slice($lineage, 0, $audience + 1);
+
+        $roles = RoleAssignment::query()
+            ->where('user_id', $student->id)
+            ->whereIn('topic_id', array_filter($path))
+            ->with('role')
+            ->get()
+            ->filter(fn (RoleAssignment $assignment) => $assignment->role->has(Capability::EventsView));
+
+        return $roles->isNotEmpty() && ! $roles->contains(fn (RoleAssignment $assignment) => $assignment->isActive());
     }
 
     /**
