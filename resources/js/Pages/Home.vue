@@ -177,6 +177,11 @@ const linkClass =
             <p v-if="!semester" class="mt-3 text-sm text-fg-muted">
                 No semester is running right now.
             </p>
+
+            <Link href="/leaderboards" :class="[linkClass, 'mt-2']">
+                See the leaderboards
+                <ArrowRight class="size-4" aria-hidden="true" />
+            </Link>
         </section>
 
         <div class="grid gap-6 lg:grid-cols-2">
