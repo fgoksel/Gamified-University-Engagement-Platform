@@ -252,8 +252,9 @@ class EventEditGapsTest extends EventTestCase
         $this->assertSame($event->id, $edit->event_id);
         $this->assertTrue($edit->actor->is($this->organiser));
         $this->assertNotNull($edit->created_at);
-        $this->assertSame(['old' => 'SQL Workshop', 'new' => 'SQL Workshop II'], $edit->changes['title']);
-        $this->assertSame(['old' => 30, 'new' => 40], $edit->changes['capacity']);
+        // assertEquals: MySQL's JSON column stores keys in its own order ("new" before "old").
+        $this->assertEquals(['old' => 'SQL Workshop', 'new' => 'SQL Workshop II'], $edit->changes['title']);
+        $this->assertEquals(['old' => 30, 'new' => 40], $edit->changes['capacity']);
         $this->assertEqualsCanonicalizing(['title', 'capacity'], array_keys($edit->changes));
     }
 
@@ -265,7 +266,7 @@ class EventEditGapsTest extends EventTestCase
 
         $this->save($this->organiser, $event, ['completion_deadline' => $new->format('Y-m-d\TH:i')]);
 
-        $this->assertSame(['old' => $old, 'new' => $new->format('Y-m-d H:i')], EventEdit::sole()->changes['completion_deadline']);
+        $this->assertEquals(['old' => $old, 'new' => $new->format('Y-m-d H:i')], EventEdit::sole()->changes['completion_deadline']);
     }
 
     public function test_a_save_that_changes_nothing_is_not_logged(): void
@@ -323,7 +324,7 @@ class EventEditGapsTest extends EventTestCase
 
         $this->actingAs($this->organiser)->get("/events/{$event->id}/edit")
             ->assertInertia(fn (Assert $page) => $page
-                ->where('history.0.changes', fn ($changes) => collect($changes)->keyBy('field')->only(['topic_tag_id', 'qr_enabled', 'application_type'])->map(fn ($c) => [$c['old'], $c['new']])->all() === [
+                ->where('history.0.changes', fn ($changes) => collect($changes)->keyBy('field')->only(['topic_tag_id', 'qr_enabled', 'application_type'])->map(fn ($c) => [$c['old'], $c['new']])->all() == [
                     'topic_tag_id' => ['SQL', 'Chess'],
                     'application_type' => ['First come, first served', 'The organiser chooses'],
                     'qr_enabled' => ['No', 'Yes'],
