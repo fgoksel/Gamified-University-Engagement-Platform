@@ -21,6 +21,11 @@ const form = useForm({
     show_neptun_code: props.board?.show_neptun_code ?? true,
     show_first_name: props.board?.show_first_name ?? false,
     show_last_name: props.board?.show_last_name ?? false,
+    hall_seconds:
+        props.board?.hall_seconds === null ||
+        props.board?.hall_seconds === undefined
+            ? ""
+            : String(props.board.hall_seconds),
 });
 
 const columns = [
@@ -94,6 +99,16 @@ function submit() {
                     {{ form.errors.columns }}
                 </p>
             </fieldset>
+
+            <!-- Task #56: how long it stays on the hall screen once published -->
+            <TextField
+                v-model="form.hall_seconds"
+                label="Time on the hall screen"
+                optional
+                type="number"
+                :hint="`Empty: use the default (${topic.hall_default} s). Otherwise 5 to 120 seconds.`"
+                :error="form.errors.hall_seconds"
+            />
         </form>
 
         <template #footer>

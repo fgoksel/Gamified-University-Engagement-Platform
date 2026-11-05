@@ -19,8 +19,14 @@ class Leaderboard extends Model
     /** Published: seen without login and on the hall screen. */
     public const PUBLIC = 'public';
 
-    /** How long a leaderboard stays on the hall screen, in seconds (Task #56). */
+    /** How long a leaderboard stays on the hall screen, in seconds, until a super admin chooses (Task #56). */
     public const HALL_SECONDS = 15;
+
+    public const HALL_SECONDS_MIN = 5;
+
+    public const HALL_SECONDS_MAX = 120;
+
+    public const HALL_SECONDS_MESSAGE = 'Choose a time from 5 to 120 seconds.';
 
     protected $fillable = [
         'topic_id',
@@ -29,6 +35,7 @@ class Leaderboard extends Model
         'show_neptun_code',
         'show_first_name',
         'show_last_name',
+        'hall_seconds',
         'created_by_id',
     ];
 
@@ -41,6 +48,7 @@ class Leaderboard extends Model
             'show_neptun_code' => 'boolean',
             'show_first_name' => 'boolean',
             'show_last_name' => 'boolean',
+            'hall_seconds' => 'integer',
         ];
     }
 
@@ -71,6 +79,14 @@ class Leaderboard extends Model
             'first_name' => $this->show_first_name,
             'last_name' => $this->show_last_name,
         ]));
+    }
+
+    /**
+     * How long this leaderboard stays on the hall screen: its own time, or the default.
+     */
+    public function hallSeconds(int $default): int
+    {
+        return $this->hall_seconds ?? $default;
     }
 
     /**

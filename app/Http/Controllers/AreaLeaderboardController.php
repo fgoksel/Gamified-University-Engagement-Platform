@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Leaderboard;
+use App\Models\Setting;
 use App\Models\Topic;
 use App\Services\AreaLeaderboards;
 use App\Services\LeaderboardStandings;
@@ -67,6 +68,8 @@ class AreaLeaderboardController extends Controller
      */
     public function hall(): JsonResponse
     {
+        $default = Setting::hallSeconds();
+
         return response()->json([
             'leaderboards' => Leaderboard::query()
                 ->onHallScreen()
@@ -79,7 +82,7 @@ class AreaLeaderboardController extends Controller
                     'name' => $board->name,
                     'topic' => $board->topic->title,
                     'columns' => $board->columns(),
-                    'seconds' => Leaderboard::HALL_SECONDS,
+                    'seconds' => $board->hallSeconds($default),
                     ...$this->standings->top($board),
                 ])
                 ->values()
@@ -145,9 +148,10 @@ class AreaLeaderboardController extends Controller
     }
 
     /**
-     * Left out, a column keeps the default: the Neptun code alone (L6, 27 October).
+     * Left out, a column keeps the default: the Neptun code alone (L6, 27 October). The time on
+     * the hall screen only changes when it is sent; empty means the default (Task #56).
      *
-     * @return array{name: string, show_neptun_code: bool, show_first_name: bool, show_last_name: bool}
+     * @return array{name: string, show_neptun_code: bool, show_first_name: bool, show_last_name: bool, hall_seconds?: ?int}
      */
     private function validated(Request $request, Topic $topic, ?Leaderboard $board = null): array
     {
@@ -156,16 +160,21 @@ class AreaLeaderboardController extends Controller
             'show_neptun_code' => ['sometimes', 'boolean'],
             'show_first_name' => ['sometimes', 'boolean'],
             'show_last_name' => ['sometimes', 'boolean'],
+            'hall_seconds' => ['nullable', 'integer', 'min:'.Leaderboard::HALL_SECONDS_MIN, 'max:'.Leaderboard::HALL_SECONDS_MAX],
         ], [
             'name.required' => 'Give the leaderboard a name.',
             'name.unique' => 'This topic already has a leaderboard with that name.',
+            'hall_seconds.*' => Leaderboard::HALL_SECONDS_MESSAGE,
         ]);
+
+        $hall = array_key_exists('hall_seconds', $data) ? ['hall_seconds' => $data['hall_seconds']] : [];
 
         $data = [
             'name' => $data['name'],
             'show_neptun_code' => (bool) ($data['show_neptun_code'] ?? true),
             'show_first_name' => (bool) ($data['show_first_name'] ?? false),
             'show_last_name' => (bool) ($data['show_last_name'] ?? false),
+            ...$hall,
         ];
 
         if (! $data['show_neptun_code'] && ! $data['show_first_name'] && ! $data['show_last_name']) {

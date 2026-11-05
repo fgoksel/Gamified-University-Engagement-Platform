@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\Capability;
 use App\Models\Leaderboard;
+use App\Models\Setting;
 use App\Models\Topic;
 use App\Services\AreaLeaderboards;
 use App\Services\TopicAccess;
@@ -284,6 +285,7 @@ class TopicController extends Controller
                 'leaderboards' => $tab === 'leaderboards'
                     ? $this->leaderboards->at($topic)->map(fn (Leaderboard $board) => $this->leaderboards->summary($board))->values()->all()
                     : null,
+                'hall_default' => $tab === 'leaderboards' ? Setting::hallSeconds() : null,
             ];
         }
 
