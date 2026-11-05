@@ -269,20 +269,18 @@ class EventEditTest extends EventTestCase
         $this->assertFalse($event->refresh()->qr_enabled);
     }
 
-    public function test_a_held_event_can_be_edited_but_completed_and_cancelled_ones_cannot(): void
+    public function test_a_held_event_can_be_edited_but_a_cancelled_one_cannot(): void
     {
         $held = $this->upcoming(['status' => 'on_hold']);
         $this->save($this->organiser, $held, ['title' => 'Held and fixed'])->assertSessionHasNoErrors();
         $this->assertSame('Held and fixed', $held->refresh()->title);
 
-        foreach (['completed', 'cancelled'] as $status) {
-            $event = $this->upcoming(['status' => $status]);
+        $event = $this->upcoming(['status' => 'cancelled']);
 
-            $this->save($this->organiser, $event, ['title' => 'Nope'])->assertSessionHasErrors('event');
-            $this->assertNotSame('Nope', $event->refresh()->title);
-            $this->actingAs($this->organiser)->get("/events/{$event->id}/edit")
-                ->assertInertia(fn (Assert $page) => $page->where('editable', false));
-        }
+        $this->save($this->organiser, $event, ['title' => 'Nope'])->assertSessionHasErrors('event');
+        $this->assertNotSame('Nope', $event->refresh()->title);
+        $this->actingAs($this->organiser)->get("/events/{$event->id}/edit")
+            ->assertInertia(fn (Assert $page) => $page->where('editable', false));
     }
 
     public function test_only_people_who_run_the_event_can_edit_it(): void

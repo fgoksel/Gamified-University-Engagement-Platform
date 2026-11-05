@@ -21,7 +21,34 @@ defineProps({
     // Which of the other tabs this person may open
     tabs: { type: Object, default: () => ({}) },
     applications: { type: Number, default: 0 },
+    // Who changed what and when, newest first (Task #76)
+    history: { type: Array, default: () => [] },
+    historyTotal: { type: Number, default: 0 },
+    historyLimit: { type: Number, default: 20 },
+    // Over (completed, or published and ended): only the points end date can change
+    over: { type: Boolean, default: false },
 });
+
+// The names the form uses, so the history reads like the page (Task #76)
+const fieldLabel = {
+    title: "Title",
+    description: "Description",
+    location: "Location",
+    topic_tag_id: "Topic tag",
+    category: "Category",
+    owning_topic_id: "Managed from",
+    audience_topic_id: "Open to",
+    capacity: "Places",
+    application_type: "How students get a place",
+    points_value: "Points",
+    event_starts_at: "Starts",
+    event_ends_at: "Ends",
+    applications_open_at: "Applications open",
+    application_deadline: "Applications close",
+    completion_deadline: "Points can be given until",
+    is_hidden: "Surprise event",
+    qr_enabled: "QR attendance",
+};
 
 const statusLabel = {
     draft: "Draft",
@@ -95,6 +122,15 @@ const tabClass = (active) => [
             place or their points.
         </p>
 
+        <p
+            v-if="over"
+            class="rounded-control bg-surface-muted px-3 py-2 text-sm text-fg-muted"
+            data-test="completed-note"
+        >
+            This event is over. Only "Points can be given until" can change, for
+            example to give a student who missed the scan more time.
+        </p>
+
         <!-- Remounted after every save, so the form starts clean with the saved values -->
         <EventForm
             :key="event.version"
@@ -107,5 +143,60 @@ const tabClass = (active) => [
             :readonly="!editable"
             :minimum-capacity="minimumCapacity"
         />
+
+        <!-- Every saved change (Task #76) -->
+        <section
+            class="rounded-card border border-line bg-surface p-5 shadow-card"
+            aria-labelledby="edit-history"
+            data-test="history"
+        >
+            <h3 id="edit-history" class="text-base font-semibold text-fg">
+                Edit history
+            </h3>
+            <p v-if="history.length === 0" class="mt-2 text-sm text-fg-muted">
+                No changes since the event was created.
+            </p>
+            <ul v-else class="mt-3 divide-y divide-line text-sm">
+                <li
+                    v-for="edit in history"
+                    :key="edit.id"
+                    class="py-2 first:pt-0 last:pb-0"
+                >
+                    <span class="text-fg">
+                        {{ edit.by ?? "Someone" }}
+                        <span class="text-fg-muted">· {{ edit.at }}</span>
+                    </span>
+                    <ul class="mt-1 space-y-0.5">
+                        <li
+                            v-for="change in edit.changes"
+                            :key="change.field"
+                            class="text-fg-muted"
+                        >
+                            <span class="text-fg">{{
+                                fieldLabel[change.field] ?? change.field
+                            }}</span
+                            >:
+                            <template v-if="change.field === 'description'">
+                                changed
+                            </template>
+                            <template v-else>
+                                {{ change.old }}
+                                <span aria-hidden="true">→</span>
+                                <span class="sr-only">to</span>
+                                {{ change.new }}
+                            </template>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+            <p
+                v-if="historyTotal > history.length"
+                class="mt-3 text-sm text-fg-muted"
+                data-test="history-more"
+            >
+                Showing the last {{ historyLimit }} of {{ historyTotal }}
+                changes.
+            </p>
+        </section>
     </div>
 </template>
