@@ -38,7 +38,7 @@ class LeaderboardStandings
             ->join('users', 'users.id', '=', 'ledger.student_id')
             ->where('topic_closure.ancestor_id', $board->topic_id)
             ->whereIn('ledger.student_id', User::role(UserRole::Student)->select('users.id'))
-            // A banned account stays out of the lists. An invited one counts: an import can credit it.
+            // A deactivated account stays out of the lists.
             ->where('users.status', '!=', 'inactive')
             ->groupBy('ledger.student_id', 'users.name', 'users.neptun_code')
             ->havingRaw('sum(ledger.points) > 0')
