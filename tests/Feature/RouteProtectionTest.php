@@ -32,6 +32,7 @@ class RouteProtectionTest extends TestCase
         'auth/activate/{token}' => 'Account activation link from the invitation email (UC-1.1, UC-2.1)',
         'auth/set-password' => 'Set a password from the activation or reset link (UC-1.1, UC-2.1)',
         'leaderboard/public' => 'Observer leaderboard without login (UC-4.1, Technical Specification 7.2)',
+        'hall' => 'The hall screen on a public display, without login (UC-6.1, Task #56)',
         'hall/leaderboards' => 'Published leaderboards for the hall screen, without login (UC-4.1, UC-6.1, Task #89)',
     ];
 

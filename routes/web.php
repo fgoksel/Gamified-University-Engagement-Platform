@@ -57,6 +57,11 @@ Route::get('/hall/leaderboards', [AreaLeaderboardController::class, 'hall'])
     ->middleware('throttle:60,1')
     ->name('hall.leaderboards');
 
+// Task #56: the hall screen itself, also without login. It reads the feed above.
+Route::get('/hall', [AreaLeaderboardController::class, 'hallScreen'])
+    ->middleware('throttle:60,1')
+    ->name('hall');
+
 Route::middleware('auth')->group(function () {
     Route::get('/password/change', [ChangePasswordController::class, 'edit'])->name('password.change');
     Route::put('/password/change', [ChangePasswordController::class, 'update'])->name('password.change.update');

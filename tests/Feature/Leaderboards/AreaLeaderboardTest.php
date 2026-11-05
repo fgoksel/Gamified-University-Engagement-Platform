@@ -262,6 +262,7 @@ class AreaLeaderboardTest extends EventTestCase
             'name' => 'Faculty total',
             'topic' => 'Faculty',
             'columns' => ['neptun_code'],
+            'seconds' => Leaderboard::HALL_SECONDS,
             'total' => 1,
             // The Neptun code alone: no name, no email, no account id (L6).
             'rows' => [['position' => 1, 'rank' => 1, 'points' => 20, 'neptun_code' => 'ANNA01']],

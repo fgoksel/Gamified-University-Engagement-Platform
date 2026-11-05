@@ -54,6 +54,14 @@ class AreaLeaderboardController extends Controller
     }
 
     /**
+     * The hall screen (Task #56), without login: it reads the feed below and rotates by itself.
+     */
+    public function hallScreen(): Response
+    {
+        return Inertia::render('Screen/Hall');
+    }
+
+    /**
      * The read-only feed of the hall screen, without login: published leaderboards only,
      * with the top places and only the columns their creators chose.
      */
@@ -71,6 +79,7 @@ class AreaLeaderboardController extends Controller
                     'name' => $board->name,
                     'topic' => $board->topic->title,
                     'columns' => $board->columns(),
+                    'seconds' => Leaderboard::HALL_SECONDS,
                     ...$this->standings->top($board),
                 ])
                 ->values()

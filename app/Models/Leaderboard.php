@@ -19,6 +19,9 @@ class Leaderboard extends Model
     /** Published: seen without login and on the hall screen. */
     public const PUBLIC = 'public';
 
+    /** How long a leaderboard stays on the hall screen, in seconds (Task #56). */
+    public const HALL_SECONDS = 15;
+
     protected $fillable = [
         'topic_id',
         'name',
