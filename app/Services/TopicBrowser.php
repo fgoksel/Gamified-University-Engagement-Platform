@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use App\Enums\Capability;
+use App\Enums\UserRole;
+use App\Models\Event;
 use App\Models\RoleAssignment;
 use App\Models\RoleDefinition;
 use App\Models\Topic;
@@ -21,9 +23,14 @@ use Illuminate\Support\Facades\Gate;
  */
 class TopicBrowser
 {
+    /** Rows on one page of the Events tab (Task #73). */
+    public const EVENTS_PER_PAGE = 20;
+
     public function __construct(
         private TopicAccess $access,
         private RoleAssignmentPolicy $assignments,
+        private EventCatalog $catalog,
+        private EventPlacement $placement,
     ) {}
 
     /**
@@ -112,6 +119,7 @@ class TopicBrowser
             'import' => $has(Capability::AccessImport),
             'define_roles' => $has(Capability::DefineRoles),
             'manage_leaderboards' => $has(Capability::LeaderboardsManage),
+            'create_event' => $this->opensEventPages($user) && $this->placement->mayOwn($user, $topic),
         ];
     }
 
@@ -177,6 +185,48 @@ class TopicBrowser
                 'code' => $item->code,
                 'trail' => $trails[$item->id] ?? [],
             ])->values()->all(),
+            'total' => $paginator->total(),
+            'page' => $paginator->currentPage(),
+            'last_page' => $paginator->lastPage(),
+            'per_page' => $paginator->perPage(),
+        ];
+    }
+
+    /**
+     * The Events tab (Task #73): events of this topic and below that the person may see.
+     * Upcoming and running ones soonest first, past ones newest first. "path" is where the
+     * event belongs, seen from the selected topic; empty when it belongs to that topic.
+     *
+     * @return array{items: list<array<string, mixed>>, when: string, total: int, page: int, last_page: int, per_page: int}
+     */
+    public function events(User $user, Topic $topic, string $when, int $page): array
+    {
+        $query = $this->catalog->inBranch($user, $topic)->with('owningTopic:id,title');
+
+        $when === 'past'
+            ? $query->where('event_ends_at', '<', now())->orderByDesc('event_starts_at')->orderByDesc('id')
+            : $query->where('event_ends_at', '>=', now())->orderBy('event_starts_at')->orderBy('id');
+
+        /** @var LengthAwarePaginator<int, Event> $paginator */
+        $paginator = $query->paginate(self::EVENTS_PER_PAGE, ['*'], 'page', $page);
+
+        $trails = $this->trails($topic, $paginator->getCollection()->pluck('owningTopic')->unique('id'));
+        $canOpen = $this->opensEventPages($user);
+
+        return [
+            'items' => $paginator->getCollection()->map(fn (Event $event) => [
+                'id' => $event->id,
+                'title' => $event->title,
+                'category' => $event->category,
+                'status' => $event->status,
+                // Formatted here: the dates are stored as typed, so the browser must not shift them.
+                'starts' => $event->event_starts_at->format('D j M Y, H:i'),
+                'path' => $event->owning_topic_id === $topic->id
+                    ? []
+                    : [...($trails[$event->owning_topic_id] ?? []), $event->owningTopic->title],
+                'can_open' => $canOpen,
+            ])->values()->all(),
+            'when' => $when,
             'total' => $paginator->total(),
             'page' => $paginator->currentPage(),
             'last_page' => $paginator->lastPage(),
@@ -471,6 +521,15 @@ class TopicBrowser
             ->get(['id', 'name', 'email'])
             ->map(fn (User $candidate) => ['id' => $candidate->id, 'name' => $candidate->name, 'email' => $candidate->email])
             ->all();
+    }
+
+    /**
+     * The event pages are for teacher and student accounts (routes/web.php), so an
+     * administrator, who holds every capability, gets no link there that would only refuse them.
+     */
+    private function opensEventPages(User $user): bool
+    {
+        return $user->hasAnyRole(UserRole::Teacher->value, UserRole::Student->value);
     }
 
     /**

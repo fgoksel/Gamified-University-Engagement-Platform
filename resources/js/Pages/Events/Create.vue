@@ -9,6 +9,8 @@ defineOptions({ layout: { title: "New event" } });
 defineProps({
     // Not "topics": that name is the shared menu flag from HandleInertiaRequests.
     owningTopics: { type: Array, required: true },
+    // From "Create event here" in the explorer (Task #73)
+    initialTopic: { type: Number, default: null },
     tags: { type: Array, required: true },
     hasActiveSemester: { type: Boolean, default: true },
 });
@@ -32,6 +34,11 @@ defineProps({
             You need a role on a topic that allows creating events there.
         </EmptyState>
 
-        <EventForm v-else :topics="owningTopics" :tags="tags" />
+        <EventForm
+            v-else
+            :topics="owningTopics"
+            :tags="tags"
+            :initial-topic="initialTopic"
+        />
     </div>
 </template>

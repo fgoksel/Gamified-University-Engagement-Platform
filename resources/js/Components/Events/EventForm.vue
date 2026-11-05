@@ -17,6 +17,8 @@ const props = defineProps({
     // Active topic tags: [{ id, name, category }]
     tags: { type: Array, required: true },
     event: { type: Object, default: null },
+    // A new event started from a topic in the explorer (Task #73)
+    initialTopic: { type: Number, default: null },
     url: { type: String, default: "/events" },
     method: { type: String, default: "post" },
     locks: { type: Object, default: () => ({}) },
@@ -31,7 +33,8 @@ const draft = computed(() => props.event?.status === "draft");
 const id = useId();
 
 // With a single owning topic there is nothing to choose.
-const onlyTopic = props.topics.length === 1 ? props.topics[0].id : "";
+const startTopic =
+    props.initialTopic ?? (props.topics.length === 1 ? props.topics[0].id : "");
 
 // Inputs give strings; the server validates and converts them.
 const form = useForm({
@@ -42,11 +45,11 @@ const form = useForm({
     description: props.event?.description ?? "",
     location: props.event?.location ?? "",
     topic_tag_id: props.event?.topic_tag_id ?? "",
-    owning_topic_id: props.event?.owning_topic_id ?? onlyTopic,
+    owning_topic_id: props.event?.owning_topic_id ?? startTopic,
     // New events are announced to the owning topic by default.
     audience_topic_id: props.event
         ? (props.event.audience_topic_id ?? "")
-        : onlyTopic,
+        : startTopic,
     capacity: String(props.event?.capacity ?? 30),
     application_type: props.event?.application_type ?? "fcfs",
     points_value: String(props.event?.points_value ?? 10),

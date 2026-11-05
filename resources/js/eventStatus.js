@@ -1,3 +1,12 @@
+// Plain words per event status (Task #73)
+export const eventStatusLabel = {
+    draft: "Draft",
+    published: "Published",
+    on_hold: "On hold",
+    completed: "Completed",
+    cancelled: "Cancelled",
+};
+
 // StatusChip tone per event status (Task #91), so every screen shows an
 // event's status the same way.
 export const eventStatusTone = {

@@ -81,6 +81,26 @@ class EventCatalog
     }
 
     /**
+     * The events of a topic and everything below it that this person may see (Task #73),
+     * the same rule as EventPolicy::view in one query: staff see every event of their
+     * topics, everybody else what is announced to them. A surprise event is for staff only,
+     * so the students it gave points to open it from their points, not from here.
+     *
+     * @return Builder<Event>
+     */
+    public function inBranch(User $user, Topic $topic): Builder
+    {
+        return Event::query()
+            ->whereIn('owning_topic_id', Topic::query()->notArchived()->withinBranch($topic)->select('topics.id'))
+            ->where(fn (Builder $q) => $q
+                ->whereIn('owning_topic_id', $this->organized->staffTopicIds($user))
+                ->orWhere(fn (Builder $q) => $q
+                    ->whereIn('audience_topic_id', $this->audienceTopicIds($user))
+                    ->whereNotIn('status', [Event::STATUS_DRAFT, Event::STATUS_ON_HOLD])
+                    ->where('is_hidden', false)));
+    }
+
+    /**
      * The topics offered in the "Topic or branch" filter: every topic the person
      * can see events in, in tree order. Picking one shows the events run or
      * announced anywhere in that branch.
