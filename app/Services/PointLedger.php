@@ -289,21 +289,7 @@ class PointLedger
      */
     public function totals(User $student, ?int $semesterId = null): array
     {
-        $rows = PointTransaction::query()
-            ->where('student_id', $student->id)
-            ->when($semesterId, fn ($query) => $query->where('semester_id', $semesterId))
-            ->selectRaw('category, sum(points) as points')
-            ->groupBy('category')
-            ->pluck('points', 'category');
-
-        $totals = ['total' => 0, 'academic' => 0, 'scientific' => 0, 'sports' => 0, 'community' => 0];
-
-        foreach ($rows as $category => $points) {
-            $totals[$category] = (int) $points;
-            $totals['total'] += (int) $points;
-        }
-
-        return $totals;
+        return app(PointCalculationService::class)->studentTotals($student->id, $semesterId);
     }
 
     private function alreadyCredited(User $student): EventActionRefused
