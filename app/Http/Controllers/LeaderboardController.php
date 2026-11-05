@@ -3,22 +3,33 @@
 namespace App\Http\Controllers;
 
 use App\Enums\UserRole;
+use App\Services\StudentHome;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\Response as HttpResponse;
 
 /**
- * The Leaderboard: home page of teachers and students (UC-1.2, UC-2.2).
- * The rankings themselves come in the leaderboard task (#54).
+ * The start page "/". Students get their home page (Task #92): points this semester, the next
+ * event, events open for applications and recent points. Teachers keep the Leaderboard
+ * (UC-1.2) until the leaderboard tasks (#54, #89) fill it.
  */
 class LeaderboardController extends Controller
 {
-    public function index(Request $request): Response|HttpResponse
+    public function index(Request $request, StudentHome $home): Response|HttpResponse
     {
+        $user = $request->user();
+
         // Admins work in the Filament panel
-        if ($request->user()->hasRole(UserRole::Admin)) {
+        if ($user->hasRole(UserRole::Admin)) {
             return Inertia::location('/admin');
+        }
+
+        if ($user->hasRole(UserRole::Student)) {
+            return Inertia::render('Home', [
+                'name' => $user->name,
+                ...$home->for($user),
+            ]);
         }
 
         return Inertia::render('Leaderboard/Index');

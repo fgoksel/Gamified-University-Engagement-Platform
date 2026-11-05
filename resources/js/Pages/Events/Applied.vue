@@ -161,8 +161,8 @@ function reapply(app) {
             class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
         >
             <p class="text-sm text-fg-muted">
-                Track your event applications, waitlist positions, and credited
-                attendance points.
+                Track your event applications, your places, and the points you
+                earned.
             </p>
             <div class="flex flex-wrap gap-2">
                 <!-- One tap to the passport from My events (Task #93) -->
@@ -232,8 +232,8 @@ function reapply(app) {
                 :icon="CalendarCheck"
                 title="You have not applied to any events"
             >
-                Events you apply to will be listed here, with their status,
-                waitlist position, and the points you earned.
+                Events you apply to will be listed here, with their status and
+                the points you earned.
             </EmptyState>
             <div class="flex justify-center">
                 <Link
