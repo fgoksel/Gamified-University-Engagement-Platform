@@ -1,7 +1,8 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, useId, watch } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, useId, watch } from "vue";
 import { router, useForm } from "@inertiajs/vue3";
 import TextField from "../TextField.vue";
+import EventTimeline from "./EventTimeline.vue";
 import { categoryDot } from "../../categoryColors.js";
 
 // The Event Form (Task #38). Used by Events/Create and by the edit page (Task #68):
@@ -10,7 +11,8 @@ import { categoryDot } from "../../categoryColors.js";
 // the page explains it once, as for an event that is over), "readonly" shows
 // an event that can no longer be changed, and Save stays off until something changed.
 const props = defineProps({
-    // Owning topics, each with the audiences it allows: [{ id, title, audiences: [{ id, title }] }]
+    // Owning topics with their path in the tree and the audiences they allow (Task #74):
+    // [{ id, title, path: [...titles], audiences: [{ id, title, path, students }] }]
     topics: { type: Array, required: true },
     // Active topic tags: [{ id, name, category }]
     tags: { type: Array, required: true },
@@ -50,6 +52,8 @@ const form = useForm({
     points_value: String(props.event?.points_value ?? 10),
     event_starts_at: props.event?.event_starts_at ?? "",
     event_ends_at: props.event?.event_ends_at ?? "",
+    // Empty: applications open when the event is published (Task #78)
+    applications_open_at: props.event?.applications_open_at ?? "",
     application_deadline: props.event?.application_deadline ?? "",
     completion_deadline: props.event?.completion_deadline ?? "",
     is_hidden: props.event?.is_hidden ?? false,
@@ -63,6 +67,29 @@ const owning = computed(() =>
 const canPublish = computed(() => owning.value?.can_publish !== false);
 
 const audiences = computed(() => owning.value?.audiences ?? []);
+
+// Paths in the tree, as on the event page (Task #74)
+const pathText = (path) => (path ?? []).join(" › ");
+const audience = computed(() =>
+    audiences.value.find((a) => a.id === Number(form.audience_topic_id)),
+);
+const studentsText = (n) => (n === 1 ? "1 student" : `${n} students`);
+
+// Pre-filled application dates (Task #79): on a new event, applications close when the
+// event starts until the organiser picks another time; they open on publishing unless an
+// "Applications open" date is set. The points end date is always the organiser's choice.
+const deadlineFollowsStart = ref(!props.event && !form.application_deadline);
+watch(
+    () => form.event_starts_at,
+    (starts) => {
+        if (deadlineFollowsStart.value) {
+            form.application_deadline = starts;
+        }
+    },
+);
+function deadlineTyped() {
+    deadlineFollowsStart.value = false;
+}
 const selectedTag = computed(() =>
     props.tags.find((t) => t.id === Number(form.topic_tag_id)),
 );
@@ -87,6 +114,7 @@ function submit(action) {
     form.transform((data) => ({
         ...data,
         audience_topic_id: data.audience_topic_id || null,
+        applications_open_at: data.applications_open_at || null,
         // A surprise event has no QR codes: its points are given by import.
         qr_enabled: data.is_hidden ? false : data.qr_enabled,
     })).submit(props.method, props.url, {
@@ -267,9 +295,36 @@ const selectClass = (field) => [
                 >
                     <option value="" disabled>Choose a topic…</option>
                     <option v-for="t in topics" :key="t.id" :value="t.id">
-                        {{ t.title }}
+                        {{ pathText(t.path) || t.title }}
                     </option>
                 </select>
+                <!-- The full path of the chosen topic (Task #74) -->
+                <nav
+                    v-if="owning?.path?.length"
+                    aria-label="Path of the chosen topic"
+                    class="mt-2"
+                    data-test="owning-path"
+                >
+                    <ol
+                        class="flex flex-wrap items-center gap-1 text-sm text-fg-muted"
+                    >
+                        <li
+                            v-for="(step, i) in owning.path"
+                            :key="i"
+                            class="flex items-center gap-1"
+                        >
+                            <span v-if="i > 0" aria-hidden="true">›</span>
+                            <span
+                                :class="
+                                    i === owning.path.length - 1
+                                        ? 'font-medium text-fg'
+                                        : ''
+                                "
+                                >{{ step }}</span
+                            >
+                        </li>
+                    </ol>
+                </nav>
                 <p
                     v-if="form.errors.owning_topic_id"
                     class="mt-1.5 text-sm text-danger-fg"
@@ -284,37 +339,103 @@ const selectClass = (field) => [
                 </p>
             </div>
 
-            <div>
-                <label
-                    :for="`${id}-audience`"
-                    class="block text-sm font-medium text-fg"
-                >
+            <!-- Picked on the path of the owning topic, with the students who will see it (Task #74) -->
+            <fieldset :aria-describedby="`${id}-audience-hint`">
+                <legend class="block text-sm font-medium text-fg">
                     Who can see and apply
-                </label>
-                <select
-                    :id="`${id}-audience`"
-                    v-model="form.audience_topic_id"
-                    :disabled="!owning || lockedField('audience_topic_id')"
-                    :class="selectClass('audience_topic_id')"
-                >
-                    <option v-for="a in audiences" :key="a.id" :value="a.id">
-                        Everyone in {{ a.title }}
-                    </option>
-                    <option value="">Invited students only</option>
-                </select>
+                </legend>
+                <p v-if="!owning" class="mt-1.5 text-sm text-fg-muted">
+                    Choose where the event is managed from first.
+                </p>
+                <div v-else class="mt-1.5 space-y-2" data-test="audiences">
+                    <label
+                        v-for="a in audiences"
+                        :key="a.id"
+                        class="flex min-h-11 cursor-pointer items-start gap-3 rounded-control border px-3 py-2 text-sm"
+                        :class="[
+                            Number(form.audience_topic_id) === a.id
+                                ? 'border-primary bg-info-soft'
+                                : 'border-line bg-surface',
+                            lockedField('audience_topic_id')
+                                ? 'cursor-not-allowed opacity-70'
+                                : '',
+                        ]"
+                    >
+                        <input
+                            v-model="form.audience_topic_id"
+                            type="radio"
+                            :name="`${id}-audience`"
+                            :value="a.id"
+                            :disabled="lockedField('audience_topic_id')"
+                            class="mt-1"
+                        />
+                        <span class="min-w-0">
+                            <span class="block font-medium text-fg">
+                                Students of {{ a.title }}
+                            </span>
+                            <span class="block text-fg-muted">
+                                {{ pathText(a.path) }} ·
+                                {{ studentsText(a.students) }}
+                            </span>
+                        </span>
+                    </label>
+                    <label
+                        class="flex min-h-11 cursor-pointer items-start gap-3 rounded-control border px-3 py-2 text-sm"
+                        :class="[
+                            form.audience_topic_id === '' ||
+                            form.audience_topic_id === null
+                                ? 'border-primary bg-info-soft'
+                                : 'border-line bg-surface',
+                            lockedField('audience_topic_id')
+                                ? 'cursor-not-allowed opacity-70'
+                                : '',
+                        ]"
+                    >
+                        <input
+                            v-model="form.audience_topic_id"
+                            type="radio"
+                            :name="`${id}-audience`"
+                            value=""
+                            :disabled="lockedField('audience_topic_id')"
+                            class="mt-1"
+                        />
+                        <span>
+                            <span class="block font-medium text-fg">
+                                Invited students only
+                            </span>
+                            <span class="block text-fg-muted">
+                                Nobody sees it in the event list.
+                            </span>
+                        </span>
+                    </label>
+                </div>
                 <p
                     v-if="form.errors.audience_topic_id"
+                    :id="`${id}-audience-hint`"
                     class="mt-1.5 text-sm text-danger-fg"
                 >
                     {{ form.errors.audience_topic_id }}
                 </p>
-                <p v-else class="mt-1.5 text-sm text-fg-muted">
-                    {{
-                        locks.audience_topic_id ||
-                        "The chosen topic and everything below it."
-                    }}
+                <p
+                    v-else
+                    :id="`${id}-audience-hint`"
+                    class="mt-1.5 text-sm text-fg-muted"
+                    role="status"
+                    data-test="audience-count"
+                >
+                    <template v-if="locks.audience_topic_id">
+                        {{ locks.audience_topic_id }}
+                    </template>
+                    <template v-else-if="audience">
+                        {{ studentsText(audience.students) }} will see this
+                        event: the students assigned to {{ audience.title }}
+                        itself, not to the topics below it.
+                    </template>
+                    <template v-else-if="owning">
+                        Only students you invite will see this event.
+                    </template>
                 </p>
-            </div>
+            </fieldset>
 
             <div class="grid gap-5 sm:grid-cols-2">
                 <TextField
@@ -417,15 +538,31 @@ const selectClass = (field) => [
                     :error="form.errors.event_ends_at"
                 />
                 <TextField
+                    v-model="form.applications_open_at"
+                    label="Applications open"
+                    optional
+                    type="datetime-local"
+                    :disabled="lockedField('applications_open_at')"
+                    :hint="
+                        locks.applications_open_at ??
+                        'Leave empty to open them when you publish.'
+                    "
+                    :error="form.errors.applications_open_at"
+                />
+                <TextField
                     v-model="form.application_deadline"
                     label="Applications close"
                     required
                     type="datetime-local"
                     :disabled="lockedField('application_deadline')"
                     :hint="
-                        locks.application_deadline ?? 'At or before the end.'
+                        locks.application_deadline ??
+                        (deadlineFollowsStart
+                            ? 'Set to the start for you. Any time up to the end.'
+                            : 'Any time up to the end.')
                     "
                     :error="form.errors.application_deadline"
+                    @input="deadlineTyped"
                 />
                 <TextField
                     v-model="form.completion_deadline"
@@ -433,10 +570,19 @@ const selectClass = (field) => [
                     required
                     type="datetime-local"
                     :disabled="lockedField('completion_deadline')"
-                    hint="At or after the end."
+                    hint="At or after the end. Points start when the event starts."
                     :error="form.errors.completion_deadline"
                 />
             </div>
+
+            <!-- The three windows as you type them (Task #79) -->
+            <EventTimeline
+                :opens-at="form.applications_open_at ?? ''"
+                :closes-at="form.application_deadline ?? ''"
+                :starts-at="form.event_starts_at ?? ''"
+                :ends-at="form.event_ends_at ?? ''"
+                :points-until="form.completion_deadline ?? ''"
+            />
         </fieldset>
 
         <!-- 4. Options -->
