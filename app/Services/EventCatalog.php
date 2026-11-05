@@ -191,7 +191,8 @@ class EventCatalog
         $mine = EventApplication::query()
             ->where('student_id', $user->id)
             ->whereIn('event_id', $page->getCollection()->pluck('id'))
-            ->pluck('status', 'event_id');
+            ->get()
+            ->keyBy('event_id');
 
         return $page->through(fn (Event $event) => $this->present($user, $event, $mine[$event->id] ?? null));
     }
@@ -209,7 +210,7 @@ class EventCatalog
         $mine = EventApplication::query()
             ->where('event_id', $event->id)
             ->where('student_id', $user->id)
-            ->value('status');
+            ->first();
 
         return [
             ...$this->present($user, $event, $mine),
@@ -226,9 +227,11 @@ class EventCatalog
      *
      * @return array<string, mixed>
      */
-    private function present(User $user, Event $event, ?string $myStatus): array
+    private function present(User $user, Event $event, ?EventApplication $mine): array
     {
         $open = $this->isOpen($event);
+        // An undone application (Task #94) counts as never sent.
+        $myStatus = $mine && ! $mine->isUndone() ? $mine->status : null;
 
         return [
             'id' => $event->id,
@@ -252,6 +255,10 @@ class EventCatalog
             'is_surprise' => $event->is_hidden,
             'is_open' => $open,
             'my_status' => $myStatus,
+            // Undo stays possible until this moment (Task #94), also after a reload; the server checks it again.
+            'undo_until' => $this->undoUntil($mine),
+            // Students may leave an event until it starts (EventApplicationService::withdraw).
+            'has_started' => now()->gte($event->event_starts_at),
             // Already applied (UC-2.3): an open application blocks applying again.
             'already_applied' => in_array($myStatus, [EventApplication::PENDING, EventApplication::ACCEPTED, EventApplication::WAITLISTED], true),
             // Used by the Apply button (Task #49): exactly the server's own checks.
@@ -264,6 +271,24 @@ class EventCatalog
             // has a place at that overlaps this one.
             'overlaps_with' => $canApply ? $this->applications->conflictingEvent($user, $event)?->title : null,
         ];
+    }
+
+    /**
+     * When the student's own active application can no longer be undone, or null
+     * when it cannot be undone at all (Task #94).
+     */
+    private function undoUntil(?EventApplication $mine): ?string
+    {
+        if (! $mine
+            || ! in_array($mine->status, [EventApplication::PENDING, EventApplication::ACCEPTED, EventApplication::WAITLISTED], true)
+            || $mine->isCredited()
+            || $mine->applied_at === null) {
+            return null;
+        }
+
+        $until = $mine->applied_at->copy()->addSeconds(EventApplication::UNDO_SECONDS);
+
+        return $until->isFuture() ? $until->toIso8601String() : null;
     }
 
     /**

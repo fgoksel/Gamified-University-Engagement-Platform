@@ -64,21 +64,21 @@ class EventStatusChangedNotification extends Notification implements ShouldQueue
             ]],
             self::RESCHEDULED => ['The time of an event you applied to changed', [
                 "The organizer changed the date or time of \"{$this->eventTitle}\".",
-                'You keep your place. Check the new time under My events. If it no longer suits you, you can withdraw.',
+                'You keep your place. Check the new time under My events. If it no longer suits you, you can leave the event.',
             ]],
             self::RELOCATED => ['The location of an event you applied to changed', [
                 "The organizer changed the location of \"{$this->eventTitle}\".",
                 $this->newLocation(),
-                'You keep your place. If the new location no longer suits you, you can withdraw under My events.',
+                'You keep your place. If the new location no longer suits you, you can leave the event under My events.',
             ]],
             self::RESCHEDULED_AND_RELOCATED => ['The time and location of an event you applied to changed', [
                 "The organizer changed the date or time and the location of \"{$this->eventTitle}\".",
                 $this->newLocation(),
-                'You keep your place. Check the new time under My events. If it no longer suits you, you can withdraw.',
+                'You keep your place. Check the new time under My events. If it no longer suits you, you can leave the event.',
             ]],
             default => ['An event you applied to is back', [
                 "\"{$this->eventTitle}\" is back on. You keep your place.",
-                'Check the date under My events. If it no longer suits you, you can withdraw.',
+                'Check the date under My events. If it no longer suits you, you can leave the event.',
             ]],
         };
 
