@@ -14,6 +14,7 @@ import AlertMessage from "../Components/AlertMessage.vue";
 import EmptyState from "../Components/EmptyState.vue";
 import StatusChip from "../Components/StatusChip.vue";
 import { categoryDot, categoryLabel } from "../categoryColors.js";
+import { places } from "../eventWords.js";
 
 // The student's home page (Task #92, 26 Oct, section 4): points this semester in the
 // four categories, the next event with a countdown, events open for applications and
@@ -113,16 +114,6 @@ const countdown = computed(() => {
         full: `Starts in ${inFullWords(left)}`,
     };
 });
-
-function placesText(event) {
-    if (event.application_type === "teacher_select") {
-        return "The organiser chooses";
-    }
-    if (event.places_left > 0) {
-        return `${event.places_left} ${event.places_left === 1 ? "place" : "places"} left`;
-    }
-    return "Full · you can join the waitlist";
-}
 
 const linkClass =
     "inline-flex min-h-11 items-center gap-1 rounded-control text-sm font-medium text-link hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
@@ -372,7 +363,7 @@ const linkClass =
                                 class="mt-0.5 size-4 shrink-0 text-fg-muted"
                                 aria-hidden="true"
                             />
-                            <dd>{{ placesText(event) }}</dd>
+                            <dd>{{ places(event) }}</dd>
                         </div>
                         <div class="flex items-start gap-2">
                             <dt class="sr-only">Points</dt>
