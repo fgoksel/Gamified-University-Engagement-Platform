@@ -12,6 +12,7 @@ use App\Policies\EventPolicy;
 use App\Policies\RoleAssignmentPolicy;
 use App\Policies\RoleDefinitionPolicy;
 use App\Policies\TopicPolicy;
+use App\Services\PointCalculationService;
 use App\Services\TopicAccess;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -30,6 +31,9 @@ class AppServiceProvider extends ServiceProvider
     {
         // One resolver per request, so every check in a request sees the same data.
         $this->app->scoped(TopicAccess::class);
+
+        // One per request too: it remembers for a moment that the leaderboard cache could not be reached.
+        $this->app->scoped(PointCalculationService::class);
     }
 
     /**

@@ -2,11 +2,9 @@
 
 namespace App\Services;
 
-use App\Enums\UserRole;
 use App\Models\Leaderboard;
 use App\Models\User;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /**
@@ -15,7 +13,7 @@ use Illuminate\Support\Str;
  * A leaderboard sums the points from events owned in its topic and every topic below it
  * (L1, 27 October), with no periods or semesters (L3). Only students appear, equal points
  * share a rank (1, 2, 2, 4) and reversed points drop out, because a reversal is a negative
- * ledger row. Caching belongs to #55, around ranked().
+ * ledger row. The sums, and their cache, are in PointCalculationService (#55).
  */
 class LeaderboardStandings
 {
@@ -25,45 +23,17 @@ class LeaderboardStandings
     /** Places above and below the person, for "about 10 places around the student" (L5). */
     public const AROUND = 5;
 
+    public function __construct(private PointCalculationService $points) {}
+
     /**
-     * Every student on the leaderboard, best first.
+     * Every student on the leaderboard, best first, each with the points per category.
+     * Worked out, and kept for a moment, by PointCalculationService (Task #55).
      *
-     * @return Collection<int, object{student_id: int, name: string, neptun_code: ?string, points: int, position: int, rank: int}>
+     * @return Collection<int, object{student_id: int, name: string, neptun_code: ?string, points: int, academic: int, scientific: int, sports: int, community: int, position: int, rank: int}>
      */
     public function ranked(Leaderboard $board): Collection
     {
-        $rows = DB::table('point_transactions as ledger')
-            ->join('events', 'events.id', '=', 'ledger.event_id')
-            ->join('topic_closure', 'topic_closure.descendant_id', '=', 'events.owning_topic_id')
-            ->join('users', 'users.id', '=', 'ledger.student_id')
-            ->where('topic_closure.ancestor_id', $board->topic_id)
-            ->whereIn('ledger.student_id', User::role(UserRole::Student)->select('users.id'))
-            // A deactivated account stays out of the lists.
-            ->where('users.status', '!=', 'inactive')
-            ->groupBy('ledger.student_id', 'users.name', 'users.neptun_code')
-            ->havingRaw('sum(ledger.points) > 0')
-            ->selectRaw('ledger.student_id, users.name, users.neptun_code, sum(ledger.points) as points')
-            ->orderByDesc('points')
-            ->orderBy('ledger.student_id')
-            ->get();
-
-        $rank = 0;
-        $previous = null;
-
-        return $rows->map(function (object $row, int $index) use (&$rank, &$previous) {
-            $row->student_id = (int) $row->student_id;
-            $row->points = (int) $row->points;
-
-            if ($row->points !== $previous) {
-                $rank = $index + 1;
-                $previous = $row->points;
-            }
-
-            $row->position = $index + 1;
-            $row->rank = $rank;
-
-            return $row;
-        });
+        return collect($this->points->areaStandings($board->topic_id))->map(fn (array $row) => (object) $row);
     }
 
     /**

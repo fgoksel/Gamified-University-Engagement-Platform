@@ -24,6 +24,8 @@
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="BROADCAST_CONNECTION" value="null"/>
         <env name="CACHE_STORE" value="array"/>
+        <!-- The leaderboard cache is off in the tests; the tests of it switch it on (Task #55). -->
+        <env name="LEADERBOARD_CACHE_TTL" value="0"/>
         <env name="DB_CONNECTION" value="sqlite"/>
         <env name="DB_DATABASE" value=":memory:"/>
         <env name="DB_URL" value=""/>

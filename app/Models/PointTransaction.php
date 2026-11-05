@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\PointCalculationService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use LogicException;
@@ -44,6 +45,9 @@ class PointTransaction extends Model
         // The ledger only grows: a mistake is corrected with a reversal row, never an edit.
         static::updating(fn () => throw new LogicException('Ledger rows cannot be changed. Add a reversal instead.'));
         static::deleting(fn () => throw new LogicException('Ledger rows cannot be deleted. Add a reversal instead.'));
+        // The totals of a leaderboard are cached (Task #55): a new row, whichever way it was
+        // written (credit, import or reversal), clears the totals it changes.
+        static::created(fn (PointTransaction $row) => app(PointCalculationService::class)->forgetCredit($row));
         static::saving(function (PointTransaction $row) {
             if ($row->type === self::CREDIT && $row->points <= 0) {
                 throw new LogicException('A credit must be a positive number of points.');
