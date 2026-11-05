@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\ImportController;
 use App\Http\Controllers\Admin\TopicTagRequestController as AdminTopicTagRequestController;
 use App\Http\Controllers\AppearanceController;
 use App\Http\Controllers\ApplicantController;
+use App\Http\Controllers\AreaLeaderboardController;
 use App\Http\Controllers\Auth\ChangePasswordController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
@@ -50,6 +51,11 @@ Route::middleware('guest')->group(function () {
 // controller logs that person out first.
 Route::get('/auth/activate/{token}', [SetPasswordController::class, 'create'])->name('password.setup');
 Route::post('/auth/set-password', [SetPasswordController::class, 'store'])->name('password.setup.store');
+
+// Task #89: what the hall screen (#56) reads, without login. Published leaderboards only.
+Route::get('/hall/leaderboards', [AreaLeaderboardController::class, 'hall'])
+    ->middleware('throttle:60,1')
+    ->name('hall.leaderboards');
 
 Route::middleware('auth')->group(function () {
     Route::get('/password/change', [ChangePasswordController::class, 'edit'])->name('password.change');
@@ -250,6 +256,19 @@ Route::middleware('auth')->group(function () {
             Route::post('/{topic}/assignments', [RoleAssignmentController::class, 'store'])->whereNumber('topic')->name('assignments.store');
             // Task #72: give a role to a list of students from a file of Neptun codes.
             Route::post('/{topic}/imports', [TopicImportController::class, 'store'])->whereNumber('topic')->name('imports.store');
+            // Task #89: a new leaderboard for this topic.
+            Route::post('/{topic}/leaderboards', [AreaLeaderboardController::class, 'store'])->whereNumber('topic')->name('leaderboards.store');
+        });
+
+        // Area leaderboards (Task #89). Open to every signed-in account: AreaLeaderboards decides
+        // per leaderboard and per topic, like the Topics routes above.
+        Route::prefix('leaderboards')->name('leaderboards.')->group(function () {
+            Route::get('/', [AreaLeaderboardController::class, 'index'])->name('index');
+            Route::get('/{leaderboard}', [AreaLeaderboardController::class, 'show'])->whereNumber('leaderboard')->name('show');
+            Route::put('/{leaderboard}', [AreaLeaderboardController::class, 'update'])->whereNumber('leaderboard')->name('update');
+            Route::post('/{leaderboard}/publish', [AreaLeaderboardController::class, 'publish'])->whereNumber('leaderboard')->name('publish');
+            Route::post('/{leaderboard}/unpublish', [AreaLeaderboardController::class, 'unpublish'])->whereNumber('leaderboard')->name('unpublish');
+            Route::delete('/{leaderboard}', [AreaLeaderboardController::class, 'destroy'])->whereNumber('leaderboard')->name('destroy');
         });
 
         // The previous "My courses" pages now live in Topics.

@@ -56,9 +56,12 @@ onMounted(async () => {
     opener = document.activeElement;
     document.body.classList.add("overflow-hidden");
     await nextTick();
-    const target =
-        panel.value?.querySelector("[data-autofocus]") ??
-        panel.value?.querySelector(focusable);
+    // The mark can sit on a wrapper: a TextField passes it to its outer div.
+    const marked = panel.value?.querySelector("[data-autofocus]");
+    const target = marked?.matches(focusable)
+        ? marked
+        : (marked?.querySelector(focusable) ??
+          panel.value?.querySelector(focusable));
     target?.focus();
 });
 

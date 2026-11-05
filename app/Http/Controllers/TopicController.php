@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Enums\Capability;
+use App\Models\Leaderboard;
 use App\Models\Topic;
+use App\Services\AreaLeaderboards;
 use App\Services\TopicAccess;
 use App\Services\TopicBrowser;
 use App\Services\TopicEventRules;
@@ -27,6 +29,7 @@ class TopicController extends Controller
         private TopicAccess $access,
         private TopicBrowser $browser,
         private TopicService $topics,
+        private AreaLeaderboards $leaderboards,
     ) {}
 
     /**
@@ -257,7 +260,7 @@ class TopicController extends Controller
     {
         $user = $request->user();
         $view = $request->query('view') === 'branch' ? 'branch' : 'contents';
-        $tab = $request->query('tab') === 'access' ? 'access' : 'topic';
+        $tab = in_array($request->query('tab'), ['access', 'leaderboards'], true) ? $request->query('tab') : 'topic';
 
         $selected = null;
 
@@ -278,6 +281,9 @@ class TopicController extends Controller
                 'counts' => $this->browser->counts($user, $topic),
                 'branch' => $view === 'branch' ? $this->browser->branch($user, $topic, $request->query('q'), max(1, (int) $request->query('page', 1))) : null,
                 'access' => $tab === 'access' ? $this->browser->access($user, $topic) : null,
+                'leaderboards' => $tab === 'leaderboards'
+                    ? $this->leaderboards->at($topic)->map(fn (Leaderboard $board) => $this->leaderboards->summary($board))->values()->all()
+                    : null,
             ];
         }
 

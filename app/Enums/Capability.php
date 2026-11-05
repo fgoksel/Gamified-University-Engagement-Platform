@@ -47,6 +47,9 @@ enum Capability: string
 
     case QrCodesManage = 'qr_codes.manage';
 
+    // Task #89: make the area leaderboards of this topic and the topics below it.
+    case LeaderboardsManage = 'leaderboards.manage';
+
     public function label(): string
     {
         return match ($this) {
@@ -67,6 +70,7 @@ enum Capability: string
             self::ApplicationsManage => 'Manage applicants',
             self::PointsCredit => 'Credit points',
             self::QrCodesManage => 'Manage event QR codes',
+            self::LeaderboardsManage => 'Manage leaderboards',
         };
     }
 
@@ -90,6 +94,7 @@ enum Capability: string
             self::ApplicationsManage => 'Review, accept, waitlist or reject the applicants of events that use organiser selection.',
             self::PointsCredit => 'Confirm attendance and credit the points of an event to its accepted participants.',
             self::QrCodesManage => 'Create, configure and print the QR codes of the events under this topic.',
+            self::LeaderboardsManage => 'Create, edit, publish and delete the leaderboards of this topic and of every topic below it.',
         };
     }
 
