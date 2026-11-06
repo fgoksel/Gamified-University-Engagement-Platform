@@ -109,11 +109,15 @@ onBeforeUnmount(() => {
         <h1 v-if="!board" class="sr-only">Leaderboards</h1>
 
         <p
-            v-if="loaded && !board"
+            v-if="!board"
             class="m-auto text-center text-[1.5em] font-semibold"
             data-test="hall-empty"
         >
-            No leaderboards are published yet.
+            {{
+                loaded
+                    ? "No leaderboards are published yet."
+                    : "Leaderboards will appear here shortly."
+            }}
         </p>
 
         <Transition

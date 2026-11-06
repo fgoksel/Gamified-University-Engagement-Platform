@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\Capability;
 use App\Enums\TaxonomyCategory;
 use App\Enums\UserRole;
 use App\Models\Topic;
@@ -16,11 +17,15 @@ use Illuminate\Support\Facades\DB;
  * are the ones the explorer opens for them (TopicAccess).
  *
  * A student only ever gets their own numbers: no other student's name, Neptun code or row leaves
- * the server. Everyone else (a teacher earns no points) gets the full list for an area they can open.
+ * the server. The full list is for the person's area of control: they hold one of the rights
+ * below at that area or above it. Everyone else gets the count alone.
  */
 class RankingExplorer
 {
     public const PER_PAGE = 50;
+
+    /** Any of these at the area, or above it, opens the full list with names and Neptun codes. */
+    private const CONTROL = [Capability::EventsManage, Capability::LeaderboardsManage, Capability::AccessView];
 
     /** The most areas a picker lists; the address still opens any area the person can open. */
     private const AREA_LIMIT = 500;
@@ -60,17 +65,30 @@ class RankingExplorer
     {
         $listed = collect($this->points->standings($area->id, $category, $tagId));
 
-        return $user->hasRole(UserRole::Student)
-            ? ['total' => $listed->count(), 'you' => $this->you($user, $listed)]
-            : ['list' => $this->fullList($listed, $page)];
+        if ($user->hasRole(UserRole::Student)) {
+            return ['total' => $listed->count(), 'you' => $this->you($user, $listed)];
+        }
+
+        return $this->inControl($user, $area)
+            ? ['list' => $this->fullList($listed, $page)]
+            : ['total' => $listed->count()];
     }
 
     /**
-     * Only the student's own numbers. "to_next" is how many points reach the next place up;
-     * null in first place, which students with equal points share.
+     * TopicAccess::can() already covers the areas above, as in the explorer.
+     */
+    private function inControl(User $user, Topic $area): bool
+    {
+        return collect(self::CONTROL)->contains(fn (Capability $capability) => $this->access->can($user, $capability, $area));
+    }
+
+    /**
+     * Only the student's own numbers. "to_next" is how many points draw level with the next
+     * place up, and "next_rank" is that place; both null in first place, which students with
+     * equal points share.
      *
      * @param  Collection<int, array<string, mixed>>  $listed
-     * @return array{rank: int, points: int, to_next: ?int}|null
+     * @return array{rank: int, points: int, to_next: ?int, next_rank: ?int}|null
      */
     private function you(User $user, Collection $listed): ?array
     {
@@ -80,12 +98,14 @@ class RankingExplorer
             return null;
         }
 
-        $nextPlace = $listed->where('points', '>', $mine['points'])->min('points');
+        // The list is best first, so the last one above is the next place up.
+        $next = $listed->where('points', '>', $mine['points'])->last();
 
         return [
             'rank' => $mine['rank'],
             'points' => $mine['points'],
-            'to_next' => $nextPlace === null ? null : $nextPlace - $mine['points'],
+            'to_next' => $next === null ? null : $next['points'] - $mine['points'],
+            'next_rank' => $next['rank'] ?? null,
         ];
     }
 

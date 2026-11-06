@@ -31,7 +31,8 @@ it in the browser on the hall computer and press F11. It reads the feed `/hall/l
 - **Rotation:** each leaderboard stays for its own seconds. The feed is read again after a full
   round, at most once a minute, so a change shows at the next round.
 - **When the server cannot be reached:** the last data stays on screen with no message, and the
-  next round tries again.
+  next round tries again. Until the first data arrives the screen says "Leaderboards will appear
+  here shortly."
 
 ### Time on the hall screen
 
@@ -54,9 +55,13 @@ found", and a category or tag that does not fit is dropped. Tags are narrowed to
   `events.topic_tag_id` (`PointCalculationService::standings($topicId, $category, $tagId)`). It is
   cached under the area's tags, so a credit clears it like the area standings.
 - **A student** gets only their rank, how many students are listed, their points, and the points
-  to reach the next place (none in first place). No other student's name, Neptun code or row
-  leaves the server. With no points there: "You have no points here yet."
-- **Everyone else** gets the full list for that choice: rank, name, Neptun code and points, 50 per page.
+  to draw level with the next place up ("15 points to reach number 3", none in first place). No
+  other student's name, Neptun code or row leaves the server. With no points there: "You have no
+  points here yet."
+- **The person's area of control:** someone who holds *Manage events*, *Manage leaderboards* or
+  *See who has access* at that area or above it gets the full list: rank, name, Neptun code and
+  points, 50 per page.
+- **Everyone else**, such as a teacher with a view-only role, gets the count alone.
 
 The data comes from `App\Services\RankingExplorer`; the section is `Components/Leaderboards/WhereAmI.vue`.
 

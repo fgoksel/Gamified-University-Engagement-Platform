@@ -6,11 +6,12 @@ import { categoryLabel } from "../../categoryColors.js";
 
 // "Where am I?" (Task #56): a place in an area, narrowed by category and tag if wanted. The
 // choice lives in the address, so it can be shared and reloaded. A student gets only their own
-// numbers from the server; everyone else gets the full list for an area they can open.
+// numbers from the server, and the full list is for the person's area of control; anyone else
+// gets the count alone.
 const props = defineProps({
     isStudent: { type: Boolean, default: false },
     // { areas: [{ id, path }], tags: [{ id, name, category }],
-    //   filters: { area, category, tag }, result: { total, you } | { list } | null }
+    //   filters: { area, category, tag }, result: { total, you } | { list } | { total } | null }
     rankings: { type: Object, required: true },
 });
 
@@ -59,6 +60,8 @@ function categoryChanged() {
 }
 
 const pointsText = (n) => (n === 1 ? "1 point" : `${n} points`);
+const studentsText = (n) =>
+    n === 1 ? "1 student has points here." : `${n} students have points here.`;
 
 const selectClass =
     "mt-1.5 block min-h-11 w-full rounded-control border border-line bg-surface px-3 py-2 text-sm text-fg focus:outline-2 focus:outline-offset-0 focus:outline-ring";
@@ -141,7 +144,8 @@ const selectClass =
                         v-if="you.to_next !== null"
                         class="mt-1 text-sm text-fg-muted"
                     >
-                        {{ pointsText(you.to_next) }} to reach the next place.
+                        {{ pointsText(you.to_next) }} to reach number
+                        {{ you.next_rank }}.
                     </p>
                 </template>
                 <p v-else class="text-fg-muted">You have no points here yet.</p>
@@ -213,6 +217,19 @@ const selectClass =
                         >
                     </div>
                 </div>
+            </template>
+
+            <template v-else-if="result">
+                <p class="text-fg">
+                    {{
+                        result.total
+                            ? studentsText(result.total)
+                            : "No students have points here yet."
+                    }}
+                </p>
+                <p class="mt-1 text-sm text-fg-muted">
+                    Names show for the areas you manage.
+                </p>
             </template>
         </div>
     </section>

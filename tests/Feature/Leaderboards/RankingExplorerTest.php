@@ -46,7 +46,7 @@ class RankingExplorerTest extends EventTestCase
         $this->bela = $this->member('Bela Kiss', 'BELA02');
 
         $this->teacher = $this->makeUser(UserRole::Teacher, 'Tom Teacher');
-        $this->assign($this->teacher, $this->role('Lecturer', [Capability::View]), $this->faculty);
+        $this->assign($this->teacher, $this->role('Lecturer', [Capability::View, Capability::EventsManage]), $this->faculty);
     }
 
     private function member(string $name, string $neptun, ?Topic $at = null): User
@@ -135,7 +135,7 @@ class RankingExplorerTest extends EventTestCase
         $response = $this->visit($this->anna, ['area' => $this->faculty->id]);
 
         $response->assertInertia(fn (Assert $page) => $page
-            ->where('rankings.result', ['total' => 2, 'you' => ['rank' => 2, 'points' => 10, 'to_next' => 20]]));
+            ->where('rankings.result', ['total' => 2, 'you' => ['rank' => 2, 'points' => 10, 'to_next' => 20, 'next_rank' => 1]]));
 
         foreach (['Bela Kiss', 'BELA02', '"list"', '"items"'] as $hidden) {
             $this->assertStringNotContainsString($hidden, json_encode($response->inertiaPage()['props']['rankings']));
@@ -161,10 +161,10 @@ class RankingExplorerTest extends EventTestCase
 
         $area = ['area' => $this->faculty->id];
 
-        $this->assertSame(['rank' => 1, 'points' => 30, 'to_next' => null], $this->you($this->anna, $area));
-        $this->assertSame(['rank' => 1, 'points' => 30, 'to_next' => null], $this->you($carla, $area));
-        $this->assertSame(['rank' => 3, 'points' => 20, 'to_next' => 10], $this->you($this->bela, $area));
-        $this->assertSame(['rank' => 4, 'points' => 5, 'to_next' => 15], $this->you($dora, $area));
+        $this->assertSame(['rank' => 1, 'points' => 30, 'to_next' => null, 'next_rank' => null], $this->you($this->anna, $area));
+        $this->assertSame(['rank' => 1, 'points' => 30, 'to_next' => null, 'next_rank' => null], $this->you($carla, $area));
+        $this->assertSame(['rank' => 3, 'points' => 20, 'to_next' => 10, 'next_rank' => 1], $this->you($this->bela, $area));
+        $this->assertSame(['rank' => 4, 'points' => 5, 'to_next' => 15, 'next_rank' => 3], $this->you($dora, $area));
     }
 
     public function test_a_student_cannot_pick_an_area_they_cannot_open(): void
@@ -184,6 +184,83 @@ class RankingExplorerTest extends EventTestCase
                 ['id' => $this->course->id, 'path' => ['Faculty', $this->course->title]],
             ])
             ->where('rankings.result', null));
+    }
+
+    /**
+     * @param  list<Capability>  $rights
+     */
+    private function staffAt(Topic $area, array $rights): User
+    {
+        $person = $this->makeUser(UserRole::Teacher);
+        $this->assign($person, $this->role('Staff '.uniqid(), [Capability::View, ...$rights]), $area);
+
+        return $person;
+    }
+
+    /**
+     * What the response may hold when the person only gets the count.
+     */
+    private function assertCountOnly(TestResponse $response, int $total): void
+    {
+        $response->assertOk()->assertInertia(fn (Assert $page) => $page->where('rankings.result', ['total' => $total]));
+
+        foreach (['Anna Nagy', 'ANNA01'] as $hidden) {
+            $this->assertStringNotContainsString($hidden, $response->getContent());
+        }
+    }
+
+    public function test_each_right_opens_the_full_list_at_the_area_and_below(): void
+    {
+        $this->credit($this->anna, 10);
+
+        foreach ([Capability::EventsManage, Capability::LeaderboardsManage, Capability::AccessView] as $right) {
+            $person = $this->staffAt($this->faculty, [$right]);
+
+            foreach ([$this->faculty, $this->course] as $area) {
+                $this->visit($person, ['area' => $area->id])
+                    ->assertInertia(fn (Assert $page) => $page->where('rankings.result.list.items.0.name', 'Anna Nagy'));
+            }
+        }
+    }
+
+    public function test_a_right_in_one_area_gives_no_names_in_a_sibling_area(): void
+    {
+        $web = $this->topic('Web', $this->faculty);
+        $this->credit($this->anna, 10, $web);
+
+        // Opens the whole faculty, but manages only Databases.
+        $person = $this->staffAt($this->faculty, []);
+        $this->assign($person, $this->role('Databases lead', [Capability::EventsManage]), $this->course);
+
+        $this->assertCountOnly($this->visit($person, ['area' => $web->id]), 1);
+    }
+
+    public function test_a_right_below_the_area_gives_no_names_above_it(): void
+    {
+        $this->credit($this->anna, 10);
+
+        $person = $this->staffAt($this->faculty, []);
+        $this->assign($person, $this->role('Databases lead', [Capability::EventsManage]), $this->course);
+
+        $this->assertCountOnly($this->visit($person, ['area' => $this->faculty->id]), 1);
+    }
+
+    public function test_a_view_only_role_gets_the_count_alone(): void
+    {
+        $this->credit($this->anna, 10);
+
+        $this->assertCountOnly($this->visit($this->staffAt($this->faculty, []), ['area' => $this->faculty->id]), 1);
+    }
+
+    public function test_a_student_never_gets_the_list_even_with_the_rights(): void
+    {
+        $this->credit($this->bela, 10);
+        $this->assign($this->anna, $this->role('Student helper', [Capability::View, Capability::EventsManage]), $this->faculty);
+
+        $response = $this->visit($this->anna, ['area' => $this->faculty->id]);
+
+        $response->assertInertia(fn (Assert $page) => $page->where('rankings.result', ['total' => 1, 'you' => null]));
+        $this->assertStringNotContainsString('BELA02', $response->getContent());
     }
 
     public function test_a_teacher_sees_the_full_list_only_for_areas_they_can_open(): void
