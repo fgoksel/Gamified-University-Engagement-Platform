@@ -120,9 +120,9 @@ class OrganizedEvents
             'owning_topic' => $event->owningTopic?->title,
             'audience_topic' => $event->audienceTopic?->title,
             // Formatted here: the dates are stored as typed, so the browser must not shift them.
-            'starts' => $event->event_starts_at->format('D j M Y, H:i'),
+            'starts' => $event->event_starts_at->translatedFormat('D j M Y, H:i'),
             'ends' => $event->event_ends_at->format('H:i'),
-            'applications_close' => $event->application_deadline->format('j M, H:i'),
+            'applications_close' => $event->application_deadline->translatedFormat('j M, H:i'),
             'capacity' => $event->capacity,
             'accepted' => $event->accepted_count,
             'waiting' => $event->waiting_count,

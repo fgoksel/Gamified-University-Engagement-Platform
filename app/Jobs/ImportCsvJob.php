@@ -121,7 +121,7 @@ abstract class ImportCsvJob implements ShouldQueue
             $this->prepare();
         } catch (InvalidArgumentException $e) {
             // Not a technical problem: the same file would fail again, so it is not retried.
-            $this->notifyAdmin($this->title().' failed', $e->getMessage(), false);
+            $this->notifyAdmin(__('jobs.csv.failed', ['title' => $this->title()]), $e->getMessage(), false);
             $this->deleteFile();
             $this->delete();
 
@@ -135,7 +135,7 @@ abstract class ImportCsvJob implements ShouldQueue
             \Maatwebsite\Excel\Excel::CSV,
         );
 
-        $this->notifyAdmin($this->title().' finished', $this->summary().$this->skippedRowsText(), true);
+        $this->notifyAdmin(__('jobs.csv.finished', ['title' => $this->title()]), $this->summary().$this->skippedRowsText(), true);
         $this->deleteFile();
     }
 
@@ -145,8 +145,8 @@ abstract class ImportCsvJob implements ShouldQueue
     public function failed(?Throwable $exception): void
     {
         $this->notifyAdmin(
-            $this->title().' failed',
-            'The import could not be completed because of a technical error. Please try again or contact support.',
+            __('jobs.csv.failed', ['title' => $this->title()]),
+            __('jobs.csv.the_import_could'),
             false,
         );
         $this->deleteFile();
@@ -155,7 +155,7 @@ abstract class ImportCsvJob implements ShouldQueue
     protected function skip(int $line, string $reason): void
     {
         $this->skipped++;
-        $this->addWarning("Row {$line} skipped: {$reason}");
+        $this->addWarning(__('jobs.csv.row_skipped', ['line' => $line, 'reason' => $reason]));
     }
 
     /**
@@ -163,7 +163,7 @@ abstract class ImportCsvJob implements ShouldQueue
      */
     protected function note(int $line, string $text): void
     {
-        $this->addWarning("Row {$line}: {$text}");
+        $this->addWarning(__('jobs.csv.row_note', ['line' => $line, 'text' => $text]));
     }
 
     private function addWarning(string $text): void
@@ -184,21 +184,21 @@ abstract class ImportCsvJob implements ShouldQueue
 
         if (array_diff($this->requiredColumns(), $headings) !== []) {
             throw new InvalidArgumentException(
-                'Incorrect file structure. The CSV file needs the columns: '.implode(', ', $this->requiredColumnLabels()).'.'
+                __('jobs.csv.incorrect_structure', ['columns' => implode(', ', $this->requiredColumnLabels())])
             );
         }
     }
 
     private function skippedRowsText(): string
     {
-        $text = $this->skipped > 0 ? " {$this->skipped} row(s) were skipped." : '';
+        $text = $this->skipped > 0 ? ' '.__('jobs.csv.rows_skipped', ['count' => $this->skipped]) : '';
 
         foreach ($this->warnings as $warning) {
             $text .= "\n".$warning;
         }
 
         if ($this->hiddenWarnings > 0) {
-            $text .= "\n... and {$this->hiddenWarnings} more.";
+            $text .= "\n".__('jobs.csv.more_warnings', ['count' => $this->hiddenWarnings]);
         }
 
         return $text;

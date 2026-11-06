@@ -7,11 +7,13 @@ import PointsImportTable from "../../Components/Events/PointsImportTable.vue";
 import Btn from "../../Components/Topics/Btn.vue";
 import { categoryDot } from "../../categoryColors.js";
 import { api } from "../../topicsApi.js";
+import { locale, t, tc } from "../../i18n.js";
+import Trans from "../../Components/Trans.vue";
 
 // Give an event's points to an imported list of students (Task #85): choose a
 // file, see what it would do, then give the points. Nothing is saved before the
 // second step, which sends the same file again.
-defineOptions({ layout: { title: "Give points by import" } });
+defineOptions({ layout: { title: t("events.import.give_points_by_import") } });
 
 const props = defineProps({
     event: { type: Object, required: true },
@@ -36,30 +38,26 @@ const previewHeading = ref(null);
 const resultHeading = ref(null);
 
 const pointsLabel = computed(() =>
-    props.event.points === 1 ? "1 point" : `${props.event.points} points`,
+    tc("events.import.points", props.event.points),
 );
 const blocked = computed(() => preview.value?.refusal ?? props.refusal);
 
 function students(count) {
-    return count === 1 ? "1 student" : `${count} students`;
+    return tc("events.import.students", count);
 }
 
 const previewSummary = computed(() => {
     const { credit, already, skipped } = preview.value;
     const parts = [
-        credit.length === 1
-            ? `1 student would receive ${pointsLabel.value}.`
-            : `${students(credit.length)} would receive ${pointsLabel.value} each.`,
+        tc("events.import.would_receive", credit.length, {
+            points: pointsLabel.value,
+        }),
     ];
     if (already.length) {
-        parts.push(
-            `${students(already.length)} already ${already.length === 1 ? "has" : "have"} them.`,
-        );
+        parts.push(tc("events.import.already_have", already.length));
     }
     if (skipped.length) {
-        parts.push(
-            `${skipped.length === 1 ? "1 row is" : `${skipped.length} rows are`} skipped.`,
-        );
+        parts.push(tc("events.import.rows_skipped", skipped.length));
     }
     return parts.join(" ");
 });
@@ -79,7 +77,7 @@ function withFile() {
 
 async function check() {
     if (!file.value) {
-        error.value = "Choose a file.";
+        error.value = t("events.import.choose_a_file");
         return;
     }
 
@@ -140,7 +138,8 @@ function startOver() {
             href="/my-events"
             class="inline-flex items-center gap-1 text-sm text-fg-muted hover:text-fg"
         >
-            <ArrowLeft class="size-4" aria-hidden="true" /> Organized by me
+            <ArrowLeft class="size-4" aria-hidden="true" />
+            {{ $t("events.import.organized_by_me") }}
         </Link>
 
         <div>
@@ -153,20 +152,22 @@ function startOver() {
                     :class="categoryDot[event.category]"
                     aria-hidden="true"
                 />
-                {{ pointsLabel }} for each student · points can be given until
-                {{ event.points_until }}
+                {{
+                    $t("events.import.per_student", {
+                        points: pointsLabel,
+                        date: event.points_until,
+                    })
+                }}
             </p>
             <p class="mt-1 text-sm text-fg-muted">
-                {{ students(credited) }}
-                {{ credited === 1 ? "has" : "have" }} the points so far.
+                {{ $tc("events.import.credited_so_far", credited) }}
             </p>
             <p
                 v-if="event.is_surprise"
                 class="mt-2 inline-flex items-center gap-1.5 rounded-full bg-surface-muted px-2.5 py-0.5 text-xs font-medium text-fg-muted"
             >
                 <EyeOff class="size-3.5" aria-hidden="true" />
-                Surprise event: students get a notification when they receive
-                its points.
+                {{ $t("events.import.surprise_event_students_get") }}
             </p>
         </div>
 
@@ -175,8 +176,7 @@ function startOver() {
             class="rounded-control bg-surface-muted px-3 py-2 text-sm text-fg-muted"
             role="status"
         >
-            {{ blocked }} You can still check a file to see who would receive
-            the points.
+            {{ $t("events.import.can_still_check", { reason: blocked }) }}
         </p>
 
         <!-- Step 1: the file -->
@@ -185,24 +185,24 @@ function startOver() {
             :aria-labelledby="`${id}-list`"
         >
             <h3 :id="`${id}-list`" class="font-semibold text-fg">
-                The list of students
+                {{ $t("events.import.the_list_of_students") }}
             </h3>
             <p class="mt-1 text-sm text-fg-muted">
-                A CSV file with a column headed
-                <strong class="text-fg">Neptun Code</strong>, for example an
-                export from Neptun or Moodle. Other columns are ignored. Only
-                students assigned to
-                <strong class="text-fg">{{ event.area }}</strong> can receive
-                the points. Importing the same list again gives points only to
-                the students who are new on it.
+                <Trans k="events.import.csv_help">
+                    <template #column>
+                        <strong class="text-fg">{{
+                            $t("events.import.neptun_code")
+                        }}</strong>
+                    </template>
+                    <template #area>
+                        <strong class="text-fg">{{ event.area }}</strong>
+                    </template>
+                </Trans>
             </p>
             <pre
                 class="mt-3 w-fit rounded-control bg-surface-muted px-3 py-2 font-mono text-xs text-fg"
-                aria-label="Example file"
-            >
-Neptun Code
-ABC123
-XYZ789</pre>
+                :aria-label="$t('events.import.example_file')"
+                >{{ $t("events.import.example_file_content") }}</pre>
 
             <form
                 class="mt-4 flex flex-wrap items-end gap-3"
@@ -213,7 +213,7 @@ XYZ789</pre>
                     <label
                         :for="`${id}-file`"
                         class="block text-sm font-medium text-fg"
-                        >File</label
+                        >{{ $t("events.import.file") }}</label
                     >
                     <input
                         :id="`${id}-file`"
@@ -228,7 +228,13 @@ XYZ789</pre>
                         @change="chooseFile"
                     />
                     <p :id="`${id}-hint`" class="mt-1.5 text-sm text-fg-muted">
-                        Up to {{ maxRows.toLocaleString("en") }} rows and 2 MB.
+                        {{
+                            $t("events.import.limits", {
+                                rows: maxRows.toLocaleString(
+                                    locale.replace("_", "-"),
+                                ),
+                            })
+                        }}
                     </p>
                 </div>
                 <Btn
@@ -237,7 +243,7 @@ XYZ789</pre>
                     :loading="checking"
                     :disabled="giving || !file"
                 >
-                    Check the file
+                    {{ $t("events.import.check_the_file") }}
                 </Btn>
             </form>
 
@@ -264,28 +270,28 @@ XYZ789</pre>
                     tabindex="-1"
                     class="font-semibold text-fg focus:outline-none"
                 >
-                    What this file would do
+                    {{ $t("events.import.what_this_file_would_do") }}
                 </h3>
                 <p class="mt-1 text-sm text-fg">{{ previewSummary }}</p>
                 <p class="mt-1 text-sm text-fg-muted">
-                    Nothing has been saved yet.
+                    {{ $t("events.import.nothing_has_been_saved_yet") }}
                 </p>
             </div>
 
             <PointsImportTable
                 v-if="preview.credit.length"
-                caption="Will receive the points"
+                :caption="$t('events.import.will_receive_the_points')"
                 :rows="preview.credit"
             />
             <PointsImportTable
                 v-if="preview.already.length"
-                caption="Already have the points"
+                :caption="$t('events.import.already_have_the_points')"
                 :rows="preview.already"
                 reasons
             />
             <PointsImportTable
                 v-if="preview.skipped.length"
-                caption="Skipped"
+                :caption="$t('events.import.skipped')"
                 :rows="preview.skipped"
                 reasons
             />
@@ -299,11 +305,15 @@ XYZ789</pre>
                     "
                     @click="give"
                 >
-                    Give {{ pointsLabel }} to
-                    {{ students(preview.credit.length) }}
+                    {{
+                        $t("events.import.give", {
+                            points: pointsLabel,
+                            students: students(preview.credit.length),
+                        })
+                    }}
                 </Btn>
                 <Btn :disabled="giving" @click="startOver">
-                    Choose another file
+                    {{ $t("events.import.choose_another_file") }}
                 </Btn>
             </div>
         </section>
@@ -320,34 +330,36 @@ XYZ789</pre>
                 tabindex="-1"
                 class="font-semibold text-fg focus:outline-none"
             >
-                Points given
+                {{ $t("events.import.points_given") }}
             </h3>
             <AlertMessage :type="result.credited.length ? 'success' : 'error'">
                 {{ result.message }}
                 <template v-if="result.credited.length">
-                    They are told on their Notifications page.
+                    {{ $t("events.import.they_are_told_on_their") }}
                 </template>
             </AlertMessage>
 
             <PointsImportTable
                 v-if="result.credited.length"
-                caption="Received the points"
+                :caption="$t('events.import.received_the_points')"
                 :rows="result.credited"
             />
             <PointsImportTable
                 v-if="result.already.length"
-                caption="Already had the points"
+                :caption="$t('events.import.already_had_the_points')"
                 :rows="result.already"
                 reasons
             />
             <PointsImportTable
                 v-if="result.skipped.length"
-                caption="Skipped"
+                :caption="$t('events.import.skipped')"
                 :rows="result.skipped"
                 reasons
             />
 
-            <Btn @click="startOver">Import another file</Btn>
+            <Btn @click="startOver">{{
+                $t("events.import.import_another_file")
+            }}</Btn>
         </section>
     </div>
 </template>

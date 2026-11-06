@@ -4,6 +4,7 @@ import { router } from "@inertiajs/vue3";
 import { TriangleAlert } from "@lucide/vue";
 import Modal from "./Modal.vue";
 import Btn from "./Btn.vue";
+import Trans from "../Trans.vue";
 import { api } from "../../topicsApi.js";
 
 // Permanently deleting a topic. System Admins only, and only for a topic that
@@ -64,23 +65,26 @@ function execute() {
     <!-- Checking -->
     <Modal
         v-if="stage === 'checking'"
-        title="Delete area"
+        :title="$t('topics.delete.delete_topic')"
         @close="emit('close')"
     >
         <p class="text-sm text-fg-muted" role="status">
-            Checking whether “{{ topic.title }}” can be deleted…
+            {{ $t("topics.delete.checking", { title: topic.title }) }}
         </p>
     </Modal>
 
     <!-- Not allowed -->
     <Modal
         v-else-if="stage === 'blocked'"
-        title="This area cannot be deleted"
+        :title="$t('topics.delete.this_topic_cannot_be_deleted')"
         @close="emit('close')"
     >
         <p class="text-sm text-fg">
-            <strong>{{ topic.title }}</strong> has been used, so it can only be
-            archived:
+            <Trans k="topics.delete.used_so_archive">
+                <template #title>
+                    <strong>{{ topic.title }}</strong>
+                </template>
+            </Trans>
         </p>
         <ul
             v-if="blockers.length"
@@ -92,12 +96,12 @@ function execute() {
             {{ error }}
         </p>
         <template #footer>
-            <Btn @click="emit('close')">Close</Btn>
+            <Btn @click="emit('close')">{{ $t("common.close") }}</Btn>
             <Btn
                 v-if="canArchive && !topic.archived"
                 variant="primary"
                 @click="emit('archive')"
-                >Archive instead</Btn
+                >{{ $t("topics.delete.archive_instead") }}</Btn
             >
         </template>
     </Modal>
@@ -105,36 +109,37 @@ function execute() {
     <!-- First confirmation -->
     <Modal
         v-else-if="stage === 'confirm1'"
-        title="Delete this area?"
+        :title="$t('topics.delete.delete_this_topic')"
         danger
         :busy="busy"
         @close="emit('close')"
     >
         <p class="text-base text-fg">
-            Are you sure you want to delete
-            <strong>{{ topic.title }}</strong
-            >?
+            <Trans k="topics.delete.confirm">
+                <template #title>
+                    <strong>{{ topic.title }}</strong>
+                </template>
+            </Trans>
         </p>
         <ul class="mt-3 list-disc space-y-1 pl-5 text-sm text-fg-muted">
-            <li>It is empty and has never been used.</li>
-            <li>Deleting removes it for good. It cannot be restored.</li>
+            <li>{{ $t("topics.delete.it_is_empty_and_has") }}</li>
+            <li>{{ $t("topics.delete.deleting_removes_it_for_good") }}</li>
             <li>
-                If you only want it out of the way, archive it instead: that is
-                reversible.
+                {{ $t("topics.delete.if_you_only_want") }}
             </li>
         </ul>
         <template #footer>
-            <Btn @click="emit('close')">Cancel</Btn>
-            <Btn variant="destructive" @click="stage = 'confirm2'"
-                >Yes, continue</Btn
-            >
+            <Btn @click="emit('close')">{{ $t("common.cancel") }}</Btn>
+            <Btn variant="destructive" @click="stage = 'confirm2'">{{
+                $t("topics.delete.yes_continue")
+            }}</Btn>
         </template>
     </Modal>
 
     <!-- Second, red warning -->
     <Modal
         v-else
-        title="Final warning: permanent deletion"
+        :title="$t('topics.delete.final_warning_permanent_deletion')"
         danger
         :busy="busy"
         @close="emit('close')"
@@ -151,18 +156,20 @@ function execute() {
             />
             <div class="text-sm">
                 <p class="font-semibold">
-                    This is important: areas should almost never be deleted.
+                    {{ $t("topics.delete.this_is_important_topics_should") }}
                 </p>
                 <p class="mt-1">
-                    “{{ topic.title }}” will be permanently removed and cannot
-                    be brought back. Archiving keeps everything and can be
-                    undone.
+                    {{ $t("topics.delete.permanent", { title: topic.title }) }}
                 </p>
             </div>
         </div>
         <div class="mt-4">
             <label for="confirm-title" class="block text-sm font-medium text-fg"
-                >Type <strong>{{ topic.title }}</strong> to confirm</label
+                ><Trans k="topics.delete.type_to_confirm">
+                    <template #title>
+                        <strong>{{ topic.title }}</strong>
+                    </template>
+                </Trans></label
             >
             <input
                 id="confirm-title"
@@ -182,14 +189,18 @@ function execute() {
             {{ error }}
         </p>
         <template #footer>
-            <Btn :disabled="busy" @click="stage = 'confirm1'">Back</Btn>
-            <Btn :disabled="busy" @click="emit('close')">Cancel</Btn>
+            <Btn :disabled="busy" @click="stage = 'confirm1'">{{
+                $t("common.back")
+            }}</Btn>
+            <Btn :disabled="busy" @click="emit('close')">{{
+                $t("common.cancel")
+            }}</Btn>
             <Btn
                 variant="destructive"
                 :loading="busy"
                 :disabled="!matches"
                 @click="execute"
-                >Delete permanently</Btn
+                >{{ $t("topics.delete.delete_permanently") }}</Btn
             >
         </template>
     </Modal>

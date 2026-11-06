@@ -16,10 +16,10 @@ enum TaxonomyCategory: string
     public function label(): string
     {
         return match ($this) {
-            self::Academic => 'Academic',
-            self::Scientific => 'Scientific',
-            self::Sports => 'Sports',
-            self::Community => 'Community / Student Life',
+            self::Academic => __('categories.academic'),
+            self::Scientific => __('categories.scientific'),
+            self::Sports => __('categories.sports'),
+            self::Community => __('categories.community'),
         };
     }
 
@@ -28,11 +28,9 @@ enum TaxonomyCategory: string
      */
     public static function options(): array
     {
-        return [
-            self::Academic->value => 'Academic',
-            self::Scientific->value => 'Scientific',
-            self::Sports->value => 'Sports',
-            self::Community->value => 'Community / Student Life',
-        ];
+        return array_combine(
+            array_map(fn (self $category) => $category->value, self::cases()),
+            array_map(fn (self $category) => $category->label(), self::cases()),
+        );
     }
 }

@@ -45,8 +45,8 @@ class EventQrCodeController extends Controller
                 'title' => $event->title,
                 'status' => $event->status,
                 'points' => $event->points_value,
-                'starts' => $event->event_starts_at->format('D j M Y, H:i'),
-                'expires' => $event->completion_deadline->format('j M Y, H:i'),
+                'starts' => $event->event_starts_at->translatedFormat('D j M Y, H:i'),
+                'expires' => $event->completion_deadline->translatedFormat('j M Y, H:i'),
             ],
             'refusal' => $this->refusalFor($event),
             'maxSlips' => QrTokenService::MAX_SLIPS,
@@ -54,7 +54,7 @@ class EventQrCodeController extends Controller
             'batches' => $slips->groupBy('batch')->reverse()->map(fn (Collection $rows, string $key) => [
                 'key' => $key,
                 'label' => $labels[$key],
-                'made' => $rows->first()['token']->created_at?->format('j M Y, H:i'),
+                'made' => $rows->first()['token']->created_at?->translatedFormat('j M Y, H:i'),
                 'by' => $rows->first()['token']->issuer?->name,
                 'total' => $rows->count(),
                 'working' => $rows->where('state', 'working')->count(),
@@ -65,7 +65,7 @@ class EventQrCodeController extends Controller
                     'number' => $row['number'],
                     'state' => $row['state'],
                     'used_by' => $row['redemption']?->student?->name,
-                    'used_at' => $row['redemption']?->redeemed_at?->format('j M, H:i'),
+                    'used_at' => $row['redemption']?->redeemed_at?->translatedFormat('j M, H:i'),
                 ])->values(),
             ])->values(),
             'log' => $this->log($event, $slips),
@@ -84,9 +84,9 @@ class EventQrCodeController extends Controller
         $data = $request->validate([
             'copies' => ['required', 'integer', 'min:1', 'max:'.QrTokenService::MAX_SLIPS],
         ], [
-            'copies.required' => 'Say how many slips to make.',
-            'copies.min' => 'Make at least 1 slip.',
-            'copies.max' => 'Make at most '.QrTokenService::MAX_SLIPS.' slips at a time.',
+            'copies.required' => __('events.qr_flash.say_how_many_slips'),
+            'copies.min' => __('events.qr_flash.make_at_least_one_slip'),
+            'copies.max' => __('events.qr_flash.make_at_most', ['max' => QrTokenService::MAX_SLIPS]),
         ]);
 
         try {
@@ -95,7 +95,7 @@ class EventQrCodeController extends Controller
             return back()->with('error', $refused->getMessage());
         }
 
-        return back()->with('success', $made === 1 ? '1 slip made. Print it from the list below.' : "{$made} slips made. Print them from the list below.");
+        return back()->with('success', trans_choice('events.qr_flash.made_slip', $made));
     }
 
     public function revoke(Request $request, Event $event, QrToken $token): RedirectResponse
@@ -105,7 +105,7 @@ class EventQrCodeController extends Controller
 
         $this->qr->revoke($request->user(), $token);
 
-        return back()->with('success', 'The slip no longer works. Points already given with it are kept.');
+        return back()->with('success', __('events.qr_flash.the_code_no_longer_works'));
     }
 
     /**
@@ -126,9 +126,9 @@ class EventQrCodeController extends Controller
                 'id' => $event->id,
                 'title' => $event->title,
                 'points' => $event->points_value,
-                'starts' => $event->event_starts_at->format('D j M Y, H:i'),
+                'starts' => $event->event_starts_at->translatedFormat('D j M Y, H:i'),
                 'owning_topic' => $event->owningTopic?->title,
-                'expires' => $event->completion_deadline->format('j M Y'),
+                'expires' => $event->completion_deadline->translatedFormat('j M Y'),
             ],
             'codes' => $rows->where('state', 'working')->map(fn (array $row) => [
                 'id' => $row['token']->id,
@@ -157,12 +157,12 @@ class EventQrCodeController extends Controller
     private function refusalFor(Event $event): ?string
     {
         return match (true) {
-            $event->is_hidden => 'A surprise event has no QR codes: its points are given only by import.',
-            ! $event->qr_enabled => 'QR attendance is switched off for this event. Turn it on in the event to make slips.',
-            $event->status === Event::STATUS_DRAFT => 'Publish the event first, then make its slips.',
-            $event->isOnHold() => 'This event is on hold. Restore it to make slips.',
-            ! in_array($event->status, [Event::STATUS_PUBLISHED, Event::STATUS_COMPLETED], true) => 'This event is no longer active.',
-            now()->gt($event->completion_deadline) => "This event's completion deadline has passed, so new slips would not work.",
+            $event->is_hidden => __('events.qr_flash.surprise_has_no_codes'),
+            ! $event->qr_enabled => __('events.qr_flash.qr_attendance_is_switched_off'),
+            $event->status === Event::STATUS_DRAFT => __('events.qr_flash.publish_the_event_first_then'),
+            $event->isOnHold() => __('events.qr_flash.this_event_is_on_hold'),
+            ! in_array($event->status, [Event::STATUS_PUBLISHED, Event::STATUS_COMPLETED], true) => __('events.qr_flash.this_event_is_no_longer'),
+            now()->gt($event->completion_deadline) => __('events.qr_flash.this_event_s_completion_deadline'),
             default => null,
         };
     }
@@ -212,7 +212,7 @@ class EventQrCodeController extends Controller
         $number = 0;
 
         return $slips->pluck('batch')->unique()->mapWithKeys(function (string $key) use (&$number) {
-            return [$key => $key === self::EARLIER ? 'Earlier slips' : 'Batch '.++$number];
+            return [$key => $key === self::EARLIER ? __('events.qr_slips.earlier') : __('events.qr_slips.batch_number', ['number' => ++$number])];
         });
     }
 
@@ -235,13 +235,13 @@ class EventQrCodeController extends Controller
             ->get()
             ->map(fn (QrRedemption $redemption) => [
                 'id' => $redemption->id,
-                'at' => $redemption->redeemed_at?->format('j M Y, H:i'),
+                'at' => $redemption->redeemed_at?->translatedFormat('j M Y, H:i'),
                 'student' => $redemption->student?->name,
                 'neptun' => $redemption->student?->neptun_code,
                 'code' => match (true) {
-                    $numbers->has($redemption->qr_token_id) => 'Slip '.$numbers[$redemption->qr_token_id],
-                    $redemption->token->isMilestone() => "Part {$redemption->token->step_number} of {$redemption->token->total_steps}",
-                    default => 'Poster',
+                    $numbers->has($redemption->qr_token_id) => __('events.qr_slips.log_slip', ['number' => $numbers[$redemption->qr_token_id]]),
+                    $redemption->token->isMilestone() => __('events.qr_slips.log_part', ['step' => $redemption->token->step_number, 'total' => $redemption->token->total_steps]),
+                    default => __('events.qr_slips.log_poster'),
                 },
                 'points' => $redemption->pointTransaction?->points,
             ]);

@@ -28,47 +28,55 @@ class HallScreen extends Page implements HasTable
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedTv;
 
-    protected static ?string $navigationLabel = 'Hall screen';
-
-    protected static ?string $title = 'Hall screen';
-
     protected static ?string $slug = 'hall-screen';
 
     protected string $view = 'filament.pages.hall-screen';
+
+    public static function getNavigationLabel(): string
+    {
+        return __('admin.hall_screen.navigation');
+    }
+
+    public function getTitle(): string
+    {
+        return __('admin.hall_screen.title');
+    }
 
     public function table(Table $table): Table
     {
         return $table
             ->query(Leaderboard::query()->inNormalBrowsing()->with('topic:id,title')->orderBy('name')->orderBy('id'))
+            ->modelLabel(__('admin.models.leaderboard'))
+            ->pluralModelLabel(__('admin.models.leaderboards'))
             ->columns([
                 TextColumn::make('name')
-                    ->label('Leaderboard')
+                    ->label(__('admin.hall_screen.leaderboard'))
                     ->searchable(),
 
                 TextColumn::make('topic.title')
-                    ->label('Area'),
+                    ->label(__('admin.hall_screen.area')),
 
                 TextColumn::make('visibility')
-                    ->label('Shown')
-                    ->formatStateUsing(fn (string $state): string => $state === Leaderboard::PUBLIC ? 'Published' : 'Area only'),
+                    ->label(__('admin.hall_screen.shown'))
+                    ->formatStateUsing(fn (string $state): string => $state === Leaderboard::PUBLIC ? __('admin.hall_screen.published') : __('admin.hall_screen.area_only')),
 
                 TextColumn::make('hall_seconds')
-                    ->label('Time on the hall screen')
-                    ->placeholder('Default')
-                    ->formatStateUsing(fn (int $state): string => "{$state} s"),
+                    ->label(__('admin.hall_screen.time'))
+                    ->placeholder(__('admin.hall_screen.default'))
+                    ->formatStateUsing(fn (int $state): string => __('admin.hall_screen.seconds_short', ['seconds' => $state])),
             ])
             ->recordActions([
                 Action::make('editTime')
-                    ->label('Edit time')
+                    ->label(__('admin.hall_screen.edit_time'))
                     ->icon(Heroicon::OutlinedClock)
-                    ->modalHeading(fn (Leaderboard $record): string => "Time on the hall screen: {$record->name}")
-                    ->modalSubmitActionLabel('Save')
+                    ->modalHeading(fn (Leaderboard $record): string => __('admin.hall_screen.time_of', ['name' => $record->name]))
+                    ->modalSubmitActionLabel(__('admin.hall_screen.save'))
                     ->fillForm(fn (Leaderboard $record): array => ['hall_seconds' => $record->hall_seconds])
-                    ->form([$this->secondsField()->nullable()->helperText(fn (): string => 'Leave empty to use the default ('.Setting::hallSeconds().' s).')])
+                    ->form([$this->secondsField()->nullable()->helperText(fn (): string => __('admin.hall_screen.leave_empty', ['seconds' => Setting::hallSeconds()]))])
                     ->action(function (Leaderboard $record, array $data): void {
                         app(AreaLeaderboards::class)->update(Auth::user(), $record, ['hall_seconds' => $data['hall_seconds'] ?: null]);
 
-                        Notification::make()->title('Time saved')->success()->send();
+                        Notification::make()->title(__('admin.hall_screen.time_saved'))->success()->send();
                     }),
             ]);
     }
@@ -77,11 +85,11 @@ class HallScreen extends Page implements HasTable
     {
         return [
             Action::make('default')
-                ->label(fn (): string => 'Default: '.Setting::hallSeconds().' s')
+                ->label(fn (): string => __('admin.hall_screen.default_is', ['seconds' => Setting::hallSeconds()]))
                 ->icon(Heroicon::OutlinedClock)
-                ->modalHeading('Default time on the hall screen')
-                ->modalDescription('Used by every leaderboard that has no time of its own.')
-                ->modalSubmitActionLabel('Save')
+                ->modalHeading(__('admin.hall_screen.default_time'))
+                ->modalDescription(__('admin.hall_screen.default_time_help'))
+                ->modalSubmitActionLabel(__('admin.hall_screen.save'))
                 ->fillForm(fn (): array => ['hall_seconds' => Setting::hallSeconds()])
                 ->form([$this->secondsField()->required()])
                 ->action(function (array $data): void {
@@ -91,7 +99,7 @@ class HallScreen extends Page implements HasTable
                     Setting::setHallSeconds($seconds);
                     TopicAudit::record(Auth::user(), 'hall_seconds.default_changed', null, 'setting', 1, ['hall_seconds' => $before], ['hall_seconds' => $seconds]);
 
-                    Notification::make()->title('Default saved')->success()->send();
+                    Notification::make()->title(__('admin.hall_screen.default_saved'))->success()->send();
                 }),
         ];
     }
@@ -99,14 +107,14 @@ class HallScreen extends Page implements HasTable
     private function secondsField(): TextInput
     {
         return TextInput::make('hall_seconds')
-            ->label('Seconds')
+            ->label(__('admin.hall_screen.seconds'))
             ->numeric()
             ->integer()
             ->minValue(Leaderboard::HALL_SECONDS_MIN)
             ->maxValue(Leaderboard::HALL_SECONDS_MAX)
             ->validationMessages([
-                'min' => Leaderboard::HALL_SECONDS_MESSAGE,
-                'max' => Leaderboard::HALL_SECONDS_MESSAGE,
+                'min' => Leaderboard::hallSecondsMessage(),
+                'max' => Leaderboard::hallSecondsMessage(),
             ]);
     }
 }

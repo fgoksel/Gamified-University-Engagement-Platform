@@ -4,6 +4,7 @@ import { Link, usePage } from "@inertiajs/vue3";
 import { ChevronUp, LogOut, Moon, Settings, Sun } from "@lucide/vue";
 import { storeToRefs } from "pinia";
 import { useThemeStore } from "../stores/theme.js";
+import { t } from "../i18n.js";
 
 const page = usePage();
 const themeStore = useThemeStore();
@@ -12,7 +13,11 @@ const { toggleTheme } = themeStore;
 
 // No login yet: show a placeholder until the backend shares auth.user.
 const user = computed(
-    () => page.props.auth?.user ?? { name: "Guest user", email: "" },
+    () =>
+        page.props.auth?.user ?? {
+            name: t("user_menu.guest"),
+            email: "",
+        },
 );
 
 const initials = computed(() =>
@@ -68,7 +73,7 @@ onBeforeUnmount(() => {
                 @click="close"
             >
                 <Settings class="size-4" :stroke-width="1.75" />
-                Profile settings
+                {{ $t("user_menu.profile_settings") }}
             </Link>
 
             <button
@@ -83,7 +88,11 @@ onBeforeUnmount(() => {
                     :stroke-width="1.75"
                 />
                 <Moon v-else class="size-4" :stroke-width="1.75" />
-                {{ theme === "dark" ? "Light mode" : "Dark mode" }}
+                {{
+                    theme === "dark"
+                        ? $t("user_menu.light_mode")
+                        : $t("user_menu.dark_mode")
+                }}
             </button>
 
             <div class="my-1 border-t border-line"></div>
@@ -96,7 +105,7 @@ onBeforeUnmount(() => {
                 role="menuitem"
             >
                 <LogOut class="size-4" :stroke-width="1.75" />
-                Log out
+                {{ $t("user_menu.log_out") }}
             </Link>
         </div>
 

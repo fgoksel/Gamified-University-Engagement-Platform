@@ -3,7 +3,8 @@ import { computed, onBeforeUnmount, onMounted, ref, useId, watch } from "vue";
 import { router, useForm } from "@inertiajs/vue3";
 import TextField from "../TextField.vue";
 import EventTimeline from "./EventTimeline.vue";
-import { categoryDot } from "../../categoryColors.js";
+import { categoryDot, categoryLabel } from "../../categoryColors.js";
+import { t, tc } from "../../i18n.js";
 
 // The Event Form (Task #38). Used by Events/Create and by the edit page (Task #68):
 // pass "event" to fill it, and "url" / "method" to say where it saves. When editing,
@@ -73,10 +74,10 @@ const audiences = computed(() => owning.value?.audiences ?? []);
 
 // Paths in the tree, as on the event page (Task #74)
 const pathText = (path) => (path ?? []).join(" › ");
+const studentsText = (n) => tc("events.form.students_count", n);
 const audience = computed(() =>
     audiences.value.find((a) => a.id === Number(form.audience_topic_id)),
 );
-const studentsText = (n) => (n === 1 ? "1 student" : `${n} students`);
 
 // Pre-filled application dates (Task #79): on a new event, applications close when the
 // event starts until the organiser picks another time; they open on publishing unless an
@@ -129,8 +130,7 @@ function submit(action) {
 }
 
 // Unsaved changes (UC-1.3): ask before leaving the edit page.
-const LEAVE_MESSAGE =
-    "Changes to this event have not been saved. Are you sure you want to leave the page?";
+const LEAVE_MESSAGE = t("events.form.changes_to_this_event_have");
 let stopListening = () => {};
 
 function warnBeforeUnload(event) {
@@ -182,12 +182,12 @@ const selectClass = (field) => [
             class="space-y-5 rounded-card border border-line bg-surface p-5 shadow-card sm:p-6"
         >
             <legend class="px-1 text-base font-semibold text-fg">
-                About the event
+                {{ $t("events.form.about_the_event") }}
             </legend>
 
             <TextField
                 v-model="form.title"
-                label="Title"
+                :label="$t('events.form.title')"
                 required
                 :disabled="lockedField('title')"
                 :error="form.errors.title"
@@ -198,7 +198,7 @@ const selectClass = (field) => [
                     :for="`${id}-description`"
                     class="block text-sm font-medium text-fg"
                 >
-                    Description
+                    {{ $t("events.form.description") }}
                     <span class="text-danger-fg" aria-hidden="true">*</span>
                 </label>
                 <textarea
@@ -223,7 +223,7 @@ const selectClass = (field) => [
                     :for="`${id}-tag`"
                     class="block text-sm font-medium text-fg"
                 >
-                    Topic tag
+                    {{ $t("events.form.topic_tag") }}
                     <span class="text-danger-fg" aria-hidden="true">*</span>
                 </label>
                 <select
@@ -233,9 +233,13 @@ const selectClass = (field) => [
                     :disabled="lockedField('topic_tag_id')"
                     :class="selectClass('topic_tag_id')"
                 >
-                    <option value="" disabled>Choose a tag…</option>
+                    <option value="" disabled>
+                        {{ $t("events.form.choose_a_tag") }}
+                    </option>
                     <option v-for="tag in tags" :key="tag.id" :value="tag.id">
-                        {{ tag.name }} ({{ tag.category }})
+                        {{ tag.name }} ({{
+                            categoryLabel[tag.category]?.toLowerCase()
+                        }})
                     </option>
                 </select>
                 <p
@@ -258,7 +262,11 @@ const selectClass = (field) => [
                         class="size-2.5 rounded-full"
                         :class="categoryDot[selectedTag.category]"
                     />
-                    Category: {{ selectedTag.category }}
+                    {{
+                        $t("events.form.category_is", {
+                            category: selectedTag.category,
+                        })
+                    }}
                 </p>
             </div>
         </fieldset>
@@ -268,16 +276,16 @@ const selectClass = (field) => [
             class="space-y-5 rounded-card border border-line bg-surface p-5 shadow-card sm:p-6"
         >
             <legend class="px-1 text-base font-semibold text-fg">
-                Where and who
+                {{ $t("events.form.where_and_who") }}
             </legend>
 
             <!-- Task #77: free text; no room booking or clash check. -->
             <TextField
                 v-model="form.location"
-                label="Location"
+                :label="$t('events.form.location')"
                 optional
                 :disabled="lockedField('location')"
-                hint="A room or an address. Students see it on the event."
+                :hint="$t('events.form.a_room_or_an_address')"
                 :error="form.errors.location"
             />
 
@@ -286,7 +294,7 @@ const selectClass = (field) => [
                     :for="`${id}-owning`"
                     class="block text-sm font-medium text-fg"
                 >
-                    Managed from
+                    {{ $t("events.form.managed") }}
                     <span class="text-danger-fg" aria-hidden="true">*</span>
                 </label>
                 <select
@@ -296,7 +304,9 @@ const selectClass = (field) => [
                     :disabled="lockedField('owning_topic_id')"
                     :class="selectClass('owning_topic_id')"
                 >
-                    <option value="" disabled>Choose an area…</option>
+                    <option value="" disabled>
+                        {{ $t("events.form.choose_a_topic") }}
+                    </option>
                     <option v-for="t in topics" :key="t.id" :value="t.id">
                         {{ pathText(t.path) || t.title }}
                     </option>
@@ -304,7 +314,7 @@ const selectClass = (field) => [
                 <!-- The full path of the chosen topic (Task #74) -->
                 <nav
                     v-if="owning?.path?.length"
-                    aria-label="Path of the chosen area"
+                    :aria-label="$t('events.form.path_of_the_chosen_area')"
                     class="mt-2"
                     data-test="owning-path"
                 >
@@ -316,7 +326,9 @@ const selectClass = (field) => [
                             :key="i"
                             class="flex items-center gap-1"
                         >
-                            <span v-if="i > 0" aria-hidden="true">›</span>
+                            <span v-if="i > 0" aria-hidden="true">{{
+                                "›"
+                            }}</span>
                             <span
                                 :class="
                                     i === owning.path.length - 1
@@ -337,7 +349,7 @@ const selectClass = (field) => [
                 <p v-else class="mt-1.5 text-sm text-fg-muted">
                     {{
                         locks.owning_topic_id ||
-                        "The area whose staff manage this event."
+                        $t("events.form.the_topic_whose_staff_manage")
                     }}
                 </p>
             </div>
@@ -345,10 +357,10 @@ const selectClass = (field) => [
             <!-- Picked on the path of the owning topic, with the students who will see it (Task #74) -->
             <fieldset :aria-describedby="`${id}-audience-hint`">
                 <legend class="block text-sm font-medium text-fg">
-                    Who can see and apply
+                    {{ $t("events.form.who_can_see_and_apply") }}
                 </legend>
                 <p v-if="!owning" class="mt-1.5 text-sm text-fg-muted">
-                    Choose where the event is managed from first.
+                    {{ $t("events.form.choose_where_managed_first") }}
                 </p>
                 <div v-else class="mt-1.5 space-y-2" data-test="audiences">
                     <label
@@ -374,7 +386,11 @@ const selectClass = (field) => [
                         />
                         <span class="min-w-0">
                             <span class="block font-medium text-fg">
-                                Students of {{ a.title }}
+                                {{
+                                    $t("events.form.students_of", {
+                                        title: a.title,
+                                    })
+                                }}
                             </span>
                             <span class="block text-fg-muted">
                                 {{ pathText(a.path) }} ·
@@ -404,10 +420,10 @@ const selectClass = (field) => [
                         />
                         <span>
                             <span class="block font-medium text-fg">
-                                Invited students only
+                                {{ $t("events.form.invited_students_only") }}
                             </span>
                             <span class="block text-fg-muted">
-                                Nobody sees it in the event list.
+                                {{ $t("events.form.nobody_sees_it") }}
                             </span>
                         </span>
                     </label>
@@ -430,12 +446,18 @@ const selectClass = (field) => [
                         {{ locks.audience_topic_id }}
                     </template>
                     <template v-else-if="audience">
-                        {{ studentsText(audience.students) }} will see this
-                        event: the students assigned to {{ audience.title }}
-                        itself, not to the areas below it.
+                        {{
+                            $tc(
+                                "events.form.audience_count",
+                                audience.students,
+                                {
+                                    title: audience.title,
+                                },
+                            )
+                        }}
                     </template>
                     <template v-else-if="owning">
-                        Only students you invite will see this event.
+                        {{ $t("events.form.only_invited") }}
                     </template>
                 </p>
             </fieldset>
@@ -443,20 +465,22 @@ const selectClass = (field) => [
             <div class="grid gap-5 sm:grid-cols-2">
                 <TextField
                     v-model="form.capacity"
-                    label="Places"
+                    :label="$t('events.form.places')"
                     required
                     type="number"
                     :disabled="lockedField('capacity')"
                     :hint="
                         editing && minimumCapacity > 1
-                            ? `At least ${minimumCapacity}: that many students are already accepted.`
+                            ? $t('events.form.at_least', {
+                                  count: minimumCapacity,
+                              })
                             : ''
                     "
                     :error="form.errors.capacity"
                 />
                 <TextField
                     v-model="form.points_value"
-                    label="Points"
+                    :label="$t('events.form.points')"
                     required
                     type="number"
                     :disabled="lockedField('points_value')"
@@ -467,7 +491,7 @@ const selectClass = (field) => [
 
             <fieldset>
                 <legend class="text-sm font-medium text-fg">
-                    How students get a place
+                    {{ $t("events.form.how_students_get_a_place") }}
                 </legend>
                 <div class="mt-2 space-y-2">
                     <label class="flex items-start gap-2 text-sm text-fg">
@@ -479,9 +503,9 @@ const selectClass = (field) => [
                             class="mt-0.5"
                         />
                         <span>
-                            First come, first served
+                            {{ $t("events.form.first_come_first_served") }}
                             <span class="block text-fg-muted">
-                                Places fill in the order students apply.
+                                {{ $t("events.form.places_fill_in_the_order") }}
                             </span>
                         </span>
                     </label>
@@ -494,9 +518,13 @@ const selectClass = (field) => [
                             class="mt-0.5"
                         />
                         <span>
-                            I choose the students
+                            {{ $t("events.form.i_choose_the_students") }}
                             <span class="block text-fg-muted">
-                                Students apply, then you select who takes part.
+                                {{
+                                    $t(
+                                        "events.form.students_apply_then_you_select",
+                                    )
+                                }}
                             </span>
                         </span>
                     </label>
@@ -520,12 +548,14 @@ const selectClass = (field) => [
         <fieldset
             class="space-y-5 rounded-card border border-line bg-surface p-5 shadow-card sm:p-6"
         >
-            <legend class="px-1 text-base font-semibold text-fg">When</legend>
+            <legend class="px-1 text-base font-semibold text-fg">
+                {{ $t("events.form.when") }}
+            </legend>
 
             <div class="grid gap-5 sm:grid-cols-2">
                 <TextField
                     v-model="form.event_starts_at"
-                    label="Starts"
+                    :label="$t('events.form.starts')"
                     required
                     type="datetime-local"
                     :disabled="lockedField('event_starts_at')"
@@ -534,7 +564,7 @@ const selectClass = (field) => [
                 />
                 <TextField
                     v-model="form.event_ends_at"
-                    label="Ends"
+                    :label="$t('events.form.ends')"
                     required
                     type="datetime-local"
                     :disabled="lockedField('event_ends_at')"
@@ -542,38 +572,38 @@ const selectClass = (field) => [
                 />
                 <TextField
                     v-model="form.applications_open_at"
-                    label="Applications open"
+                    :label="$t('events.form.applications_open')"
                     optional
                     type="datetime-local"
                     :disabled="lockedField('applications_open_at')"
                     :hint="
                         locks.applications_open_at ??
-                        'Leave empty to open them when you publish.'
+                        $t('events.form.applications_open_hint')
                     "
                     :error="form.errors.applications_open_at"
                 />
                 <TextField
                     v-model="form.application_deadline"
-                    label="Applications close"
+                    :label="$t('events.form.applications_close')"
                     required
                     type="datetime-local"
                     :disabled="lockedField('application_deadline')"
                     :hint="
                         locks.application_deadline ??
                         (deadlineFollowsStart
-                            ? 'Set to the start for you. Any time up to the end.'
-                            : 'Any time up to the end.')
+                            ? $t('events.form.deadline_set_to_start')
+                            : $t('events.form.at_or_before_the_end'))
                     "
                     :error="form.errors.application_deadline"
                     @input="deadlineTyped"
                 />
                 <TextField
                     v-model="form.completion_deadline"
-                    label="Points can be given until"
+                    :label="$t('events.form.points_can_be_given_until')"
                     required
                     type="datetime-local"
                     :disabled="lockedField('completion_deadline')"
-                    hint="At or after the end. Points start when the event starts."
+                    :hint="$t('events.form.at_or_after_the_end')"
                     :error="form.errors.completion_deadline"
                 />
             </div>
@@ -593,7 +623,7 @@ const selectClass = (field) => [
             class="space-y-5 rounded-card border border-line bg-surface p-5 shadow-card sm:p-6"
         >
             <legend class="px-1 text-base font-semibold text-fg">
-                Options
+                {{ $t("events.form.options") }}
             </legend>
 
             <label class="flex items-start gap-2 text-sm text-fg">
@@ -604,12 +634,14 @@ const selectClass = (field) => [
                     class="mt-0.5"
                 />
                 <span>
-                    Use QR codes for attendance
+                    {{ $t("events.form.use_qr_codes_for_attendance") }}
                     <span class="block text-fg-muted">
                         {{
                             form.is_hidden
-                                ? "A surprise event has no QR codes."
-                                : "Students scan a code to confirm they took part."
+                                ? $t(
+                                      "events.form.a_surprise_event_has_no_qr_codes",
+                                  )
+                                : $t("events.form.students_scan_a_code")
                         }}
                     </span>
                 </span>
@@ -623,11 +655,11 @@ const selectClass = (field) => [
                     class="mt-0.5"
                 />
                 <span>
-                    Surprise event
+                    {{ $t("events.form.surprise_event") }}
                     <span class="block text-fg-muted">
                         {{
                             locks.is_hidden ||
-                            "Students never see it and cannot apply. Its points are given by importing a list of students."
+                            $t("events.form.surprise_students_never_see_it")
                         }}
                     </span>
                 </span>
@@ -644,7 +676,7 @@ const selectClass = (field) => [
 
         <template v-if="editing">
             <p v-if="readonly" class="text-sm text-fg-muted">
-                This event can no longer be changed.
+                {{ $t("events.form.this_event_can_no_longer") }}
             </p>
             <div
                 v-else
@@ -654,7 +686,7 @@ const selectClass = (field) => [
                     v-if="!form.isDirty"
                     class="self-center text-sm text-fg-muted"
                 >
-                    No changes to save.
+                    {{ $t("events.form.no_changes_to_save") }}
                 </p>
                 <button
                     type="submit"
@@ -662,15 +694,14 @@ const selectClass = (field) => [
                     data-test="save"
                     class="inline-flex items-center justify-center rounded-control bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                    Save changes
+                    {{ $t("events.form.save_changes") }}
                 </button>
             </div>
         </template>
 
         <template v-else>
             <p v-if="!canPublish" class="text-sm text-fg-muted">
-                You can save this event as a draft. Someone who may manage
-                events in this area publishes it.
+                {{ $t("events.form.you_can_save_this_event") }}
             </p>
             <div class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
                 <button
@@ -679,7 +710,7 @@ const selectClass = (field) => [
                     class="inline-flex items-center justify-center rounded-control border border-line bg-surface px-4 py-2.5 text-sm font-medium text-fg hover:bg-surface-muted disabled:opacity-70"
                     @click="submit('draft')"
                 >
-                    Save as draft
+                    {{ $t("events.form.save_as_draft") }}
                 </button>
                 <button
                     v-if="canPublish"
@@ -687,7 +718,7 @@ const selectClass = (field) => [
                     :disabled="form.processing"
                     class="inline-flex items-center justify-center rounded-control bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:opacity-70"
                 >
-                    Publish event
+                    {{ $t("events.form.publish_event") }}
                 </button>
             </div>
         </template>

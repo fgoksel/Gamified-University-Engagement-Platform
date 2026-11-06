@@ -63,8 +63,8 @@ class UpdateEventRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'topic_tag_id.required' => 'Choose a topic tag.',
-            'owning_topic_id.required' => 'Choose where the event is managed from.',
+            'topic_tag_id.required' => __('events.validation.choose_a_topic_tag'),
+            'owning_topic_id.required' => __('events.validation.choose_where_the_event'),
         ];
     }
 

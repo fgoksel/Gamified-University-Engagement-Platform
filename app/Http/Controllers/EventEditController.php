@@ -95,7 +95,7 @@ class EventEditController extends Controller
         $data = $request->validated();
         $editor->update($request->user(), $event, $data, $data['version'] ?? null);
 
-        return redirect()->route('events.edit', $event)->with('success', 'The event is saved.');
+        return redirect()->route('events.edit', $event)->with('success', __('events.edit_flash.the_event_is_saved'));
     }
 
     /**
@@ -119,24 +119,24 @@ class EventEditController extends Controller
 
         $words = function (string $field, mixed $value) use ($topics, $tags): string {
             if ($value === null || $value === '') {
-                return '(none)';
+                return __('events.edit_log.none');
             }
 
             return match ($field) {
-                'owning_topic_id', 'audience_topic_id' => $topics[$value] ?? '(removed)',
-                'topic_tag_id' => $tags[$value] ?? '(removed)',
-                'application_type' => $value === 'teacher_select' ? 'The organiser chooses' : 'First come, first served',
-                'is_hidden', 'qr_enabled' => $value ? 'Yes' : 'No',
-                'event_starts_at', 'event_ends_at', 'applications_open_at', 'application_deadline', 'completion_deadline' => Carbon::parse($value)->format('D j M Y, H:i'),
+                'owning_topic_id', 'audience_topic_id' => $topics[$value] ?? __('events.edit_log.removed'),
+                'topic_tag_id' => $tags[$value] ?? __('events.edit_log.removed'),
+                'application_type' => $value === 'teacher_select' ? __('events.edit_log.organiser_chooses') : __('events.edit_log.first_come_first_served'),
+                'is_hidden', 'qr_enabled' => $value ? __('events.edit_log.yes') : __('events.edit_log.no'),
+                'event_starts_at', 'event_ends_at', 'applications_open_at', 'application_deadline', 'completion_deadline' => Carbon::parse($value)->translatedFormat('D j M Y, H:i'),
                 // Long text: the log keeps it all, the page only says that it changed.
-                'description' => 'changed',
+                'description' => __('events.edit_log.changed'),
                 default => (string) $value,
             };
         };
 
         return $edits->map(fn (EventEdit $edit) => [
             'id' => $edit->id,
-            'at' => $edit->created_at->format('D j M Y, H:i'),
+            'at' => $edit->created_at->translatedFormat('D j M Y, H:i'),
             'by' => $edit->actor?->name,
             'changes' => collect($edit->changes)
                 // The category follows the tag, so the tag line says it all.

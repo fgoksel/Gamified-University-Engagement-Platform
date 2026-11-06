@@ -36,7 +36,7 @@ defineProps({
         <span
             v-if="badge > 0"
             class="ml-auto inline-flex min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-semibold text-on-primary"
-            :aria-label="`${badge} unread`"
+            :aria-label="$t('navigation.unread', { count: badge })"
         >
             {{ badge > 99 ? "99+" : badge }}
         </span>

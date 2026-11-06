@@ -6,10 +6,11 @@ import EmptyState from "../../Components/EmptyState.vue";
 import StatusChip from "../../Components/StatusChip.vue";
 import TextField from "../../Components/TextField.vue";
 import Btn from "../../Components/Topics/Btn.vue";
+import { t, tc } from "../../i18n.js";
 
 // Printed QR slips of one event (Task #84, replacing the posters and parts of Task #44):
 // make a batch, print exactly that batch, withdraw a slip, and see who used which slip.
-defineOptions({ layout: { title: "QR slips" } });
+defineOptions({ layout: { title: t("events.qr_slips.title") } });
 
 const props = defineProps({
     event: { type: Object, required: true },
@@ -32,10 +33,10 @@ const confirming = ref(null);
 
 // The state of a slip, with its StatusChip tone (docs/design-system.md)
 const states = {
-    working: { label: "Not used yet", tone: "info" },
-    used: { label: "Used", tone: "success" },
-    withdrawn: { label: "Withdrawn", tone: "neutral" },
-    expired: { label: "Expired", tone: "neutral" },
+    working: { label: t("events.qr_slips.state.working"), tone: "info" },
+    used: { label: t("events.qr_slips.state.used"), tone: "success" },
+    withdrawn: { label: t("events.qr_slips.state.withdrawn"), tone: "neutral" },
+    expired: { label: t("events.qr_slips.state.expired"), tone: "neutral" },
 };
 
 function submit() {
@@ -53,8 +54,33 @@ function withdraw(slip) {
     );
 }
 
-function count(n, one, many) {
-    return `${n} ${n === 1 ? one : many}`;
+// "30 slips", with when they were made and by whom, when that is known
+function batchLine(batch) {
+    const text = { made: batch.made, by: batch.by };
+
+    if (batch.made && batch.by) {
+        return tc("events.qr_slips.batch.made_by", batch.total, text);
+    }
+    if (batch.made) {
+        return tc("events.qr_slips.batch.made", batch.total, text);
+    }
+    if (batch.by) {
+        return tc("events.qr_slips.batch.by", batch.total, text);
+    }
+    return tc("events.qr_slips.batch.total", batch.total);
+}
+
+// "30 used · 12 not used yet", with the withdrawn ones when there are any
+function batchUse(batch) {
+    const counts = {
+        used: batch.used,
+        working: batch.working,
+        withdrawn: batch.withdrawn,
+    };
+
+    return batch.withdrawn
+        ? t("events.qr_slips.batch.use_withdrawn", counts)
+        : t("events.qr_slips.batch.use", counts);
 }
 </script>
 
@@ -64,14 +90,20 @@ function count(n, one, many) {
             href="/my-events"
             class="inline-flex min-h-11 items-center gap-1 text-sm text-fg-muted hover:text-fg"
         >
-            <ArrowLeft class="size-4" aria-hidden="true" /> Organized by me
+            <ArrowLeft class="size-4" aria-hidden="true" />
+            {{ $t("events.qr_slips.organized_by_me") }}
         </Link>
 
         <div>
             <h2 class="text-lg font-semibold text-fg">{{ event.title }}</h2>
             <p class="text-sm text-fg-muted">
-                {{ event.starts }} · {{ event.points }} points · slips work
-                until {{ event.expires }}
+                {{
+                    $t("events.qr_slips.summary", {
+                        starts: event.starts,
+                        points: event.points,
+                        expires: event.expires,
+                    })
+                }}
             </p>
         </div>
 
@@ -80,12 +112,11 @@ function count(n, one, many) {
             class="rounded-card border border-line bg-surface p-5 shadow-card sm:p-6"
             aria-labelledby="make-slips"
         >
-            <h3 id="make-slips" class="font-semibold text-fg">Make slips</h3>
+            <h3 id="make-slips" class="font-semibold text-fg">
+                {{ $t("events.qr_slips.make.title") }}
+            </h3>
             <p class="mt-1 text-sm text-fg-muted">
-                For an event with no screen, such as an outdoor or sports event.
-                Each slip gives {{ event.points }} points once, to the first
-                accepted student who scans it. A slip is not tied to a person,
-                so it can be handed on. It never changes.
+                {{ $t("events.qr_slips.make.intro", { points: event.points }) }}
             </p>
 
             <p
@@ -105,10 +136,10 @@ function count(n, one, many) {
                 <TextField
                     v-model="form.copies"
                     class="w-full sm:w-64"
-                    label="How many slips"
+                    :label="$t('events.qr_slips.make.how_many')"
                     type="number"
                     required
-                    :hint="`1 to ${maxSlips}. They print 12 to an A4 page.`"
+                    :hint="$t('events.qr_slips.make.hint', { max: maxSlips })"
                     :error="form.errors.copies"
                 />
                 <Btn
@@ -117,7 +148,7 @@ function count(n, one, many) {
                     :loading="form.processing"
                     :disabled="copies < 1 || copies > maxSlips"
                 >
-                    Make slips
+                    {{ $t("events.qr_slips.make.button") }}
                 </Btn>
             </form>
         </section>
@@ -128,7 +159,9 @@ function count(n, one, many) {
             class="space-y-3"
             aria-labelledby="batches"
         >
-            <h3 id="batches" class="font-semibold text-fg">Print</h3>
+            <h3 id="batches" class="font-semibold text-fg">
+                {{ $t("events.qr_slips.print.title") }}
+            </h3>
             <article
                 v-for="batch in batches"
                 :key="batch.key"
@@ -139,18 +172,10 @@ function count(n, one, many) {
                     <div>
                         <h4 class="font-medium text-fg">{{ batch.label }}</h4>
                         <p class="text-sm text-fg-muted">
-                            {{ count(batch.total, "slip", "slips") }}
-                            <template v-if="batch.made">
-                                · made {{ batch.made }}</template
-                            ><template v-if="batch.by">
-                                by {{ batch.by }}</template
-                            >
+                            {{ batchLine(batch) }}
                         </p>
                         <p class="text-sm text-fg-muted">
-                            {{ batch.used }} used · {{ batch.working }} not used
-                            yet<template v-if="batch.withdrawn">
-                                · {{ batch.withdrawn }} withdrawn</template
-                            >
+                            {{ batchUse(batch) }}
                         </p>
                     </div>
                     <a
@@ -160,11 +185,15 @@ function count(n, one, many) {
                         class="inline-flex min-h-11 items-center gap-2 rounded-control border border-line bg-surface px-3 text-sm font-medium text-fg hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                     >
                         <Printer class="size-4" aria-hidden="true" />
-                        Print {{ count(batch.working, "slip", "slips") }}
-                        <span class="sr-only">of {{ batch.label }}</span>
+                        {{ $tc("events.qr_slips.print.button", batch.working) }}
+                        <span class="sr-only">{{
+                            $t("events.qr_slips.print.of_batch", {
+                                label: batch.label,
+                            })
+                        }}</span>
                     </a>
                     <p v-else class="text-sm text-fg-muted">
-                        Nothing left to print
+                        {{ $t("events.qr_slips.print.nothing_left") }}
                     </p>
                 </div>
 
@@ -176,9 +205,12 @@ function count(n, one, many) {
                             class="size-4 group-open:rotate-90"
                             aria-hidden="true"
                         />
-                        Each slip<span class="sr-only">
-                            of {{ batch.label }}</span
-                        >
+                        {{ $t("events.qr_slips.each.title") }}
+                        <span class="sr-only">{{
+                            $t("events.qr_slips.print.of_batch", {
+                                label: batch.label,
+                            })
+                        }}</span>
                     </summary>
                     <div class="mt-2 overflow-x-auto">
                         <table class="w-full text-left text-sm">
@@ -188,16 +220,18 @@ function count(n, one, many) {
                                         scope="col"
                                         class="px-3 py-2 font-medium"
                                     >
-                                        Slip
+                                        {{ $t("events.qr_slips.each.slip") }}
                                     </th>
                                     <th
                                         scope="col"
                                         class="px-3 py-2 font-medium"
                                     >
-                                        State
+                                        {{ $t("events.qr_slips.each.state") }}
                                     </th>
                                     <th scope="col" class="px-3 py-2">
-                                        <span class="sr-only">Actions</span>
+                                        <span class="sr-only">{{
+                                            $t("events.qr_slips.each.actions")
+                                        }}</span>
                                     </th>
                                 </tr>
                             </thead>
@@ -230,30 +264,53 @@ function count(n, one, many) {
                                                 class="inline-flex flex-wrap items-center justify-end gap-2"
                                             >
                                                 <span class="text-fg-muted">
-                                                    It stops working at once.
+                                                    {{
+                                                        $t(
+                                                            "events.qr_slips.each.stops_at_once",
+                                                        )
+                                                    }}
                                                 </span>
                                                 <Btn
                                                     small
                                                     variant="danger"
                                                     @click="withdraw(slip)"
                                                 >
-                                                    Withdraw slip
-                                                    {{ slip.number }}
+                                                    {{
+                                                        $t(
+                                                            "events.qr_slips.each.withdraw_slip",
+                                                            {
+                                                                number: slip.number,
+                                                            },
+                                                        )
+                                                    }}
                                                 </Btn>
                                                 <Btn
                                                     small
                                                     @click="confirming = null"
                                                 >
-                                                    Keep it
+                                                    {{
+                                                        $t(
+                                                            "events.qr_slips.each.keep_it",
+                                                        )
+                                                    }}
                                                 </Btn>
                                             </span>
                                             <Btn
                                                 v-else
                                                 small
-                                                :aria-label="`Withdraw slip ${slip.number}`"
+                                                :aria-label="
+                                                    $t(
+                                                        'events.qr_slips.each.withdraw_slip_label',
+                                                        { number: slip.number },
+                                                    )
+                                                "
                                                 @click="confirming = slip.id"
                                             >
-                                                Withdraw
+                                                {{
+                                                    $t(
+                                                        "events.qr_slips.each.withdraw",
+                                                    )
+                                                }}
                                             </Btn>
                                         </template>
                                     </td>
@@ -265,16 +322,22 @@ function count(n, one, many) {
             </article>
         </section>
 
-        <EmptyState v-else :icon="TicketCheck" title="No slips yet">
-            Make slips above, then print them.
+        <EmptyState
+            v-else
+            :icon="TicketCheck"
+            :title="$t('events.qr_slips.empty.title')"
+        >
+            {{ $t("events.qr_slips.empty.description") }}
         </EmptyState>
 
         <!-- The log: who used which slip, and when -->
         <section class="space-y-3" aria-labelledby="slip-log">
             <div>
-                <h3 id="slip-log" class="font-semibold text-fg">Slip log</h3>
+                <h3 id="slip-log" class="font-semibold text-fg">
+                    {{ $t("events.qr_slips.log.title") }}
+                </h3>
                 <p class="text-sm text-fg-muted">
-                    Who used which slip, and when. Newest first.
+                    {{ $t("events.qr_slips.log.help") }}
                 </p>
             </div>
             <div
@@ -285,19 +348,19 @@ function count(n, one, many) {
                     <thead class="bg-surface-muted text-fg-muted">
                         <tr>
                             <th scope="col" class="px-4 py-2 font-medium">
-                                When
+                                {{ $t("events.qr_slips.log.when") }}
                             </th>
                             <th scope="col" class="px-4 py-2 font-medium">
-                                Student
+                                {{ $t("events.qr_slips.log.student") }}
                             </th>
                             <th scope="col" class="px-4 py-2 font-medium">
-                                Neptun code
+                                {{ $t("events.qr_slips.log.neptun_code") }}
                             </th>
                             <th scope="col" class="px-4 py-2 font-medium">
-                                Code
+                                {{ $t("events.qr_slips.log.code") }}
                             </th>
                             <th scope="col" class="px-4 py-2 font-medium">
-                                Points
+                                {{ $t("events.qr_slips.log.points") }}
                             </th>
                         </tr>
                     </thead>
@@ -330,19 +393,10 @@ function count(n, one, many) {
                 v-else
                 class="rounded-control bg-surface-muted px-3 py-2 text-sm text-fg-muted"
             >
-                No slip has been used yet.
+                {{ $t("events.qr_slips.log.empty") }}
             </p>
             <p v-if="retired" class="text-sm text-fg-muted">
-                {{
-                    count(
-                        retired,
-                        "poster or part code",
-                        "posters and part codes",
-                    )
-                }}
-                from before printed slips no longer
-                {{ retired === 1 ? "works" : "work" }}. Earlier scans of them
-                stay in the log.
+                {{ $tc("events.qr_slips.retired", retired) }}
             </p>
         </section>
     </div>

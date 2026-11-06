@@ -18,9 +18,9 @@ defineProps({
         >
             <Check class="size-3" :stroke-width="2.5" aria-hidden="true" />
             {{ capabilityLabel(value) }}
-            <span v-if="passOn.includes(value)" class="text-fg-muted"
-                >(can pass on)</span
-            >
+            <span v-if="passOn.includes(value)" class="text-fg-muted">{{
+                $t("topics.capabilities.can_pass")
+            }}</span>
         </li>
     </ul>
 </template>

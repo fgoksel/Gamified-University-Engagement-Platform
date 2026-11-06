@@ -45,7 +45,7 @@ onBeforeUnmount(() => clearTimeout(timer));
             <button
                 type="button"
                 class="rounded-control p-1 text-fg-muted hover:bg-surface-muted hover:text-fg focus-visible:outline-2 focus-visible:outline-ring"
-                aria-label="Close message"
+                :aria-label="$t('common.close_message')"
                 @click="hide"
             >
                 <X class="size-4" :stroke-width="1.75" />

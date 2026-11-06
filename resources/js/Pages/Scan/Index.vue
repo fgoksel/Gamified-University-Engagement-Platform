@@ -12,11 +12,12 @@ import { BrowserQRCodeReader } from "@zxing/library";
 import Btn from "../../Components/Topics/Btn.vue";
 import { extractCode } from "../../qrCode.js";
 import { categoryDot, categoryLabel } from "../../categoryColors.js";
+import { t } from "../../i18n.js";
 
 // Student: scan an event's QR code to confirm attendance (UC-2.3, Task #51).
 // The server decides everything (POST /qr/redeem, Task #45): this page only
 // reads the code and shows the answer.
-defineOptions({ layout: { title: "Scan QR code" } });
+defineOptions({ layout: { title: t("scan.scan_qr_code") } });
 
 const props = defineProps({
     // Set when the code was opened from the phone's own camera app.
@@ -67,7 +68,7 @@ async function redeem(text) {
         if (response.ok) {
             result.value = {
                 type: "success",
-                title: `${data.points} points credited`,
+                title: t("scan.points_credited", { points: data.points }),
                 message: data.event,
                 points: data.points,
                 category: data.category,
@@ -75,21 +76,21 @@ async function redeem(text) {
         } else {
             result.value = {
                 type: "error",
-                title: "Could not confirm attendance",
+                title: t("scan.could_not_confirm_attendance"),
                 message:
                     response.status === 429
-                        ? "Too many attempts. Wait a minute and try again."
+                        ? t("scan.too_many_attempts_wait")
                         : data.message ||
                           data.errors?.code?.[0] ||
-                          "Something went wrong. Try again.",
+                          t("scan.something_went_wrong_try_again"),
             };
         }
     } catch {
         pending.value = null;
         result.value = {
             type: "error",
-            title: "Connection error",
-            message: "The server could not be reached. Try again.",
+            title: t("scan.connection_error"),
+            message: t("scan.the_server_could"),
         };
     } finally {
         processing.value = false;
@@ -104,8 +105,7 @@ async function startCamera() {
         const devices = await reader.listVideoInputDevices();
 
         if (devices.length === 0) {
-            cameraError.value =
-                "No camera was found on this device. Sign in on another device to scan.";
+            cameraError.value = t("scan.no_camera_was_found");
             return;
         }
 
@@ -133,8 +133,7 @@ async function startCamera() {
         );
     } catch {
         cameraActive.value = false;
-        cameraError.value =
-            "The camera could not be used. Allow camera access in your browser (it needs a secure https page), or sign in on another device.";
+        cameraError.value = t("scan.the_camera_could");
     }
 }
 
@@ -168,10 +167,10 @@ onUnmounted(stopCamera);
             <QrCode class="mx-auto size-10 text-primary" />
             <div>
                 <h2 class="text-base font-semibold text-fg">
-                    Confirm your attendance
+                    {{ $t("scan.confirm_your_attendance") }}
                 </h2>
                 <p class="mt-1 text-sm text-fg-muted">
-                    You opened an event QR code. Claim your points now?
+                    {{ $t("scan.you_opened_an_event_qr") }}
                 </p>
             </div>
             <Btn
@@ -180,7 +179,7 @@ onUnmounted(stopCamera);
                 data-test="claim"
                 @click="redeem(pending)"
             >
-                Claim points
+                {{ $t("scan.claim_points") }}
             </Btn>
         </section>
 
@@ -216,7 +215,7 @@ onUnmounted(stopCamera);
                 data-test="confirmation"
             >
                 <div>
-                    <dt class="text-fg-muted">Points</dt>
+                    <dt class="text-fg-muted">{{ $t("scan.points") }}</dt>
                     <dd
                         class="text-lg font-semibold text-fg"
                         data-test="points"
@@ -225,7 +224,7 @@ onUnmounted(stopCamera);
                     </dd>
                 </div>
                 <div>
-                    <dt class="text-fg-muted">Category</dt>
+                    <dt class="text-fg-muted">{{ $t("scan.category") }}</dt>
                     <dd
                         class="flex items-center justify-center gap-1.5 text-lg font-semibold text-fg"
                         data-test="category"
@@ -235,20 +234,20 @@ onUnmounted(stopCamera);
                             :class="categoryDot[result.category]"
                             aria-hidden="true"
                         />
-                        {{ categoryLabel[result.category] ?? result.category }}
+                        {{ categoryLabel[result.category] }}
                     </dd>
                 </div>
             </dl>
             <div class="flex flex-wrap justify-center gap-2">
                 <Btn variant="primary" data-test="again" @click="scanAnother">
                     <RotateCw class="size-4" />
-                    Scan another code
+                    {{ $t("scan.scan_another_code") }}
                 </Btn>
                 <Link
                     href="/my-events"
                     class="inline-flex items-center justify-center rounded-control border border-line bg-surface px-3 py-2 text-sm font-medium text-fg hover:bg-surface-muted"
                 >
-                    My events
+                    {{ $t("scan.my_events") }}
                 </Link>
             </div>
         </section>
@@ -281,7 +280,9 @@ onUnmounted(stopCamera);
                 >
                     <Camera class="size-8 text-fg-muted" />
                     <p class="text-sm text-fg-muted">{{ cameraError }}</p>
-                    <Btn @click="startCamera">Try the camera again</Btn>
+                    <Btn @click="startCamera">{{
+                        $t("scan.try_the_camera_again")
+                    }}</Btn>
                 </div>
 
                 <div
@@ -289,12 +290,12 @@ onUnmounted(stopCamera);
                     class="absolute inset-0 z-20 flex items-center justify-center gap-2 bg-black/50 font-medium text-white"
                 >
                     <RotateCw class="size-5 animate-spin" />
-                    Checking the code…
+                    {{ $t("scan.checking_the_code") }}
                 </div>
             </div>
 
             <p class="text-center text-sm text-fg-muted">
-                Point the camera at the QR code shown at the event.
+                {{ $t("scan.point_the_camera") }}
             </p>
         </template>
     </div>

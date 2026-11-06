@@ -3,11 +3,12 @@ import { Link, useForm, usePage } from "@inertiajs/vue3";
 import AlertMessage from "../../Components/AlertMessage.vue";
 import PrimaryButton from "../../Components/PrimaryButton.vue";
 import TextField from "../../Components/TextField.vue";
+import { t } from "../../i18n.js";
 
 defineOptions({
     layout: {
-        title: "Log in",
-        description: "Use your university email address.",
+        title: t("auth.login.title"),
+        description: t("auth.login.description"),
     },
 });
 
@@ -37,7 +38,7 @@ function submit() {
         <form class="space-y-5" novalidate @submit.prevent="submit">
             <TextField
                 v-model="form.email"
-                label="Email address"
+                :label="$t('auth.email_address')"
                 type="email"
                 autocomplete="username"
                 :error="form.errors.email"
@@ -46,7 +47,7 @@ function submit() {
             <div>
                 <TextField
                     v-model="form.password"
-                    label="Password"
+                    :label="$t('auth.password')"
                     type="password"
                     autocomplete="current-password"
                     :error="form.errors.password"
@@ -56,12 +57,14 @@ function submit() {
                         href="/forgot-password"
                         class="text-sm font-medium text-link hover:underline"
                     >
-                        Forgot password?
+                        {{ $t("auth.login.forgot_password") }}
                     </Link>
                 </div>
             </div>
 
-            <PrimaryButton :loading="form.processing">Log in</PrimaryButton>
+            <PrimaryButton :loading="form.processing">{{
+                $t("auth.login.submit")
+            }}</PrimaryButton>
         </form>
     </div>
 </template>

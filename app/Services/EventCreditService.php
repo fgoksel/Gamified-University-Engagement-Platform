@@ -40,7 +40,7 @@ class EventCreditService
     {
         // 1. Authorization: Actor must have points.credit capability on owning topic
         if (! $actor->can('credit', $event)) {
-            throw new AuthorizationException('You are not authorized to credit points for this event.');
+            throw new AuthorizationException(__('events.credit_service.you_are_not_authorized'));
         }
 
         // 2. Validate Event State & Window via PointLedger refusal check
@@ -54,7 +54,7 @@ class EventCreditService
         if (! $this->passports->looksLikePassport($passport)) {
             return $this->unknownStudent(
                 'passport_invalid',
-                'This is not a QR passport. Ask the student to show the one on their "My QR passport" page.',
+                __('events.credit_service.not_a_qr_passport'),
             );
         }
 
@@ -64,8 +64,8 @@ class EventCreditService
             return $this->unknownStudent(
                 $problem === 'expired' ? 'passport_expired' : 'passport_invalid',
                 $problem === 'expired'
-                    ? 'This QR passport has expired. Ask the student to open their passport again.'
-                    : 'This QR passport is not valid.',
+                    ? __('events.credit_service.this_qr_passport_has_expired')
+                    : __('events.credit_service.this_qr_passport'),
             );
         }
 
@@ -80,7 +80,7 @@ class EventCreditService
 
             return [
                 'status' => 'credited',
-                'message' => "Success: Points credited to {$student->name} (+{$transaction->points} pts).",
+                'message' => __('events.credit_service.credited', ['name' => $student->name, 'points' => $transaction->points]),
                 'points' => $transaction->points,
                 'student' => [
                     'id' => $student->id,
@@ -119,7 +119,7 @@ class EventCreditService
         return [
             'status' => $status,
             'message' => $message,
-            'student' => ['id' => 0, 'name' => 'Unknown Student', 'neptun_code' => null],
+            'student' => ['id' => 0, 'name' => __('events.credit_service.unknown_student'), 'neptun_code' => null],
         ];
     }
 }

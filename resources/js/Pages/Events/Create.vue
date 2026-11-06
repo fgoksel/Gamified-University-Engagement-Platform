@@ -2,9 +2,10 @@
 import { CalendarPlus } from "@lucide/vue";
 import EmptyState from "../../Components/EmptyState.vue";
 import EventForm from "../../Components/Events/EventForm.vue";
+import { t } from "../../i18n.js";
 
 // Teacher: create an event (Task #38, UC-1.3)
-defineOptions({ layout: { title: "New event" } });
+defineOptions({ layout: { title: t("events.create.new_event") } });
 
 defineProps({
     // Not "topics": that name is the shared menu flag from HandleInertiaRequests.
@@ -21,17 +22,17 @@ defineProps({
         <EmptyState
             v-if="!hasActiveSemester"
             :icon="CalendarPlus"
-            title="No active semester"
+            :title="$t('events.create.no_active_semester')"
         >
-            Events belong to a semester. Ask an administrator to open one.
+            {{ $t("events.create.events_belong_to_a_semester") }}
         </EmptyState>
 
         <EmptyState
             v-else-if="owningTopics.length === 0"
             :icon="CalendarPlus"
-            title="You cannot create events yet"
+            :title="$t('events.create.you_cannot_create_events_yet')"
         >
-            You need a role in an area that allows creating events there.
+            {{ $t("events.create.you_need_a_role") }}
         </EmptyState>
 
         <EventForm

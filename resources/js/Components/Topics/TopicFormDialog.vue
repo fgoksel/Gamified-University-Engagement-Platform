@@ -3,7 +3,9 @@ import { computed } from "vue";
 import { useForm } from "@inertiajs/vue3";
 import Modal from "./Modal.vue";
 import Btn from "./Btn.vue";
+import Trans from "../Trans.vue";
 import TextField from "../TextField.vue";
+import { t } from "../../i18n.js";
 
 // Create a topic (under a parent, or at the top level) or edit one.
 // The parent stays visible while typing, and errors keep what was entered.
@@ -22,8 +24,10 @@ const form = useForm({
 });
 
 const heading = computed(() => {
-    if (props.mode === "edit") return "Edit area";
-    return props.parent ? "New area" : "New top-level area";
+    if (props.mode === "edit") return t("topics.form.edit_topic");
+    return props.parent
+        ? t("topics.form.new_topic")
+        : t("topics.form.new_top_level_topic");
 });
 
 const url = computed(() => {
@@ -46,28 +50,29 @@ function submit() {
                 class="rounded-control bg-surface-muted px-3 py-2 text-sm text-fg-muted"
             >
                 <template v-if="parent">
-                    Adding under
-                    <strong class="text-fg">{{ parent.title }}</strong
-                    >. People with access to it get access to the new area too.
+                    <Trans k="topics.form.adding_under">
+                        <template #parent>
+                            <strong class="text-fg">{{ parent.title }}</strong>
+                        </template>
+                    </Trans>
                 </template>
                 <template v-else>
-                    A top-level area has no parent. You organise what goes below
-                    it, and give people roles on it.
+                    {{ $t("topics.form.a_top_level_topic_has") }}
                 </template>
             </p>
 
             <TextField
                 v-model="form.title"
-                label="Name"
+                :label="$t('topics.form.name')"
                 required
                 :error="form.errors.title"
                 data-autofocus
             />
             <TextField
                 v-model="form.code"
-                label="Code"
+                :label="$t('topics.form.code')"
                 optional
-                hint="A short reference such as BMEINFO101. It does not change how the area behaves."
+                :hint="$t('topics.form.a_short_reference_such')"
                 :error="form.errors.code"
             />
 
@@ -75,10 +80,10 @@ function submit() {
                 <label
                     for="topic-description"
                     class="block text-sm font-medium text-fg"
-                    >Description
-                    <span class="font-normal text-fg-muted"
-                        >(optional)</span
-                    ></label
+                    >{{ $t("topics.form.description") }}
+                    <span class="font-normal text-fg-muted">{{
+                        $t("fields.optional")
+                    }}</span></label
                 >
                 <textarea
                     id="topic-description"
@@ -102,14 +107,20 @@ function submit() {
         </form>
 
         <template #footer>
-            <Btn :disabled="form.processing" @click="emit('close')">Cancel</Btn>
+            <Btn :disabled="form.processing" @click="emit('close')">{{
+                $t("common.cancel")
+            }}</Btn>
             <Btn
                 type="submit"
                 form="topic-form"
                 variant="primary"
                 :loading="form.processing"
             >
-                {{ mode === "edit" ? "Save area" : "Create area" }}
+                {{
+                    mode === "edit"
+                        ? $t("topics.form.save_topic")
+                        : $t("topics.form.create_topic")
+                }}
             </Btn>
         </template>
     </Modal>

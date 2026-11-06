@@ -8,6 +8,7 @@ use App\Models\Faculty;
 use App\Models\User;
 use App\Notifications\OrganizerInvitationNotification;
 use App\Services\SystemAdminService;
+use App\Support\AdminUpload;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\FileUpload;
@@ -23,7 +24,6 @@ use Filament\Tables\Table;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 
 /**
@@ -43,39 +43,53 @@ class OrganizerManagement extends Page implements HasTable
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedUserGroup;
 
-    protected static ?string $navigationLabel = 'Organizers';
-
-    protected static ?string $title = 'Organizer Management';
-
     protected static ?string $slug = 'organizers';
 
     protected static ?int $navigationSort = 1;
 
     protected string $view = 'filament.pages.organizer-management';
 
+    public static function getNavigationLabel(): string
+    {
+        return __('admin.organizers.navigation');
+    }
+
+    public function getTitle(): string
+    {
+        return __('admin.organizers.title');
+    }
+
     public function table(Table $table): Table
     {
         return $table
             ->query(User::role(UserRole::Teacher)->latest())
+            ->modelLabel(__('admin.models.user'))
+            ->pluralModelLabel(__('admin.models.users'))
             ->columns([
                 TextColumn::make('name')
-                    ->label('Name')
+                    ->label(__('admin.organizers.name'))
                     ->searchable()
                     ->sortable(),
 
                 TextColumn::make('email')
-                    ->label('Email')
+                    ->label(__('admin.organizers.email'))
                     ->searchable()
                     ->sortable(),
 
                 TextColumn::make('faculty.name')
-                    ->label('Organizational Unit / Faculty')
+                    ->label(__('admin.organizers.organizational_unit_faculty'))
                     ->placeholder('—')
                     ->sortable(),
 
                 TextColumn::make('status')
-                    ->label('Status')
+                    ->label(__('admin.organizers.status'))
                     ->badge()
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        'active' => __('admin.status.active'),
+                        'invited' => __('admin.status.invited'),
+                        'inactive' => __('admin.status.inactive'),
+                        default => $state,
+                    })
                     ->color(fn (string $state): string => match ($state) {
                         'active' => 'success',
                         'invited' => 'warning',
@@ -84,17 +98,17 @@ class OrganizerManagement extends Page implements HasTable
                     }),
 
                 TextColumn::make('created_at')
-                    ->label('Registration Date')
+                    ->label(__('admin.organizers.registration_date'))
                     ->dateTime()
                     ->sortable(),
             ])
             ->actions([
                 // UC-3.1.2: Edit organizer details (pencil icon).
                 Action::make('edit')
-                    ->label('Edit')
+                    ->label(__('admin.organizers.edit'))
                     ->icon(Heroicon::OutlinedPencilSquare)
-                    ->modalHeading('Edit Organizer')
-                    ->modalSubmitActionLabel('Save Changes')
+                    ->modalHeading(__('admin.organizers.edit_organizer'))
+                    ->modalSubmitActionLabel(__('admin.organizers.save_changes'))
                     ->fillForm(fn (User $record): array => [
                         'name' => $record->name,
                         'email' => $record->email,
@@ -102,12 +116,12 @@ class OrganizerManagement extends Page implements HasTable
                     ])
                     ->form([
                         TextInput::make('name')
-                            ->label('Full Name')
+                            ->label(__('admin.organizers.full_name'))
                             ->required()
                             ->maxLength(255),
 
                         TextInput::make('email')
-                            ->label('Institutional Email')
+                            ->label(__('admin.organizers.institutional_email'))
                             ->email()
                             ->required()
                             ->maxLength(255)
@@ -117,11 +131,11 @@ class OrganizerManagement extends Page implements HasTable
                                 ignoreRecord: true,
                             )
                             ->validationMessages([
-                                'unique' => 'This email address is already registered in the system.',
+                                'unique' => __('admin.organizers.this_email_address_is_already'),
                             ]),
 
                         Select::make('faculty_id')
-                            ->label('Organizational Unit / Faculty')
+                            ->label(__('admin.organizers.organizational_unit_faculty'))
                             ->options(fn (): array => Faculty::query()->pluck('name', 'id')->all())
                             ->searchable()
                             ->nullable()
@@ -135,21 +149,21 @@ class OrganizerManagement extends Page implements HasTable
                         ]);
 
                         Notification::make()
-                            ->title('Organizer Updated')
+                            ->title(__('admin.organizers.organizer_updated'))
                             ->success()
-                            ->body("{$record->name}'s details have been successfully updated.")
+                            ->body(__('admin.organizers.name_s_details_have_been', ['name' => $record->name]))
                             ->send();
                     }),
 
                 // UC-3.1.2: Resend activation email for invited organizer.
                 Action::make('resend_invitation')
-                    ->label('Resend Invite')
+                    ->label(__('admin.organizers.resend_invite'))
                     ->icon(Heroicon::OutlinedEnvelope)
                     ->color('info')
                     ->requiresConfirmation()
-                    ->modalHeading('Resend Invitation')
-                    ->modalDescription(fn (User $record): string => "Generate a new activation link and resend the invitation email to {$record->email}?")
-                    ->modalSubmitActionLabel('Yes, Resend')
+                    ->modalHeading(__('admin.organizers.resend_invitation'))
+                    ->modalDescription(fn (User $record): string => __('admin.organizers.generate_a_new_activation_link', ['email' => $record->email]))
+                    ->modalSubmitActionLabel(__('admin.organizers.yes_resend'))
                     ->visible(fn (User $record): bool => $record->status === 'invited')
                     ->action(function (User $record): void {
                         $token = Str::random(64);
@@ -162,9 +176,9 @@ class OrganizerManagement extends Page implements HasTable
                         $record->notify(new OrganizerInvitationNotification($token, 24));
 
                         Notification::make()
-                            ->title('Invitation Resent')
+                            ->title(__('admin.organizers.invitation_resent'))
                             ->success()
-                            ->body('The activation link has been successfully resent.')
+                            ->body(__('admin.organizers.the_activation_link_has_been'))
                             ->send();
                     }),
 
@@ -173,21 +187,21 @@ class OrganizerManagement extends Page implements HasTable
                 // after the account has been deactivated.
                 // Guarded by AdminPolicy (Technical Specification Table 25, Task #32).
                 Action::make('deactivate')
-                    ->label('Deactivate')
+                    ->label(__('admin.organizers.deactivate'))
                     ->icon(Heroicon::OutlinedNoSymbol)
                     ->color('danger')
                     ->requiresConfirmation()
-                    ->modalHeading('Deactivate Organizer')
-                    ->modalDescription(fn (User $record): string => "Are you sure you want to deactivate {$record->name}? The Organizer will not be able to log in, but their previous events will remain.".static::topicRolesNote($record))
-                    ->modalSubmitActionLabel('Yes, Deactivate')
+                    ->modalHeading(__('admin.organizers.deactivate_organizer'))
+                    ->modalDescription(fn (User $record): string => __('admin.organizers.are_you_sure_you_want', ['name' => $record->name]).static::topicRolesNote($record))
+                    ->modalSubmitActionLabel(__('admin.organizers.yes_deactivate'))
                     ->visible(fn (User $record): bool => $record->status === 'active')
                     ->disabled(fn (User $record): bool => ! auth()->user()?->can('deactivate', $record))
                     ->tooltip(function (User $record): ?string {
                         if ($record->id === auth()->id()) {
-                            return 'You cannot deactivate your own account.';
+                            return __('admin.organizers.you_cannot_deactivate_your_own');
                         }
                         if ($record->hasRole(UserRole::Admin) && User::role(UserRole::Admin)->where('status', 'active')->count() <= 1) {
-                            return 'Cannot deactivate the last remaining Administrator.';
+                            return __('admin.organizers.cannot_deactivate_the_last_remaining');
                         }
 
                         return null;
@@ -195,11 +209,11 @@ class OrganizerManagement extends Page implements HasTable
                     ->action(function (User $record): void {
                         if (! auth()->user()?->can('deactivate', $record)) {
                             Notification::make()
-                                ->title('Action Not Allowed')
+                                ->title(__('admin.organizers.action_not_allowed'))
                                 ->danger()
                                 ->body($record->id === auth()->id()
-                                    ? 'You cannot deactivate your own account.'
-                                    : 'Cannot deactivate the last remaining Administrator.')
+                                    ? __('admin.organizers.you_cannot_deactivate_your_own')
+                                    : __('admin.organizers.cannot_deactivate_the_last_remaining'))
                                 ->send();
 
                             return;
@@ -210,30 +224,30 @@ class OrganizerManagement extends Page implements HasTable
                         try {
                             app(SystemAdminService::class)->deactivate(auth()->user(), $record);
                         } catch (AuthorizationException $exception) {
-                            Notification::make()->title('Action Not Allowed')->danger()->body($exception->getMessage())->send();
+                            Notification::make()->title(__('admin.organizers.action_not_allowed'))->danger()->body($exception->getMessage())->send();
 
                             return;
                         }
 
                         Notification::make()
-                            ->title('Organizer Deactivated')
+                            ->title(__('admin.organizers.organizer_deactivated'))
                             ->warning()
-                            ->body("{$record->name} has been deactivated and can no longer log in.")
+                            ->body(__('admin.organizers.name_has_been_deactivated', ['name' => $record->name]))
                             ->send();
                     }),
 
                 // UC-3.1.2: Activate a previously deactivated organizer (green checkmark).
                 // If the user never activated (email_verified_at is null), put them back to invited and send a fresh link.
                 Action::make('activate')
-                    ->label('Activate')
+                    ->label(__('admin.organizers.activate'))
                     ->icon(Heroicon::OutlinedCheckCircle)
                     ->color('success')
                     ->requiresConfirmation()
-                    ->modalHeading('Activate Organizer')
+                    ->modalHeading(__('admin.organizers.activate_organizer'))
                     ->modalDescription(fn (User $record): string => ($record->email_verified_at === null || $record->must_change_password)
-                        ? "Activate {$record->name}? Since this account has not activated yet, their status will become Invited and a fresh activation email will be sent."
-                        : "Activate {$record->name}? They will be able to log in again with their existing password.")
-                    ->modalSubmitActionLabel('Yes, Activate')
+                        ? __('admin.organizers.activate_name_since_this_account', ['name' => $record->name])
+                        : __('admin.organizers.activate_name_they_will', ['name' => $record->name]))
+                    ->modalSubmitActionLabel(__('admin.organizers.yes_activate'))
                     ->visible(fn (User $record): bool => $record->status === 'inactive')
                     ->action(function (User $record): void {
                         if ($record->email_verified_at === null || $record->must_change_password) {
@@ -248,17 +262,17 @@ class OrganizerManagement extends Page implements HasTable
                             $record->notify(new OrganizerInvitationNotification($token, 24));
 
                             Notification::make()
-                                ->title('Organizer Activated')
+                                ->title(__('admin.organizers.organizer_activated'))
                                 ->success()
-                                ->body("{$record->name} has not activated yet. Their status was set to Invited and a new activation link has been sent.")
+                                ->body(__('admin.organizers.name_has_not_activated_yet', ['name' => $record->name]))
                                 ->send();
                         } else {
                             $record->update(['status' => 'active']);
 
                             Notification::make()
-                                ->title('Organizer Activated')
+                                ->title(__('admin.organizers.organizer_activated'))
                                 ->success()
-                                ->body("{$record->name} has been activated and can log in again.")
+                                ->body(__('admin.organizers.name_has_been_activated', ['name' => $record->name]))
                                 ->send();
                         }
                     }),
@@ -269,19 +283,19 @@ class OrganizerManagement extends Page implements HasTable
     {
         return [
             Action::make('invite')
-                ->label('Invite Organizer')
+                ->label(__('admin.organizers.invite_organizer'))
                 ->icon(Heroicon::OutlinedEnvelope)
-                ->modalHeading('Invite New Organizer')
-                ->modalDescription('Send an invitation email to a teacher, demonstrator, or student organizer.')
-                ->modalSubmitActionLabel('Send Invitation')
+                ->modalHeading(__('admin.organizers.invite_new_organizer'))
+                ->modalDescription(__('admin.organizers.send_an_invitation_email'))
+                ->modalSubmitActionLabel(__('admin.organizers.send_invitation'))
                 ->form([
                     TextInput::make('name')
-                        ->label('Full Name')
+                        ->label(__('admin.organizers.full_name'))
                         ->required()
                         ->maxLength(255),
 
                     TextInput::make('email')
-                        ->label('Institutional Email')
+                        ->label(__('admin.organizers.institutional_email'))
                         ->email()
                         ->required()
                         ->maxLength(255)
@@ -290,11 +304,11 @@ class OrganizerManagement extends Page implements HasTable
                             column: 'email',
                         )
                         ->validationMessages([
-                            'unique' => 'This email address is already registered in the system.',
+                            'unique' => __('admin.organizers.this_email_address_is_already'),
                         ]),
 
                     Select::make('faculty_id')
-                        ->label('Organizational Unit / Faculty')
+                        ->label(__('admin.organizers.organizational_unit_faculty'))
                         ->options(fn (): array => Faculty::query()->pluck('name', 'id')->all())
                         ->searchable()
                         ->nullable()
@@ -320,23 +334,24 @@ class OrganizerManagement extends Page implements HasTable
                         $user->notify(new OrganizerInvitationNotification($token, 24));
 
                         Notification::make()
-                            ->title('Invitation Sent')
+                            ->title(__('admin.organizers.invitation_sent'))
                             ->success()
-                            ->body("The invitation was successfully sent to {$user->email}.")
+                            ->body(__('admin.organizers.the_invitation_was_successfully_sent', ['email' => $user->email]))
                             ->send();
                     });
                 }),
 
             // UC-3.1.1: Bulk CSV import for organizers (Task #24)
             Action::make('import')
-                ->label('Import Organizers (CSV)')
+                ->label(__('admin.organizers.import_organizers_csv'))
                 ->icon(Heroicon::OutlinedArrowUpTray)
-                ->modalHeading('Bulk Import Organizers (CSV)')
-                ->modalDescription('Upload a Neptun CSV file (max 10 MB) containing organizer accounts (Full Name, Email, and optional Faculty).')
-                ->modalSubmitActionLabel('Execute Import')
+                ->modalHeading(__('admin.organizers.bulk_import_organizers_csv'))
+                ->modalDescription(__('admin.organizers.upload_a_neptun_csv_file'))
+                ->modalSubmitActionLabel(__('admin.organizers.execute_import'))
                 ->form([
                     FileUpload::make('file')
-                        ->label('CSV File')
+                        ->placeholder(AdminUpload::placeholder())
+                        ->label(__('admin.organizers.csv_file'))
                         ->disk('local')
                         ->directory('imports')
                         ->acceptedFileTypes([
@@ -350,16 +365,16 @@ class OrganizerManagement extends Page implements HasTable
                         ->maxFiles(1)
                         ->maxSize(10240) // 10MB per Technical Spec 7.3.1
                         ->required()
-                        ->helperText(new HtmlString('<a href="/admin/sample-csv/organizers" class="text-primary-600 underline font-medium" download>Download sample CSV template</a>')),
+                        ->helperText(AdminUpload::sampleLink('/admin/sample-csv/organizers', __('admin.organizers.download_sample_csv_template'))),
                 ])
                 ->action(function (array $data): void {
                     $path = $data['file'];
                     ImportOrganizersJob::dispatch($path, auth()->id());
 
                     Notification::make()
-                        ->title('Organizer Import Queued')
+                        ->title(__('admin.organizers.organizer_import_queued'))
                         ->success()
-                        ->body('The CSV file was uploaded and background import has been queued. You will receive a panel notification when the import finishes.')
+                        ->body(__('admin.organizers.the_csv_file_was_uploaded'))
                         ->send();
                 }),
         ];
@@ -374,6 +389,6 @@ class OrganizerManagement extends Page implements HasTable
 
         return $count === 0
             ? ''
-            : " They hold {$count} active area role(s). These stay in place (nothing is removed); hand them over in Areas when needed.";
+            : ' '.__('admin.organizers.they_hold_count_active_topic', ['count' => $count]);
     }
 }

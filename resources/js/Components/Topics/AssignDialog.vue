@@ -3,6 +3,7 @@ import { computed, ref } from "vue";
 import { useForm } from "@inertiajs/vue3";
 import Modal from "./Modal.vue";
 import Btn from "./Btn.vue";
+import Trans from "../Trans.vue";
 import CapabilityList from "./CapabilityList.vue";
 import { api, debounce } from "../../topicsApi.js";
 
@@ -62,7 +63,7 @@ function submit() {
 
 <template>
     <Modal
-        title="Give a role"
+        :title="$t('topics.assign.give_a_role')"
         wide
         :busy="form.processing"
         @close="emit('close')"
@@ -71,16 +72,18 @@ function submit() {
             <p
                 class="rounded-control bg-info-soft px-3 py-2 text-sm text-info-fg"
             >
-                The role is given at <strong>{{ topic.title }}</strong> and also
-                applies to every area below it. It does not give access to the
-                parent or to sibling areas.
+                <Trans k="topics.assign.given_at">
+                    <template #title>
+                        <strong>{{ topic.title }}</strong>
+                    </template>
+                </Trans>
             </p>
 
             <div>
                 <label
                     for="person-search"
                     class="block text-sm font-medium text-fg"
-                    >Person</label
+                    >{{ $t("topics.assign.person") }}</label
                 >
                 <div
                     v-if="chosen"
@@ -100,7 +103,7 @@ function submit() {
                             form.user_id = null;
                         "
                     >
-                        Change
+                        {{ $t("topics.assign.change") }}
                     </button>
                 </div>
                 <template v-else>
@@ -109,7 +112,9 @@ function submit() {
                         v-model="term"
                         type="search"
                         autocomplete="off"
-                        placeholder="Search active accounts by name or email"
+                        :placeholder="
+                            $t('topics.assign.search_active_accounts_by_name')
+                        "
                         class="mt-1.5 block w-full rounded-control border border-line bg-surface px-3 py-2 text-fg focus:outline-2 focus:outline-offset-0 focus:outline-ring"
                         data-autofocus
                         @input="search"
@@ -121,12 +126,12 @@ function submit() {
                         v-else-if="searching"
                         class="mt-1.5 text-sm text-fg-muted"
                     >
-                        Searching…
+                        {{ $t("topics.assign.searching") }}
                     </p>
                     <ul
                         v-if="results.length"
                         class="mt-1 divide-y divide-line rounded-control border border-line"
-                        aria-label="Matching people"
+                        :aria-label="$t('topics.assign.matching_people')"
                     >
                         <li v-for="person in results" :key="person.id">
                             <button
@@ -147,7 +152,7 @@ function submit() {
                         v-else-if="term.trim().length >= 2 && !searching"
                         class="mt-1.5 text-sm text-fg-muted"
                     >
-                        No active account matches.
+                        {{ $t("topics.assign.no_active_account_matches") }}
                     </p>
                 </template>
                 <p
@@ -159,14 +164,14 @@ function submit() {
             </div>
 
             <fieldset>
-                <legend class="block text-sm font-medium text-fg">Role</legend>
+                <legend class="block text-sm font-medium text-fg">
+                    {{ $t("topics.assign.role") }}
+                </legend>
                 <p
                     v-if="roles.length === 0"
                     class="mt-1.5 text-sm text-fg-muted"
                 >
-                    There is no role you may give here. A System Admin can
-                    create roles, or give you the right to define them for this
-                    branch.
+                    {{ $t("topics.assign.there_is_no_role") }}
                 </p>
                 <div v-else class="mt-1.5 space-y-2">
                     <label
@@ -207,19 +212,27 @@ function submit() {
             </fieldset>
 
             <p v-if="role" class="text-sm text-fg-muted" aria-live="polite">
-                {{ chosen ? chosen.name : "The person" }} will be able to do the
-                things listed above at {{ topic.title }} and below it.
+                {{
+                    $t("topics.assign.will_be_able", {
+                        person: chosen
+                            ? chosen.name
+                            : $t("topics.assign.the_person"),
+                        topic: topic.title,
+                    })
+                }}
             </p>
         </form>
 
         <template #footer>
-            <Btn :disabled="form.processing" @click="emit('close')">Cancel</Btn>
+            <Btn :disabled="form.processing" @click="emit('close')">{{
+                $t("common.cancel")
+            }}</Btn>
             <Btn
                 type="submit"
                 form="assign-form"
                 variant="primary"
                 :loading="form.processing"
-                >Give role</Btn
+                >{{ $t("topics.assign.give_role") }}</Btn
             >
         </template>
     </Modal>

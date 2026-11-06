@@ -22,7 +22,13 @@ use Inertia\Response;
  */
 class SetPasswordController extends Controller
 {
-    public const EXPIRED_MESSAGE = 'The link has expired. Please request a new password reset on the login page.';
+    /**
+     * What a person is told when the link in their email no longer works.
+     */
+    public static function expiredMessage(): string
+    {
+        return __('auth.set_password.expired');
+    }
 
     /**
      * Show the Password Setup page, or send the user back if the link is bad.
@@ -32,7 +38,7 @@ class SetPasswordController extends Controller
         $user = $this->findUserByToken($token);
 
         if (! $user) {
-            return redirect()->route('login')->with('error', self::EXPIRED_MESSAGE);
+            return redirect()->route('login')->with('error', self::expiredMessage());
         }
 
         return Inertia::render('Auth/SetPassword', [
@@ -52,13 +58,13 @@ class SetPasswordController extends Controller
             'token' => ['required', 'string'],
             'password' => ['required', 'confirmed', Password::defaults()],
         ], [
-            'password.confirmed' => 'The two passwords do not match.',
+            'password.confirmed' => __('auth.passwords_do_not_match'),
         ]);
 
         $user = $this->findUserByToken($request->string('token'));
 
         if (! $user) {
-            return redirect()->route('login')->with('error', self::EXPIRED_MESSAGE);
+            return redirect()->route('login')->with('error', self::expiredMessage());
         }
 
         $this->logOutSomeoneElse($request, $user);
@@ -66,7 +72,7 @@ class SetPasswordController extends Controller
         // On a password reset the old password is the user's own one (UC-1.1 exceptions).
         if (! $user->isInvited() && Hash::check($request->input('password'), $user->password)) {
             throw ValidationException::withMessages([
-                'password' => 'The new password cannot be the same as the old one.',
+                'password' => __('auth.password_same_as_old'),
             ]);
         }
 
@@ -83,8 +89,8 @@ class SetPasswordController extends Controller
         ])->save();
 
         return redirect()->route('login')->with('success', $wasInvited
-            ? 'Your account is active. You can now log in with your new password.'
-            : 'Your password has been changed. You can now log in with your new password.');
+            ? __('auth.set_password.activated')
+            : __('auth.set_password.changed'));
     }
 
     /**

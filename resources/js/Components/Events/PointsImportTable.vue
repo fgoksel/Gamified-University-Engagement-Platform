@@ -22,10 +22,18 @@ const title = computed(() => `${props.caption} (${props.rows.length})`);
             />
             <thead class="bg-surface-muted text-xs text-fg-muted uppercase">
                 <tr>
-                    <th scope="col" class="px-3 py-2">Row</th>
-                    <th scope="col" class="px-3 py-2">Neptun code</th>
-                    <th scope="col" class="px-3 py-2">Student</th>
-                    <th v-if="reasons" scope="col" class="px-3 py-2">Why</th>
+                    <th scope="col" class="px-3 py-2">
+                        {{ $t("events.import.table.row") }}
+                    </th>
+                    <th scope="col" class="px-3 py-2">
+                        {{ $t("events.import.table.neptun_code") }}
+                    </th>
+                    <th scope="col" class="px-3 py-2">
+                        {{ $t("events.import.table.student") }}
+                    </th>
+                    <th v-if="reasons" scope="col" class="px-3 py-2">
+                        {{ $t("events.import.table.why") }}
+                    </th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-line">

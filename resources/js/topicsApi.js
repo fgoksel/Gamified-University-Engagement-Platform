@@ -1,3 +1,4 @@
+import { t } from "./i18n.js";
 // Small JSON helper for the Topics screens (lazy tree, search, previews) and
 // file uploads that answer with JSON (Task #85). Sends the session cookie and
 // Laravel's CSRF token, and turns error responses into a thrown Error with a
@@ -39,7 +40,7 @@ async function request(method, url, body) {
         throw new ApiError(
             first ??
                 data.message ??
-                "Something went wrong. Nothing was changed.",
+                t("topics.api.something_went_wrong_nothing_was"),
             response.status,
             errors,
         );

@@ -7,8 +7,10 @@ import Btn from "../../Components/Topics/Btn.vue";
 import Modal from "../../Components/Topics/Modal.vue";
 import CapabilityList from "../../Components/Topics/CapabilityList.vue";
 import RoleFormDialog from "../../Components/Topics/RoleFormDialog.vue";
+import Trans from "../../Components/Trans.vue";
+import { t } from "../../i18n.js";
 
-defineOptions({ layout: { title: "Roles" } });
+defineOptions({ layout: { title: t("topics.roles.roles") } });
 
 defineProps({
     roles: { type: Array, required: true },
@@ -42,24 +44,24 @@ function setArchived(role, archived) {
             class="inline-flex items-center gap-1 text-sm text-fg-muted hover:text-fg hover:underline"
         >
             <ArrowLeft class="size-4" :stroke-width="1.75" aria-hidden="true" />
-            Back to areas
+            {{ $t("topics.roles.back_to_topics") }}
         </Link>
 
         <div class="flex flex-wrap items-start justify-between gap-3">
             <p class="max-w-2xl text-sm text-fg-muted">
-                A role is a name plus a set of things people can do. Roles are
-                reusable: give the same role to many people at different areas.
-                The name is just a label; only the ticked abilities count.
+                {{ $t("topics.roles.a_role_is_a_name") }}
             </p>
             <Btn variant="primary" @click="editing = 'new'">
                 <Plus class="size-4" :stroke-width="2" aria-hidden="true" />
-                New role
+                {{ $t("topics.roles.new_role") }}
             </Btn>
         </div>
 
-        <EmptyState v-if="roles.length === 0" title="No roles yet">
-            Create the first role, then give it to people in an area. A fresh
-            installation starts without any predefined roles.
+        <EmptyState
+            v-if="roles.length === 0"
+            :title="$t('topics.roles.no_roles_yet')"
+        >
+            {{ $t("topics.roles.create_the_first_role_then") }}
         </EmptyState>
 
         <ul v-else class="space-y-3">
@@ -75,7 +77,7 @@ function setArchived(role, archived) {
                             <span
                                 v-if="role.archived"
                                 class="ml-2 rounded-full bg-surface-muted px-2 py-0.5 text-xs font-normal text-fg-muted"
-                                >archived</span
+                                >{{ $t("topics.roles.archived") }}</span
                             >
                         </h2>
                         <p
@@ -87,26 +89,37 @@ function setArchived(role, archived) {
                         <p class="mt-1 text-xs text-fg-muted">
                             {{
                                 role.global
-                                    ? "Global: can be used anywhere"
-                                    : `Only in “${role.scope.title}” and below`
+                                    ? $t(
+                                          "topics.roles.global_can_be_used_anywhere",
+                                      )
+                                    : $t("topics.roles.only_in_scope", {
+                                          scope: role.scope.title,
+                                      })
                             }}
-                            · {{ role.active_assignments }} active assignment(s)
+                            ·
+                            {{
+                                $t("topics.roles.active_assignments", {
+                                    count: role.active_assignments,
+                                })
+                            }}
                         </p>
                     </div>
                     <div v-if="role.editable" class="flex gap-2">
-                        <Btn small @click="editing = role">Edit</Btn>
+                        <Btn small @click="editing = role">{{
+                            $t("common.edit")
+                        }}</Btn>
                         <Btn
                             v-if="!role.archived"
                             small
                             @click="archiving = role"
-                            >Archive</Btn
+                            >{{ $t("topics.roles.archive") }}</Btn
                         >
                         <Btn
                             v-else
                             small
                             :loading="busy"
                             @click="setArchived(role, false)"
-                            >Restore</Btn
+                            >{{ $t("topics.roles.restore") }}</Btn
                         >
                     </div>
                 </div>
@@ -129,22 +142,26 @@ function setArchived(role, archived) {
 
         <Modal
             v-if="archiving"
-            title="Archive this role?"
+            :title="$t('topics.roles.archive_this_role')"
             @close="archiving = null"
         >
             <p class="text-sm text-fg">
-                <strong>{{ archiving.name }}</strong> can no longer be given to
-                new people. The {{ archiving.active_assignments }} active
-                assignment(s) stay as they are: nobody loses access, and areas
-                are untouched. You can restore the role at any time.
+                <Trans
+                    k="topics.roles.archive_confirm"
+                    :params="{ count: archiving.active_assignments }"
+                >
+                    <template #name>
+                        <strong>{{ archiving.name }}</strong>
+                    </template>
+                </Trans>
             </p>
             <template #footer>
-                <Btn @click="archiving = null">Cancel</Btn>
+                <Btn @click="archiving = null">{{ $t("common.cancel") }}</Btn>
                 <Btn
                     variant="danger"
                     :loading="busy"
                     @click="setArchived(archiving, true)"
-                    >Archive role</Btn
+                    >{{ $t("topics.roles.archive_role") }}</Btn
                 >
             </template>
         </Modal>

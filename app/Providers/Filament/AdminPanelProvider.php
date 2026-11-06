@@ -37,7 +37,7 @@ class AdminPanelProvider extends PanelProvider
             ->profile(EditProfile::class, isSimple: false)
             // Admin panel messages for finished / failed CSV imports (Task #30).
             ->databaseNotifications()
-            ->brandName('Campus Engage')
+            ->brandName(fn (): string => __('app.name'))
             ->font('Instrument Sans')
             ->colors([
                 'primary' => '#1a73db',
@@ -46,11 +46,11 @@ class AdminPanelProvider extends PanelProvider
             // Topics and roles are managed in the explorer, which uses the same
             // policies for System Admins and everyone else.
             ->navigationItems([
-                NavigationItem::make('Areas')
+                NavigationItem::make(fn (): string => __('admin.navigation.topics'))
                     ->url('/topics')
                     ->icon(Heroicon::OutlinedRectangleGroup)
                     ->sort(8),
-                NavigationItem::make('Area roles')
+                NavigationItem::make(fn (): string => __('admin.navigation.topic_roles'))
                     ->url('/topics/roles')
                     ->icon(Heroicon::OutlinedKey)
                     ->sort(9),

@@ -41,14 +41,14 @@ class TopicImportController extends Controller
             'parent_topic_ids' => ['nullable', 'array'],
             'parent_topic_ids.*' => ['integer'],
         ], [
-            'file.required' => 'Choose a file.',
-            'role_definition_id.required' => 'Choose a role.',
+            'file.required' => __('topics.import_flash.choose_a_file'),
+            'role_definition_id.required' => __('topics.import_flash.choose_a_role'),
         ]);
 
         $file = $request->file('file');
 
         if (! in_array(strtolower($file->getClientOriginalExtension()), ['csv', 'txt'], true)) {
-            throw ValidationException::withMessages(['file' => 'The file must be a CSV file.']);
+            throw ValidationException::withMessages(['file' => __('topics.import_flash.the_file_must')]);
         }
 
         $role = RoleDefinition::find($data['role_definition_id']);
@@ -66,14 +66,14 @@ class TopicImportController extends Controller
         $parents = array_values(array_unique(array_map('intval', $data['parent_topic_ids'] ?? [])));
 
         if (array_diff($parents, $offered) !== []) {
-            throw ValidationException::withMessages(['parent_topic_ids' => 'You can only add students to areas above this one where you may import them.']);
+            throw ValidationException::withMessages(['parent_topic_ids' => __('topics.import_flash.you_can_only_add_students')]);
         }
 
         foreach (Topic::query()->whereIn('id', $parents)->get() as $parent) {
             $allowed = Gate::forUser($user)->inspect('importRole', [RoleAssignment::class, $parent, $role]);
 
             if ($allowed->denied()) {
-                throw ValidationException::withMessages(['parent_topic_ids' => "{$parent->title}: {$allowed->message()}"]);
+                throw ValidationException::withMessages(['parent_topic_ids' => __('topics.import_flash.parent_not_allowed', ['topic' => $parent->title, 'reason' => $allowed->message()])]);
             }
         }
 
@@ -83,13 +83,13 @@ class TopicImportController extends Controller
         if ($path === false) {
             report(new RuntimeException("A student import file could not be saved to storage (topic {$topic->id})."));
 
-            throw ValidationException::withMessages(['file' => 'The file could not be saved on the server, so nothing was imported. Please try again, or tell an administrator.']);
+            throw ValidationException::withMessages(['file' => __('topics.import_flash.the_file_could')]);
         }
 
         ImportTopicStudentsJob::dispatch($path, $user->id, $topic->id, $role->id, $parents);
 
         return redirect()
             ->route('topics.show', ['topic' => $topic, 'tab' => 'access'])
-            ->with('success', 'The import has started. You will find the result under Notifications.');
+            ->with('success', __('topics.import_flash.the_import_has_started'));
     }
 }

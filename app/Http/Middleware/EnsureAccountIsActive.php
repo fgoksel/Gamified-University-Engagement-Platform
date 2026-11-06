@@ -26,10 +26,10 @@ class EnsureAccountIsActive
             $request->session()->regenerateToken();
 
             if ($request->expectsJson()) {
-                abort(403, 'Your account has been deactivated.');
+                abort(403, __('auth.account.deactivated'));
             }
 
-            return redirect()->route('login')->with('error', 'Your account has been deactivated. Please contact an administrator.');
+            return redirect()->route('login')->with('error', __('auth.account.deactivated_contact'));
         }
 
         return $next($request);

@@ -102,7 +102,11 @@ function submit() {
 
 <template>
     <Modal
-        :title="editing ? `Edit role: ${role.name}` : 'New role'"
+        :title="
+            editing
+                ? $t('topics.role_form.edit_role', { name: role.name })
+                : $t('topics.role_form.new_role')
+        "
         wide
         :busy="form.processing"
         @close="emit('close')"
@@ -113,16 +117,19 @@ function submit() {
                 class="rounded-control bg-warning-soft px-3 py-2 text-sm text-warning-fg"
                 role="status"
             >
-                {{ usage.assignments }} active assignment(s) held by
-                {{ usage.people }} person/people use this role. Changing what it
-                can do changes their access straight away.
+                {{
+                    $t("topics.role_form.usage_warning", {
+                        assignments: usage.assignments,
+                        people: usage.people,
+                    })
+                }}
             </p>
 
             <TextField
                 v-model="form.name"
-                label="Role name"
+                :label="$t('topics.role_form.role_name')"
                 required
-                hint="Any title you like. A name never gives extra power."
+                :hint="$t('topics.role_form.any_title_you_like')"
                 :error="form.errors.name"
                 data-autofocus
             />
@@ -131,10 +138,10 @@ function submit() {
                 <label
                     for="role-description"
                     class="block text-sm font-medium text-fg"
-                    >Description
-                    <span class="font-normal text-fg-muted"
-                        >(optional)</span
-                    ></label
+                    >{{ $t("topics.role_form.description") }}
+                    <span class="font-normal text-fg-muted">{{
+                        $t("fields.optional")
+                    }}</span></label
                 >
                 <textarea
                     id="role-description"
@@ -148,7 +155,7 @@ function submit() {
                 <label
                     for="role-scope"
                     class="block text-sm font-medium text-fg"
-                    >Where can this role be used?</label
+                    >{{ $t("topics.role_form.where_can_this_role") }}</label
                 >
                 <select
                     id="role-scope"
@@ -156,42 +163,45 @@ function submit() {
                     class="mt-1.5 block min-h-11 w-full rounded-control border border-line bg-surface px-3 py-2 text-fg focus:outline-2 focus:outline-offset-0 focus:outline-ring"
                 >
                     <option v-if="isAdmin" value="">
-                        Everywhere (global role)
+                        {{ $t("topics.role_form.everywhere_global_role") }}
                     </option>
                     <option
                         v-for="scope in scopes"
                         :key="scope.id"
                         :value="scope.id"
                     >
-                        Only in “{{ scope.title }}” and below<template
-                            v-if="scope.trail.length"
-                        >
-                            (in {{ scope.trail.join(" › ") }})</template
-                        >
+                        {{
+                            scope.trail.length
+                                ? $t("topics.role_form.scope_option_in", {
+                                      title: scope.title,
+                                      trail: scope.trail.join(" › "),
+                                  })
+                                : $t("topics.roles.only_in_scope", {
+                                      scope: scope.title,
+                                  })
+                        }}
                     </option>
                 </select>
                 <p class="mt-1.5 text-sm text-fg-muted">
-                    A role for one branch never changes anything in other
-                    branches.
+                    {{ $t("topics.role_form.a_role_for_one_branch") }}
                 </p>
             </div>
             <p v-else class="text-sm text-fg-muted">
-                Used
                 {{
                     role.global
-                        ? "everywhere"
-                        : `only in “${role.scope?.title}” and below`
-                }}. The place cannot be changed.
+                        ? $t("topics.role_form.used_everywhere")
+                        : $t("topics.role_form.used_only_in", {
+                              title: role.scope?.title,
+                          })
+                }}
             </p>
 
             <fieldset>
                 <legend class="text-sm font-medium text-fg">
-                    What this role can do
+                    {{ $t("topics.role_form.what_this_role_can_do") }}
                 </legend>
                 <p class="mt-1 text-sm text-fg-muted">
-                    You can only include what you are allowed to pass on. “Can
-                    pass on” lets the holder give that power to other people,
-                    which is different from being able to use it.
+                    {{ $t("topics.role_form.you_can_only_include_what") }}
                 </p>
                 <ul
                     class="mt-2 divide-y divide-line rounded-card border border-line"
@@ -246,7 +256,7 @@ function submit() {
                                     )
                                 "
                             />
-                            Can pass on
+                            {{ $t("topics.role_form.can_pass") }}
                         </label>
                     </li>
                 </ul>
@@ -282,21 +292,28 @@ function submit() {
                     type="checkbox"
                     class="mt-1 size-4 shrink-0"
                 />
-                <span class="text-fg"
-                    >I understand this changes the access of
-                    {{ usage.people }} person/people who hold this role.</span
-                >
+                <span class="text-fg">{{
+                    $t("topics.role_form.understand", {
+                        people: usage.people,
+                    })
+                }}</span>
             </label>
         </form>
 
         <template #footer>
-            <Btn :disabled="form.processing" @click="emit('close')">Cancel</Btn>
+            <Btn :disabled="form.processing" @click="emit('close')">{{
+                $t("common.cancel")
+            }}</Btn>
             <Btn
                 type="submit"
                 form="role-form"
                 variant="primary"
                 :loading="form.processing"
-                >{{ editing ? "Save role" : "Create role" }}</Btn
+                >{{
+                    editing
+                        ? $t("topics.role_form.save_role")
+                        : $t("topics.role_form.create_role")
+                }}</Btn
             >
         </template>
     </Modal>

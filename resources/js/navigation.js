@@ -9,6 +9,7 @@ import {
     Trophy,
     UserRound,
 } from "@lucide/vue";
+import { t } from "./i18n.js";
 
 // Main menu of AppLayout, per role. One place to add or rename menu items.
 // An item with "children" is a group heading with links under it.
@@ -17,35 +18,47 @@ import {
 // (Topics is shown only to people who have access to at least one topic).
 
 // Shared items, so the sidebar menu and the mobile bottom bar use the same labels.
-const home = { label: "Home", href: "/", icon: Home };
-const events = { label: "Events", href: "/events", icon: CalendarDays };
-const scan = { label: "Scan", href: "/scan", icon: QrCode };
-const myEvents = { label: "My events", href: "/my-events", icon: IdCard };
+const home = { label: t("navigation.home"), href: "/", icon: Home };
+const events = {
+    label: t("navigation.events"),
+    href: "/events",
+    icon: CalendarDays,
+};
+const scan = { label: t("navigation.scan"), href: "/scan", icon: QrCode };
+const myEvents = {
+    label: t("navigation.my_events"),
+    href: "/my-events",
+    icon: IdCard,
+};
 const organizedByMe = {
-    label: "Organized by me",
+    label: t("navigation.organized_by_me"),
     href: "/my-events",
     icon: IdCard,
 };
 const leaderboards = {
-    label: "Leaderboards",
+    label: t("navigation.leaderboards"),
     href: "/leaderboards",
     icon: Trophy,
 };
 const notifications = {
-    label: "Notifications",
+    label: t("navigation.notifications"),
     href: "/notifications",
     icon: Bell,
     badge: "unread",
 };
-const profile = { label: "Profile", href: "/profile", icon: UserRound };
+const profile = {
+    label: t("navigation.profile"),
+    href: "/profile",
+    icon: UserRound,
+};
 const topics = {
-    label: "Areas",
+    label: t("navigation.topics"),
     href: "/topics",
     icon: FolderTree,
     needs: "available",
 };
 const topicRoles = {
-    label: "Roles",
+    label: t("navigation.roles"),
     href: "/topics/roles",
     icon: ShieldCheck,
     needs: "roles",
@@ -55,12 +68,15 @@ export const navigation = {
     teacher: [
         home,
         {
-            label: "Events",
+            label: t("navigation.events"),
             icon: CalendarDays,
             children: [
-                { label: "All events", href: events.href },
+                { label: t("navigation.all_events"), href: events.href },
                 { label: organizedByMe.label, href: organizedByMe.href },
-                { label: "Tag requests", href: "/topic-tag-requests" },
+                {
+                    label: t("navigation.tag_requests"),
+                    href: "/topic-tag-requests",
+                },
             ],
         },
         leaderboards,
@@ -74,11 +90,11 @@ export const navigation = {
         events,
         scan,
         {
-            label: "My events and passport",
+            label: t("navigation.my_events_and_passport"),
             icon: IdCard,
             children: [
                 { label: myEvents.label, href: myEvents.href },
-                { label: "My QR passport", href: "/passport" },
+                { label: t("navigation.my_qr_passport"), href: "/passport" },
             ],
         },
         leaderboards,
@@ -92,7 +108,7 @@ export const navigation = {
         topics,
         topicRoles,
         {
-            label: "Admin panel",
+            label: t("navigation.admin_panel"),
             href: "/admin",
             icon: UserRound,
             external: true,

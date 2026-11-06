@@ -66,16 +66,21 @@ function destroy() {
     <div class="space-y-4">
         <div class="flex flex-wrap items-start justify-between gap-3">
             <div class="min-w-0">
-                <h3 class="text-base font-semibold text-fg">Leaderboards</h3>
+                <h3 class="text-base font-semibold text-fg">
+                    {{ $t("topics.leaderboards_panel.leaderboards") }}
+                </h3>
                 <p class="mt-1 text-sm text-fg-muted">
-                    A leaderboard here ranks students by the points from events
-                    in
-                    {{ topic.title }} and in all areas below it.
+                    {{
+                        $t(
+                            "topics.leaderboards_panel.a_leaderboard_here_ranks_students",
+                            { title: topic.title },
+                        )
+                    }}
                 </p>
             </div>
             <Btn v-if="manage" variant="primary" @click="creating = true">
                 <Plus class="size-4" :stroke-width="2" aria-hidden="true" />
-                New leaderboard
+                {{ $t("topics.leaderboards_panel.new_leaderboard") }}
             </Btn>
         </div>
 
@@ -99,17 +104,26 @@ function destroy() {
                             v-if="board.is_public"
                             tone="info"
                             :icon="Globe"
-                            >Published</StatusChip
+                            >{{
+                                $t("topics.leaderboards_panel.published")
+                            }}</StatusChip
                         >
-                        <StatusChip v-else :icon="Users">Area only</StatusChip>
+                        <StatusChip v-else :icon="Users">{{
+                            $t("topics.leaderboards_panel.area_only")
+                        }}</StatusChip>
                     </div>
                     <p class="text-sm text-fg-muted">
-                        Shows: {{ columnNames(board) }}
+                        {{
+                            $t("topics.leaderboards_panel.shows", {
+                                board: columnNames(board),
+                            })
+                        }}
                     </p>
                 </div>
                 <div v-if="manage" class="flex flex-wrap gap-2">
                     <Btn small @click="editing = board">
-                        Edit<span class="sr-only"> {{ board.name }}</span>
+                        {{ $t("topics.leaderboards_panel.edit")
+                        }}<span class="sr-only"> {{ board.name }}</span>
                     </Btn>
                     <Btn
                         v-if="board.is_public"
@@ -117,13 +131,16 @@ function destroy() {
                         :disabled="busy"
                         @click="unpublish(board)"
                     >
-                        Unpublish<span class="sr-only"> {{ board.name }}</span>
+                        {{ $t("topics.leaderboards_panel.unpublish")
+                        }}<span class="sr-only"> {{ board.name }}</span>
                     </Btn>
                     <Btn v-else small @click="publishing = board">
-                        Publish<span class="sr-only"> {{ board.name }}</span>
+                        {{ $t("topics.leaderboards_panel.publish")
+                        }}<span class="sr-only"> {{ board.name }}</span>
                     </Btn>
                     <Btn small @click="deleting = board">
-                        Delete<span class="sr-only"> {{ board.name }}</span>
+                        {{ $t("topics.leaderboards_panel.delete")
+                        }}<span class="sr-only"> {{ board.name }}</span>
                     </Btn>
                 </div>
             </li>
@@ -132,7 +149,7 @@ function destroy() {
             v-else
             class="rounded-card border border-dashed border-line px-4 py-6 text-center text-sm text-fg-muted"
         >
-            No leaderboards here yet.
+            {{ $t("topics.leaderboards_panel.no_leaderboards_here_yet") }}
         </p>
 
         <LeaderboardFormDialog
@@ -149,45 +166,53 @@ function destroy() {
 
         <Modal
             v-if="publishing"
-            title="Publish this leaderboard?"
+            :title="$t('topics.leaderboards_panel.publish_this_leaderboard')"
             :busy="busy"
             @close="publishing = null"
         >
             <p class="text-base text-fg">
-                Anyone can then see <strong>{{ publishing.name }}</strong
-                >, without signing in, and it appears on the hall screen.
+                {{ $t("topics.leaderboards_panel.anyone_can_then_see") }}
+                <strong>{{ publishing.name }}</strong
+                >{{ $t("topics.leaderboards_panel.without_signing_in_and_it") }}
             </p>
             <p class="mt-3 text-sm text-fg" data-test="publish-warning">
                 {{ publishWarning }}
             </p>
             <p class="mt-3 text-sm text-fg-muted">
-                It shows: {{ columnNames(publishing) }}. You can unpublish it at
-                any time.
+                {{
+                    $t("topics.leaderboards_panel.it_shows_you_can_unpublish", {
+                        publishing: columnNames(publishing),
+                    })
+                }}
             </p>
             <template #footer>
-                <Btn :disabled="busy" @click="publishing = null">Cancel</Btn>
-                <Btn variant="primary" :loading="busy" @click="publish"
-                    >Publish leaderboard</Btn
-                >
+                <Btn :disabled="busy" @click="publishing = null">{{
+                    $t("topics.leaderboards_panel.cancel")
+                }}</Btn>
+                <Btn variant="primary" :loading="busy" @click="publish">{{
+                    $t("topics.leaderboards_panel.publish_leaderboard")
+                }}</Btn>
             </template>
         </Modal>
 
         <Modal
             v-if="deleting"
-            title="Delete this leaderboard?"
+            :title="$t('topics.leaderboards_panel.delete_this_leaderboard')"
             danger
             :busy="busy"
             @close="deleting = null"
         >
             <p class="text-base text-fg">
-                <strong>{{ deleting.name }}</strong> goes away for everybody. No
-                points change: they stay in the ledger.
+                <strong>{{ deleting.name }}</strong>
+                {{ $t("topics.leaderboards_panel.goes_away_for_everybody_no") }}
             </p>
             <template #footer>
-                <Btn :disabled="busy" @click="deleting = null">Cancel</Btn>
-                <Btn variant="destructive" :loading="busy" @click="destroy"
-                    >Delete leaderboard</Btn
-                >
+                <Btn :disabled="busy" @click="deleting = null">{{
+                    $t("topics.leaderboards_panel.cancel_2")
+                }}</Btn>
+                <Btn variant="destructive" :loading="busy" @click="destroy">{{
+                    $t("topics.leaderboards_panel.delete_leaderboard")
+                }}</Btn>
             </template>
         </Modal>
     </div>

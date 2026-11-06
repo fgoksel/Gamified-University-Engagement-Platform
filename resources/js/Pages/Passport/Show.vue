@@ -2,11 +2,12 @@
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { router } from "@inertiajs/vue3";
 import { RefreshCw, ShieldCheck, Sun } from "@lucide/vue";
+import { t } from "../../i18n.js";
 
 // My QR passport (Task #52): the student shows it, an organiser scans it with
 // "Scan attendance". The code is signed and short-lived, so the page draws a
 // new one every minute; an old screenshot stops working.
-defineOptions({ layout: { title: "My QR passport" } });
+defineOptions({ layout: { title: t("passport.my_qr_passport") } });
 
 const props = defineProps({
     passport: { type: Object, required: true },
@@ -57,7 +58,7 @@ const progress = computed(
             <div class="mx-auto mt-5 w-full max-w-xs rounded-xl bg-white p-3">
                 <img
                     :src="passport.image"
-                    alt="Your QR passport"
+                    :alt="$t('passport.your_qr_passport')"
                     class="block h-auto w-full"
                 />
             </div>
@@ -92,14 +93,14 @@ const progress = computed(
                         :stroke-dashoffset="50.27 * (1 - progress)"
                     />
                 </svg>
-                New code in {{ secondsLeft }}s
+                {{ $t("passport.new_code_in", { time: `${secondsLeft}s` }) }}
                 <button
                     type="button"
                     class="ml-1 inline-flex min-h-11 items-center gap-1 rounded-control px-2 py-1 text-fg hover:bg-surface-muted"
                     @click="refresh"
                 >
                     <RefreshCw class="size-3.5" />
-                    Refresh now
+                    {{ $t("passport.refresh_now") }}
                 </button>
             </div>
         </section>
@@ -107,13 +108,11 @@ const progress = computed(
         <ul class="space-y-3 text-sm text-fg-muted">
             <li class="flex gap-3">
                 <ShieldCheck class="mt-0.5 size-4 shrink-0 text-fg" />
-                Show this to the organiser at the event. The code is yours alone
-                and changes every minute, so an old screenshot stops working.
+                {{ $t("passport.show_this_to_the_organiser") }}
             </li>
             <li class="flex gap-3">
                 <Sun class="mt-0.5 size-4 shrink-0 text-fg" />
-                Turn your screen brightness up if the organiser's camera cannot
-                read it.
+                {{ $t("passport.turn_your_screen_brightness_up") }}
             </li>
         </ul>
     </div>

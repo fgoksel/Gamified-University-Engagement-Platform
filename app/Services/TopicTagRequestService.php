@@ -28,14 +28,14 @@ class TopicTagRequestService
     {
         if ($request->status !== 'pending') {
             throw ValidationException::withMessages([
-                'status' => 'This topic tag request has already been resolved.',
+                'status' => __('tag_requests.service.this_topic_tag_request_has'),
             ]);
         }
 
         // UC-3.4 exception: "Duplicate Topic Tag Name: Approving a request whose Proposed Name matches an existing Topic Tag displays error: 'A topic tag with this name already exists.'"
         if (TopicTag::where('name', $request->proposed_name)->exists()) {
             throw ValidationException::withMessages([
-                'proposed_name' => 'A topic tag with this name already exists.',
+                'proposed_name' => __('tag_requests.service.a_topic_tag'),
             ]);
         }
 
@@ -77,7 +77,7 @@ class TopicTagRequestService
     {
         if ($request->status !== 'pending') {
             throw ValidationException::withMessages([
-                'status' => 'This topic tag request has already been resolved.',
+                'status' => __('tag_requests.service.this_topic_tag_request_has'),
             ]);
         }
 

@@ -4,6 +4,7 @@ import { ChevronRight, Globe, Trophy, Users } from "@lucide/vue";
 import EmptyState from "../EmptyState.vue";
 import StatusChip from "../StatusChip.vue";
 import { categoryLabel } from "../../categoryColors.js";
+import { tc } from "../../i18n.js";
 
 // "My leaderboard" (Task #54, UC-1.2 and UC-2.2). A student sees their own points in total and
 // per category, and on each leaderboard they may see their rank and points there. Everyone else
@@ -27,7 +28,7 @@ const tileClass = {
     community: "bg-cat-community-soft text-cat-community-fg",
 };
 
-const students = (n) => (n === 1 ? "1 student listed" : `${n} students listed`);
+const students = (n) => tc("leaderboards.own.students_listed", n);
 </script>
 
 <template>
@@ -40,10 +41,10 @@ const students = (n) => (n === 1 ? "1 student listed" : `${n} students listed`);
             data-test="own-points"
         >
             <h3 id="own-points" class="text-base font-semibold text-fg">
-                Your points
+                {{ $t("leaderboards.own.your_points") }}
             </h3>
             <p class="mt-1 text-sm text-fg-muted">
-                From every event, added up from the points ledger.
+                {{ $t("leaderboards.own.from_every_event_added_up") }}
             </p>
 
             <p class="mt-3 flex items-baseline gap-2">
@@ -53,22 +54,24 @@ const students = (n) => (n === 1 ? "1 student listed" : `${n} students listed`);
                 >
                     {{ points.total }}
                 </span>
-                <span class="text-fg-muted">points in total</span>
+                <span class="text-fg-muted">{{
+                    $t("leaderboards.own.points_in_total")
+                }}</span>
             </p>
 
             <ul class="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
                 <li
-                    v-for="category in categories"
-                    :key="category"
+                    v-for="area in categories"
+                    :key="area"
                     class="rounded-control p-3"
-                    :class="tileClass[category]"
-                    :data-test="`own-${category}`"
+                    :class="tileClass[area]"
+                    :data-test="`own-${area}`"
                 >
                     <span class="block text-sm font-medium">
-                        {{ categoryLabel[category] }}
+                        {{ categoryLabel[area] }}
                     </span>
                     <span class="block text-2xl font-semibold tabular-nums">
-                        {{ points[category] }}
+                        {{ points[area] }}
                     </span>
                 </li>
             </ul>
@@ -76,17 +79,22 @@ const students = (n) => (n === 1 ? "1 student listed" : `${n} students listed`);
 
         <section aria-labelledby="own-boards" data-test="own-boards">
             <h3 id="own-boards" class="text-base font-semibold text-fg">
-                Leaderboards
+                {{ $t("leaderboards.own.leaderboards") }}
             </h3>
             <p class="mt-1 text-sm text-fg-muted">
                 <template v-if="isStudent">
-                    The published leaderboards, and those of the areas you
-                    belong to. Each one counts the points from the events of its
-                    area.
+                    {{
+                        $t(
+                            "leaderboards.own.the_published_leaderboards_and_those",
+                        )
+                    }}
                 </template>
                 <template v-else>
-                    The published leaderboards, and those of the areas you
-                    belong to. Teachers are not ranked.
+                    {{
+                        $t(
+                            "leaderboards.own.the_published_leaderboards_and_those_2",
+                        )
+                    }}
                 </template>
             </p>
 
@@ -118,12 +126,13 @@ const students = (n) => (n === 1 ? "1 student listed" : `${n} students listed`);
                                     class="block text-sm text-fg"
                                     data-test="you"
                                 >
-                                    You are number
+                                    {{ $t("leaderboards.own.you_are_number") }}
                                     <strong>{{ board.you.rank }}</strong>
-                                    of <strong>{{ board.students }}</strong
-                                    >, with
+                                    {{ $t("leaderboards.own.of") }}
+                                    <strong>{{ board.students }}</strong
+                                    >{{ $t("leaderboards.own.with") }}
                                     <strong>{{ board.you.points }}</strong>
-                                    points here.
+                                    {{ $t("leaderboards.own.points_here") }}
                                 </span>
                                 <span
                                     v-if="board.you"
@@ -131,12 +140,12 @@ const students = (n) => (n === 1 ? "1 student listed" : `${n} students listed`);
                                     data-test="you-categories"
                                 >
                                     <span
-                                        v-for="category in categories"
-                                        :key="category"
+                                        v-for="area in categories"
+                                        :key="area"
                                     >
-                                        {{ categoryLabel[category] }}
+                                        {{ categoryLabel[area] }}
                                         <span class="tabular-nums">{{
-                                            board.you.categories[category]
+                                            board.you.categories[area]
                                         }}</span>
                                     </span>
                                 </span>
@@ -145,9 +154,12 @@ const students = (n) => (n === 1 ? "1 student listed" : `${n} students listed`);
                                     class="block text-sm text-fg-muted"
                                     data-test="not-listed"
                                 >
-                                    You are not on this leaderboard yet. It
-                                    counts the points from events in
-                                    {{ board.topic.title }}.
+                                    {{
+                                        $t(
+                                            "leaderboards.own.you_are_not_on_this",
+                                            { title: board.topic.title },
+                                        )
+                                    }}
                                 </span>
                             </template>
                         </span>
@@ -156,11 +168,13 @@ const students = (n) => (n === 1 ? "1 student listed" : `${n} students listed`);
                                 v-if="board.is_public"
                                 tone="info"
                                 :icon="Globe"
-                                >Published</StatusChip
+                                >{{
+                                    $t("leaderboards.own.published")
+                                }}</StatusChip
                             >
-                            <StatusChip v-else :icon="Users"
-                                >Area only</StatusChip
-                            >
+                            <StatusChip v-else :icon="Users">{{
+                                $t("leaderboards.own.area_only")
+                            }}</StatusChip>
                             <ChevronRight
                                 class="size-5 text-fg-muted"
                                 :stroke-width="1.75"
@@ -175,10 +189,9 @@ const students = (n) => (n === 1 ? "1 student listed" : `${n} students listed`);
                 v-else
                 class="mt-3"
                 :icon="Trophy"
-                title="No leaderboards for you yet"
+                :title="$t('leaderboards.own.no_leaderboards_for_you_yet')"
             >
-                When an area you belong to makes a leaderboard, or one is
-                published, it appears here.
+                {{ $t("leaderboards.own.when_a_topic_you_belong") }}
             </EmptyState>
         </section>
     </div>

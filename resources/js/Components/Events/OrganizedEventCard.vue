@@ -12,7 +12,8 @@ import {
 import Btn from "../Topics/Btn.vue";
 import StatusChip from "../StatusChip.vue";
 import { eventStatusTone } from "../../eventStatus.js";
-import { categoryDot } from "../../categoryColors.js";
+import { categoryDot, categoryLabel } from "../../categoryColors.js";
+import { t } from "../../i18n.js";
 
 // One event on "Organized by me" (Task #37) with the actions its status allows.
 const props = defineProps({
@@ -22,11 +23,11 @@ const props = defineProps({
 const emit = defineEmits(["cancel", "delete"]);
 
 const statusLabel = {
-    draft: "Draft",
-    published: "Published",
-    on_hold: "On hold",
-    completed: "Completed",
-    cancelled: "Cancelled",
+    draft: t("events.organized_card.draft"),
+    published: t("events.organized_card.published"),
+    on_hold: t("events.organized_card.on_hold"),
+    completed: t("events.organized_card.completed"),
+    cancelled: t("events.organized_card.cancelled"),
 };
 
 const isOpen = computed(() =>
@@ -57,7 +58,7 @@ function post(action) {
                         tone="info"
                         :icon="EyeOff"
                     >
-                        Surprise event
+                        {{ $t("events.organized_card.surprise_event") }}
                     </StatusChip>
                 </div>
                 <h2 class="mt-2 text-lg font-semibold text-fg">
@@ -68,8 +69,12 @@ function post(action) {
                         class="size-2.5 shrink-0 rounded-full"
                         :class="categoryDot[event.category]"
                     />
-                    {{ event.tag ?? event.category }} ·
-                    {{ event.points }} points
+                    {{ event.tag ?? categoryLabel[event.category] }} ·
+                    {{
+                        $t("events.organized_card.points_text", {
+                            points: event.points,
+                        })
+                    }}
                 </p>
             </div>
 
@@ -80,7 +85,7 @@ function post(action) {
                     :href="`/events/${event.id}/applicants`"
                     class="inline-flex min-h-9 items-center justify-center rounded-control border border-line bg-surface px-3 text-sm font-medium text-fg hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                 >
-                    Applicants
+                    {{ $t("events.organized_card.applicants") }}
                 </Link>
                 <Link
                     v-if="
@@ -91,7 +96,7 @@ function post(action) {
                     :href="`/events/${event.id}/scan`"
                     class="inline-flex min-h-9 items-center justify-center rounded-control border border-line bg-surface px-3 text-sm font-medium text-fg hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                 >
-                    Scan attendance
+                    {{ $t("events.organized_card.scan_attendance") }}
                 </Link>
                 <!-- Task #84: printed slips for an event with no screen. Also after the event,
                      for the log and for slips that still give points until the points end date. -->
@@ -104,7 +109,7 @@ function post(action) {
                     :href="`/events/${event.id}/qr-codes`"
                     class="inline-flex min-h-9 items-center justify-center rounded-control border border-line bg-surface px-3 text-sm font-medium text-fg hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                 >
-                    QR slips
+                    {{ $t("events.organized_card.qr_codes") }}
                 </Link>
                 <!-- Task #81: opens check-in and shows the live code full-screen. A completed
                      event takes check-ins until its points end date, like the import below. -->
@@ -118,7 +123,7 @@ function post(action) {
                     data-test="attendance-qr"
                     @click="post('checkin/screen')"
                 >
-                    Show attendance QR
+                    {{ $t("events.organized_card.show_attendance_qr") }}
                 </Btn>
                 <!-- Task #85: a completed event takes points until its points end date. -->
                 <Link
@@ -129,7 +134,7 @@ function post(action) {
                     :href="`/events/${event.id}/points-import`"
                     class="inline-flex min-h-9 items-center justify-center rounded-control border border-line bg-surface px-3 text-sm font-medium text-fg hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                 >
-                    Give points by import
+                    {{ $t("events.organized_card.give_points_by_import") }}
                 </Link>
                 <Link
                     v-if="event.can_edit"
@@ -137,7 +142,7 @@ function post(action) {
                     class="inline-flex min-h-9 items-center justify-center rounded-control border border-line bg-surface px-3 text-sm font-medium text-fg hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                     data-test="edit"
                 >
-                    Edit
+                    {{ $t("common.edit") }}
                 </Link>
                 <template v-if="event.can_manage">
                     <Btn
@@ -146,14 +151,14 @@ function post(action) {
                         small
                         @click="post('publish')"
                     >
-                        Publish
+                        {{ $t("events.organized_card.publish") }}
                     </Btn>
                     <Btn
                         v-if="event.status === 'published'"
                         small
                         @click="post('hold')"
                     >
-                        Put on hold
+                        {{ $t("events.organized_card.put_on_hold") }}
                     </Btn>
                     <Btn
                         v-if="event.status === 'on_hold'"
@@ -161,10 +166,10 @@ function post(action) {
                         small
                         @click="post('restore')"
                     >
-                        Restore
+                        {{ $t("events.organized_card.restore") }}
                     </Btn>
                     <Btn v-if="isOpen" small @click="emit('cancel', event)">
-                        Cancel event
+                        {{ $t("events.organized_card.cancel_event") }}
                     </Btn>
                     <Btn
                         v-if="event.can_delete"
@@ -172,7 +177,7 @@ function post(action) {
                         small
                         @click="emit('delete', event)"
                     >
-                        Delete
+                        {{ $t("common.delete") }}
                     </Btn>
                 </template>
             </div>
@@ -190,31 +195,41 @@ function post(action) {
                     <CalendarClock
                         class="mt-0.5 size-4 shrink-0 text-fg-muted"
                     />
-                    <span class="sr-only">When</span>
+                    <span class="sr-only">{{
+                        $t("events.organized_card.when")
+                    }}</span>
                 </dt>
                 <dd class="col-start-2 text-fg">
                     {{ event.starts }}–{{ event.ends }}
                 </dd>
                 <dd class="col-start-2 text-fg-muted">
-                    Applications close {{ event.applications_close }}
+                    {{
+                        $t("events.organized_card.applications_close_on", {
+                            date: event.applications_close,
+                        })
+                    }}
                 </dd>
             </div>
             <div class="grid grid-cols-[auto_1fr] content-start gap-x-2">
                 <dt>
                     <MapPin class="mt-0.5 size-4 shrink-0 text-fg-muted" />
-                    <span class="sr-only">Location</span>
+                    <span class="sr-only">{{
+                        $t("events.organized_card.location")
+                    }}</span>
                 </dt>
                 <dd v-if="event.location" class="col-start-2 text-fg">
                     {{ event.location }}
                 </dd>
                 <dd v-else class="col-start-2 text-fg-muted">
-                    No location yet
+                    {{ $t("events.organized_card.no_location_yet") }}
                 </dd>
             </div>
             <div class="grid grid-cols-[auto_1fr] content-start gap-x-2">
                 <dt>
                     <Building2 class="mt-0.5 size-4 shrink-0 text-fg-muted" />
-                    <span class="sr-only">Areas</span>
+                    <span class="sr-only">{{
+                        $t("events.organized_card.topics")
+                    }}</span>
                 </dt>
                 <dd class="col-start-2 text-fg">
                     {{ event.owning_topic }}
@@ -222,25 +237,37 @@ function post(action) {
                 <dd class="col-start-2 text-fg-muted">
                     {{
                         event.audience_topic
-                            ? `Open to ${event.audience_topic}`
-                            : "Invited students only"
+                            ? $t("events.organized_card.open_to_topic", {
+                                  topic: event.audience_topic,
+                              })
+                            : $t("events.organized_card.invited_students_only")
                     }}
                 </dd>
             </div>
             <div class="grid grid-cols-[auto_1fr] content-start gap-x-2">
                 <dt>
                     <Users class="mt-0.5 size-4 shrink-0 text-fg-muted" />
-                    <span class="sr-only">Places</span>
+                    <span class="sr-only">{{
+                        $t("events.organized_card.places")
+                    }}</span>
                 </dt>
                 <dd class="col-start-2 text-fg">
-                    {{ event.accepted }} / {{ event.capacity }} places taken
+                    {{
+                        $t("events.organized_card.places_taken_of", {
+                            accepted: event.accepted,
+                            capacity: event.capacity,
+                        })
+                    }}
                 </dd>
                 <dd class="col-start-2 text-fg-muted">
-                    {{ event.waiting }} waiting ·
                     {{
-                        event.application_type === "fcfs"
-                            ? "first come, first served"
-                            : "you choose"
+                        $t("events.organized_card.waiting_how", {
+                            count: event.waiting,
+                            how:
+                                event.application_type === "fcfs"
+                                    ? $t("events.organized_card.first_come")
+                                    : $t("events.organized_card.you_choose"),
+                        })
                     }}
                 </dd>
             </div>
@@ -250,9 +277,13 @@ function post(action) {
             >
                 <dt>
                     <QrCode class="mt-0.5 size-4 shrink-0 text-fg-muted" />
-                    <span class="sr-only">Attendance</span>
+                    <span class="sr-only">{{
+                        $t("events.organized_card.attendance")
+                    }}</span>
                 </dt>
-                <dd class="col-start-2 text-fg">QR attendance</dd>
+                <dd class="col-start-2 text-fg">
+                    {{ $t("events.organized_card.qr_attendance") }}
+                </dd>
             </div>
         </dl>
 
@@ -260,7 +291,11 @@ function post(action) {
             v-if="event.status === 'cancelled' && event.cancellation_reason"
             class="mt-4 rounded-control bg-surface-muted px-3 py-2 text-sm text-fg-muted"
         >
-            Reason: {{ event.cancellation_reason }}
+            {{
+                $t("events.organized_card.reason", {
+                    reason: event.cancellation_reason,
+                })
+            }}
         </p>
     </article>
 </template>

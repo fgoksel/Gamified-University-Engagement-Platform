@@ -29,12 +29,12 @@ class TopicTagRequestController extends Controller
 
         if ($request->wantsJson()) {
             return response()->json([
-                'message' => 'Topic tag request approved successfully.',
+                'message' => __('tag_requests.admin.topic_tag_request_approved_successfully'),
                 'topic_tag' => $tag,
             ]);
         }
 
-        return back()->with('status', 'Topic tag request approved.');
+        return back()->with('status', __('tag_requests.admin.topic_tag_request_approved'));
     }
 
     /**
@@ -52,10 +52,10 @@ class TopicTagRequestController extends Controller
 
         if ($request->wantsJson()) {
             return response()->json([
-                'message' => 'Topic tag request rejected.',
+                'message' => __('tag_requests.admin.topic_tag_request_rejected'),
             ]);
         }
 
-        return back()->with('status', 'Topic tag request rejected.');
+        return back()->with('status', __('tag_requests.admin.topic_tag_request_rejected'));
     }
 }

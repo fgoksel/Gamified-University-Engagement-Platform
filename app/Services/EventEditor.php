@@ -106,24 +106,24 @@ class EventEditor
         }
 
         $locks = [
-            'owning_topic_id' => 'The area that manages an event cannot change once it is published.',
-            'is_hidden' => 'The surprise setting cannot change once the event is published.',
+            'owning_topic_id' => __('events.editor.the_topic_that_manages'),
+            'is_hidden' => __('events.editor.the_surprise_setting_cannot_change'),
         ];
 
         $hasApplicants = $event->applications()->where('status', '!=', EventApplication::WITHDRAWN)->exists();
 
         if ($hasApplicants) {
-            $locks['audience_topic_id'] = 'Students have already applied, so who can see and apply cannot change.';
-            $locks['application_type'] = 'Students have already applied, so how they get a place cannot change.';
+            $locks['audience_topic_id'] = __('events.editor.students_have_already_applied_so');
+            $locks['application_type'] = __('events.editor.students_have_already_applied_so_2');
         }
 
         if ($event->pointTransactions()->where('type', PointTransaction::CREDIT)->exists()) {
-            $locks['points_value'] = 'Points were already credited, so the points cannot change.';
-            $locks['topic_tag_id'] = 'Points were already credited, so the tag and category cannot change.';
+            $locks['points_value'] = __('events.editor.points_were_already_credited_so');
+            $locks['topic_tag_id'] = __('events.editor.points_were_already_credited_so_2');
         }
 
         if ($event->event_starts_at->isPast()) {
-            $locks['event_starts_at'] = 'The event has started, so its start cannot move.';
+            $locks['event_starts_at'] = __('events.editor.the_event_has_started_so');
         }
 
         return $locks;
@@ -152,13 +152,13 @@ class EventEditor
 
             if (! $this->isEditable($locked)) {
                 throw ValidationException::withMessages([
-                    'event' => 'A cancelled event cannot be changed.',
+                    'event' => __('events.editor.a_cancelled_event_cannot'),
                 ]);
             }
 
             if ($version !== null && $version !== $this->version($locked)) {
                 throw ValidationException::withMessages([
-                    'event' => 'Someone changed this event while you were editing. Reload the page and make your changes again.',
+                    'event' => __('events.editor.someone_changed_this_event_while'),
                 ]);
             }
 
@@ -224,14 +224,14 @@ class EventEditor
         foreach (array_keys($this->locks($event)) as $field) {
             // A page opened before a field existed leaves it out: nothing was changed there.
             if (array_key_exists($field, $data) && $this->differs($event->{$field}, $data[$field])) {
-                $errors[$field] = 'The event is over, so only "Points can be given until" can change.';
+                $errors[$field] = __('events.editor.over_only_points_until');
             }
         }
 
         $completeBy = Carbon::parse($data['completion_deadline']);
 
         if ($completeBy->lt($event->event_ends_at)) {
-            $errors['completion_deadline'] = 'The completion deadline cannot be before the event ends.';
+            $errors['completion_deadline'] = __('events.editor.deadline_before_end');
         }
 
         if ($errors !== []) {
@@ -339,14 +339,14 @@ class EventEditor
         $owning = Topic::find($owningId);
 
         if ($owning === null || (! isset($locks['owning_topic_id']) && $owningId !== $event->owning_topic_id && ! $this->placement->mayOwn($actor, $owning))) {
-            $errors['owning_topic_id'] ??= 'You cannot manage events in this area.';
+            $errors['owning_topic_id'] ??= __('events.editor.you_cannot_manage_events');
         }
 
         $audienceId = $data['audience_topic_id'] ?? null;
         if ($keeps('audience_topic_id', $audienceId)) {
             $audienceId = $event->audience_topic_id;
         } elseif ($audienceId !== null && $owning !== null && ! in_array((int) $audienceId, $this->placement->audienceIds($owning), true)) {
-            $errors['audience_topic_id'] = 'The audience must be the owning area or an area above it.';
+            $errors['audience_topic_id'] = __('events.editor.the_audience_must');
         }
 
         $type = $keeps('application_type', $data['application_type']) ? $event->application_type : $data['application_type'];
@@ -355,15 +355,15 @@ class EventEditor
         $tagId = $keeps('topic_tag_id', (int) $data['topic_tag_id']) ? $event->topic_tag_id : (int) $data['topic_tag_id'];
         $tag = TopicTag::query()->whereKey($tagId)->first();
         if ($tag === null || (! $tag->is_active && $tagId !== $event->topic_tag_id)) {
-            $errors['topic_tag_id'] = 'This topic tag is no longer available.';
+            $errors['topic_tag_id'] = __('events.editor.this_topic_tag');
         }
 
         $capacity = (int) $data['capacity'];
         $accepted = $this->minimumCapacity($event);
         if ($capacity < $accepted) {
             $errors['capacity'] = $accepted === 1 && $event->applications()->where('status', EventApplication::ACCEPTED)->doesntExist()
-                ? 'There must be at least one place.'
-                : "{$accepted} students are already accepted, so there cannot be fewer places.";
+                ? __('events.editor.there_must_be_at_least')
+                : __('events.editor.students_accepted', ['count' => $accepted]);
         }
 
         $starts = $keeps('event_starts_at', $data['event_starts_at']) ? $event->event_starts_at : $date('event_starts_at');
@@ -372,17 +372,17 @@ class EventEditor
         $completeBy = $date('completion_deadline');
 
         if (! isset($locks['event_starts_at']) && $starts->lte(now()) && ! $unchanged('event_starts_at', $starts)) {
-            $errors['event_starts_at'] = 'The event must start in the future.';
+            $errors['event_starts_at'] = __('events.editor.the_event_must_start');
         }
         if ($ends->lte($starts)) {
-            $errors['event_ends_at'] = 'The event must end after it starts.';
+            $errors['event_ends_at'] = __('events.editor.the_event_must_end_after');
         }
         if ($applyBy->lte(now()) && ! $unchanged('application_deadline', $applyBy)) {
-            $errors['application_deadline'] = 'The application deadline must be in the future.';
+            $errors['application_deadline'] = __('events.editor.the_application_deadline_must');
         }
         // Applications may stay open while the event runs, but not after it (Task #78).
         if ($applyBy->gt($ends)) {
-            $errors['application_deadline'] ??= 'Applications must close before the event ends.';
+            $errors['application_deadline'] ??= __('events.editor.applications_must_close_before');
         }
 
         // A page opened before this field existed leaves it out: keep what is stored.
@@ -391,10 +391,10 @@ class EventEditor
             $opensAt = ($data['applications_open_at'] ?? null) === null ? null : $date('applications_open_at');
         }
         if ($opensAt !== null && $opensAt->gte($applyBy)) {
-            $errors['applications_open_at'] = 'Applications must open before they close.';
+            $errors['applications_open_at'] = __('events.editor.applications_must_open_before_they');
         }
         if ($completeBy->lt($ends)) {
-            $errors['completion_deadline'] = 'The completion deadline cannot be before the event ends.';
+            $errors['completion_deadline'] = __('events.editor.the_completion_deadline_cannot');
         }
 
         $hidden = $keeps('is_hidden', (bool) ($data['is_hidden'] ?? false)) ? $event->is_hidden : (bool) ($data['is_hidden'] ?? false);

@@ -31,7 +31,7 @@ class EditProfile extends BaseEditProfile
     public function getSubheading(): ?string
     {
         return $this->mustChangePassword
-            ? 'You are using a temporary password. Choose your own password to continue.'
+            ? __('admin.profile.you_are_using_a_temporary')
             : null;
     }
 
@@ -41,7 +41,7 @@ class EditProfile extends BaseEditProfile
             ->required(fn (): bool => $this->mustChangePassword)
             ->rule(fn () => function (string $attribute, #[SensitiveParameter] mixed $value, Closure $fail): void {
                 if (Hash::check($value, $this->getUser()->getAuthPassword())) {
-                    $fail('The new password cannot be the same as the old one.');
+                    $fail(__('admin.profile.the_new_password_cannot'));
                 }
             });
     }

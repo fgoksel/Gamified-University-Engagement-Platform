@@ -18,16 +18,17 @@ import EmptyState from "../../Components/EmptyState.vue";
 import StatusChip from "../../Components/StatusChip.vue";
 import Modal from "../../Components/Topics/Modal.vue";
 import Btn from "../../Components/Topics/Btn.vue";
-import { categoryDot } from "../../categoryColors.js";
+import { categoryDot, categoryLabel } from "../../categoryColors.js";
 import {
     actionWords,
     applyLabels,
     leaveText,
     myStatus,
 } from "../../eventWords.js";
+import { t } from "../../i18n.js";
 
 // Student: events I applied to (UC-2.3, Task #50)
-defineOptions({ layout: { title: "My events" } });
+defineOptions({ layout: { title: t("events.applied.my_events") } });
 
 const props = defineProps({
     applications: {
@@ -161,8 +162,9 @@ function reapply(app) {
             class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
         >
             <p class="text-sm text-fg-muted">
-                Track your event applications, your places, and the points you
-                earned.
+                {{
+                    $t("events.applied.track_your_event_applications_waitlist")
+                }}
             </p>
             <div class="flex flex-wrap gap-2">
                 <!-- One tap to the passport from My events (Task #93) -->
@@ -171,14 +173,14 @@ function reapply(app) {
                     class="inline-flex min-h-11 items-center gap-2 rounded-control border border-line bg-surface px-3 py-2 text-sm font-medium text-fg hover:bg-surface-muted transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                 >
                     <IdCard class="size-4" />
-                    My QR passport
+                    {{ $t("events.applied.my_qr_passport") }}
                 </Link>
                 <Link
                     href="/events"
                     class="inline-flex items-center gap-2 rounded-control border border-line bg-surface px-3 py-2 text-sm font-medium text-fg hover:bg-surface-muted transition"
                 >
                     <Calendar class="size-4" />
-                    Browse Events
+                    {{ $t("events.applied.browse_events") }}
                 </Link>
             </div>
         </div>
@@ -198,7 +200,7 @@ function reapply(app) {
                 "
                 @click="currentTab = 'all'"
             >
-                All ({{ counts.all }})
+                {{ $t("events.applied.tab_all", { count: counts.all }) }}
             </button>
             <button
                 type="button"
@@ -210,7 +212,7 @@ function reapply(app) {
                 "
                 @click="currentTab = 'active'"
             >
-                Active ({{ counts.active }})
+                {{ $t("events.applied.tab_active", { count: counts.active }) }}
             </button>
             <button
                 type="button"
@@ -222,7 +224,9 @@ function reapply(app) {
                 "
                 @click="currentTab = 'history'"
             >
-                History ({{ counts.history }})
+                {{
+                    $t("events.applied.tab_history", { count: counts.history })
+                }}
             </button>
         </div>
 
@@ -230,10 +234,9 @@ function reapply(app) {
         <div v-if="applications.length === 0" class="space-y-4">
             <EmptyState
                 :icon="CalendarCheck"
-                title="You have not applied to any events"
+                :title="$t('events.applied.you_have_not_applied')"
             >
-                Events you apply to will be listed here, with their status and
-                the points you earned.
+                {{ $t("events.applied.events_you_apply_to_will") }}
             </EmptyState>
             <div class="flex justify-center">
                 <Link
@@ -241,7 +244,7 @@ function reapply(app) {
                     class="inline-flex items-center gap-2 rounded-control bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover transition"
                 >
                     <Calendar class="size-4" />
-                    Find events to join
+                    {{ $t("events.applied.find_events_to_join") }}
                 </Link>
             </div>
         </div>
@@ -251,7 +254,7 @@ function reapply(app) {
             v-else-if="filteredApplications.length === 0"
             class="rounded-card border border-line bg-surface p-8 text-center text-sm text-fg-muted"
         >
-            No events found in this category.
+            {{ $t("events.applied.no_events_found") }}
         </div>
 
         <!-- Application Cards -->
@@ -287,7 +290,7 @@ function reapply(app) {
                                     :class="categoryDot[app.event.category]"
                                 ></span>
                                 <span class="capitalize">{{
-                                    app.event.category
+                                    categoryLabel[app.event.category]
                                 }}</span>
                             </span>
 
@@ -321,7 +324,11 @@ function reapply(app) {
                             tone="success"
                             :icon="Sparkles"
                         >
-                            +{{ app.event.points_value }} pts Credited
+                            {{
+                                $t("events.applied.points_credited", {
+                                    points: app.event.points_value,
+                                })
+                            }}
                         </StatusChip>
 
                         <!-- Application Status, in plain words (Task #94) -->
@@ -338,13 +345,13 @@ function reapply(app) {
                             v-if="app.event.status === 'on_hold'"
                             tone="warning"
                         >
-                            On hold
+                            {{ $t("events.applied.on_hold") }}
                         </StatusChip>
                         <StatusChip
                             v-else-if="app.event.status === 'cancelled'"
                             tone="danger"
                         >
-                            Cancelled
+                            {{ $t("events.applied.cancelled") }}
                         </StatusChip>
                     </div>
                 </div>
@@ -362,29 +369,39 @@ function reapply(app) {
                     class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-2 text-xs text-fg-muted border-t border-line/60"
                 >
                     <div>
-                        <span class="font-medium text-fg">Event Date:</span>
+                        <span class="font-medium text-fg">{{
+                            $t("events.applied.event_date")
+                        }}</span>
                         <div class="mt-0.5">
                             {{ formatDateTime(app.event.event_starts_at) }}
                         </div>
                     </div>
                     <div>
-                        <span class="font-medium text-fg"
-                            >Application Deadline:</span
-                        >
+                        <span class="font-medium text-fg">{{
+                            $t("events.applied.application_deadline")
+                        }}</span>
                         <div class="mt-0.5">
                             {{ formatDateTime(app.event.application_deadline) }}
                         </div>
                     </div>
                     <div v-if="app.event.location">
-                        <span class="font-medium text-fg">Location:</span>
+                        <span class="font-medium text-fg">{{
+                            $t("events.applied.location")
+                        }}</span>
                         <div class="mt-0.5">
                             {{ app.event.location }}
                         </div>
                     </div>
                     <div>
-                        <span class="font-medium text-fg">Reward:</span>
+                        <span class="font-medium text-fg">{{
+                            $t("events.applied.reward")
+                        }}</span>
                         <div class="mt-0.5 font-semibold text-fg">
-                            +{{ app.event.points_value }} points
+                            {{
+                                $t("events.applied.reward_points", {
+                                    points: app.event.points_value,
+                                })
+                            }}
                         </div>
                     </div>
                 </div>
@@ -395,22 +412,39 @@ function reapply(app) {
                 >
                     <div class="text-xs text-fg-muted">
                         <span v-if="app.withdrawn_at">
-                            You left on {{ shortDateTime(app.withdrawn_at) }}.
+                            {{
+                                $t("events.applied.withdrawn_on", {
+                                    date: shortDateTime(app.withdrawn_at),
+                                })
+                            }}
                         </span>
                         <span v-else-if="app.status === 'waitlisted'">
-                            Applied on {{ shortDateTime(app.applied_at) }} ·
-                            you'll get a message if a place opens.
+                            {{
+                                $t("events.applied.applied_waitlisted", {
+                                    date: shortDateTime(app.applied_at),
+                                })
+                            }}
                         </span>
                         <span v-else-if="app.status === 'pending'">
-                            Applied on {{ shortDateTime(app.applied_at) }} · the
-                            organiser will choose and let you know.
+                            {{
+                                $t("events.applied.applied_pending", {
+                                    date: shortDateTime(app.applied_at),
+                                })
+                            }}
                         </span>
                         <span v-else-if="app.status === 'accepted'">
-                            Applied on {{ shortDateTime(app.applied_at) }} ·
-                            your place is confirmed.
+                            {{
+                                $t("events.applied.applied_accepted", {
+                                    date: shortDateTime(app.applied_at),
+                                })
+                            }}
                         </span>
                         <span v-else-if="app.status === 'rejected'">
-                            The organiser chose other students this time.
+                            {{
+                                $t(
+                                    "events.applied.application_was_not_selected",
+                                )
+                            }}
                         </span>
                     </div>
 
@@ -434,7 +468,7 @@ function reapply(app) {
                             <RotateCcw class="size-3.5" />
                             {{
                                 reapplyingId === app.id
-                                    ? "Sending…"
+                                    ? $t("events.applied.sending")
                                     : applyLabels.again
                             }}
                         </button>

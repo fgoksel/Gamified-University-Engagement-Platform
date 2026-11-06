@@ -37,13 +37,13 @@ class OrganizerInvitationNotification extends Notification implements ShouldQueu
         $activationUrl = url('/auth/activate/'.$this->activationToken);
 
         return (new MailMessage)
-            ->subject('Invitation to Gamified University Engagement Platform')
-            ->greeting("Hello {$notifiable->name},")
-            ->line('You have been invited to join the Gamified University Engagement Platform as an Event Organizer.')
-            ->line("To complete your registration and set up your password, please click the button below within {$this->expiresInHours} hours:")
-            ->action('Activate Account & Set Password', $activationUrl)
-            ->line('If you were not expecting this invitation, you can safely ignore this email.')
-            ->salutation('Best regards, University Engagement Team');
+            ->subject(__('mail.organizer_invitation.subject'))
+            ->greeting(__('mail.greeting_comma', ['name' => $notifiable->name]))
+            ->line(__('mail.organizer_invitation.invited'))
+            ->line(trans_choice('mail.organizer_invitation.complete', $this->expiresInHours))
+            ->action(__('mail.organizer_invitation.action'), $activationUrl)
+            ->line(__('mail.organizer_invitation.ignore'))
+            ->salutation(__('mail.salutation'));
     }
 
     /**

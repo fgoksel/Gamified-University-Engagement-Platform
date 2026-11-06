@@ -87,7 +87,7 @@ class RoleService
 
                 if ($usage['assignments'] > 0 && ! filter_var($data['acknowledge_affected'] ?? false, FILTER_VALIDATE_BOOLEAN)) {
                     throw ValidationException::withMessages([
-                        'capabilities' => "{$usage['assignments']} active assignment(s) held by {$usage['people']} person(s) use this role. Confirm that their access should change.",
+                        'capabilities' => __('topics.role_service.confirm_change', ['assignments' => $usage['assignments'], 'people' => $usage['people']]),
                     ]);
                 }
             }
@@ -149,9 +149,9 @@ class RoleService
             'delegable' => ['array'],
             'delegable.*' => ['string', 'in:'.implode(',', Capability::values())],
         ], [
-            'name.required' => 'Give the role a name.',
-            'capabilities.required' => 'Choose at least one thing this role can do.',
-            'capabilities.min' => 'Choose at least one thing this role can do.',
+            'name.required' => __('topics.role_service.give_the_role_a_name'),
+            'capabilities.required' => __('topics.role_service.choose_at_least_one_thing'),
+            'capabilities.min' => __('topics.role_service.choose_at_least_one_thing'),
         ])->validate();
 
         $capabilities = Capability::normalise($clean['capabilities']);
@@ -165,14 +165,14 @@ class RoleService
             if ($missing !== []) {
                 $names = implode(', ', array_map(fn (string $m) => Capability::from($m)->label(), $missing));
                 throw ValidationException::withMessages([
-                    'capabilities' => '"'.Capability::from($value)->label()."\" also needs: {$names}.",
+                    'capabilities' => __('topics.role_service.also_needs', ['power' => Capability::from($value)->label(), 'needs' => $names]),
                 ]);
             }
         }
 
         if (array_diff($delegable, $capabilities) !== []) {
             throw ValidationException::withMessages([
-                'delegable' => 'A role can only pass on powers that it has itself.',
+                'delegable' => __('topics.role_service.a_role_can_only_pass'),
             ]);
         }
 

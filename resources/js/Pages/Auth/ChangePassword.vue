@@ -2,13 +2,13 @@
 import { Link, useForm } from "@inertiajs/vue3";
 import PrimaryButton from "../../Components/PrimaryButton.vue";
 import TextField from "../../Components/TextField.vue";
+import { t } from "../../i18n.js";
 
 // Shown on first login, while the user still has a temporary password (UC-2.1).
 defineOptions({
     layout: {
-        title: "Change your password",
-        description:
-            "You are using a temporary password. Choose your own password to continue.",
+        title: t("auth.change_password.title"),
+        description: t("auth.change_password.description"),
     },
 });
 
@@ -31,7 +31,7 @@ function submit() {
         <form class="space-y-5" novalidate @submit.prevent="submit">
             <TextField
                 v-model="form.current_password"
-                label="Old password"
+                :label="$t('auth.old_password')"
                 type="password"
                 autocomplete="current-password"
                 :error="form.errors.current_password"
@@ -39,21 +39,23 @@ function submit() {
 
             <TextField
                 v-model="form.password"
-                label="New password"
+                :label="$t('auth.new_password')"
                 type="password"
                 autocomplete="new-password"
-                hint="At least 8 characters."
+                :hint="$t('auth.password_hint')"
                 :error="form.errors.password"
             />
 
             <TextField
                 v-model="form.password_confirmation"
-                label="Confirm new password"
+                :label="$t('auth.confirm_new_password')"
                 type="password"
                 autocomplete="new-password"
             />
 
-            <PrimaryButton :loading="form.processing">Save</PrimaryButton>
+            <PrimaryButton :loading="form.processing">{{
+                $t("common.save")
+            }}</PrimaryButton>
         </form>
 
         <Link
@@ -62,7 +64,7 @@ function submit() {
             as="button"
             class="text-sm font-medium text-link hover:underline"
         >
-            Log out
+            {{ $t("auth.change_password.log_out") }}
         </Link>
     </div>
 </template>

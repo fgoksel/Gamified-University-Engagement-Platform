@@ -89,14 +89,16 @@ onBeforeUnmount(() => {
                 <QrCode class="mt-0.5 size-6 shrink-0 text-primary" />
                 <div>
                     <h2 class="text-base font-semibold text-fg">
-                        Check-in is open
+                        {{ $t("events.checkin.title") }}
                     </h2>
                     <p class="mt-1 text-sm text-fg-muted">
-                        Scan the code that is showing at the event<template
-                            v-if="points"
-                        >
-                            to get your {{ points }} points</template
-                        >.
+                        {{
+                            points
+                                ? $t("events.checkin.text_with_points", {
+                                      points,
+                                  })
+                                : $t("events.checkin.text")
+                        }}
                     </p>
                 </div>
             </div>
@@ -106,7 +108,7 @@ onBeforeUnmount(() => {
                 data-test="checkin-scan"
             >
                 <QrCode class="size-4" />
-                Scan
+                {{ $t("events.checkin.scan") }}
             </Link>
         </section>
     </div>

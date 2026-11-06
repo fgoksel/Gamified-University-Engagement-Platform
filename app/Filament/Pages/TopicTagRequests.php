@@ -28,15 +28,21 @@ class TopicTagRequests extends Page implements HasTable
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedInboxArrowDown;
 
-    protected static ?string $navigationLabel = 'Tag Requests';
-
-    protected static ?string $title = 'Topic Tag Requests Queue';
-
     protected static ?string $slug = 'topic-tag-requests';
 
     protected static ?int $navigationSort = 5;
 
     protected string $view = 'filament.pages.topic-tag-requests';
+
+    public static function getNavigationLabel(): string
+    {
+        return __('admin.tag_requests.navigation');
+    }
+
+    public function getTitle(): string
+    {
+        return __('admin.tag_requests.title');
+    }
 
     public static function getNavigationBadge(): ?string
     {
@@ -54,16 +60,18 @@ class TopicTagRequests extends Page implements HasTable
     {
         return $table
             ->query(TopicTagRequest::query()->with(['requestedBy', 'resolvedBy'])->latest())
+            ->modelLabel(__('admin.models.topic_tag_request'))
+            ->pluralModelLabel(__('admin.models.topic_tag_requests'))
             ->columns([
                 TextColumn::make('proposed_name')
-                    ->label('Proposed Name')
+                    ->label(__('admin.tag_requests.proposed_name'))
                     ->searchable()
                     ->sortable(),
 
                 TextColumn::make('category')
-                    ->label('Category')
+                    ->label(__('admin.tag_requests.category'))
                     ->badge()
-                    ->formatStateUsing(fn (string $state): string => TaxonomyCategory::tryFrom($state)?->label() ?? ucfirst($state))
+                    ->formatStateUsing(fn (string $state): string => TaxonomyCategory::tryFrom($state)?->label() ?? $state)
                     ->color(fn (string $state): string => match ($state) {
                         'academic' => 'info',
                         'scientific' => 'primary',
@@ -74,23 +82,29 @@ class TopicTagRequests extends Page implements HasTable
                     ->sortable(),
 
                 TextColumn::make('justification')
-                    ->label('Justification')
+                    ->label(__('admin.tag_requests.justification'))
                     ->limit(50)
                     ->searchable(),
 
                 TextColumn::make('requestedBy.name')
-                    ->label('Requested By')
+                    ->label(__('admin.tag_requests.requested'))
                     ->searchable()
                     ->sortable(),
 
                 TextColumn::make('requestedBy.email')
-                    ->label('Teacher Email')
+                    ->label(__('admin.tag_requests.teacher_email'))
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('status')
-                    ->label('Status')
+                    ->label(__('admin.tag_requests.status'))
                     ->badge()
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        'pending' => __('admin.status.pending'),
+                        'approved' => __('admin.status.approved'),
+                        'rejected' => __('admin.status.rejected'),
+                        default => $state,
+                    })
                     ->color(fn (string $state): string => match ($state) {
                         'approved' => 'success',
                         'pending' => 'warning',
@@ -100,61 +114,61 @@ class TopicTagRequests extends Page implements HasTable
                     ->sortable(),
 
                 TextColumn::make('resolvedBy.name')
-                    ->label('Resolved By')
+                    ->label(__('admin.tag_requests.resolved'))
                     ->placeholder('—')
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('rejection_reason')
-                    ->label('Rejection Reason')
+                    ->label(__('admin.tag_requests.rejection_reason'))
                     ->placeholder('—')
                     ->limit(40)
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('created_at')
-                    ->label('Date')
+                    ->label(__('admin.tag_requests.date'))
                     ->dateTime()
                     ->sortable(),
             ])
             ->filters([
                 SelectFilter::make('status')
-                    ->label('Status')
+                    ->label(__('admin.tag_requests.status'))
                     ->options([
-                        'pending' => 'Pending',
-                        'approved' => 'Approved',
-                        'rejected' => 'Rejected',
+                        'pending' => __('admin.tag_requests.pending'),
+                        'approved' => __('admin.tag_requests.approved'),
+                        'rejected' => __('admin.tag_requests.rejected'),
                     ]),
 
                 SelectFilter::make('category')
-                    ->label('Category')
+                    ->label(__('admin.tag_requests.category'))
                     ->options(TaxonomyCategory::options()),
             ])
             ->actions([
                 // UC-3.4: Approve action
                 Action::make('approve')
-                    ->label('Approve')
+                    ->label(__('admin.tag_requests.approve'))
                     ->icon(Heroicon::OutlinedCheckCircle)
                     ->color('success')
                     ->requiresConfirmation()
-                    ->modalHeading('Approve Topic Tag Request')
-                    ->modalDescription(fn (TopicTagRequest $record): string => "Approve \"{$record->proposed_name}\"? A new active topic tag will be created and {$record->requestedBy?->name} will be notified.")
-                    ->modalSubmitActionLabel('Yes, Approve')
+                    ->modalHeading(__('admin.tag_requests.approve_topic_tag_request'))
+                    ->modalDescription(fn (TopicTagRequest $record): string => __('admin.tag_requests.approve_proposed_name_a_new', ['proposed_name' => $record->proposed_name, 'name' => $record->requestedBy?->name]))
+                    ->modalSubmitActionLabel(__('admin.tag_requests.yes_approve'))
                     ->visible(fn (TopicTagRequest $record): bool => $record->status === 'pending')
                     ->action(function (TopicTagRequest $record): void {
                         try {
                             app(TopicTagRequestService::class)->approve($record, auth()->user());
 
                             Notification::make()
-                                ->title('Topic Tag Request Approved')
+                                ->title(__('admin.tag_requests.topic_tag_request_approved'))
                                 ->success()
-                                ->body("Topic tag \"{$record->proposed_name}\" is now live and {$record->requestedBy?->name} has been notified.")
+                                ->body(__('admin.tag_requests.topic_tag_proposed_name', ['proposed_name' => $record->proposed_name, 'name' => $record->requestedBy?->name]))
                                 ->send();
                         } catch (ValidationException $e) {
                             $message = $e->validator->errors()->first('proposed_name')
                                 ?: $e->validator->errors()->first('status')
-                                ?: 'Could not approve request.';
+                                ?: __('admin.tag_requests.could_not_approve_request');
 
                             Notification::make()
-                                ->title('Approval Not Allowed')
+                                ->title(__('admin.tag_requests.approval_not_allowed'))
                                 ->danger()
                                 ->body($message)
                                 ->send();
@@ -163,17 +177,17 @@ class TopicTagRequests extends Page implements HasTable
 
                 // UC-3.4: Reject action
                 Action::make('reject')
-                    ->label('Reject')
+                    ->label(__('admin.tag_requests.reject'))
                     ->icon(Heroicon::OutlinedXCircle)
                     ->color('danger')
-                    ->modalHeading('Reject Topic Tag Request')
-                    ->modalDescription(fn (TopicTagRequest $record): string => "Reject request for \"{$record->proposed_name}\"? State an optional reason to explain why to {$record->requestedBy?->name}.")
-                    ->modalSubmitActionLabel('Reject Request')
+                    ->modalHeading(__('admin.tag_requests.reject_topic_tag_request'))
+                    ->modalDescription(fn (TopicTagRequest $record): string => __('admin.tag_requests.reject_request_for_proposed_name', ['proposed_name' => $record->proposed_name, 'name' => $record->requestedBy?->name]))
+                    ->modalSubmitActionLabel(__('admin.tag_requests.reject_request'))
                     ->visible(fn (TopicTagRequest $record): bool => $record->status === 'pending')
                     ->form([
                         Textarea::make('reason')
-                            ->label('Rejection Reason')
-                            ->placeholder('e.g. A similar topic tag already exists in the Academic category.')
+                            ->label(__('admin.tag_requests.rejection_reason'))
+                            ->placeholder(__('admin.tag_requests.e_g_a_similar_topic'))
                             ->rows(3)
                             ->nullable(),
                     ])
@@ -186,15 +200,15 @@ class TopicTagRequests extends Page implements HasTable
                             );
 
                             Notification::make()
-                                ->title('Topic Tag Request Rejected')
+                                ->title(__('admin.tag_requests.topic_tag_request_rejected'))
                                 ->warning()
-                                ->body("The request has been marked as rejected and {$record->requestedBy?->name} has been notified.")
+                                ->body(__('admin.tag_requests.the_request_has_been_marked', ['name' => $record->requestedBy?->name]))
                                 ->send();
                         } catch (ValidationException $e) {
                             Notification::make()
-                                ->title('Action Failed')
+                                ->title(__('admin.tag_requests.action_failed'))
                                 ->danger()
-                                ->body($e->validator->errors()->first() ?: 'Could not reject request.')
+                                ->body($e->validator->errors()->first() ?: __('admin.tag_requests.could_not_reject_request'))
                                 ->send();
                         }
                     }),

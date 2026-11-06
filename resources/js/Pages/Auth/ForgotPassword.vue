@@ -4,12 +4,12 @@ import { ArrowLeft } from "@lucide/vue";
 import AlertMessage from "../../Components/AlertMessage.vue";
 import PrimaryButton from "../../Components/PrimaryButton.vue";
 import TextField from "../../Components/TextField.vue";
+import { t } from "../../i18n.js";
 
 defineOptions({
     layout: {
-        title: "Forgot password",
-        description:
-            "Enter your email address and we will send you a link to set a new password.",
+        title: t("auth.forgot_password.title"),
+        description: t("auth.forgot_password.description"),
     },
 });
 
@@ -33,14 +33,14 @@ function submit() {
         <form class="space-y-5" novalidate @submit.prevent="submit">
             <TextField
                 v-model="form.email"
-                label="Email address"
+                :label="$t('auth.email_address')"
                 type="email"
                 autocomplete="username"
                 :error="form.errors.email"
             />
 
             <PrimaryButton :loading="form.processing">
-                Send reset link
+                {{ $t("auth.forgot_password.submit") }}
             </PrimaryButton>
         </form>
 
@@ -49,7 +49,7 @@ function submit() {
             class="inline-flex items-center gap-1.5 text-sm font-medium text-link hover:underline"
         >
             <ArrowLeft class="size-4" :stroke-width="1.75" />
-            Back to log in
+            {{ $t("auth.forgot_password.back_to_login") }}
         </Link>
     </div>
 </template>
