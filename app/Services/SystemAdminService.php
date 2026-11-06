@@ -43,11 +43,11 @@ class SystemAdminService
             $target = User::query()->whereKey($target->id)->lockForUpdate()->firstOrFail();
 
             if ($target->status !== 'active') {
-                throw ValidationException::withMessages(['user' => 'Only an active account can become a System Admin.']);
+                throw ValidationException::withMessages(['user' => __('admin.system_admins.only_an_active_account_can')]);
             }
 
             if ($admins->contains($target->id) || $target->hasRole(UserRole::Admin)) {
-                throw ValidationException::withMessages(['user' => "{$target->name} is already a System Admin."]);
+                throw ValidationException::withMessages(['user' => __('admin.system_admins.already_admin', ['name' => $target->name])]);
             }
 
             $target->assignRole(UserRole::Admin);
@@ -91,7 +91,7 @@ class SystemAdminService
             $incoming = User::query()->whereKey($incoming->id)->lockForUpdate()->firstOrFail();
 
             if ($incoming->id === $outgoing->id || $incoming->status !== 'active' || $admins->contains($incoming->id)) {
-                throw ValidationException::withMessages(['user' => 'Choose an active account that is not already a System Admin.']);
+                throw ValidationException::withMessages(['user' => __('admin.system_admins.choose_an_active_account')]);
             }
 
             $incoming->assignRole(UserRole::Admin);
@@ -114,13 +114,13 @@ class SystemAdminService
             $this->assertActingAdmin($actor, $admins);
 
             if ($actor->id === $target->id) {
-                throw new AuthorizationException('You cannot deactivate your own account.');
+                throw new AuthorizationException(__('admin.system_admins.you_cannot_deactivate_your_own'));
             }
 
             $target = User::query()->whereKey($target->id)->lockForUpdate()->firstOrFail();
 
             if ($admins->contains($target->id) && $admins->diff([$target->id])->isEmpty()) {
-                throw new AuthorizationException('Cannot deactivate the last remaining Administrator.');
+                throw new AuthorizationException(__('admin.system_admins.cannot_deactivate_the_last_remaining'));
             }
 
             $target->update([
@@ -190,7 +190,7 @@ class SystemAdminService
     private function assertActingAdmin(User $actor, Collection $admins): void
     {
         if (! $admins->contains($actor->id)) {
-            throw new AuthorizationException('Only an active System Admin can do this.');
+            throw new AuthorizationException(__('admin.system_admins.only_an_active_system_admin'));
         }
     }
 
@@ -202,17 +202,17 @@ class SystemAdminService
     private function assertCanLoseAdmin(User $actor, User $target, Collection $admins): void
     {
         if ($actor->id === $target->id) {
-            throw new AuthorizationException('You cannot remove or replace yourself. Another System Admin must do it.');
+            throw new AuthorizationException(__('admin.system_admins.you_cannot_remove_or_replace'));
         }
 
         if (! $admins->contains($target->id) && ! $target->hasRole(UserRole::Admin)) {
-            throw ValidationException::withMessages(['user' => "{$target->name} is not a System Admin."]);
+            throw ValidationException::withMessages(['user' => __('admin.system_admins.not_admin', ['name' => $target->name])]);
         }
 
         // The actor is a different active admin, so one remains. Counting anyway keeps
         // the invariant explicit and guards future callers.
         if ($admins->diff([$target->id])->isEmpty()) {
-            throw new AuthorizationException('The last active System Admin cannot be removed.');
+            throw new AuthorizationException(__('admin.system_admins.the_last_active_system_admin'));
         }
     }
 
@@ -222,7 +222,7 @@ class SystemAdminService
     private function requireReason(string $reason): void
     {
         if (trim($reason) === '') {
-            throw ValidationException::withMessages(['reason' => 'Give a reason for the change.']);
+            throw ValidationException::withMessages(['reason' => __('admin.system_admins.give_a_reason')]);
         }
     }
 }

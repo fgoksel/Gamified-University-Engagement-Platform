@@ -116,7 +116,7 @@ class HallScreenTest extends EventTestCase
         foreach ([4, 121, 'soon'] as $seconds) {
             $this->actingAs($this->areaAdmin())
                 ->put("/leaderboards/{$board->id}", ['name' => 'Published', 'hall_seconds' => $seconds])
-                ->assertSessionHasErrors(['hall_seconds' => Leaderboard::HALL_SECONDS_MESSAGE]);
+                ->assertSessionHasErrors(['hall_seconds' => Leaderboard::hallSecondsMessage()]);
         }
 
         $this->assertNull($board->fresh()->hall_seconds);
@@ -178,10 +178,8 @@ class HallScreenTest extends EventTestCase
 
     public function test_the_publish_step_warns_that_the_leaderboard_goes_public(): void
     {
-        $this->assertStringContainsString(
-            'Published leaderboards are shown on the hall screen and to anyone without signing in.',
-            file_get_contents(resource_path('js/leaderboardWords.js')),
-        );
+        $this->assertSame('Published leaderboards are shown on the hall screen and to anyone without signing in.', __('leaderboards.publish_warning'));
+        $this->assertStringContainsString('leaderboards.publish_warning', file_get_contents(resource_path('js/leaderboardWords.js')));
         $this->assertStringContainsString('{{ publishWarning }}', file_get_contents(resource_path('js/Components/Topics/LeaderboardsPanel.vue')));
     }
 

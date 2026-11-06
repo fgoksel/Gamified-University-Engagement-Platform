@@ -122,7 +122,7 @@ class StudentHome
                 'application_type' => $event->application_type,
                 'capacity' => $event->capacity,
                 'places_left' => max(0, $event->capacity - (int) $event->accepted_count),
-                'applications_close' => $event->application_deadline->format('D j M, H:i'),
+                'applications_close' => $event->application_deadline->translatedFormat('D j M, H:i'),
             ])
             ->values()
             ->all();
@@ -149,7 +149,7 @@ class StudentHome
                 'category' => $row->category,
                 'points' => $row->points,
                 'correction' => $row->type === PointTransaction::REVERSAL,
-                'at' => $row->created_at?->format('D j M Y'),
+                'at' => $row->created_at?->translatedFormat('D j M Y'),
             ])
             ->all();
     }
@@ -167,7 +167,7 @@ class StudentHome
             'category' => $event->category,
             'tag' => $event->tag?->name,
             'points' => $event->points_value,
-            'starts' => $event->event_starts_at->format('D j M Y, H:i'),
+            'starts' => $event->event_starts_at->translatedFormat('D j M Y, H:i'),
         ];
     }
 }

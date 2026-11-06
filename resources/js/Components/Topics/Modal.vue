@@ -109,7 +109,7 @@ onBeforeUnmount(() => {
                     <button
                         type="button"
                         class="-m-1 rounded-control p-1 text-fg-muted hover:bg-surface-muted hover:text-fg focus-visible:outline-2 focus-visible:outline-ring"
-                        aria-label="Close dialog"
+                        :aria-label="$t('areas.modal.close_dialog')"
                         @click="close"
                     >
                         <X class="size-5" :stroke-width="1.75" />

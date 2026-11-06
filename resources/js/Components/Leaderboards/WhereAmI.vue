@@ -92,7 +92,7 @@ const selectClass =
                 </select>
             </label>
             <label class="block text-sm font-medium text-fg">
-                {{ words.category }}
+                {{ words.categoryLabel }}
                 <select
                     v-model="category"
                     :class="selectClass"

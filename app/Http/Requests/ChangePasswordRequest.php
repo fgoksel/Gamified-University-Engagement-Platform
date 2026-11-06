@@ -33,9 +33,9 @@ class ChangePasswordRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'current_password.current_password' => 'The old password is incorrect.',
-            'password.confirmed' => 'The two passwords do not match.',
-            'password.different' => 'The new password cannot be the same as the old one.',
+            'current_password.current_password' => __('auth.old_password_incorrect'),
+            'password.confirmed' => __('auth.passwords_do_not_match'),
+            'password.different' => __('auth.password_same_as_old'),
         ];
     }
 }

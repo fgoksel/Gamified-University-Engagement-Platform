@@ -14,14 +14,14 @@ class TestMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: config('app.name').': test email',
+            subject: __('mail.test.subject', ['app' => config('app.name')]),
         );
     }
 
     public function content(): Content
     {
         return new Content(
-            htmlString: '<p>This is a test email. If you can read it, the mail settings work.</p>',
+            htmlString: '<p>'.e(__('mail.test.body')).'</p>',
         );
     }
 }

@@ -2,9 +2,10 @@
 import { onBeforeUnmount, onMounted, ref } from "vue";
 import { Maximize, Minimize } from "@lucide/vue";
 import AppLogo from "../Components/AppLogo.vue";
+import { t } from "../i18n.js";
 
 defineProps({
-    title: { type: String, default: "Leaderboard" },
+    title: { type: String, default: () => t("leaderboard.title") },
     semester: { type: String, default: "" },
 });
 
@@ -41,7 +42,9 @@ onBeforeUnmount(() =>
                     @click="toggleFullscreen"
                 >
                     <Maximize class="size-4" :stroke-width="1.75" />
-                    <span class="hidden sm:inline">Full screen</span>
+                    <span class="hidden sm:inline">{{
+                        $t("layout.full_screen")
+                    }}</span>
                 </button>
             </div>
         </header>
@@ -66,7 +69,7 @@ onBeforeUnmount(() =>
             v-if="isFullscreen"
             type="button"
             class="fixed right-4 top-4 rounded-control p-2 text-fg-muted opacity-40 hover:bg-surface-muted hover:opacity-100 focus-visible:opacity-100"
-            aria-label="Exit full screen"
+            :aria-label="$t('layout.exit_full_screen')"
             @click="toggleFullscreen"
         >
             <Minimize class="size-5" :stroke-width="1.75" />

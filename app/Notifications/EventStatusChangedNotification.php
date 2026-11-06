@@ -54,46 +54,46 @@ class EventStatusChangedNotification extends Notification implements ShouldQueue
     public function toMail(object $notifiable): MailMessage
     {
         [$subject, $lines] = match ($this->change) {
-            self::CANCELLED => ['An event you applied to is cancelled', [
-                "The organizer cancelled \"{$this->eventTitle}\". It will not take place.",
-                ...($this->reason ? ["Reason: {$this->reason}"] : []),
+            self::CANCELLED => [__('mail.event_status.an_event_you_applied'), [
+                __('mail.event_status.cancelled_text', ['event' => $this->eventTitle]),
+                ...($this->reason ? [__('mail.reason', ['reason' => $this->reason])] : []),
             ]],
-            self::ON_HOLD => ['An event you applied to is on hold', [
-                "The organizer put \"{$this->eventTitle}\" on hold. It may come back later.",
-                'Your application is kept. We will tell you if the event is restored or cancelled.',
+            self::ON_HOLD => [__('mail.event_status.an_event_you_applied_2'), [
+                __('mail.event_status.on_hold_text', ['event' => $this->eventTitle]),
+                __('mail.event_status.your_application_is_kept_we'),
             ]],
-            self::RESCHEDULED => ['The time of an event you applied to changed', [
-                "The organizer changed the date or time of \"{$this->eventTitle}\".",
-                'You keep your place. Check the new time under My events. If it no longer suits you, you can leave the event.',
+            self::RESCHEDULED => [__('mail.event_status.the_time_of_an_event'), [
+                __('mail.event_status.rescheduled_text', ['event' => $this->eventTitle]),
+                __('mail.event_status.you_keep_your_place_check'),
             ]],
-            self::RELOCATED => ['The location of an event you applied to changed', [
-                "The organizer changed the location of \"{$this->eventTitle}\".",
+            self::RELOCATED => [__('mail.event_status.the_location_of_an_event'), [
+                __('mail.event_status.relocated_text', ['event' => $this->eventTitle]),
                 $this->newLocation(),
-                'You keep your place. If the new location no longer suits you, you can leave the event under My events.',
+                __('mail.event_status.you_keep_your_place_if'),
             ]],
-            self::RESCHEDULED_AND_RELOCATED => ['The time and location of an event you applied to changed', [
-                "The organizer changed the date or time and the location of \"{$this->eventTitle}\".",
+            self::RESCHEDULED_AND_RELOCATED => [__('mail.event_status.the_time_and_location'), [
+                __('mail.event_status.both_text', ['event' => $this->eventTitle]),
                 $this->newLocation(),
-                'You keep your place. Check the new time under My events. If it no longer suits you, you can leave the event.',
+                __('mail.event_status.you_keep_your_place_check'),
             ]],
-            default => ['An event you applied to is back', [
-                "\"{$this->eventTitle}\" is back on. You keep your place.",
-                'Check the date under My events. If it no longer suits you, you can leave the event.',
+            default => [__('mail.event_status.an_event_you_applied_3'), [
+                __('mail.event_status.restored_text', ['event' => $this->eventTitle]),
+                __('mail.event_status.check_the_date_under_my'),
             ]],
         };
 
-        $mail = (new MailMessage)->subject($subject)->greeting("Hello {$notifiable->name},");
+        $mail = (new MailMessage)->subject($subject)->greeting(__('mail.greeting_comma', ['name' => $notifiable->name]));
 
         foreach ($lines as $line) {
             $mail->line($line);
         }
 
-        return $mail->salutation('Best regards, University Engagement Team');
+        return $mail->salutation(__('mail.salutation'));
     }
 
     private function newLocation(): string
     {
-        return $this->location !== null ? "New location: {$this->location}" : 'The location was removed.';
+        return $this->location !== null ? __('mail.event_status.new_location', ['location' => $this->location]) : __('mail.event_status.the_location_was_removed');
     }
 
     /**

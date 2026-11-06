@@ -40,9 +40,9 @@ const describedBy = computed(() => {
             <span v-if="required" class="text-danger-fg" aria-hidden="true"
                 >*</span
             >
-            <span v-else-if="optional" class="font-normal text-fg-muted"
-                >(optional)</span
-            >
+            <span v-else-if="optional" class="font-normal text-fg-muted">{{
+                $t("fields.optional")
+            }}</span>
         </label>
 
         <div class="relative mt-1.5">
@@ -66,7 +66,11 @@ const describedBy = computed(() => {
                 v-if="isPassword"
                 type="button"
                 class="absolute inset-y-0 right-0 flex items-center rounded-control px-3 text-fg-muted hover:text-fg focus-visible:outline-2 focus-visible:outline-ring"
-                :aria-label="showPassword ? 'Hide password' : 'Show password'"
+                :aria-label="
+                    showPassword
+                        ? $t('fields.hide_password')
+                        : $t('fields.show_password')
+                "
                 :aria-pressed="showPassword"
                 @click="showPassword = !showPassword"
             >

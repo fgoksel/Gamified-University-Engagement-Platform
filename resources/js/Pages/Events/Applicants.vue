@@ -4,10 +4,12 @@ import { Link, router } from "@inertiajs/vue3";
 import { ArrowLeft, Trash2 } from "@lucide/vue";
 import Modal from "../../Components/Topics/Modal.vue";
 import Btn from "../../Components/Topics/Btn.vue";
-import { categoryDot } from "../../categoryColors.js";
+import Trans from "../../Components/Trans.vue";
+import { categoryDot, categoryLabel } from "../../categoryColors.js";
+import { t } from "../../i18n.js";
 
 // Organizer: applicants of one event (UC-1.6, Task #41)
-defineOptions({ layout: { title: "Applied students" } });
+defineOptions({ layout: { title: t("events.applicants.applied_students") } });
 
 const props = defineProps({
     event: { type: Object, required: true },
@@ -103,11 +105,11 @@ function confirmReject() {
 }
 
 const statusLabel = {
-    pending: "Pending",
-    accepted: "Accepted",
-    waitlisted: "Waitlisted",
-    rejected: "Rejected",
-    withdrawn: "Withdrawn",
+    pending: t("events.applicants.pending"),
+    accepted: t("events.applicants.accepted"),
+    waitlisted: t("events.applicants.waitlisted"),
+    rejected: t("events.applicants.rejected"),
+    withdrawn: t("events.applicants.withdrawn"),
 };
 
 const categories = ["academic", "scientific", "sports", "community"];
@@ -129,7 +131,8 @@ function formatDateTime(iso) {
             href="/my-events"
             class="inline-flex min-h-11 items-center gap-1.5 text-sm text-fg-muted hover:text-fg focus-visible:outline-2 focus-visible:outline-ring rounded-control"
         >
-            <ArrowLeft class="size-4" /> Back to my events
+            <ArrowLeft class="size-4" />
+            {{ $t("events.applicants.back_to_my_events") }}
         </Link>
 
         <div
@@ -140,36 +143,57 @@ function formatDateTime(iso) {
                 <p class="text-sm text-fg-muted">
                     {{
                         isSelection
-                            ? "Selection mode: you decide who takes part."
-                            : "First come, first served: applicants are accepted automatically in arrival order."
+                            ? $t(
+                                  "events.applicants.selection_mode_you_decide_who",
+                              )
+                            : $t(
+                                  "events.applicants.first_come_first_served_applicants",
+                              )
                     }}
                 </p>
             </div>
             <div class="flex flex-wrap items-center gap-4 text-sm">
                 <span data-test="total-applicants"
-                    >Total applicants:
-                    <strong>{{ open.length }} / {{ event.capacity }}</strong>
-                    capacity</span
+                    ><Trans k="events.applicants.total">
+                        <template #count>
+                            <strong
+                                >{{ open.length }} /
+                                {{ event.capacity }}</strong
+                            >
+                        </template>
+                    </Trans></span
                 >
                 <span v-if="isSelection" data-test="selected-counter"
-                    >Selected:
-                    <strong>{{ selectedCount }} / {{ event.capacity }}</strong>
+                    ><Trans k="events.applicants.selected_count">
+                        <template #count>
+                            <strong
+                                >{{ selectedCount }} /
+                                {{ event.capacity }}</strong
+                            >
+                        </template>
+                    </Trans>
                 </span>
             </div>
         </div>
 
         <div v-if="isSelection" class="flex flex-wrap items-center gap-3">
-            <label class="text-sm text-fg-muted" for="applicant-filter"
-                >Filter</label
-            >
+            <label class="text-sm text-fg-muted" for="applicant-filter">{{
+                $t("events.applicants.filter")
+            }}</label>
             <select
                 id="applicant-filter"
                 v-model="filter"
                 class="min-h-11 rounded-control border border-line bg-surface px-3 py-2 text-sm"
             >
-                <option value="all">All students</option>
-                <option value="selected">Selected students</option>
-                <option value="unselected">Unselected students</option>
+                <option value="all">
+                    {{ $t("events.applicants.all_students") }}
+                </option>
+                <option value="selected">
+                    {{ $t("events.applicants.selected_students") }}
+                </option>
+                <option value="unselected">
+                    {{ $t("events.applicants.unselected_students") }}
+                </option>
             </select>
             <Btn
                 variant="primary"
@@ -179,7 +203,7 @@ function formatDateTime(iso) {
                 data-test="save"
                 @click="onSave"
             >
-                Save
+                {{ $t("common.save") }}
             </Btn>
         </div>
 
@@ -187,7 +211,7 @@ function formatDateTime(iso) {
             v-if="rows.length === 0"
             class="rounded-card border border-line bg-surface p-8 text-center text-sm text-fg-muted"
         >
-            No applicants to show.
+            {{ $t("events.applicants.no_applicants_to_show") }}
         </div>
 
         <div
@@ -198,14 +222,24 @@ function formatDateTime(iso) {
                 <thead class="bg-surface-muted text-xs text-fg-muted uppercase">
                     <tr>
                         <th v-if="isSelection" class="w-10 px-3 py-2">
-                            <span class="sr-only">Select</span>
+                            <span class="sr-only">{{
+                                $t("events.applicants.select")
+                            }}</span>
                         </th>
-                        <th class="px-3 py-2">Student</th>
-                        <th class="px-3 py-2">Points</th>
-                        <th class="px-3 py-2">Applied</th>
-                        <th class="px-3 py-2">Status</th>
+                        <th class="px-3 py-2">
+                            {{ $t("events.applicants.student") }}
+                        </th>
+                        <th class="px-3 py-2">
+                            {{ $t("events.applicants.points") }}
+                        </th>
+                        <th class="px-3 py-2">
+                            {{ $t("events.applicants.applied") }}
+                        </th>
+                        <th class="px-3 py-2">
+                            {{ $t("events.applicants.status") }}
+                        </th>
                         <th v-if="isSelection" class="px-3 py-2 text-right">
-                            Actions
+                            {{ $t("events.applicants.actions") }}
                         </th>
                     </tr>
                 </thead>
@@ -227,7 +261,11 @@ function formatDateTime(iso) {
                                         'waitlisted',
                                     ].includes(a.status)
                                 "
-                                :aria-label="`Select ${a.student.name}`"
+                                :aria-label="
+                                    $t('events.applicants.select_student', {
+                                        name: a.student.name,
+                                    })
+                                "
                                 @change="toggle(a)"
                             />
                         </td>
@@ -250,7 +288,11 @@ function formatDateTime(iso) {
                                     popover = popover === a.id ? null : a.id
                                 "
                             >
-                                {{ a.points.total }} pts
+                                {{
+                                    $t("events.applicants.points_total", {
+                                        points: a.points.total,
+                                    })
+                                }}
                             </button>
                             <div
                                 v-if="popover === a.id"
@@ -269,7 +311,7 @@ function formatDateTime(iso) {
                                             class="size-2 rounded-full"
                                             :class="categoryDot[c]"
                                         ></span>
-                                        {{ c }}
+                                        {{ categoryLabel[c] }}
                                     </span>
                                     <strong>{{ a.points[c] }}</strong>
                                 </div>
@@ -283,9 +325,9 @@ function formatDateTime(iso) {
                                 isSelection &&
                                 a.status === "pending" &&
                                 !ticked.has(a.id)
-                                    ? "Pending"
+                                    ? $t("events.applicants.pending")
                                     : isSelection && ticked.has(a.id)
-                                      ? "Selected"
+                                      ? $t("events.applicants.selected")
                                       : statusLabel[a.status]
                             }}
                         </td>
@@ -301,7 +343,11 @@ function formatDateTime(iso) {
                                 "
                                 type="button"
                                 class="inline-flex items-center gap-1 rounded-control p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
-                                :aria-label="`Remove ${a.student.name}`"
+                                :aria-label="
+                                    $t('events.applicants.remove_named', {
+                                        name: a.student.name,
+                                    })
+                                "
                                 @click="rejecting = a"
                             >
                                 <Trash2 class="size-4" />
@@ -314,40 +360,44 @@ function formatDateTime(iso) {
 
         <Modal
             v-if="showOverflow"
-            title="Capacity exceeded"
+            :title="$t('events.applicants.capacity_exceeded')"
             :busy="saving"
             @close="showOverflow = false"
         >
             <p class="text-sm">
-                The number of selected students exceeds the maximum capacity.
-                Would you like to modify the maximum capacity?
+                {{ $t("events.applicants.the_number_of_selected_students") }}
             </p>
             <template #footer>
                 <Btn
                     variant="quiet"
                     :disabled="saving"
                     @click="showOverflow = false"
-                    >No</Btn
+                    >{{ $t("common.no") }}</Btn
                 >
-                <Btn variant="primary" :loading="saving" @click="save(true)"
-                    >Yes, raise to {{ selectedCount }}</Btn
-                >
+                <Btn variant="primary" :loading="saving" @click="save(true)">{{
+                    $t("events.applicants.yes_raise_to", {
+                        count: selectedCount,
+                    })
+                }}</Btn>
             </template>
         </Modal>
 
         <Modal
             v-if="rejecting"
-            title="Remove student"
+            :title="$t('events.applicants.remove_student')"
             danger
             @close="rejecting = null"
         >
             <p class="text-sm">
-                Are you sure you want to remove the student from the event? This
-                cannot be undone this semester.
+                {{ $t("events.applicants.are_you_sure_you_want") }}
             </p>
             <template #footer>
-                <Btn variant="quiet" @click="rejecting = null">No</Btn>
-                <Btn variant="destructive" @click="confirmReject">Yes</Btn>
+                <Btn variant="quiet" @click="rejecting = null">{{
+                    $t("common.no")
+                }}</Btn>
+                <Btn variant="destructive" @click="confirmReject">{{
+                    $t("common.yes")
+                }}</Btn>
             </template>
         </Modal>
     </div>

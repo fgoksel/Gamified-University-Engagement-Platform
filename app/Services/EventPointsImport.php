@@ -70,18 +70,18 @@ class EventPointsImport
             $row = ['line' => $line, 'neptun_code' => $code, 'name' => $student?->name];
 
             [$list, $reason] = match (true) {
-                $code === '' => ['skipped', 'The Neptun code is empty.'],
-                preg_match(self::NEPTUN, $code) !== 1 => ['skipped', 'This is not a Neptun code: it should be 6 letters or digits.'],
-                isset($firstLine[$code]) => ['skipped', "Listed already on row {$firstLine[$code]}."],
-                $student === null => ['skipped', 'No student account has this Neptun code.'],
-                $student->is($organiser) => ['skipped', 'You cannot give points to yourself.'],
+                $code === '' => ['skipped', __('events.points_import.the_neptun_code_is_empty')],
+                preg_match(self::NEPTUN, $code) !== 1 => ['skipped', __('events.points_import.this_is_not_a_neptun')],
+                isset($firstLine[$code]) => ['skipped', __('events.points_import.listed_already', ['line' => $firstLine[$code]])],
+                $student === null => ['skipped', __('events.points_import.no_student_account_has')],
+                $student->is($organiser) => ['skipped', __('events.points_import.you_cannot_give_points')],
                 $credits->has($student->id) => ['already', $reversed->has($credits[$student->id])
-                    ? 'Their points for this event were taken back, so they cannot be given again.'
-                    : 'Already has the points for this event.'],
-                $student->status === 'invited' => ['skipped', 'Has not activated their account yet. Import them again once they have.'],
-                $student->status !== 'active' => ['skipped', 'Their account is deactivated.'],
-                ! $inArea->has($student->id) => ['skipped', "Not assigned to {$area->title}, the area of this event."],
-                ! $seesEvents->has($student->id) => ['skipped', "Their role in {$area->title} does not include \"View events\"."],
+                    ? __('events.points_import.their_points_for_this_event')
+                    : __('events.points_import.already_has_the_points')],
+                $student->status === 'invited' => ['skipped', __('events.points_import.has_not_activated_their_account')],
+                $student->status !== 'active' => ['skipped', __('events.points_import.their_account_is_deactivated')],
+                ! $inArea->has($student->id) => ['skipped', __('events.points_import.not_assigned', ['area' => $area->title])],
+                ! $seesEvents->has($student->id) => ['skipped', __('events.points_import.role_lacks_view', ['area' => $area->title])],
                 default => ['credit', null],
             };
 
@@ -128,7 +128,7 @@ class EventPointsImport
                 $creditedIds[] = $row['id'];
             } catch (EventActionRefused $refused) {
                 if ($refused->reason === 'already_credited') {
-                    $already[] = $entry + ['reason' => 'Already has the points for this event.'];
+                    $already[] = $entry + ['reason' => __('events.points_import.already_has_the_points')];
                 } else {
                     $skipped[] = $entry + ['reason' => $refused->getMessage()];
                 }

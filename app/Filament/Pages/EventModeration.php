@@ -10,13 +10,19 @@ class EventModeration extends Page
 {
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedShieldExclamation;
 
-    protected static ?string $navigationLabel = 'Event moderation';
-
-    protected static ?string $title = 'Event moderation';
-
     protected static ?int $navigationSort = 7;
 
     protected string $view = 'filament.pages.coming-soon';
+
+    public static function getNavigationLabel(): string
+    {
+        return __('admin.event_moderation.navigation');
+    }
+
+    public function getTitle(): string
+    {
+        return __('admin.event_moderation.title');
+    }
 
     /**
      * @return array<string, mixed>
@@ -24,11 +30,11 @@ class EventModeration extends Page
     protected function getViewData(): array
     {
         return [
-            'description' => 'Oversee every event in the system, regardless of organizer.',
+            'description' => __('admin.event_moderation.oversee_every_event'),
             'plannedFeatures' => [
-                'Search all events',
-                'Delete problematic events with a required reason',
-                'Review and reverse incorrect point credits (audit log)',
+                __('admin.event_moderation.search_all_events'),
+                __('admin.event_moderation.delete_problematic_events'),
+                __('admin.event_moderation.review_and_reverse_incorrect_point'),
             ],
         ];
     }

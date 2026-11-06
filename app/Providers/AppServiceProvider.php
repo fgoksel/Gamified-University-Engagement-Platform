@@ -14,7 +14,9 @@ use App\Policies\RoleDefinitionPolicy;
 use App\Policies\TopicPolicy;
 use App\Services\PointCalculationService;
 use App\Services\TopicAccess;
+use App\Support\PseudoLoader;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Contracts\Translation\Loader;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
@@ -34,6 +36,9 @@ class AppServiceProvider extends ServiceProvider
 
         // One per request too: it remembers for a moment that the leaderboard cache could not be reached.
         $this->app->scoped(PointCalculationService::class);
+        // The made-up test language (APP_LOCALE=qps) is built from the English texts of Laravel's
+        // translator, so every text on a screen changes, not only the ones of this project (Task #95).
+        $this->app->extend('translation.loader', fn (Loader $loader) => new PseudoLoader($loader));
     }
 
     /**

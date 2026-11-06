@@ -10,6 +10,7 @@ use App\Models\RoleAssignment;
 use App\Models\Semester;
 use App\Models\Topic;
 use App\Services\CourseEnrollmentScope;
+use App\Support\AdminUpload;
 use Filament\Actions\Action;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\FileUpload;
@@ -59,7 +60,7 @@ class FacultyCourses extends Page implements HasTable
 
     public function getTitle(): string
     {
-        return "Courses of {$this->record->name}";
+        return __('admin.faculty_courses.courses_of_name', ['name' => $this->record->name]);
     }
 
     public function table(Table $table): Table
@@ -71,27 +72,29 @@ class FacultyCourses extends Page implements HasTable
                     ->with('legacyTopic')
                     ->orderBy('code')
             )
+            ->modelLabel(__('admin.models.course'))
+            ->pluralModelLabel(__('admin.models.courses'))
             ->columns([
                 TextColumn::make('code')
-                    ->label('Code')
+                    ->label(__('admin.faculty_courses.code'))
                     ->searchable()
                     ->sortable(),
 
                 TextColumn::make('name')
-                    ->label('Name')
+                    ->label(__('admin.faculty_courses.name'))
                     ->searchable()
                     ->sortable(),
 
                 TextColumn::make('legacyTopic.title')
-                    ->label('Linked Area')
-                    ->placeholder('— Not linked —')
+                    ->label(__('admin.faculty_courses.linked_area'))
+                    ->placeholder(__('admin.faculty_courses.not_linked'))
                     ->badge()
                     ->color(fn (Course $record): string => $record->legacyTopic ? 'success' : 'gray')
                     ->searchable()
                     ->sortable(),
 
                 TextColumn::make('students')
-                    ->label('Students')
+                    ->label(__('admin.faculty_courses.students'))
                     ->state(fn (Course $record): int => $record->legacyTopic === null ? 0 : RoleAssignment::query()
                         ->active()
                         ->where('topic_id', $record->legacyTopic->id)
@@ -99,24 +102,24 @@ class FacultyCourses extends Page implements HasTable
                         ->count()),
 
                 TextColumn::make('created_at')
-                    ->label('Added')
+                    ->label(__('admin.faculty_courses.added'))
                     ->dateTime()
                     ->sortable(),
             ])
             ->actions([
                 Action::make('linkTopic')
-                    ->label(fn (Course $record): string => $record->legacyTopic ? 'Change Link' : 'Link to Area')
+                    ->label(fn (Course $record): string => $record->legacyTopic ? __('admin.faculty_courses.change_link') : __('admin.faculty_courses.link_to_area'))
                     ->icon(Heroicon::OutlinedLink)
                     ->color('gray')
-                    ->modalHeading(fn (Course $record): string => "Link Course {$record->code} to an Area Node")
-                    ->modalDescription('Link this course to a node in the area tree. Students imported for this course will be placed on this area.')
-                    ->modalSubmitActionLabel('Save Link')
+                    ->modalHeading(fn (Course $record): string => __('admin.faculty_courses.link_course_code', ['code' => $record->code]))
+                    ->modalDescription(__('admin.faculty_courses.link_this_course'))
+                    ->modalSubmitActionLabel(__('admin.faculty_courses.save_link'))
                     ->fillForm(fn (Course $record): array => [
                         'topic_id' => $record->legacyTopic?->id,
                     ])
                     ->form(fn (Course $record): array => [
                         Select::make('topic_id')
-                            ->label('Area Node')
+                            ->label(__('admin.faculty_courses.area_node'))
                             ->searchable()
                             ->preload()
                             ->options(function () use ($record): array {
@@ -132,7 +135,7 @@ class FacultyCourses extends Page implements HasTable
                                     ->pluck('title', 'id')
                                     ->all();
                             })
-                            ->placeholder('— Unlink / No Area —')
+                            ->placeholder(__('admin.faculty_courses.unlink_no_area'))
                             ->nullable(),
                     ])
                     ->action(function (Course $record, array $data): void {
@@ -144,29 +147,29 @@ class FacultyCourses extends Page implements HasTable
 
                         if ($newTopicId !== null) {
                             Topic::where('id', $newTopicId)->update(['course_id' => $record->id]);
-                            $topicTitle = Topic::find($newTopicId)?->title ?? 'Area';
+                            $topicTitle = Topic::find($newTopicId)?->title ?? __('admin.faculty_courses.area');
                             Notification::make()
-                                ->title('Course linked to area')
+                                ->title(__('admin.faculty_courses.course_linked_to_area'))
                                 ->success()
-                                ->body("{$record->code} is now linked to \"{$topicTitle}\".")
+                                ->body(__('admin.faculty_courses.code_is_now_linked', ['code' => $record->code, 'area_title' => $topicTitle]))
                                 ->send();
                         } else {
                             Notification::make()
-                                ->title('Course unlinked from area')
+                                ->title(__('admin.faculty_courses.course_unlinked_from_area'))
                                 ->success()
-                                ->body("{$record->code} is no longer linked to an area.")
+                                ->body(__('admin.faculty_courses.code_is_no_longer_linked', ['code' => $record->code]))
                                 ->send();
                         }
                     }),
 
                 Action::make('importEnrolments')
-                    ->label('Import Enrolments')
+                    ->label(__('admin.faculty_courses.import_enrolments'))
                     ->icon(Heroicon::OutlinedArrowUpTray)
                     ->color('success')
                     ->visible(fn (Course $record): bool => $record->legacyTopic !== null)
-                    ->modalHeading(fn (Course $record): string => "Import Enrolments: {$record->code} ({$record->name})")
-                    ->modalDescription('Choose the course area or a subgroup as the destination. Upload only the students who should join that node.')
-                    ->modalSubmitActionLabel('Execute Import')
+                    ->modalHeading(fn (Course $record): string => __('admin.faculty_courses.import_enrolments_code_name', ['code' => $record->code, 'name' => $record->name]))
+                    ->modalDescription(__('admin.faculty_courses.choose_the_course_area'))
+                    ->modalSubmitActionLabel(__('admin.faculty_courses.execute_import'))
                     ->form(function (Course $record): array {
                         $topic = $record->legacyTopic;
                         if (! $topic) {
@@ -175,7 +178,8 @@ class FacultyCourses extends Page implements HasTable
 
                         return [
                             FileUpload::make('file')
-                                ->label('Neptun Enrolment CSV')
+                                ->placeholder(AdminUpload::placeholder())
+                                ->label(__('admin.faculty_courses.neptun_enrolment_csv'))
                                 ->disk('local')
                                 ->directory('imports')
                                 ->acceptedFileTypes([
@@ -189,16 +193,16 @@ class FacultyCourses extends Page implements HasTable
                                 ->maxFiles(1)
                                 ->maxSize(10240)
                                 ->required()
-                                ->helperText('Required columns: Neptun Code, Course Code, Course Name'),
+                                ->helperText(__('admin.faculty_courses.required_columns_neptun_code_course')),
 
                             Select::make('semester_id')
-                                ->label('Semester')
+                                ->label(__('admin.faculty_courses.semester'))
                                 ->options(Semester::query()->orderByDesc('starts_at')->pluck('name', 'id'))
                                 ->default(fn () => Semester::where('status', 'active')->value('id'))
                                 ->required(),
 
                             Select::make('target_topic_id')
-                                ->label('Import destination')
+                                ->label(__('admin.faculty_courses.import_destination'))
                                 ->options(fn (): array => CourseEnrollmentScope::destinations($record)->orderBy('depth')->orderBy('title')->pluck('title', 'id')->all())
                                 ->default($topic->id)
                                 ->required()
@@ -207,21 +211,21 @@ class FacultyCourses extends Page implements HasTable
                                     $set('nodes_above', []);
                                     $set('nodes_below', []);
                                 })
-                                ->helperText('For a lab subset, choose its lab node. The course link stays unchanged.'),
+                                ->helperText(__('admin.faculty_courses.for_a_lab_subset_choose')),
 
-                            Section::make('Which other nodes should these students also belong to?')
-                                ->description('Membership is added only at the selected destination and the nodes you tick below. Parent course membership is not added automatically.')
+                            Section::make(__('admin.faculty_courses.which_other_nodes_should_these'))
+                                ->description(__('admin.faculty_courses.membership_is_added_only'))
                                 ->schema([
                                     CheckboxList::make('nodes_above')
-                                        ->label('Nodes Directly Above (Ancestors)')
+                                        ->label(__('admin.faculty_courses.nodes_directly_above_ancestors'))
                                         ->options(fn (Get $get): array => self::importNodeOptions((int) $get('target_topic_id'), true))
-                                        ->helperText('Optional: include parent nodes only when explicitly selected.')
+                                        ->helperText(__('admin.faculty_courses.optional_include_parent_nodes_only'))
                                         ->bulkToggleable(),
 
                                     CheckboxList::make('nodes_below')
-                                        ->label('Nodes Directly Below (Descendants)')
+                                        ->label(__('admin.faculty_courses.nodes_directly_below_descendants'))
                                         ->options(fn (Get $get): array => self::importNodeOptions((int) $get('target_topic_id'), false))
-                                        ->helperText('Optional: include child nodes only when explicitly selected.')
+                                        ->helperText(__('admin.faculty_courses.optional_include_child_nodes_only'))
                                         ->bulkToggleable(),
                                 ]),
                         ];
@@ -230,7 +234,7 @@ class FacultyCourses extends Page implements HasTable
                         $targetTopicId = (int) $data['target_topic_id'];
                         if (CourseEnrollmentScope::destination($record, $targetTopicId) === null) {
                             throw ValidationException::withMessages([
-                                'target_topic_id' => 'Choose the linked course area or an active descendant as the import destination.',
+                                'target_topic_id' => __('admin.faculty_courses.choose_the_linked_course_area'),
                             ]);
                         }
 
@@ -251,23 +255,23 @@ class FacultyCourses extends Page implements HasTable
                         );
 
                         Notification::make()
-                            ->title('Enrolment import queued')
+                            ->title(__('admin.faculty_courses.enrolment_import_queued'))
                             ->success()
-                            ->body("Enrolment import for {$record->code} has been queued. You will receive a panel notification when complete.")
+                            ->body(__('admin.faculty_courses.enrolment_import_for_code_has', ['code' => $record->code]))
                             ->send();
                     }),
 
                 Action::make('edit')
-                    ->label('Edit')
+                    ->label(__('admin.faculty_courses.edit'))
                     ->icon(Heroicon::OutlinedPencilSquare)
-                    ->modalHeading('Edit course')
-                    ->modalSubmitActionLabel('Save Changes')
+                    ->modalHeading(__('admin.faculty_courses.edit_course'))
+                    ->modalSubmitActionLabel(__('admin.faculty_courses.save_changes'))
                     ->fillForm(fn (Course $record): array => ['code' => $record->code, 'name' => $record->name])
                     ->form(fn (Course $record): array => static::courseFields($record))
                     ->action(function (Course $record, array $data): void {
                         $record->update(['code' => strtoupper(trim($data['code'])), 'name' => trim($data['name'])]);
 
-                        Notification::make()->title('Course updated')->success()->send();
+                        Notification::make()->title(__('admin.faculty_courses.course_updated'))->success()->send();
                     }),
             ]);
     }
@@ -291,21 +295,22 @@ class FacultyCourses extends Page implements HasTable
     {
         return [
             Action::make('back')
-                ->label('All faculties')
+                ->label(__('admin.faculty_courses.all_faculties'))
                 ->icon(Heroicon::OutlinedArrowLeft)
                 ->color('gray')
                 ->url(Faculties::getUrl()),
 
             Action::make('importEnrolments')
-                ->label('Import enrolments (CSV)')
+                ->label(__('admin.faculty_courses.import_enrolments_csv'))
                 ->icon(Heroicon::OutlinedUsers)
                 ->color('gray')
-                ->modalHeading('Bulk Import Course Enrolments (CSV)')
-                ->modalDescription('Upload a Neptun enrolment CSV (Neptun Code, Course Code, Course Name). Students are placed on each course\'s linked area.')
-                ->modalSubmitActionLabel('Import')
+                ->modalHeading(__('admin.faculty_courses.bulk_import_course_enrolments_csv'))
+                ->modalDescription(__('admin.faculty_courses.upload_a_neptun_enrolment_csv'))
+                ->modalSubmitActionLabel(__('admin.faculty_courses.import'))
                 ->form([
                     FileUpload::make('file')
-                        ->label('CSV File')
+                        ->placeholder(AdminUpload::placeholder())
+                        ->label(__('admin.faculty_courses.csv_file'))
                         ->disk('local')
                         ->directory('imports')
                         ->acceptedFileTypes([
@@ -319,10 +324,10 @@ class FacultyCourses extends Page implements HasTable
                         ->maxFiles(1)
                         ->maxSize(10240)
                         ->required()
-                        ->helperText('Required columns: Neptun Code, Course Code, Course Name'),
+                        ->helperText(__('admin.faculty_courses.required_columns_neptun_code_course')),
 
                     Select::make('semester_id')
-                        ->label('Semester')
+                        ->label(__('admin.faculty_courses.semester'))
                         ->options(Semester::query()->orderByDesc('starts_at')->pluck('name', 'id'))
                         ->default(fn () => Semester::where('status', 'active')->value('id'))
                         ->required(),
@@ -335,22 +340,23 @@ class FacultyCourses extends Page implements HasTable
                     );
 
                     Notification::make()
-                        ->title('Enrolment import queued')
+                        ->title(__('admin.faculty_courses.enrolment_import_queued'))
                         ->success()
-                        ->body('The enrolment CSV has been queued for background processing.')
+                        ->body(__('admin.faculty_courses.the_enrolment_csv_has_been'))
                         ->send();
                 }),
 
             Action::make('import')
-                ->label('Import courses (CSV)')
+                ->label(__('admin.faculty_courses.import_courses_csv'))
                 ->icon(Heroicon::OutlinedArrowUpTray)
                 ->color('gray')
-                ->modalHeading('Import courses (CSV)')
-                ->modalDescription('Upload a CSV file with the columns Course Code and Course Name. New courses are added to this faculty; codes that already exist are skipped.')
-                ->modalSubmitActionLabel('Import')
+                ->modalHeading(__('admin.faculty_courses.import_courses_csv'))
+                ->modalDescription(__('admin.faculty_courses.upload_a_csv_file'))
+                ->modalSubmitActionLabel(__('admin.faculty_courses.import'))
                 ->form([
                     FileUpload::make('file')
-                        ->label('CSV File')
+                        ->placeholder(AdminUpload::placeholder())
+                        ->label(__('admin.faculty_courses.csv_file'))
                         ->disk('local')
                         ->directory('imports')
                         ->acceptedFileTypes([
@@ -368,10 +374,10 @@ class FacultyCourses extends Page implements HasTable
                 ->action(fn (array $data) => $this->importCourses($data['file'])),
 
             Action::make('create')
-                ->label('Add course')
+                ->label(__('admin.faculty_courses.add_course'))
                 ->icon(Heroicon::OutlinedPlus)
-                ->modalHeading('Add course')
-                ->modalSubmitActionLabel('Add course')
+                ->modalHeading(__('admin.faculty_courses.add_course'))
+                ->modalSubmitActionLabel(__('admin.faculty_courses.add_course'))
                 ->form(static::courseFields())
                 ->action(function (array $data): void {
                     $course = Course::create([
@@ -381,9 +387,9 @@ class FacultyCourses extends Page implements HasTable
                     ]);
 
                     Notification::make()
-                        ->title('Course added')
+                        ->title(__('admin.faculty_courses.course_added'))
                         ->success()
-                        ->body("{$course->code} {$course->name} has been added.")
+                        ->body(__('admin.faculty_courses.code_name_has_been_added', ['code' => $course->code, 'name' => $course->name]))
                         ->send();
                 }),
         ];
@@ -402,7 +408,7 @@ class FacultyCourses extends Page implements HasTable
 
         if (array_diff(['course_code', 'course_name'], $columns) !== []) {
             Storage::disk('local')->delete($path);
-            Notification::make()->title('Import failed')->danger()->body('Incorrect file structure. The CSV file needs the columns: Course Code, Course Name.')->send();
+            Notification::make()->title(__('admin.faculty_courses.import_failed'))->danger()->body(__('admin.faculty_courses.incorrect_file_structure_the_csv'))->send();
 
             return;
         }
@@ -412,7 +418,7 @@ class FacultyCourses extends Page implements HasTable
             $name = (string) ($row['course_name'] ?? '');
 
             if ($code === '' || $name === '') {
-                $problems[] = "Row {$line} skipped: Course Code and Course Name are both required.";
+                $problems[] = __('admin.faculty_courses.row_line_skipped_course_code', ['line' => $line]);
 
                 return;
             }
@@ -425,19 +431,19 @@ class FacultyCourses extends Page implements HasTable
             } elseif ($course->faculty_id === $this->record->id) {
                 $existing++;
             } else {
-                $problems[] = "Row {$line} skipped: {$code} belongs to {$course->faculty->name}.";
+                $problems[] = __('admin.faculty_courses.row_line_skipped_code_belongs', ['line' => $line, 'code' => $code, 'name' => $course->faculty->name]);
             }
         }), $path, 'local', ExcelFormat::CSV);
 
         Storage::disk('local')->delete($path);
 
-        $body = "{$added} courses added. {$existing} were already in this faculty.";
+        $body = __('admin.faculty_courses.added_courses_added_existing_were', ['added' => $added, 'existing' => $existing]);
 
         if ($problems !== []) {
-            $body .= ' '.count($problems).' rows skipped. '.implode(' ', array_slice($problems, 0, 5));
+            $body .= ' '.__('admin.faculty_courses.rows_skipped', ['count' => count($problems), 'problems' => implode(' ', array_slice($problems, 0, 5))]);
         }
 
-        Notification::make()->title('Course import finished')->success()->body($body)->send();
+        Notification::make()->title(__('admin.faculty_courses.course_import_finished'))->success()->body($body)->send();
     }
 
     /**
@@ -447,14 +453,14 @@ class FacultyCourses extends Page implements HasTable
     {
         return [
             TextInput::make('code')
-                ->label('Course code')
+                ->label(__('admin.faculty_courses.course_code'))
                 ->required()
                 ->maxLength(50)
                 ->unique(table: Course::class, column: 'code', ignorable: $record)
-                ->validationMessages(['unique' => 'A course with this code already exists.']),
+                ->validationMessages(['unique' => __('admin.faculty_courses.a_course_with_this_code')]),
 
             TextInput::make('name')
-                ->label('Course name')
+                ->label(__('admin.faculty_courses.course_name'))
                 ->required()
                 ->maxLength(255),
         ];

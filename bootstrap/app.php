@@ -41,7 +41,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->render(function (ThrottleRequestsException $e, Request $request) {
             if ($request->routeIs('login.store', 'password.email')) {
                 return back()->withErrors([
-                    'email' => 'Too many attempts. Please wait a minute and try again.',
+                    'email' => __('errors.too_many_attempts'),
                 ]);
             }
         });
@@ -58,6 +58,6 @@ return Application::configure(basePath: dirname(__DIR__))
                 return null;
             }
 
-            return redirect('/')->with('error', 'You do not have permission to view this page.');
+            return redirect('/')->with('error', __('errors.no_permission'));
         });
     })->create();

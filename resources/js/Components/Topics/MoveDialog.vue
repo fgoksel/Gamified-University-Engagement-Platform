@@ -3,7 +3,9 @@ import { computed, ref } from "vue";
 import { router } from "@inertiajs/vue3";
 import Modal from "./Modal.vue";
 import Btn from "./Btn.vue";
+import Trans from "../Trans.vue";
 import { api, debounce } from "../../topicsApi.js";
+import { t } from "../../i18n.js";
 
 // Move a topic, with everything below it, to another place. Shows what the
 // move changes before anything happens.
@@ -22,7 +24,9 @@ const busy = ref(false);
 const error = ref("");
 
 const destinationTitle = computed(() =>
-    destination.value === null ? "the top level" : destination.value?.title,
+    destination.value === null
+        ? t("areas.move.the_top_level")
+        : destination.value?.title,
 );
 
 const search = debounce(async () => {
@@ -71,26 +75,33 @@ function submit() {
 </script>
 
 <template>
-    <Modal title="Move area" wide :busy="busy" @close="emit('close')">
+    <Modal
+        :title="$t('areas.move.move_area')"
+        wide
+        :busy="busy"
+        @close="emit('close')"
+    >
         <div class="space-y-4">
             <p class="text-sm text-fg">
-                Move <strong>{{ topic.title }}</strong> and everything below it.
-                Nothing is copied or deleted; the people with roles on it keep
-                them.
+                <Trans k="areas.move.intro">
+                    <template #title>
+                        <strong>{{ topic.title }}</strong>
+                    </template>
+                </Trans>
             </p>
 
             <div v-if="destination === undefined">
                 <label
                     for="destination-search"
                     class="block text-sm font-medium text-fg"
-                    >New place</label
+                    >{{ $t("areas.move.new_place") }}</label
                 >
                 <input
                     id="destination-search"
                     v-model="term"
                     type="search"
                     autocomplete="off"
-                    placeholder="Search for the area to move it into"
+                    :placeholder="$t('areas.move.search_for_the_area')"
                     class="mt-1.5 block w-full rounded-control border border-line bg-surface px-3 py-2 text-fg focus:outline-2 focus:outline-offset-0 focus:outline-ring"
                     data-autofocus
                     @input="search"
@@ -99,7 +110,7 @@ function submit() {
                 <ul
                     v-if="results.length"
                     class="mt-1 divide-y divide-line rounded-control border border-line"
-                    aria-label="Possible places"
+                    :aria-label="$t('areas.move.possible_places')"
                 >
                     <li v-for="place in results" :key="place.id">
                         <button
@@ -113,7 +124,11 @@ function submit() {
                             <span
                                 v-if="place.trail.length"
                                 class="text-fg-muted"
-                                >in {{ place.trail.join(" › ") }}</span
+                                >{{
+                                    $t("areas.explorer.in_trail", {
+                                        trail: place.trail.join(" › "),
+                                    })
+                                }}</span
                             >
                         </button>
                     </li>
@@ -124,13 +139,17 @@ function submit() {
                     class="mt-2 text-sm text-link underline"
                     @click="choose(null)"
                 >
-                    Make it a top-level area
+                    {{ $t("areas.move.make_it_a_top_level") }}
                 </button>
             </div>
 
             <div v-else class="space-y-3">
                 <p class="text-sm text-fg">
-                    New place: <strong>{{ destinationTitle }}</strong>
+                    <Trans k="areas.move.new_place_is">
+                        <template #place>
+                            <strong>{{ destinationTitle }}</strong>
+                        </template>
+                    </Trans>
                     <button
                         type="button"
                         class="ml-2 text-sm text-link underline"
@@ -139,7 +158,7 @@ function submit() {
                             preview = null;
                         "
                     >
-                        Change
+                        {{ $t("areas.move.change") }}
                     </button>
                 </p>
 
@@ -155,17 +174,29 @@ function submit() {
                     </ul>
                     <ul v-else class="list-disc space-y-1 pl-5 text-sm text-fg">
                         <li>
-                            {{ preview.topics_moved }} area(s) move together.
+                            {{
+                                $t("areas.move.areas_move", {
+                                    count: preview.topics_moved,
+                                })
+                            }}
                         </li>
                         <li>
-                            {{ preview.gain_people }} person/people will gain
-                            access through the new parents.
+                            {{
+                                $t("areas.move.gain", {
+                                    count: preview.gain_people,
+                                })
+                            }}
                         </li>
                         <li>
-                            {{ preview.lose_people }} person/people will lose
-                            access they had through the old parents.
+                            {{
+                                $t("areas.move.lose", {
+                                    count: preview.lose_people,
+                                })
+                            }}
                         </li>
-                        <li>Roles given in these areas stay with them.</li>
+                        <li>
+                            {{ $t("areas.move.roles_given_on_these_areas") }}
+                        </li>
                     </ul>
                 </template>
             </div>
@@ -180,13 +211,15 @@ function submit() {
         </div>
 
         <template #footer>
-            <Btn :disabled="busy" @click="emit('close')">Cancel</Btn>
+            <Btn :disabled="busy" @click="emit('close')">{{
+                $t("common.cancel")
+            }}</Btn>
             <Btn
                 variant="primary"
                 :loading="busy"
                 :disabled="!preview || preview.blocked.length > 0"
                 @click="submit"
-                >Move area</Btn
+                >{{ $t("areas.move.move_area") }}</Btn
             >
         </template>
     </Modal>

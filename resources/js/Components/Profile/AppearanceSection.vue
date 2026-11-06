@@ -2,6 +2,7 @@
 import { useId } from "vue";
 import { storeToRefs } from "pinia";
 import { Moon, Sun } from "@lucide/vue";
+import { t } from "../../i18n.js";
 import { useThemeStore } from "../../stores/theme.js";
 import SettingsSection from "./SettingsSection.vue";
 
@@ -12,18 +13,20 @@ const { theme } = storeToRefs(themeStore);
 const name = useId();
 
 const options = [
-    { value: "light", label: "Light", icon: Sun },
-    { value: "dark", label: "Dark", icon: Moon },
+    { value: "light", label: t("profile.appearance.light"), icon: Sun },
+    { value: "dark", label: t("profile.appearance.dark"), icon: Moon },
 ];
 </script>
 
 <template>
     <SettingsSection
-        title="Appearance"
-        description="Choose how the app looks. Your choice is saved to your account."
+        :title="$t('profile.appearance.title')"
+        :description="$t('profile.appearance.description')"
     >
         <fieldset>
-            <legend class="sr-only">Theme</legend>
+            <legend class="sr-only">
+                {{ $t("profile.appearance.theme") }}
+            </legend>
             <div class="grid max-w-md grid-cols-2 gap-3">
                 <label
                     v-for="option in options"

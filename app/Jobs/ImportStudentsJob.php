@@ -33,7 +33,7 @@ class ImportStudentsJob extends ImportCsvJob
 
     protected function title(): string
     {
-        return 'Student import';
+        return __('jobs.students.student_import');
     }
 
     protected function prepare(): void
@@ -50,37 +50,37 @@ class ImportStudentsJob extends ImportCsvJob
         $year = $row['year_of_study'] ?? null;
 
         if ($name === '') {
-            $this->skip($line, 'The full name is missing.');
+            $this->skip($line, __('jobs.students.the_full_name_is_missing'));
 
             return;
         }
 
         if (Validator::make(['email' => $email], ['email' => ['required', 'email', 'max:255']])->fails()) {
-            $this->skip($line, 'Invalid email address format.');
+            $this->skip($line, __('jobs.students.invalid_email_address_format'));
 
             return;
         }
 
         if (! preg_match('/^[A-Z0-9]{6}$/', $neptun)) {
-            $this->skip($line, 'The Neptun code must be exactly 6 alphanumeric characters.');
+            $this->skip($line, __('jobs.students.the_neptun_code_must'));
 
             return;
         }
 
         if ($year !== null && $year !== '' && ! (is_numeric($year) && (int) $year == $year && $year >= 1 && $year <= 6)) {
-            $this->skip($line, 'The year of study must be a number from 1 to 6.');
+            $this->skip($line, __('jobs.students.the_year_of_study_must'));
 
             return;
         }
 
         if (User::where('neptun_code', $neptun)->exists()) {
-            $this->skip($line, "Neptun Code {$neptun} is already registered.");
+            $this->skip($line, __('jobs.students.neptun_registered', ['code' => $neptun]));
 
             return;
         }
 
         if (User::where('email', $email)->exists()) {
-            $this->skip($line, 'This email address is already registered in the system.');
+            $this->skip($line, __('jobs.students.this_email_address_is_already'));
 
             return;
         }
@@ -113,6 +113,6 @@ class ImportStudentsJob extends ImportCsvJob
 
     protected function summary(): string
     {
-        return 'Successfully imported '.number_format($this->imported).' students.';
+        return __('jobs.students.imported', ['count' => number_format($this->imported)]);
     }
 }

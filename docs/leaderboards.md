@@ -39,7 +39,8 @@ it in the browser on the hall computer and press F11. It reads the feed `/hall/l
 
 Publishing a leaderboard asks first, and says that published leaderboards are shown on the hall
 screen and to anyone without signing in. The words of the hall screen, the time on it and *Where am
-I?* are in `resources/js/leaderboardWords.js`, ready for the translations of #95.
+I?* are in `resources/js/leaderboardWords.js`, which reads them from the dictionary
+(`docs/translations.md`).
 
 ### Time on the hall screen
 

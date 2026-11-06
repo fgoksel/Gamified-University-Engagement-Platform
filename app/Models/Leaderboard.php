@@ -26,8 +26,6 @@ class Leaderboard extends Model
 
     public const HALL_SECONDS_MAX = 120;
 
-    public const HALL_SECONDS_MESSAGE = 'Choose a time from 5 to 120 seconds.';
-
     protected $fillable = [
         'topic_id',
         'name',
@@ -38,6 +36,12 @@ class Leaderboard extends Model
         'hall_seconds',
         'created_by_id',
     ];
+
+    /** Said when a time on the hall screen is outside the limits. */
+    public static function hallSecondsMessage(): string
+    {
+        return __('leaderboards.hall_seconds.message', ['min' => self::HALL_SECONDS_MIN, 'max' => self::HALL_SECONDS_MAX]);
+    }
 
     /**
      * @return array<string, string>

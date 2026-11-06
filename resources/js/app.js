@@ -1,6 +1,7 @@
 import { createApp, h } from "vue";
 import { createInertiaApp, router } from "@inertiajs/vue3";
 import { createPinia } from "pinia";
+import i18n from "./i18n.js";
 import { useThemeStore } from "./stores/theme.js";
 import AppLayout from "./Layouts/AppLayout.vue";
 import AuthLayout from "./Layouts/AuthLayout.vue";
@@ -39,6 +40,7 @@ createInertiaApp({
         createApp({ render: () => h(App, props) })
             .use(plugin)
             .use(pinia)
+            .use(i18n)
             .mount(el);
     },
 });

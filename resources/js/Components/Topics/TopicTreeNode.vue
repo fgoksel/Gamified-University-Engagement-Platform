@@ -43,7 +43,7 @@ const kids = computed(() => tree.children[props.node.id] ?? []);
                 type="button"
                 tabindex="-1"
                 class="flex size-8 shrink-0 items-center justify-center rounded-control text-fg-muted hover:bg-line focus-visible:outline-2 focus-visible:outline-ring"
-                :aria-label="`${isOpen ? 'Collapse' : 'Expand'} ${node.title}`"
+                :aria-label="`${isOpen ? $t('areas.tree.collapse') : $t('areas.tree.expand')} ${node.title}`"
                 @click.stop="tree.toggle(node.id)"
             >
                 <LoaderCircle

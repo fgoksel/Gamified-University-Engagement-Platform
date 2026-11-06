@@ -35,7 +35,7 @@ final class NeptunCodeFile
         $heading = self::headingLine($file);
 
         if (trim($heading) === '') {
-            throw ValidationException::withMessages(['file' => 'The file is empty.']);
+            throw ValidationException::withMessages(['file' => __('imports.neptun.the_file_is_empty')]);
         }
 
         // Counted before reading, so a huge file is refused at once instead of being read for minutes.
@@ -51,18 +51,18 @@ final class NeptunCodeFile
             $column = collect(self::COLUMNS)->first(fn (string $name) => in_array($name, $headings, true));
 
             if ($column === null) {
-                throw ValidationException::withMessages(['file' => 'The first line of the file must name the columns, and one of them must be "Neptun Code".']);
+                throw ValidationException::withMessages(['file' => __('imports.neptun.the_first_line')]);
             }
 
             Excel::import(new CsvRowsImport(function (array $row, int $line) use ($column, &$rows) {
                 $rows[] = ['line' => $line, 'code' => Str::upper(trim((string) ($row[$column] ?? '')))];
             }, $settings), $file, null, ExcelFormat::CSV);
         } catch (SpreadsheetException) {
-            throw ValidationException::withMessages(['file' => 'The file could not be read. Save it as a CSV file and try again.']);
+            throw ValidationException::withMessages(['file' => __('imports.neptun.the_file_could')]);
         }
 
         if ($rows === []) {
-            throw ValidationException::withMessages(['file' => 'The file has no Neptun codes below its first line.']);
+            throw ValidationException::withMessages(['file' => __('imports.neptun.the_file_has_no_neptun')]);
         }
 
         // The quick count above may miss a last line without a line break, or old line endings.
@@ -75,7 +75,7 @@ final class NeptunCodeFile
 
     private static function tooManyRows(): ValidationException
     {
-        return ValidationException::withMessages(['file' => 'The file has more than '.number_format(self::MAX_ROWS).' rows. Split it and import the parts one after the other.']);
+        return ValidationException::withMessages(['file' => __('imports.neptun.too_many_rows', ['max' => number_format(self::MAX_ROWS)])]);
     }
 
     private static function headingLine(UploadedFile $file): string

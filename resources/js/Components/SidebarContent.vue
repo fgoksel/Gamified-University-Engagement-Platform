@@ -8,7 +8,10 @@ const { isTeacher } = useRole();
 </script>
 
 <template>
-    <nav class="flex-1 overflow-y-auto px-3 py-4" aria-label="Main menu">
+    <nav
+        class="flex-1 overflow-y-auto px-3 py-4"
+        :aria-label="$t('navigation.main_menu')"
+    >
         <MainNav />
         <SubjectAreaPanel v-if="isTeacher" />
     </nav>

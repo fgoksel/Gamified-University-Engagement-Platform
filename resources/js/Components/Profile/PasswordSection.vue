@@ -22,13 +22,13 @@ function submit() {
 
 <template>
     <SettingsSection
-        title="Change password"
-        description="Use at least 8 characters. You will stay logged in on this device."
+        :title="$t('profile.password.title')"
+        :description="$t('profile.password.description')"
     >
         <form class="max-w-md space-y-5" novalidate @submit.prevent="submit">
             <TextField
                 v-model="form.current_password"
-                label="Old password"
+                :label="$t('auth.old_password')"
                 type="password"
                 autocomplete="current-password"
                 :error="form.errors.current_password"
@@ -36,22 +36,22 @@ function submit() {
 
             <TextField
                 v-model="form.password"
-                label="New password"
+                :label="$t('auth.new_password')"
                 type="password"
                 autocomplete="new-password"
-                hint="At least 8 characters."
+                :hint="$t('auth.password_hint')"
                 :error="form.errors.password"
             />
 
             <TextField
                 v-model="form.password_confirmation"
-                label="Confirm new password"
+                :label="$t('auth.confirm_new_password')"
                 type="password"
                 autocomplete="new-password"
             />
 
             <PrimaryButton :loading="form.processing" class="sm:w-auto">
-                Change password
+                {{ $t("profile.password.submit") }}
             </PrimaryButton>
         </form>
     </SettingsSection>

@@ -121,7 +121,7 @@ class ApplicantReviewService
 
             if ($locked->application_type !== 'teacher_select') {
                 throw ValidationException::withMessages([
-                    'event' => 'Selections can only be saved for events in selection mode.',
+                    'event' => __('events.review.selections_can_only_be_saved'),
                 ]);
             }
 
@@ -136,7 +136,7 @@ class ApplicantReviewService
 
             if ($selected->contains(fn (int $id) => ! $applications->has($id))) {
                 throw ValidationException::withMessages([
-                    'selected' => 'Some selected applications cannot be chosen any more. Reload the page.',
+                    'selected' => __('events.review.some_selected_applications_cannot'),
                 ]);
             }
 
@@ -149,7 +149,7 @@ class ApplicantReviewService
             if ($selected->count() > $capacity) {
                 if (! $expandCapacity) {
                     throw ValidationException::withMessages([
-                        'capacity' => 'The number of selected students exceeds the maximum capacity.',
+                        'capacity' => __('events.review.the_number_of_selected_students'),
                     ]);
                 }
 
@@ -167,16 +167,16 @@ class ApplicantReviewService
                     // D04: In selection mode, an organizer cannot approve their own application.
                     if ($application->student_id === $actor->id) {
                         throw ValidationException::withMessages([
-                            'selected' => 'Organizers cannot approve their own applications; another manager must decide.',
+                            'selected' => __('events.review.organizers_cannot_approve_their_own'),
                         ]);
                     }
 
-                    $this->move($application, EventApplication::ACCEPTED, $actor, 'Selected by organizer');
+                    $this->move($application, EventApplication::ACCEPTED, $actor, __('events.review.selected_by_organizer'));
                     $application->update(['decided_by_id' => $actor->id, 'decided_at' => now()]);
                     $notify[] = [$application->student_id, EventApplicationDecisionNotification::ACCEPTED];
                     $accepted++;
                 } elseif (! $isSelected && $application->status === EventApplication::ACCEPTED) {
-                    $this->move($application, EventApplication::PENDING, $actor, 'Removed from selection by organizer');
+                    $this->move($application, EventApplication::PENDING, $actor, __('events.review.removed_from_selection_by_organizer'));
                     $application->update(['decided_by_id' => null, 'decided_at' => null]);
                     $notify[] = [$application->student_id, EventApplicationDecisionNotification::REMOVED];
                     $unselected++;
@@ -212,17 +212,17 @@ class ApplicantReviewService
 
             if (! in_array($locked->status, self::OPEN, true)) {
                 throw ValidationException::withMessages([
-                    'application' => 'This application can no longer be rejected.',
+                    'application' => __('events.review.this_application_can_no_longer'),
                 ]);
             }
 
             if ($locked->isCredited()) {
                 throw ValidationException::withMessages([
-                    'application' => 'Points were already credited for this student; the application cannot be rejected.',
+                    'application' => __('events.review.points_were_already_credited'),
                 ]);
             }
 
-            $this->move($locked, EventApplication::REJECTED, $actor, 'Rejected by organizer');
+            $this->move($locked, EventApplication::REJECTED, $actor, __('events.review.rejected_by_organizer'));
             $locked->update(['decided_by_id' => $actor->id, 'decided_at' => now()]);
             $notify[] = [$locked->student_id, EventApplicationDecisionNotification::REJECTED];
 
@@ -241,7 +241,7 @@ class ApplicantReviewService
 
         if ($locked->status !== Event::STATUS_PUBLISHED) {
             throw ValidationException::withMessages([
-                'event' => 'Applicants can only be reviewed while the event is published.',
+                'event' => __('events.review.applicants_can_only_be_reviewed'),
             ]);
         }
 

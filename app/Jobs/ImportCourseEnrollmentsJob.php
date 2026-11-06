@@ -96,7 +96,7 @@ class ImportCourseEnrollmentsJob extends ImportCsvJob
 
     protected function title(): string
     {
-        return 'Course enrolment import';
+        return __('jobs.course_enrolments.course_enrolment_import');
     }
 
     protected function prepare(): void
@@ -110,7 +110,7 @@ class ImportCourseEnrollmentsJob extends ImportCsvJob
             : Semester::where('status', 'active')->first();
 
         if ($this->semester === null) {
-            throw new InvalidArgumentException('There is no active semester to link the courses to.');
+            throw new InvalidArgumentException(__('jobs.course_enrolments.no_active_semester'));
         }
 
         $this->admin = User::find($this->adminId);
@@ -123,7 +123,7 @@ class ImportCourseEnrollmentsJob extends ImportCsvJob
                 : null;
 
             if ($this->destination === null) {
-                throw new InvalidArgumentException('Choose the linked course area or an active descendant as the import destination.');
+                throw new InvalidArgumentException(__('jobs.course_enrolments.choose_destination'));
             }
         }
 
@@ -146,7 +146,7 @@ class ImportCourseEnrollmentsJob extends ImportCsvJob
         $courseName = (string) ($row['course_name'] ?? '');
 
         if ($neptun === '' || $courseCode === '' || $courseName === '') {
-            $this->skip($line, 'Neptun Code, Course Code and Course Name are all required.');
+            $this->skip($line, __('jobs.course_enrolments.neptun_code_course_code'));
 
             return;
         }
@@ -173,7 +173,7 @@ class ImportCourseEnrollmentsJob extends ImportCsvJob
         // Keep the older target-only course import behaviour for existing callers.
         if (($this->courseId !== null && $course->id !== $this->courseId)
             || ($this->courseId === null && $this->targetTopicId !== null && $courseTopic?->id !== $this->targetTopicId)) {
-            $this->skip($line, "Course {$courseCode} does not match the selected source course.");
+            $this->skip($line, __('jobs.course_enrolments.course_mismatch', ['code' => $courseCode]));
 
             return;
         }
@@ -237,31 +237,35 @@ class ImportCourseEnrollmentsJob extends ImportCsvJob
 
     protected function summary(): string
     {
-        $text = "Successfully processed: {$this->registrations} student-course registrations.";
+        $parts = [__('jobs.course_enrolments.processed', ['count' => $this->registrations])];
 
         if ($this->additionalPlacements > 0) {
-            $text .= " Added {$this->additionalPlacements} additional same-branch node memberships.";
+            $parts[] = __('jobs.course_enrolments.added_placements', ['count' => $this->additionalPlacements]);
         }
 
         if ($this->unregistered > 0) {
-            $text .= " Skipped {$this->unregistered} rows due to unregistered Neptun codes.";
+            $parts[] = __('jobs.course_enrolments.skipped_unregistered', ['count' => $this->unregistered]);
         }
 
         if ($this->unknownCourses !== []) {
-            $text .= ' Skipped '.array_sum($this->unknownCourses).' rows because the course code is unknown ('
-                .implode(', ', array_keys($this->unknownCourses)).'). Add the course under its faculty first.';
+            $parts[] = __('jobs.course_enrolments.skipped_unknown_course', [
+                'count' => array_sum($this->unknownCourses),
+                'codes' => implode(', ', array_keys($this->unknownCourses)),
+            ]);
         }
 
         if ($this->notLinked !== []) {
-            $text .= ' Skipped '.array_sum($this->notLinked).' rows because the course is not linked to an area ('
-                .implode(', ', array_keys($this->notLinked)).'). Link the course to an area in the area tree first; students are never attached to another area automatically.';
+            $parts[] = __('jobs.course_enrolments.skipped_not_linked', [
+                'count' => array_sum($this->notLinked),
+                'codes' => implode(', ', array_keys($this->notLinked)),
+            ]);
         }
 
         if ($this->roleUnavailable > 0) {
-            $text .= " Skipped {$this->roleUnavailable} rows because the student role is archived or could not be given.";
+            $parts[] = __('jobs.course_enrolments.skipped_role', ['count' => $this->roleUnavailable]);
         }
 
-        return $text;
+        return implode(' ', $parts);
     }
 
     private function student(string $neptun): ?User

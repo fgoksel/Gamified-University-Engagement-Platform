@@ -52,23 +52,23 @@ class PointLedger
     public function refusalFor(Event $event): ?EventActionRefused
     {
         if ($event->isOnHold()) {
-            return new EventActionRefused('on_hold', 'This event is on hold. Points cannot be credited until it is restored.', 409);
+            return new EventActionRefused('on_hold', __('ledger.this_event_is_on_hold'), 409);
         }
 
         if (! in_array($event->status, [Event::STATUS_PUBLISHED, Event::STATUS_COMPLETED], true)) {
-            return new EventActionRefused('inactive', 'This event is no longer active.', 409);
+            return new EventActionRefused('inactive', __('ledger.this_event_is_no_longer'), 409);
         }
 
         if ($this->access->isHidden($event->owningTopic)) {
-            return new EventActionRefused('topic_archived', 'The area of this event is archived, so nothing can be credited.', 409);
+            return new EventActionRefused('topic_archived', __('ledger.the_area_of_this_event'), 409);
         }
 
         if (now()->lt($event->event_starts_at)) {
-            return new EventActionRefused('not_started', 'The event has not started yet.', 409);
+            return new EventActionRefused('not_started', __('ledger.the_event_has_not_started'), 409);
         }
 
         if (now()->gt($event->completion_deadline)) {
-            return new EventActionRefused('deadline_passed', "This event's completion deadline has passed.", 409);
+            return new EventActionRefused('deadline_passed', __('ledger.this_event_s_completion_deadline'), 409);
         }
 
         return null;
@@ -86,18 +86,18 @@ class PointLedger
     public function credit(Event $event, User $student, User $creditedBy, string $source): PointTransaction
     {
         if ($event->is_hidden) {
-            throw new EventActionRefused('import_only', 'This is a surprise event: its points are given only by import.', 409);
+            throw new EventActionRefused('import_only', __('ledger.surprise_import_only'), 409);
         }
 
         return $this->write($event, $student, $creditedBy, $source, function (?EventApplication $application) use ($event, $student) {
             if ($application === null || ! $application->isAccepted()) {
-                throw new EventActionRefused('not_registered', "{$student->name} is not registered or selected for this event.", 403);
+                throw new EventActionRefused('not_registered', __('ledger.not_registered', ['name' => $student->name]), 403);
             }
 
             if ($this->leftTheArea($event, $student)) {
                 $area = $this->importArea($event);
 
-                throw new EventActionRefused('left_area', "{$student->name} is no longer assigned to {$area->title}, so this event gives them no points.", 403);
+                throw new EventActionRefused('left_area', __('ledger.left_area', ['name' => $student->name, 'area' => $area->title]), 403);
             }
         });
     }
@@ -115,7 +115,7 @@ class PointLedger
     {
         return $this->write($event, $student, $creditedBy, self::IMPORT, function () use ($event, $student) {
             if (! $student->hasRole(UserRole::Student)) {
-                throw new EventActionRefused('not_a_student', "{$student->name} does not have a student account.", 403);
+                throw new EventActionRefused('not_a_student', __('ledger.not_a_student', ['name' => $student->name]), 403);
             }
 
             $area = $this->importArea($event);
@@ -127,7 +127,7 @@ class PointLedger
                 ->contains(fn (RoleAssignment $assignment) => $assignment->role->has(Capability::EventsView));
 
             if (! $seesEvents) {
-                throw new EventActionRefused('not_in_area', "{$student->name} is not assigned to {$area->title} with a role that includes \"View events\".", 403);
+                throw new EventActionRefused('not_in_area', __('ledger.not_in_area', ['name' => $student->name, 'area' => $area->title]), 403);
             }
         });
     }
@@ -181,11 +181,11 @@ class PointLedger
     private function write(Event $event, User $student, User $creditedBy, string $source, callable $eligible): PointTransaction
     {
         if ($student->is($creditedBy)) {
-            throw new EventActionRefused('self_credit', 'Points cannot be credited to the person who authorised them.', 403);
+            throw new EventActionRefused('self_credit', __('ledger.points_cannot_be_credited'), 403);
         }
 
         if ($student->status !== 'active') {
-            throw new EventActionRefused('student_inactive', 'This student account is not active.', 409);
+            throw new EventActionRefused('student_inactive', __('ledger.this_student_account'), 409);
         }
 
         if ($refusal = $this->refusalFor($event)) {
@@ -245,11 +245,11 @@ class PointLedger
     public function reverse(PointTransaction $credit, User $admin, string $reason): PointTransaction
     {
         if (! $this->access->isSystemAdmin($admin)) {
-            throw new EventActionRefused('forbidden', 'Only a System Admin can reverse points.', 403);
+            throw new EventActionRefused('forbidden', __('ledger.only_a_system_admin_can'), 403);
         }
 
         if (trim($reason) === '') {
-            throw new EventActionRefused('reason_required', 'A reason is required to reverse points.');
+            throw new EventActionRefused('reason_required', __('ledger.a_reason_is_required'));
         }
 
         try {
@@ -257,11 +257,11 @@ class PointLedger
                 $original = PointTransaction::query()->lockForUpdate()->findOrFail($credit->id);
 
                 if ($original->type !== PointTransaction::CREDIT) {
-                    throw new EventActionRefused('not_a_credit', 'Only a credit can be reversed.');
+                    throw new EventActionRefused('not_a_credit', __('ledger.only_a_credit_can'));
                 }
 
                 if (DB::table('semesters')->where('id', $original->semester_id)->value('status') === 'archived') {
-                    throw new EventActionRefused('semester_closed', 'Points from a closed semester cannot be reversed.', 409);
+                    throw new EventActionRefused('semester_closed', __('ledger.points_from_a_closed_semester'), 409);
                 }
 
                 return PointTransaction::create([
@@ -278,7 +278,7 @@ class PointLedger
                 ]);
             });
         } catch (UniqueConstraintViolationException) {
-            throw new EventActionRefused('already_reversed', 'This credit has already been reversed.', 409);
+            throw new EventActionRefused('already_reversed', __('ledger.this_credit_has_already_been'), 409);
         }
     }
 
@@ -294,6 +294,6 @@ class PointLedger
 
     private function alreadyCredited(User $student): EventActionRefused
     {
-        return new EventActionRefused('already_credited', "Points have already been credited to {$student->name} for this event.", 409);
+        return new EventActionRefused('already_credited', __('ledger.already_credited', ['name' => $student->name]), 409);
     }
 }

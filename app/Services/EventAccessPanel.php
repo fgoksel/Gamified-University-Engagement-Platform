@@ -20,9 +20,6 @@ use Illuminate\Support\Facades\Gate;
  */
 class EventAccessPanel
 {
-    /** Shown in place of a node above the viewer's own access, as the topic explorer does. */
-    public const HIDDEN_NODE = 'a branch above your access';
-
     public function __construct(private TopicAccess $access) {}
 
     /**
@@ -79,7 +76,7 @@ class EventAccessPanel
                         'role' => $assignment->role->name,
                         'node' => in_array($assignment->topic_id, $open, true)
                             ? ['id' => $assignment->topic_id, 'title' => (string) $titles[$assignment->topic_id]]
-                            : ['id' => null, 'title' => self::HIDDEN_NODE],
+                            : ['id' => null, 'title' => __('events.access_panel.a_branch_above_your_access')],
                     ])
                     ->values()
                     ->all(),

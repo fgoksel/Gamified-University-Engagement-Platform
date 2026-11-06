@@ -3,7 +3,9 @@ import { computed, ref } from "vue";
 import { router } from "@inertiajs/vue3";
 import Modal from "./Modal.vue";
 import Btn from "./Btn.vue";
+import Trans from "../Trans.vue";
 import { api, debounce } from "../../topicsApi.js";
+import { t } from "../../i18n.js";
 
 // Ending a role, or handing it to someone else ("replace role holder").
 // Three screens: the details, a first confirmation, a second confirmation.
@@ -57,7 +59,7 @@ function choose(candidate) {
 async function prepare() {
     error.value = "";
     if (isReplace.value && !replacement.value) {
-        error.value = "Choose who takes over this role.";
+        error.value = t("areas.change_role.choose_who_takes_over");
         return;
     }
     busy.value = true;
@@ -88,7 +90,8 @@ function execute() {
             onSuccess: () => emit("close"),
             onError: (errors) => {
                 error.value =
-                    Object.values(errors)[0] ?? "Nothing was changed.";
+                    Object.values(errors)[0] ??
+                    t("areas.change_role.nothing_was_changed");
                 stage.value = "details";
                 prepared.value = null;
             },
@@ -102,7 +105,11 @@ function execute() {
     <!-- 1. Details -->
     <Modal
         v-if="stage === 'details'"
-        :title="isReplace ? 'Replace role holder' : 'End role'"
+        :title="
+            isReplace
+                ? $t('areas.change_role.replace_role_holder')
+                : $t('areas.change_role.end_role')
+        "
         :busy="busy"
         @close="emit('close')"
     >
@@ -110,20 +117,29 @@ function execute() {
             <dl
                 class="grid grid-cols-[auto,1fr] gap-x-4 gap-y-1 rounded-control bg-surface-muted p-3 text-sm"
             >
-                <dt class="text-fg-muted">Person</dt>
+                <dt class="text-fg-muted">
+                    {{ $t("areas.change_role.person") }}
+                </dt>
                 <dd class="font-medium text-fg">
                     {{ person }}
                     <span
                         v-if="!assignment.user.active"
                         class="ml-1 rounded-full bg-warning-soft px-2 py-0.5 text-xs text-warning-fg"
-                        >inactive account</span
+                        >{{ $t("areas.change_role.inactive_account") }}</span
                     >
                 </dd>
-                <dt class="text-fg-muted">Role</dt>
+                <dt class="text-fg-muted">
+                    {{ $t("areas.change_role.role") }}
+                </dt>
                 <dd class="text-fg">{{ role }}</dd>
-                <dt class="text-fg-muted">Area</dt>
+                <dt class="text-fg-muted">
+                    {{ $t("areas.change_role.area") }}
+                </dt>
                 <dd class="text-fg">
-                    {{ place }} <span class="text-fg-muted">(and below)</span>
+                    {{ place }}
+                    <span class="text-fg-muted">{{
+                        $t("areas.change_role.and_below")
+                    }}</span>
                 </dd>
             </dl>
 
@@ -131,7 +147,7 @@ function execute() {
                 <label
                     for="replacement-search"
                     class="block text-sm font-medium text-fg"
-                    >Who takes over?</label
+                    >{{ $t("areas.change_role.who_takes_over") }}</label
                 >
                 <div
                     v-if="replacement"
@@ -150,7 +166,7 @@ function execute() {
                         class="text-sm text-link underline"
                         @click="replacement = null"
                     >
-                        Change
+                        {{ $t("areas.change_role.change") }}
                     </button>
                 </div>
                 <template v-else>
@@ -159,7 +175,11 @@ function execute() {
                         v-model="term"
                         type="search"
                         autocomplete="off"
-                        placeholder="Search active accounts by name or email"
+                        :placeholder="
+                            $t(
+                                'areas.change_role.search_active_accounts_by_name',
+                            )
+                        "
                         class="mt-1.5 block w-full rounded-control border border-line bg-surface px-3 py-2 text-fg focus:outline-2 focus:outline-offset-0 focus:outline-ring"
                         data-autofocus
                         @input="search"
@@ -167,7 +187,7 @@ function execute() {
                     <ul
                         v-if="results.length"
                         class="mt-1 divide-y divide-line rounded-control border border-line"
-                        aria-label="Matching people"
+                        :aria-label="$t('areas.change_role.matching_people')"
                     >
                         <li v-for="candidate in results" :key="candidate.id">
                             <button
@@ -186,8 +206,7 @@ function execute() {
                     </ul>
                 </template>
                 <p class="mt-1.5 text-sm text-fg-muted">
-                    The successor gets the same role in the same area.
-                    Everything below stays as it is.
+                    {{ $t("areas.change_role.the_successor_gets_the_same") }}
                 </p>
             </div>
 
@@ -195,7 +214,7 @@ function execute() {
                 <label
                     for="change-reason"
                     class="block text-sm font-medium text-fg"
-                    >Reason</label
+                    >{{ $t("areas.change_role.reason") }}</label
                 >
                 <textarea
                     id="change-reason"
@@ -206,7 +225,7 @@ function execute() {
                     :data-autofocus="isReplace ? undefined : ''"
                 ></textarea>
                 <p class="mt-1 text-sm text-fg-muted">
-                    Kept in the history of this role.
+                    {{ $t("areas.change_role.kept_in_the_history") }}
                 </p>
             </div>
 
@@ -219,13 +238,15 @@ function execute() {
             </p>
         </form>
         <template #footer>
-            <Btn :disabled="busy" @click="emit('close')">Cancel</Btn>
+            <Btn :disabled="busy" @click="emit('close')">{{
+                $t("common.cancel")
+            }}</Btn>
             <Btn
                 type="submit"
                 form="change-form"
                 variant="primary"
                 :loading="busy"
-                >Continue</Btn
+                >{{ $t("areas.change_role.continue") }}</Btn
             >
         </template>
     </Modal>
@@ -233,68 +254,98 @@ function execute() {
     <!-- 2. First confirmation -->
     <Modal
         v-else-if="stage === 'confirm1'"
-        title="Are you sure?"
+        :title="$t('areas.change_role.are_you_sure')"
         :busy="busy"
         @close="emit('close')"
     >
         <p class="text-base text-fg">
-            Are you sure you want to remove <strong>{{ person }}</strong> from
-            <strong>{{ role }}</strong> in <strong>{{ place }}</strong
-            >?
+            <Trans k="areas.change_role.remove_confirm">
+                <template #person>
+                    <strong>{{ person }}</strong>
+                </template>
+                <template #role>
+                    <strong>{{ role }}</strong>
+                </template>
+                <template #place>
+                    <strong>{{ place }}</strong>
+                </template>
+            </Trans>
         </p>
         <p v-if="isReplace" class="mt-3 text-sm text-fg">
-            Proposed successor: <strong>{{ replacement.name }}</strong
-            >.
+            <Trans k="areas.change_role.proposed_successor">
+                <template #name>
+                    <strong>{{ replacement.name }}</strong>
+                </template>
+            </Trans>
         </p>
         <ul class="mt-3 list-disc space-y-1 pl-5 text-sm text-fg-muted">
             <li>{{ prepared.summary.remains }}</li>
             <li>{{ prepared.summary.loses }}</li>
         </ul>
         <template #footer>
-            <Btn @click="emit('close')">Cancel</Btn>
-            <Btn variant="danger" @click="stage = 'confirm2'"
-                >Yes, continue</Btn
-            >
+            <Btn @click="emit('close')">{{ $t("common.cancel") }}</Btn>
+            <Btn variant="danger" @click="stage = 'confirm2'">{{
+                $t("areas.change_role.yes_continue")
+            }}</Btn>
         </template>
     </Modal>
 
     <!-- 3. Second confirmation -->
     <Modal
         v-else
-        :title="isReplace ? 'Confirm the handover' : 'Confirm ending this role'"
+        :title="
+            isReplace
+                ? $t('areas.change_role.confirm_the_handover')
+                : $t('areas.change_role.confirm_ending_this_role')
+        "
         :busy="busy"
         @close="emit('close')"
     >
         <p class="text-base text-fg">
-            <template v-if="isReplace">
-                Confirm replacing <strong>{{ person }}</strong> with
-                <strong>{{ replacement.name }}</strong
-                >?
-            </template>
-            <template v-else>
-                Confirm ending <strong>{{ role }}</strong> for
-                <strong>{{ person }}</strong> in <strong>{{ place }}</strong
-                >?
-            </template>
+            <Trans v-if="isReplace" k="areas.change_role.confirm_replacing">
+                <template #person>
+                    <strong>{{ person }}</strong>
+                </template>
+                <template #replacement>
+                    <strong>{{ replacement.name }}</strong>
+                </template>
+            </Trans>
+            <Trans v-else k="areas.change_role.confirm_ending">
+                <template #role>
+                    <strong>{{ role }}</strong>
+                </template>
+                <template #person>
+                    <strong>{{ person }}</strong>
+                </template>
+                <template #place>
+                    <strong>{{ place }}</strong>
+                </template>
+            </Trans>
         </p>
         <dl
             class="mt-3 grid grid-cols-[auto,1fr] gap-x-4 gap-y-1 rounded-control bg-surface-muted p-3 text-sm"
         >
-            <dt class="text-fg-muted">Role</dt>
+            <dt class="text-fg-muted">{{ $t("areas.change_role.role") }}</dt>
             <dd class="text-fg">{{ role }}</dd>
-            <dt class="text-fg-muted">Area</dt>
-            <dd class="text-fg">{{ place }} (and below)</dd>
-            <dt class="text-fg-muted">Leaving</dt>
+            <dt class="text-fg-muted">{{ $t("areas.change_role.area") }}</dt>
+            <dd class="text-fg">
+                {{ $t("areas.change_role.place_and_below", { place }) }}
+            </dd>
+            <dt class="text-fg-muted">
+                {{ $t("areas.change_role.leaving") }}
+            </dt>
             <dd class="text-fg">{{ person }}</dd>
             <template v-if="isReplace">
-                <dt class="text-fg-muted">Taking over</dt>
+                <dt class="text-fg-muted">
+                    {{ $t("areas.change_role.taking_over") }}
+                </dt>
                 <dd class="text-fg">{{ replacement.name }}</dd>
             </template>
-            <dt class="text-fg-muted">Reason</dt>
+            <dt class="text-fg-muted">{{ $t("areas.change_role.reason") }}</dt>
             <dd class="text-fg">{{ prepared.summary.reason }}</dd>
         </dl>
         <p class="mt-3 text-sm text-fg-muted">
-            This is recorded in the history. Nothing is deleted.
+            {{ $t("areas.change_role.this_is_recorded") }}
         </p>
         <p
             v-if="error"
@@ -304,10 +355,18 @@ function execute() {
             {{ error }}
         </p>
         <template #footer>
-            <Btn :disabled="busy" @click="stage = 'confirm1'">Back</Btn>
-            <Btn :disabled="busy" @click="emit('close')">Cancel</Btn>
+            <Btn :disabled="busy" @click="stage = 'confirm1'">{{
+                $t("common.back")
+            }}</Btn>
+            <Btn :disabled="busy" @click="emit('close')">{{
+                $t("common.cancel")
+            }}</Btn>
             <Btn variant="danger" :loading="busy" @click="execute">
-                {{ isReplace ? "Confirm replacement" : "Confirm, end role" }}
+                {{
+                    isReplace
+                        ? $t("areas.change_role.confirm_replacement")
+                        : $t("areas.change_role.confirm_end_role")
+                }}
             </Btn>
         </template>
     </Modal>

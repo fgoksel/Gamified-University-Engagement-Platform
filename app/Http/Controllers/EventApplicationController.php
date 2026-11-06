@@ -24,7 +24,7 @@ class EventApplicationController extends Controller
 
             if ($overlap !== null) {
                 throw ValidationException::withMessages([
-                    'overlap' => "This event overlaps in time with {$overlap->title}. Are you sure you want to apply?",
+                    'overlap' => __('events.apply.overlap', ['event' => $overlap->title]),
                 ]);
             }
         }
@@ -32,10 +32,10 @@ class EventApplicationController extends Controller
         $application = $service->apply($request->user(), $event);
 
         $message = match ($application->status) {
-            EventApplication::ACCEPTED => "You're in!",
-            EventApplication::WAITLISTED => "The event is full, so you're on the waitlist. We'll tell you if a place opens.",
-            EventApplication::PENDING => "You've applied. The organiser will choose and let you know.",
-            default => "You've applied.",
+            EventApplication::ACCEPTED => __('events.apply_flash.your_application_has_been_accepted'),
+            EventApplication::WAITLISTED => __('events.apply_flash.the_event_is_at_capacity'),
+            EventApplication::PENDING => __('events.apply_flash.your_application_has_been_registered'),
+            default => __('events.apply_flash.application_submitted'),
         };
 
         if ($request->wantsJson()) {
@@ -56,7 +56,7 @@ class EventApplicationController extends Controller
     {
         $application = $service->withdraw($request->user(), $event);
 
-        $message = "You've left the event.";
+        $message = __('events.apply_flash.you_have_successfully_withdrawn');
 
         if ($request->wantsJson()) {
             return response()->json([
@@ -76,7 +76,7 @@ class EventApplicationController extends Controller
     {
         $service->undo($request->user(), $event);
 
-        $message = 'Application undone';
+        $message = __('events.apply_flash.application_undone');
 
         if ($request->wantsJson()) {
             return response()->json(['message' => $message]);
