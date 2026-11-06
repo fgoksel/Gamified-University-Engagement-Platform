@@ -8,6 +8,7 @@ use App\Models\Event;
 use App\Models\EventApplication;
 use App\Models\Semester;
 use App\Models\TopicTag;
+use App\Services\EventAccessPanel;
 use App\Services\EventCatalog;
 use App\Services\EventPlacement;
 use App\Services\OrganizedEvents;
@@ -43,12 +44,16 @@ class EventController extends Controller
      * It follows the same visibility rules as the catalog (EventPolicy::view);
      * an event the person may not see is "not found", so its existence is not revealed.
      */
-    public function show(Request $request, Event $event, EventCatalog $catalog): Response
+    public function show(Request $request, Event $event, EventCatalog $catalog, EventAccessPanel $access): Response
     {
         abort_unless(Gate::forUser($request->user())->allows('view', $event), 404);
 
         return Inertia::render('Events/Show', [
             'event' => $catalog->detail($request->user(), $event),
+            // Task #75: where the event sits in the tree, and who can manage it (null for a viewer
+            // who runs no part of it and may not see who has access there).
+            'path' => $access->path($event),
+            'managers' => $access->managers($request->user(), $event),
         ]);
     }
 

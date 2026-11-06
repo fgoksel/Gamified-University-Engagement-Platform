@@ -5,7 +5,9 @@ import {
     ArrowLeft,
     Building2,
     CalendarClock,
+    ChevronRight,
     Clock,
+    FolderTree,
     ListChecks,
     MapPin,
     QrCode,
@@ -15,6 +17,7 @@ import {
 } from "@lucide/vue";
 import ApplyAction from "../../Components/Events/ApplyAction.vue";
 import CheckinBanner from "../../Components/Events/CheckinBanner.vue";
+import EventAccessPanel from "../../Components/Events/EventAccessPanel.vue";
 import StatusChip from "../../Components/StatusChip.vue";
 import { categoryDot } from "../../categoryColors.js";
 import { eventStatusTone } from "../../eventStatus.js";
@@ -28,6 +31,11 @@ defineOptions({ layout: { title: "Event" } });
 
 const props = defineProps({
     event: { type: Object, required: true },
+    // Where the event sits in the tree, from the top down: [{ id, title }] (Task #75)
+    path: { type: Array, default: () => [] },
+    // Everyone who can manage it, with where the right comes from; null for people who
+    // only apply and may not see who has access (Task #75)
+    managers: { type: Array, default: null },
 });
 
 // The student's own status in plain words (Task #94)
@@ -158,6 +166,43 @@ const showActions = computed(
                         Invited students only
                     </dd>
                 </div>
+                <div v-if="path.length" class="sm:col-span-2">
+                    <dt class="flex items-start gap-2 text-fg-muted">
+                        <FolderTree class="mt-0.5 size-4 shrink-0" />
+                        Path in the tree
+                    </dt>
+                    <dd class="pl-6 text-fg">
+                        <ol
+                            class="flex flex-wrap items-center gap-x-1 gap-y-1"
+                            data-test="event-path"
+                        >
+                            <li
+                                v-for="(node, index) in path"
+                                :key="node.id"
+                                class="flex items-center gap-1"
+                            >
+                                <ChevronRight
+                                    v-if="index > 0"
+                                    class="size-3.5 shrink-0 text-fg-muted"
+                                    aria-hidden="true"
+                                />
+                                <span
+                                    :class="
+                                        index === path.length - 1
+                                            ? 'font-medium'
+                                            : 'text-fg-muted'
+                                    "
+                                    :aria-current="
+                                        index === path.length - 1
+                                            ? 'location'
+                                            : undefined
+                                    "
+                                    >{{ node.title }}</span
+                                >
+                            </li>
+                        </ol>
+                    </dd>
+                </div>
                 <div v-if="!event.is_surprise">
                     <dt class="flex items-start gap-2 text-fg-muted">
                         <Users class="mt-0.5 size-4 shrink-0" />
@@ -202,5 +247,8 @@ const showActions = computed(
                 <ApplyAction :event="event" />
             </div>
         </article>
+
+        <!-- Task #75: who can manage this event and where their right comes from -->
+        <EventAccessPanel v-if="managers" :managers="managers" />
     </div>
 </template>
