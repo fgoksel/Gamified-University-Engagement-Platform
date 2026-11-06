@@ -129,7 +129,7 @@ function pageLabel(label) {
 
             <div class="grid gap-3 sm:grid-cols-3">
                 <label class="block text-sm">
-                    <span class="font-medium text-fg">Topic or branch</span>
+                    <span class="font-medium text-fg">Area or branch</span>
                     <select
                         :value="filters.topic ?? ''"
                         class="mt-1 block min-h-11 w-full rounded-control border border-line bg-surface px-3 py-2 text-fg focus:outline-2 focus:outline-offset-0 focus:outline-ring"
@@ -140,7 +140,7 @@ function pageLabel(label) {
                             })
                         "
                     >
-                        <option value="">All topics</option>
+                        <option value="">All areas</option>
                         <option
                             v-for="topic in topicOptions"
                             :key="topic.id"
@@ -263,7 +263,7 @@ function pageLabel(label) {
             :title="isFiltered() ? 'No matching events' : 'No events yet'"
         >
             <template v-if="isFiltered()">
-                Try another search, topic, category or date.
+                Try another search, area, category or date.
             </template>
             <template v-else-if="filters.when === 'past'">
                 Events that have ended will be listed here.

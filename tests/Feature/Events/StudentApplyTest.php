@@ -218,7 +218,7 @@ class StudentApplyTest extends TopicTestCase
         $this->faculty->forceFill(['archived_at' => now()])->save();
 
         $this->actingAs($student)->post("/events/{$event->id}/apply")
-            ->assertSessionHasErrors(['event' => 'Applications are frozen because this topic is archived.']);
+            ->assertSessionHasErrors(['event' => 'Applications are frozen because this area is archived.']);
     }
 
     public function test_without_the_apply_permission_there_is_no_button_and_no_application(): void

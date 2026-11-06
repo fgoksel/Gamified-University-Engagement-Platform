@@ -5,7 +5,7 @@ import Modal from "./Modal.vue";
 import Btn from "./Btn.vue";
 
 // Archive a topic: it and everything below it leave normal browsing.
-// Nothing is deleted and it can be restored from "Archived topics".
+// Nothing is deleted and it can be restored from "Archived areas".
 const props = defineProps({
     topic: { type: Object, required: true },
 });
@@ -31,7 +31,7 @@ function submit() {
 </script>
 
 <template>
-    <Modal title="Archive this topic?" :busy="busy" @close="emit('close')">
+    <Modal title="Archive this area?" :busy="busy" @close="emit('close')">
         <p class="text-base text-fg">
             Archive <strong>{{ topic.title }}</strong> and everything inside it?
         </p>
@@ -40,7 +40,7 @@ function submit() {
                 It disappears from the tree, search and counts for everybody.
             </li>
             <li>
-                <strong class="text-fg">Nothing is deleted.</strong> Topics,
+                <strong class="text-fg">Nothing is deleted.</strong> Areas,
                 roles and history stay as they are.
             </li>
             <li>Roles inside it cannot be changed while it is archived.</li>
@@ -48,7 +48,7 @@ function submit() {
                 Events run inside it are frozen: students cannot see or apply to
                 them, and no points can be given, until it is restored.
             </li>
-            <li>You can restore it any time from “Archived topics”.</li>
+            <li>You can restore it any time from “Archived areas”.</li>
         </ul>
         <p
             v-if="error"
@@ -60,7 +60,7 @@ function submit() {
         <template #footer>
             <Btn :disabled="busy" @click="emit('close')">Cancel</Btn>
             <Btn variant="primary" :loading="busy" @click="submit"
-                >Archive topic</Btn
+                >Archive area</Btn
             >
         </template>
     </Modal>

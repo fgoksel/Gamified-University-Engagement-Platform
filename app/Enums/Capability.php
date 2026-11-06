@@ -53,11 +53,11 @@ enum Capability: string
     public function label(): string
     {
         return match ($this) {
-            self::View => 'View topics',
-            self::Create => 'Add topics',
-            self::Edit => 'Edit any topic',
-            self::Organise => 'Move topics',
-            self::Archive => 'Archive topics',
+            self::View => 'View areas',
+            self::Create => 'Add areas',
+            self::Edit => 'Edit any area',
+            self::Organise => 'Move areas',
+            self::Archive => 'Archive areas',
             self::AccessView => 'See who has access',
             self::AccessAssign => 'Give people roles',
             self::AccessEnd => 'End and replace roles',
@@ -77,24 +77,24 @@ enum Capability: string
     public function description(): string
     {
         return match ($this) {
-            self::View => 'Open the topic and everything below it, and see its description.',
-            self::Create => 'Add child topics, and edit the topics the person added themselves.',
-            self::Edit => 'Change the title, code and description of any topic in the branch, including other people\'s.',
-            self::Organise => 'Move a topic, with everything below it, to another place. Needs this role at both the old and the new place.',
-            self::Archive => 'Hide a topic and everything below it from normal browsing, and bring it back later. Nothing is deleted; roles and history are kept.',
+            self::View => 'Open the area and everything below it, and see its description.',
+            self::Create => 'Add child areas, and edit the areas the person added themselves.',
+            self::Edit => 'Change the title, code and description of any area in the branch, including other people\'s.',
+            self::Organise => 'Move an area, with everything below it, to another place. Needs this role at both the old and the new place.',
+            self::Archive => 'Hide an area and everything below it from normal browsing, and bring it back later. Nothing is deleted; roles and history are kept.',
             self::AccessView => 'See the people and roles assigned in the branch. Does not allow changing them.',
             self::AccessAssign => 'Give an existing role to a person in the branch, within the powers the giver may pass on.',
             self::AccessEnd => 'End or hand over a role in the branch. Never one\'s own role.',
-            self::AccessImport => 'Give a role to a list of students imported from a file of Neptun codes, here or in the branch, within the powers the importer may pass on. Topics above are offered only where the importer has this right too.',
+            self::AccessImport => 'Give a role to a list of students imported from a file of Neptun codes, here or in the branch, within the powers the importer may pass on. Areas above are offered only where the importer has this right too.',
             self::DefineRoles => 'Create and edit reusable roles for this branch, within the powers the creator may pass on.',
             self::EventsView => 'Browse the published, visible events announced to this branch.',
             self::EventsApply => 'Apply for the published events announced to this branch.',
-            self::EventsCreate => 'Create events and edit their drafts under this topic.',
-            self::EventsManage => 'Edit, publish, put on hold, cancel or delete the events under this topic and everything below it.',
+            self::EventsCreate => 'Create events and edit their drafts under this area.',
+            self::EventsManage => 'Edit, publish, put on hold, cancel or delete the events under this area and everything below it.',
             self::ApplicationsManage => 'Review, accept, waitlist or reject the applicants of events that use organiser selection.',
             self::PointsCredit => 'Confirm attendance and credit the points of an event to its accepted participants.',
-            self::QrCodesManage => 'Create, configure and print the QR codes of the events under this topic.',
-            self::LeaderboardsManage => 'Create, edit, publish and delete the leaderboards of this topic and of every topic below it.',
+            self::QrCodesManage => 'Create, configure and print the QR codes of the events under this area.',
+            self::LeaderboardsManage => 'Create, edit, publish and delete the leaderboards of this area and of every area below it.',
         };
     }
 

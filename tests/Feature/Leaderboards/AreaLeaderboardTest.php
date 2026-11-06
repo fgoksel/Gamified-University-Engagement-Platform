@@ -150,7 +150,7 @@ class AreaLeaderboardTest extends EventTestCase
         $first = $this->board(null, ['name' => 'Total']);
 
         $this->actingAs($this->areaAdmin)->post($url, ['name' => 'Total'])
-            ->assertSessionHasErrors(['name' => 'This topic already has a leaderboard with that name.']);
+            ->assertSessionHasErrors(['name' => 'This area already has a leaderboard with that name.']);
 
         // The same name is fine on another topic, and a leaderboard keeps its own name when edited.
         $this->actingAs($this->areaAdmin)->post("/topics/{$this->course->id}/leaderboards", ['name' => 'Total'])

@@ -61,8 +61,8 @@ function submit() {
             >
                 Every student in the file gets the chosen role at
                 <strong>{{ topic.title }}</strong
-                >. They see only the events announced to the topics they are
-                added to, not the events of topics above or below. Students who
+                >. They see only the events announced to the areas they are
+                added to, not the events of areas above or below. Students who
                 already have the role there are left as they are, so importing
                 the same file again adds nobody twice.
             </p>
@@ -103,7 +103,7 @@ function submit() {
                     class="mt-1.5 text-sm text-fg-muted"
                 >
                     There is no role you may give by import here. A role can
-                    only contain powers you may pass on at this topic.
+                    only contain powers you may pass on in this area.
                 </p>
                 <div v-else class="mt-1.5 space-y-2">
                     <label
@@ -147,8 +147,8 @@ function submit() {
                     Also add them to
                 </legend>
                 <p class="mt-1 text-sm text-fg-muted">
-                    Tick a topic above if these students should also see the
-                    events announced there. Only the topics above where you may
+                    Tick an area above if these students should also see the
+                    events announced there. Only the areas above where you may
                     import are listed.
                 </p>
                 <div class="mt-1.5 space-y-2">

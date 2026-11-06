@@ -79,7 +79,7 @@ class SystemAdmins extends Page implements HasTable
                     ->icon(Heroicon::OutlinedUserMinus)
                     ->color('danger')
                     ->modalHeading(fn (User $record): string => "Are you sure you want to remove {$record->name} as System Admin?")
-                    ->modalDescription('Step 1 of 2. They keep their account and any topic roles; they lose administrator authority.')
+                    ->modalDescription('Step 1 of 2. They keep their account and any area roles; they lose administrator authority.')
                     ->modalSubmitActionLabel('Yes, continue')
                     ->disabled(fn (User $record): bool => $record->id === auth()->id())
                     ->tooltip(fn (User $record): ?string => $record->id === auth()->id() ? 'You cannot remove yourself. Another System Admin must do it.' : null)

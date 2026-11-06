@@ -297,7 +297,7 @@ class AssignmentService
             'topic_id' => $assignment->topic_id,
             'replacement' => $replacement?->name,
             'reason' => $reason,
-            'remains' => 'The topic, everything below it, the role definition and other people\'s roles stay as they are. Roles this person gave to others stay in place.',
+            'remains' => 'The area, everything below it, the role definition and other people\'s roles stay as they are. Roles this person gave to others stay in place.',
             'loses' => 'The person loses only the access this role gave. Access from any other role they hold is kept.',
         ];
     }

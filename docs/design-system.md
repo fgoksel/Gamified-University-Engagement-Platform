@@ -41,8 +41,8 @@ Measured contrast (WCAG 2.2 AA needs 4.5:1 for normal text). All pairs pass in b
 | `info-fg` on `info-soft` | 4.93 | 6.61 |
 
 The status colours are deliberately calm: "danger" is a deep navy, not red. Category colours
-(`cat-academic`, `cat-scientific`, `cat-sports`, `cat-community`) are only for subject area and
-event category dots and chips (`resources/js/categoryColors.js`), never for status.
+(`cat-academic`, `cat-scientific`, `cat-sports`, `cat-community`) are only for
+category dots and chips (`resources/js/categoryColors.js`), never for status.
 
 ## Components
 

@@ -332,7 +332,7 @@ class EventApplicationService
         if (($event->owningTopic && $access->isHidden($event->owningTopic))
             || ($event->audienceTopic && $access->isHidden($event->audienceTopic))) {
             throw ValidationException::withMessages([
-                'event' => 'Applications are frozen because this topic is archived.',
+                'event' => 'Applications are frozen because this area is archived.',
             ]);
         }
 

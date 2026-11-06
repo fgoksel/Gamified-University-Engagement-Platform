@@ -33,12 +33,12 @@ class TopicPolicy
         if ($parent === null) {
             return $this->access->isSystemAdmin($user)
                 ? Response::allow()
-                : Response::deny('Only a System Admin can start a new top-level topic.');
+                : Response::deny('Only a System Admin can start a new top-level area.');
         }
 
         return $this->access->can($user, Capability::Create, $parent)
             ? Response::allow()
-            : Response::deny('You cannot add topics here.');
+            : Response::deny('You cannot add areas here.');
     }
 
     /**
@@ -55,7 +55,7 @@ class TopicPolicy
             return Response::allow();
         }
 
-        return Response::deny('You cannot edit this topic.');
+        return Response::deny('You cannot edit this area.');
     }
 
     /**
@@ -65,18 +65,18 @@ class TopicPolicy
     public function move(User $user, Topic $topic, ?Topic $destination): Response
     {
         if (! $this->access->can($user, Capability::Organise, $topic)) {
-            return Response::deny('You cannot move this topic.');
+            return Response::deny('You cannot move this area.');
         }
 
         if ($destination === null) {
             return $this->access->isSystemAdmin($user)
                 ? Response::allow()
-                : Response::deny('Only a System Admin can make a topic top-level.');
+                : Response::deny('Only a System Admin can make an area top-level.');
         }
 
         return $this->access->can($user, Capability::Organise, $destination)
             ? Response::allow()
-            : Response::deny('You cannot move topics into that place.');
+            : Response::deny('You cannot move areas into that place.');
     }
 
     /**
@@ -94,7 +94,7 @@ class TopicPolicy
     {
         return $this->access->can($user, Capability::Archive, $topic)
             ? Response::allow()
-            : Response::deny('You cannot archive topics here.');
+            : Response::deny('You cannot archive areas here.');
     }
 
     /**
@@ -104,7 +104,7 @@ class TopicPolicy
     {
         return $this->access->can($user, Capability::Archive, $topic)
             ? Response::allow()
-            : Response::deny('You cannot restore topics here.');
+            : Response::deny('You cannot restore areas here.');
     }
 
     /**
@@ -115,6 +115,6 @@ class TopicPolicy
     {
         return $this->access->isSystemAdmin($user)
             ? Response::allow()
-            : Response::deny('Only a System Admin can permanently delete a topic.');
+            : Response::deny('Only a System Admin can permanently delete an area.');
     }
 }

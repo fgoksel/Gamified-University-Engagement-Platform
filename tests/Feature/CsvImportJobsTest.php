@@ -330,8 +330,8 @@ class CsvImportJobsTest extends TestCase
         $this->assertSame(0, RoleAssignment::count());
         $this->assertSame(0, RoleDefinition::count());
         $this->assertSame(1, Topic::count());
-        $this->assertStringContainsString('Skipped 1 rows because the course is not linked to a topic (MED100).', $this->adminMessage()['body']);
-        $this->assertStringContainsString('never attached to another topic', $this->adminMessage()['body']);
+        $this->assertStringContainsString('Skipped 1 rows because the course is not linked to an area (MED100).', $this->adminMessage()['body']);
+        $this->assertStringContainsString('never attached to another area', $this->adminMessage()['body']);
         $this->assertNotNull($unrelated);
     }
 
@@ -344,7 +344,7 @@ class CsvImportJobsTest extends TestCase
         (new ImportCourseEnrollmentsJob($this->csv("Neptun Code,Course Code,Course Name\nABC123,BMEINFO101,Programming 1\n"), $this->admin->id))->handle();
 
         $this->assertSame([0, 0, 0], [Topic::count(), RoleDefinition::count(), RoleAssignment::count()]);
-        $this->assertStringContainsString('not linked to a topic', $this->adminMessage()['body']);
+        $this->assertStringContainsString('not linked to an area', $this->adminMessage()['body']);
     }
 
     public function test_unknown_neptun_codes_are_skipped_and_counted(): void

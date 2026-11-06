@@ -53,10 +53,19 @@ class EventPolicy
      * Seeing the event: staff always; everybody else once it is published, not on hold,
      * and announced to an audience node they are assigned to. A surprise event is never
      * announced (Task #86); the students it gave points to may open it afterwards.
+     * An event cancelled before it was published never went out, so it stays with its staff.
      */
     public function view(User $user, Event $event): bool
     {
-        return $this->staff($user, $event) || $this->announcedTo($user, $event) || $this->creditedFor($user, $event);
+        if ($this->staff($user, $event)) {
+            return true;
+        }
+
+        if ($event->status === Event::STATUS_CANCELLED && $event->published_at === null) {
+            return false;
+        }
+
+        return $this->announcedTo($user, $event) || $this->creditedFor($user, $event);
     }
 
     public function apply(User $user, Event $event): bool

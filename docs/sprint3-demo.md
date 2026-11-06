@@ -50,8 +50,8 @@ Demo University
 
 ### Step 1: a booth is a sub-area with its own students
 
-1. Sign in as **Gréta**. *Topics* opens at University Fair, with the two booths below it.
-2. *New topic* adds another booth, for example Chemistry booth.
+1. Sign in as **Gréta**. *Areas* opens at University Fair, with the two booths below it.
+2. *New area* adds another booth, for example Chemistry booth.
 3. On the new booth, *Access → Import students*: choose a file with a column of Neptun codes and the
    role "Event student". Leave the fair unticked, unless those students should belong to the fair too.
 

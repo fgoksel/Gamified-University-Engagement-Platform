@@ -50,7 +50,7 @@ Demo University
     └── Athletics Club          Erik, Fanni: "Event student"
 ```
 
-Both roles are ordinary topic roles (Topics → Roles); a title gives no power, the capabilities do.
+Both roles are ordinary area roles (Areas → Roles); a title gives no power, the capabilities do.
 
 | Event | Branch | State at the start of the demo |
 |---|---|---|
@@ -71,7 +71,7 @@ Both roles are ordinary topic roles (Topics → Roles); a title gives no power, 
 
 1. Sign in as **Ivan**. *Events → Organized by me* lists his branch's events in every state: draft,
    published, on hold, cancelled, completed, and the hidden *Surprise SQL Quiz* with its badge.
-2. *Create event*: the topic picker only offers topics in the Faculty of Informatics. Ivan cannot
+2. *Create event*: the area picker only offers areas in the Faculty of Informatics. Ivan cannot
    create events for the Faculty of Sport.
 
 ### Step 2: two branches, refused cross-branch actions (acceptance criterion)
@@ -131,10 +131,10 @@ All at the running **Indexing Lab** (20 points):
 2. Cancel an event with a reason: everyone still applied receives the reason; students who withdrew
    or were rejected are left alone.
 
-### Step 8: topic changes freeze events (Task #66), optional
+### Step 8: area changes freeze events (Task #66), optional
 
-In *Topics*, a branch lead archives *Databases*: its events disappear for students and nothing can be
-applied to or credited until the topic is restored. (The demo organisers hold only event
+In *Areas*, a branch lead archives *Databases*: its events disappear for students and nothing can be
+applied to or credited until the area is restored. (The demo organisers hold only event
 capabilities; use the System Admin or a role with `topic.archive` to show this.)
 
 ## Leaderboards and the hall screen (Task #56)
@@ -154,7 +154,7 @@ running the seeder again; nothing else changes. A second run adds nothing.
 
 ## 4. Regression of Sprint 1
 
-- The System Admin panel (`/admin`, organisers, students, faculties, tags) and the Topics explorer
+- The System Admin panel (`/admin`, organisers, students, faculties, tags) and the Areas explorer
   are part of the automated suite. `Sprint2DemoSeederTest` also opens every main page for each kind
   of demo account (organiser, student, System Admin).
 - Run everything: `docker compose exec app php artisan test` and `./vendor/bin/pint --test`;

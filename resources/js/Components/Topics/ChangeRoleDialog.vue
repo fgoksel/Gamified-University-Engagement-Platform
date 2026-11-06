@@ -121,7 +121,7 @@ function execute() {
                 </dd>
                 <dt class="text-fg-muted">Role</dt>
                 <dd class="text-fg">{{ role }}</dd>
-                <dt class="text-fg-muted">Topic</dt>
+                <dt class="text-fg-muted">Area</dt>
                 <dd class="text-fg">
                     {{ place }} <span class="text-fg-muted">(and below)</span>
                 </dd>
@@ -186,7 +186,7 @@ function execute() {
                     </ul>
                 </template>
                 <p class="mt-1.5 text-sm text-fg-muted">
-                    The successor gets the same role at the same topic.
+                    The successor gets the same role in the same area.
                     Everything below stays as it is.
                 </p>
             </div>
@@ -282,7 +282,7 @@ function execute() {
         >
             <dt class="text-fg-muted">Role</dt>
             <dd class="text-fg">{{ role }}</dd>
-            <dt class="text-fg-muted">Topic</dt>
+            <dt class="text-fg-muted">Area</dt>
             <dd class="text-fg">{{ place }} (and below)</dd>
             <dt class="text-fg-muted">Leaving</dt>
             <dd class="text-fg">{{ person }}</dd>

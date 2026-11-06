@@ -177,7 +177,7 @@ class AreaLeaderboardController extends Controller
             'hall_seconds' => ['nullable', 'integer', 'min:'.Leaderboard::HALL_SECONDS_MIN, 'max:'.Leaderboard::HALL_SECONDS_MAX],
         ], [
             'name.required' => 'Give the leaderboard a name.',
-            'name.unique' => 'This topic already has a leaderboard with that name.',
+            'name.unique' => 'This area already has a leaderboard with that name.',
             'hall_seconds.*' => Leaderboard::HALL_SECONDS_MESSAGE,
         ]);
 

@@ -8,6 +8,7 @@ use App\Models\Event;
 use App\Models\EventApplication;
 use App\Models\Semester;
 use App\Models\TopicTag;
+use App\Services\EventAccessPanel;
 use App\Services\EventCatalog;
 use App\Services\EventPlacement;
 use App\Services\OrganizedEvents;
@@ -43,12 +44,16 @@ class EventController extends Controller
      * It follows the same visibility rules as the catalog (EventPolicy::view);
      * an event the person may not see is "not found", so its existence is not revealed.
      */
-    public function show(Request $request, Event $event, EventCatalog $catalog): Response
+    public function show(Request $request, Event $event, EventCatalog $catalog, EventAccessPanel $access): Response
     {
         abort_unless(Gate::forUser($request->user())->allows('view', $event), 404);
 
         return Inertia::render('Events/Show', [
             'event' => $catalog->detail($request->user(), $event),
+            // Task #75: where the event sits in the tree, and who can manage it (null for a viewer
+            // who runs no part of it and may not see who has access there).
+            'path' => $access->path($event),
+            'managers' => $access->managers($request->user(), $event),
         ]);
     }
 
@@ -140,14 +145,19 @@ class EventController extends Controller
     }
 
     /**
-     * The Event Form for a new event (Task #38, UC-1.3).
+     * The Event Form for a new event (Task #38, UC-1.3). "Create event here" in the explorer
+     * sends ?area=: kept only if the person may use that topic, otherwise ignored (Task #73).
      */
     public function create(Request $request, EventPlacement $placement): Response
     {
         Gate::forUser($request->user())->authorize('create', Event::class);
 
+        $owningTopics = $placement->formOptions($request->user());
+        $area = $request->integer('area');
+
         return Inertia::render('Events/Create', [
-            'owningTopics' => $placement->formOptions($request->user()),
+            'owningTopics' => $owningTopics,
+            'initialTopic' => in_array($area, array_column($owningTopics, 'id'), true) ? $area : null,
             'tags' => TopicTag::query()
                 ->where('is_active', true)
                 ->orderBy('category')

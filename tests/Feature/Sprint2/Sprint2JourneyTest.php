@@ -291,7 +291,7 @@ class Sprint2JourneyTest extends TopicTestCase
             'capacity' => 5, 'application_type' => 'fcfs', 'points_value' => 5,
             'event_starts_at' => now()->addDays(2)->toDateTimeString(), 'event_ends_at' => now()->addDays(2)->addHour()->toDateTimeString(),
             'application_deadline' => now()->addDay()->toDateTimeString(), 'completion_deadline' => now()->addDays(3)->toDateTimeString(),
-        ])->assertSessionHasErrors(['owning_topic_id' => 'You cannot create events at this topic.']);
+        ])->assertSessionHasErrors(['owning_topic_id' => 'You cannot create events in this area.']);
 
         // ...nor see, run, review, credit or make QR codes for Sara's event.
         $this->actingAs($this->ivan)->get("/events/{$sportEvent->id}")->assertNotFound();

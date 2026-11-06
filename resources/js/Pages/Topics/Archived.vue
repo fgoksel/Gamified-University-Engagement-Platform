@@ -8,7 +8,7 @@ import Modal from "../../Components/Topics/Modal.vue";
 import DeleteTopicDialog from "../../Components/Topics/DeleteTopicDialog.vue";
 import { formatDate, plural } from "../../topicsLabels.js";
 
-defineOptions({ layout: { title: "Archived topics" } });
+defineOptions({ layout: { title: "Archived areas" } });
 
 defineProps({
     topics: { type: Array, required: true },
@@ -44,17 +44,17 @@ function restore() {
             class="inline-flex items-center gap-1 text-sm text-fg-muted hover:text-fg hover:underline"
         >
             <ArrowLeft class="size-4" :stroke-width="1.75" aria-hidden="true" />
-            Back to topics
+            Back to areas
         </Link>
 
         <p class="max-w-2xl text-sm text-fg-muted">
-            Archived topics, and everything inside them, are hidden from normal
+            Archived areas, and everything inside them, are hidden from normal
             browsing. Nothing in them is deleted: roles and history are kept,
             and restoring brings the whole branch back.
         </p>
 
         <EmptyState v-if="topics.length === 0" title="Nothing is archived">
-            Topics you archive appear here, and can be restored.
+            Areas you archive appear here, and can be restored.
         </EmptyState>
 
         <ul v-else class="space-y-3">
@@ -76,7 +76,7 @@ function restore() {
                         in {{ topic.trail.join(" › ") }}
                     </p>
                     <p class="mt-1 text-xs text-fg-muted">
-                        {{ plural(topic.topics_inside, "topic") }} inside ·
+                        {{ plural(topic.topics_inside, "area") }} inside ·
                         archived {{ formatDate(topic.archived_at)
                         }}<template v-if="topic.archived_by">
                             by {{ topic.archived_by }}</template
@@ -110,7 +110,7 @@ function restore() {
 
         <Modal
             v-if="restoring"
-            title="Restore this topic?"
+            title="Restore this area?"
             :busy="busy"
             @close="restoring = null"
         >
@@ -129,7 +129,7 @@ function restore() {
             <template #footer>
                 <Btn :disabled="busy" @click="restoring = null">Cancel</Btn>
                 <Btn variant="primary" :loading="busy" @click="restore"
-                    >Restore topic</Btn
+                    >Restore area</Btn
                 >
             </template>
         </Modal>

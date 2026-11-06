@@ -41,8 +41,8 @@ function inheritedGroups() {
             <div>
                 <h2 class="text-base font-semibold text-fg">Who has access</h2>
                 <p class="mt-1 text-sm text-fg-muted">
-                    A role given at a topic also applies to every topic below
-                    it. Roles from above cannot be taken away here.
+                    A role given in an area also applies to every area below it.
+                    Roles from above cannot be taken away here.
                 </p>
                 <p
                     v-if="counts.people_effective !== undefined"
@@ -59,7 +59,7 @@ function inheritedGroups() {
                             ? "assignment"
                             : "assignments"
                     }}
-                    at this topic
+                    in this area
                     <span class="text-fg-muted">
                         (one person with two roles counts once as a person,
                         twice as assignments)
@@ -216,7 +216,7 @@ function inheritedGroups() {
                     :stroke-width="1.75"
                     aria-hidden="true"
                 />
-                Ended roles at this topic ({{ access.history.length }})
+                Ended roles in this area ({{ access.history.length }})
             </summary>
             <ul class="mt-3 divide-y divide-line text-sm">
                 <li v-for="row in access.history" :key="row.id" class="py-2">
