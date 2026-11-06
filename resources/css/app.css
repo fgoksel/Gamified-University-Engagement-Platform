@@ -90,7 +90,7 @@
     --fg-muted: #9aa8bf;
 
     --primary: #1a73db; /* brand-600 */
-    --primary-hover: #4596f5; /* brand-500 */
+    --primary-hover: #1864c2; /* brand-700: white text stays AA, the lighter brand-500 did not */
     --on-primary: #ffffff;
     --link: #6fb2fb; /* brand-400 */
     --ring: #6fb2fb; /* brand-400 */

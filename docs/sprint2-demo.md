@@ -137,6 +137,21 @@ In *Areas*, a branch lead archives *Databases*: its events disappear for student
 applied to or credited until the area is restored. (The demo organisers hold only event
 capabilities; use the System Admin or a role with `topic.archive` to show this.)
 
+## Leaderboards and the hall screen (Task #56)
+
+The seeder publishes three leaderboards, with the points of the demo events: **University total**,
+**Informatics total** (with names) and **Sport total**. A database seeded earlier gets them by
+running the seeder again; nothing else changes. A second run adds nothing.
+
+| To see | Open | As |
+|---|---|---|
+| The hall screen | `/hall` in a private window | nobody: it needs no login |
+| *Where am I?*, own numbers only | `/leaderboards`, area Databases | Anna, or Erik with area Athletics Club |
+| *Rankings*, the full list | `/leaderboards`, area Faculty of Informatics | Ivan |
+| A refused area | `/leaderboards?area=` with the id of Faculty of Sport | Ivan ("not found") |
+| Publishing a leaderboard, with its warning | Topics → Faculty of Informatics → Leaderboards | Ivan |
+| The default time on the hall screen | Admin panel → Hall screen | System Admin |
+
 ## 4. Regression of Sprint 1
 
 - The System Admin panel (`/admin`, organisers, students, faculties, tags) and the Areas explorer

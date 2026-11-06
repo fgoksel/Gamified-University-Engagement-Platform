@@ -6,6 +6,7 @@ import StatusChip from "../StatusChip.vue";
 import Btn from "./Btn.vue";
 import Modal from "./Modal.vue";
 import LeaderboardFormDialog from "./LeaderboardFormDialog.vue";
+import { publishWarning } from "../../leaderboardWords.js";
 import { leaderboardColumnLabels } from "../../topicsLabels.js";
 
 // The Leaderboards tab of a topic (Task #89). Everyone who can open the topic
@@ -155,6 +156,9 @@ function destroy() {
             <p class="text-base text-fg">
                 Anyone can then see <strong>{{ publishing.name }}</strong
                 >, without signing in, and it appears on the hall screen.
+            </p>
+            <p class="mt-3 text-sm text-fg" data-test="publish-warning">
+                {{ publishWarning }}
             </p>
             <p class="mt-3 text-sm text-fg-muted">
                 It shows: {{ columnNames(publishing) }}. You can unpublish it at

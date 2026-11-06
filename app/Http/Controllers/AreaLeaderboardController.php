@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Leaderboard;
+use App\Models\Setting;
 use App\Models\Topic;
 use App\Services\AreaLeaderboards;
 use App\Services\LeaderboardStandings;
 use App\Services\OwnLeaderboards;
+use App\Services\RankingExplorer;
 use App\Services\TopicAccess;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -30,11 +32,24 @@ class AreaLeaderboardController extends Controller
     ) {}
 
     /**
-     * "My leaderboard" (Task #54): the person's own points and rank, and the leaderboards they may see.
+     * "My leaderboard" (Task #54): the person's own points and rank, and the leaderboards they
+     * may see. "Where am I?" (Task #56) reads its choice from the address: an area the person
+     * may not open looks exactly like one that does not exist.
      */
-    public function index(Request $request, OwnLeaderboards $own): Response
+    public function index(Request $request, OwnLeaderboards $own, RankingExplorer $rankings): Response
     {
-        return Inertia::render('Leaderboards/Index', $own->for($request->user()));
+        $user = $request->user();
+        $area = null;
+
+        if ($request->filled('area')) {
+            $area = Topic::find($request->integer('area'));
+            abort_unless($area !== null && $this->access->canView($user, $area), 404);
+        }
+
+        return Inertia::render('Leaderboards/Index', [
+            ...$own->for($user),
+            'rankings' => $rankings->for($user, $area, $request->string('category')->toString(), $request->integer('tag'), max(1, $request->integer('page', 1))),
+        ]);
     }
 
     public function show(Request $request, Leaderboard $leaderboard): Response
@@ -54,11 +69,21 @@ class AreaLeaderboardController extends Controller
     }
 
     /**
+     * The hall screen (Task #56), without login: it reads the feed below and rotates by itself.
+     */
+    public function hallScreen(): Response
+    {
+        return Inertia::render('Screen/Hall');
+    }
+
+    /**
      * The read-only feed of the hall screen, without login: published leaderboards only,
      * with the top places and only the columns their creators chose.
      */
     public function hall(): JsonResponse
     {
+        $default = Setting::hallSeconds();
+
         return response()->json([
             'leaderboards' => Leaderboard::query()
                 ->onHallScreen()
@@ -71,6 +96,7 @@ class AreaLeaderboardController extends Controller
                     'name' => $board->name,
                     'topic' => $board->topic->title,
                     'columns' => $board->columns(),
+                    'seconds' => $board->hallSeconds($default),
                     ...$this->standings->top($board),
                 ])
                 ->values()
@@ -136,9 +162,10 @@ class AreaLeaderboardController extends Controller
     }
 
     /**
-     * Left out, a column keeps the default: the Neptun code alone (L6, 27 October).
+     * Left out, a column keeps the default: the Neptun code alone (L6, 27 October). The time on
+     * the hall screen only changes when it is sent; empty means the default (Task #56).
      *
-     * @return array{name: string, show_neptun_code: bool, show_first_name: bool, show_last_name: bool}
+     * @return array{name: string, show_neptun_code: bool, show_first_name: bool, show_last_name: bool, hall_seconds?: ?int}
      */
     private function validated(Request $request, Topic $topic, ?Leaderboard $board = null): array
     {
@@ -147,16 +174,21 @@ class AreaLeaderboardController extends Controller
             'show_neptun_code' => ['sometimes', 'boolean'],
             'show_first_name' => ['sometimes', 'boolean'],
             'show_last_name' => ['sometimes', 'boolean'],
+            'hall_seconds' => ['nullable', 'integer', 'min:'.Leaderboard::HALL_SECONDS_MIN, 'max:'.Leaderboard::HALL_SECONDS_MAX],
         ], [
             'name.required' => 'Give the leaderboard a name.',
             'name.unique' => 'This area already has a leaderboard with that name.',
+            'hall_seconds.*' => Leaderboard::HALL_SECONDS_MESSAGE,
         ]);
+
+        $hall = array_key_exists('hall_seconds', $data) ? ['hall_seconds' => $data['hall_seconds']] : [];
 
         $data = [
             'name' => $data['name'],
             'show_neptun_code' => (bool) ($data['show_neptun_code'] ?? true),
             'show_first_name' => (bool) ($data['show_first_name'] ?? false),
             'show_last_name' => (bool) ($data['show_last_name'] ?? false),
+            ...$hall,
         ];
 
         if (! $data['show_neptun_code'] && ! $data['show_first_name'] && ! $data['show_last_name']) {

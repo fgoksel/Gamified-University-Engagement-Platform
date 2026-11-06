@@ -4,6 +4,7 @@ import { useForm } from "@inertiajs/vue3";
 import Modal from "./Modal.vue";
 import Btn from "./Btn.vue";
 import TextField from "../TextField.vue";
+import { screenTimeWords } from "../../leaderboardWords.js";
 import { leaderboardColumnLabels } from "../../topicsLabels.js";
 
 // Create or edit a leaderboard of a topic (Task #89). It always covers the
@@ -21,6 +22,11 @@ const form = useForm({
     show_neptun_code: props.board?.show_neptun_code ?? true,
     show_first_name: props.board?.show_first_name ?? false,
     show_last_name: props.board?.show_last_name ?? false,
+    hall_seconds:
+        props.board?.hall_seconds === null ||
+        props.board?.hall_seconds === undefined
+            ? ""
+            : String(props.board.hall_seconds),
 });
 
 const columns = [
@@ -94,6 +100,16 @@ function submit() {
                     {{ form.errors.columns }}
                 </p>
             </fieldset>
+
+            <!-- Task #56: how long it stays on the hall screen once published -->
+            <TextField
+                v-model="form.hall_seconds"
+                :label="screenTimeWords.label"
+                optional
+                type="number"
+                :hint="screenTimeWords.hint(topic.hall_default)"
+                :error="form.errors.hall_seconds"
+            />
         </form>
 
         <template #footer>

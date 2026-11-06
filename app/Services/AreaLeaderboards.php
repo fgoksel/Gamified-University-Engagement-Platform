@@ -86,6 +86,7 @@ class AreaLeaderboards
             'show_neptun_code' => $board->show_neptun_code,
             'show_first_name' => $board->show_first_name,
             'show_last_name' => $board->show_last_name,
+            'hall_seconds' => $board->hall_seconds,
         ];
     }
 
@@ -112,7 +113,7 @@ class AreaLeaderboards
     }
 
     /**
-     * @param  array{name: string, show_neptun_code: bool, show_first_name: bool, show_last_name: bool}  $data
+     * @param  array{name?: string, show_neptun_code?: bool, show_first_name?: bool, show_last_name?: bool, hall_seconds?: ?int}  $data
      */
     public function update(User $actor, Leaderboard $board, array $data): Leaderboard
     {
@@ -160,6 +161,6 @@ class AreaLeaderboards
      */
     private function snapshot(Leaderboard $board): array
     {
-        return $board->only(['name', 'visibility', 'show_neptun_code', 'show_first_name', 'show_last_name']);
+        return $board->only(['name', 'visibility', 'show_neptun_code', 'show_first_name', 'show_last_name', 'hall_seconds']);
     }
 }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\Capability;
 use App\Models\Leaderboard;
+use App\Models\Setting;
 use App\Models\Topic;
 use App\Services\AreaLeaderboards;
 use App\Services\TopicAccess;
@@ -284,6 +285,9 @@ class TopicController extends Controller
                 'leaderboards' => $tab === 'leaderboards'
                     ? $this->leaderboards->at($topic)->map(fn (Leaderboard $board) => $this->leaderboards->summary($board))->values()->all()
                     : null,
+                // The default time on the hall screen, shown in the leaderboard dialog (Task #56)
+                'hall_default' => $tab === 'leaderboards' ? Setting::hallSeconds() : null,
+                // Events of this area and below (Task #73)
                 'events' => $tab === 'events'
                     ? $this->browser->events($user, $topic, $request->query('when') === 'past' ? 'past' : 'upcoming', max(1, (int) $request->query('page', 1)))
                     : null,

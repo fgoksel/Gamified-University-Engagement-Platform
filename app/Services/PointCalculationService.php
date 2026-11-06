@@ -44,10 +44,27 @@ class PointCalculationService
      */
     public function areaStandings(int $topicId): array
     {
+        return $this->standings($topicId);
+    }
+
+    /**
+     * The same standings, narrowed to the points of one category and to the events of one tag
+     * ("Where am I?", Task #56). Kept under the area's tags, so a credit clears them all alike.
+     *
+     * @return list<array{student_id: int, name: string, neptun_code: ?string, points: int, academic: int, scientific: int, sports: int, community: int, position: int, rank: int}>
+     */
+    public function standings(int $topicId, ?string $category = null, ?int $tagId = null): array
+    {
+        $key = "leaderboard:area:{$topicId}";
+
+        if ($category !== null || $tagId !== null) {
+            $key .= ':category:'.($category ?? 'any').':tag:'.($tagId ?? 'any');
+        }
+
         return $this->remember(
-            "leaderboard:area:{$topicId}",
+            $key,
             [self::ALL_AREAS, $this->areaTag($topicId)],
-            fn () => $this->calculateArea($topicId),
+            fn () => $this->calculateArea($topicId, $category, $tagId),
         );
     }
 
@@ -97,7 +114,7 @@ class PointCalculationService
     /**
      * @return list<array<string, int|string|null>>
      */
-    private function calculateArea(int $topicId): array
+    private function calculateArea(int $topicId, ?string $category = null, ?int $tagId = null): array
     {
         $categories = collect(TaxonomyCategory::cases())
             ->map(fn (TaxonomyCategory $category) => "sum(case when ledger.category = '{$category->value}' then ledger.points else 0 end) as {$category->value}")
@@ -111,6 +128,8 @@ class PointCalculationService
             ->whereIn('ledger.student_id', User::role(UserRole::Student)->select('users.id'))
             // A deactivated account stays out of the lists.
             ->where('users.status', '!=', 'inactive')
+            ->when($category, fn ($query) => $query->where('ledger.category', $category))
+            ->when($tagId, fn ($query) => $query->where('events.topic_tag_id', $tagId))
             ->groupBy('ledger.student_id', 'users.name', 'users.neptun_code')
             ->havingRaw('sum(ledger.points) > 0')
             ->selectRaw("ledger.student_id, users.name, users.neptun_code, sum(ledger.points) as points, {$categories}")

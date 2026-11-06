@@ -6,10 +6,12 @@ use App\Enums\UserRole;
 use App\Models\Event;
 use App\Models\EventApplication;
 use App\Models\EventApplicationTransition;
+use App\Models\Leaderboard;
 use App\Models\Semester;
 use App\Models\Topic;
 use App\Models\TopicTag;
 use App\Models\User;
+use App\Services\AreaLeaderboards;
 use App\Services\AssignmentService;
 use App\Services\EventApplicationService;
 use App\Services\PointLedger;
@@ -57,6 +59,18 @@ class Sprint2DemoSeeder extends Seeder
         'fanni' => ['Fanni Balogh', 'sprint2.fanni@example.test', UserRole::Student, 'FANN07'],
     ];
 
+    /**
+     * Published leaderboards for the hall screen and "Where am I?" (Task #56):
+     * name => [area, or null for the university, show first and last names].
+     *
+     * @var array<string, array{0: ?string, 1: bool}>
+     */
+    public const LEADERBOARDS = [
+        'University total' => [null, false],
+        'Informatics total' => ['Faculty of Informatics', true],
+        'Sport total' => ['Faculty of Sport', false],
+    ];
+
     /** @var array<string, User> */
     private array $people = [];
 
@@ -78,7 +92,8 @@ class Sprint2DemoSeeder extends Seeder
         }
 
         if (Topic::where('title', self::ROOT)->whereNull('parent_id')->exists()) {
-            $this->command?->info('The Sprint 2 demo data already exists. Nothing changed.');
+            $this->command?->info('The Sprint 2 demo data already exists. Only leaderboards that are missing are added.');
+            $this->leaderboards($admin);
 
             return;
         }
@@ -120,8 +135,30 @@ class Sprint2DemoSeeder extends Seeder
 
         $this->informaticsEvents($databases);
         $this->sportEvents($athletics);
+        $this->leaderboards($admin);
 
         $this->report();
+    }
+
+    /**
+     * Their points come from the demo events' ledger rows. Separate from the rest of the demo, so
+     * a database seeded before these boards existed gets them too, and a second run adds nothing.
+     */
+    private function leaderboards(User $admin): void
+    {
+        $university = Topic::where('title', self::ROOT)->whereNull('parent_id')->firstOrFail();
+        $boards = app(AreaLeaderboards::class);
+
+        foreach (self::LEADERBOARDS as $name => [$area, $names]) {
+            $topic = $area === null ? $university : Topic::where('title', $area)->where('parent_id', $university->id)->firstOrFail();
+
+            if (Leaderboard::where('topic_id', $topic->id)->where('name', $name)->exists()) {
+                continue;
+            }
+
+            $board = $boards->create($admin, $topic, ['name' => $name, 'show_neptun_code' => true, 'show_first_name' => $names, 'show_last_name' => $names]);
+            $boards->setPublished($admin, $board, true);
+        }
     }
 
     private function informaticsEvents(Topic $databases): void
@@ -329,6 +366,7 @@ class Sprint2DemoSeeder extends Seeder
 
         $this->command?->line('Faculty of Informatics: Ivan organises; Anna, Bence, Csilla, Dániel and Eszter are students.');
         $this->command?->line('Faculty of Sport: Sara organises; Erik and Fanni are students.');
+        $this->command?->line('Hall screen: /hall, three published leaderboards. Where am I?: /leaderboards.');
         $this->command?->line('Walkthrough: docs/sprint2-demo.md');
     }
 }

@@ -34,6 +34,7 @@ Measured contrast (WCAG 2.2 AA needs 4.5:1 for normal text). All pairs pass in b
 | `link` on `surface` | 5.77 | 7.82 |
 | `link` on `canvas` | 5.42 | 8.41 |
 | `on-primary` on `primary` | 4.65 | 4.65 |
+| `on-primary` on `primary-hover` | 5.77 | 5.77 |
 | `success-fg` on `success-soft` | 5.05 | 8.35 |
 | `warning-fg` on `warning-soft` | 6.68 | 7.90 |
 | `danger-fg` on `danger-soft` | 8.45 | 7.34 |
