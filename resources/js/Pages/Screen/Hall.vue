@@ -2,12 +2,14 @@
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { Pause, Play } from "@lucide/vue";
 import Btn from "../../Components/Topics/Btn.vue";
+import { hallWords } from "../../leaderboardWords.js";
 import { leaderboardColumnLabels } from "../../topicsLabels.js";
 
 // The hall screen (Task #56): the published leaderboards one at a time, on a public display and
 // without login. Each stays for its own seconds; the feed is read again after a full round, at
 // most once a minute. When the server cannot be reached the last data simply stays up and the
-// next round tries again, so nothing alarming ever shows in the hall.
+// next round tries again, so nothing alarming ever shows in the hall. The display stays awake
+// where the browser allows it.
 const FEED = "/hall/leaderboards";
 const REFRESH_MS = 60_000;
 // A feed that hangs must not stop the rotation for long.
@@ -84,13 +86,36 @@ function togglePause() {
     schedule();
 }
 
-const studentsText = (n) =>
-    n === 1
-        ? "1 student on this leaderboard"
-        : `${n} students on this leaderboard`;
+// A display in a hall must not dim. Also while paused. Hiding the page drops the lock, so it is
+// asked for again on the way back. Without support, or when refused, the screen may simply dim.
+let wakeLock = null;
+
+async function keepAwake() {
+    if (wakeLock !== null || !("wakeLock" in navigator) || document.hidden) {
+        return;
+    }
+
+    try {
+        const lock = await navigator.wakeLock.request("screen");
+
+        if (unmounted) {
+            lock.release().catch(() => {});
+            return;
+        }
+
+        wakeLock = lock;
+        lock.addEventListener("release", () => {
+            if (wakeLock === lock) wakeLock = null;
+        });
+    } catch {
+        // Not allowed here: nothing to tell the hall.
+    }
+}
 
 onMounted(async () => {
-    document.title = "Leaderboards";
+    document.title = hallWords.title;
+    document.addEventListener("visibilitychange", keepAwake);
+    keepAwake();
     await load();
     schedule();
 });
@@ -98,6 +123,9 @@ onMounted(async () => {
 onBeforeUnmount(() => {
     unmounted = true;
     clearTimeout(timer);
+    document.removeEventListener("visibilitychange", keepAwake);
+    wakeLock?.release().catch(() => {});
+    wakeLock = null;
 });
 </script>
 
@@ -106,18 +134,14 @@ onBeforeUnmount(() => {
     <main
         class="flex h-dvh flex-col overflow-hidden px-[4vw] py-[3dvh] text-[min(3.6dvh,4.5vw)] leading-tight"
     >
-        <h1 v-if="!board" class="sr-only">Leaderboards</h1>
+        <h1 v-if="!board" class="sr-only">{{ hallWords.title }}</h1>
 
         <p
             v-if="!board"
             class="m-auto text-center text-[1.5em] font-semibold"
             data-test="hall-empty"
         >
-            {{
-                loaded
-                    ? "No leaderboards are published yet."
-                    : "Leaderboards will appear here shortly."
-            }}
+            {{ loaded ? hallWords.empty : hallWords.waiting }}
         </p>
 
         <Transition
@@ -144,7 +168,7 @@ onBeforeUnmount(() => {
                     <thead class="text-left text-[0.8em] text-fg-muted">
                         <tr class="h-[5dvh] border-b-2 border-line">
                             <th scope="col" class="w-[14%] font-medium">
-                                Rank
+                                {{ hallWords.rank }}
                             </th>
                             <th
                                 v-for="column in board.columns"
@@ -158,7 +182,7 @@ onBeforeUnmount(() => {
                                 scope="col"
                                 class="w-[18%] text-right font-medium"
                             >
-                                Points
+                                {{ hallWords.points }}
                             </th>
                         </tr>
                     </thead>
@@ -186,7 +210,7 @@ onBeforeUnmount(() => {
                 </table>
 
                 <p v-if="!board.rows.length" class="mt-[3dvh] text-fg-muted">
-                    No points on this leaderboard yet.
+                    {{ hallWords.noPoints }}
                 </p>
             </section>
         </Transition>
@@ -195,15 +219,17 @@ onBeforeUnmount(() => {
             v-if="board"
             class="mt-auto flex items-center justify-between gap-4 pt-[1.5dvh] text-[0.8em] text-fg-muted"
         >
-            <span data-test="hall-total">{{ studentsText(board.total) }}</span>
+            <span data-test="hall-total">{{
+                hallWords.students(board.total)
+            }}</span>
             <span class="flex shrink-0 items-center gap-4">
                 <span class="tabular-nums" data-test="hall-indicator">
-                    {{ index + 1 }} of {{ boards.length }}
+                    {{ hallWords.position(index + 1, boards.length) }}
                 </span>
                 <Btn data-test="hall-pause" @click="togglePause">
                     <Play v-if="paused" class="size-4" aria-hidden="true" />
                     <Pause v-else class="size-4" aria-hidden="true" />
-                    {{ paused ? "Resume" : "Pause" }}
+                    {{ paused ? hallWords.resume : hallWords.pause }}
                 </Btn>
             </span>
         </footer>

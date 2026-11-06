@@ -176,6 +176,15 @@ class HallScreenTest extends EventTestCase
         $this->actingAs($this->admin)->get('/admin/hall-screen')->assertOk();
     }
 
+    public function test_the_publish_step_warns_that_the_leaderboard_goes_public(): void
+    {
+        $this->assertStringContainsString(
+            'Published leaderboards are shown on the hall screen and to anyone without signing in.',
+            file_get_contents(resource_path('js/leaderboardWords.js')),
+        );
+        $this->assertStringContainsString('{{ publishWarning }}', file_get_contents(resource_path('js/Components/Topics/LeaderboardsPanel.vue')));
+    }
+
     private function areaAdmin(): User
     {
         if ($this->areaAdmin === null) {

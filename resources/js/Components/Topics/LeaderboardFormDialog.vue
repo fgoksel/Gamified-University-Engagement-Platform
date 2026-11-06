@@ -4,6 +4,7 @@ import { useForm } from "@inertiajs/vue3";
 import Modal from "./Modal.vue";
 import Btn from "./Btn.vue";
 import TextField from "../TextField.vue";
+import { screenTimeWords } from "../../leaderboardWords.js";
 import { leaderboardColumnLabels } from "../../topicsLabels.js";
 
 // Create or edit a leaderboard of a topic (Task #89). It always covers the
@@ -103,10 +104,10 @@ function submit() {
             <!-- Task #56: how long it stays on the hall screen once published -->
             <TextField
                 v-model="form.hall_seconds"
-                label="Time on the hall screen"
+                :label="screenTimeWords.label"
                 optional
                 type="number"
-                :hint="`Empty: use the default (${topic.hall_default} s). Otherwise 5 to 120 seconds.`"
+                :hint="screenTimeWords.hint(topic.hall_default)"
                 :error="form.errors.hall_seconds"
             />
         </form>

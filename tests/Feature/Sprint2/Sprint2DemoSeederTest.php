@@ -6,6 +6,7 @@ use App\Enums\UserRole;
 use App\Exceptions\EventActionRefused;
 use App\Models\Event;
 use App\Models\EventApplication;
+use App\Models\Leaderboard;
 use App\Models\PointTransaction;
 use App\Models\QrToken;
 use App\Models\RoleAssignment;
@@ -228,5 +229,35 @@ class Sprint2DemoSeederTest extends TestCase
 
         $this->assertSame(0, Event::count());
         $this->assertSame(0, Topic::count());
+    }
+
+    public function test_it_publishes_leaderboards_with_points_and_stays_repeatable(): void
+    {
+        $this->seed(Sprint2DemoSeeder::class);
+
+        $names = fn () => Leaderboard::query()->onHallScreen()->orderBy('name')->pluck('name')->all();
+        $expected = ['Informatics total', 'Sport total', 'University total'];
+
+        $this->assertSame($expected, $names());
+        $this->assertSame(3, Leaderboard::count());
+
+        $this->seed(Sprint2DemoSeeder::class);
+        $this->assertSame(3, Leaderboard::count());
+
+        foreach ($this->getJson('/hall/leaderboards')->json('leaderboards') as $board) {
+            $this->assertGreaterThan(0, $board['total'], $board['name']);
+        }
+    }
+
+    public function test_a_database_seeded_before_the_leaderboards_gets_them_too(): void
+    {
+        $this->seed(Sprint2DemoSeeder::class);
+        Leaderboard::query()->delete();
+        $events = Event::count();
+
+        $this->seed(Sprint2DemoSeeder::class);
+
+        $this->assertSame(3, Leaderboard::count());
+        $this->assertSame($events, Event::count());
     }
 }

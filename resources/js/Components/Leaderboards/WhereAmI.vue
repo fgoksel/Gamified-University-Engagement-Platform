@@ -3,6 +3,7 @@ import { computed, ref, watch } from "vue";
 import { router } from "@inertiajs/vue3";
 import Btn from "../Topics/Btn.vue";
 import { categoryLabel } from "../../categoryColors.js";
+import { whereAmIWords as words } from "../../leaderboardWords.js";
 
 // "Where am I?" (Task #56): a place in an area, narrowed by category and tag if wanted. The
 // choice lives in the address, so it can be shared and reloaded. A student gets only their own
@@ -59,10 +60,6 @@ function categoryChanged() {
     go();
 }
 
-const pointsText = (n) => (n === 1 ? "1 point" : `${n} points`);
-const studentsText = (n) =>
-    n === 1 ? "1 student has points here." : `${n} students have points here.`;
-
 const selectClass =
     "mt-1.5 block min-h-11 w-full rounded-control border border-line bg-surface px-3 py-2 text-sm text-fg focus:outline-2 focus:outline-offset-0 focus:outline-ring";
 </script>
@@ -74,17 +71,17 @@ const selectClass =
         data-test="where-am-i"
     >
         <h3 id="where-am-i" class="text-base font-semibold text-fg">
-            {{ isStudent ? "Where am I?" : "Rankings" }}
+            {{ isStudent ? words.titleStudent : words.titleOthers }}
         </h3>
         <p class="mt-1 text-sm text-fg-muted">
-            Pick an area, and a category or tag if you like.
+            {{ words.intro }}
         </p>
 
         <div class="mt-3 grid gap-3 sm:grid-cols-3">
             <label class="block text-sm font-medium text-fg">
-                Area
+                {{ words.area }}
                 <select v-model="area" :class="selectClass" @change="go()">
-                    <option value="">Choose an area…</option>
+                    <option value="">{{ words.chooseArea }}</option>
                     <option
                         v-for="option in rankings.areas"
                         :key="option.id"
@@ -95,13 +92,13 @@ const selectClass =
                 </select>
             </label>
             <label class="block text-sm font-medium text-fg">
-                Category
+                {{ words.category }}
                 <select
                     v-model="category"
                     :class="selectClass"
                     @change="categoryChanged"
                 >
-                    <option value="">All categories</option>
+                    <option value="">{{ words.allCategories }}</option>
                     <option
                         v-for="(label, value) in categoryLabel"
                         :key="value"
@@ -112,9 +109,9 @@ const selectClass =
                 </select>
             </label>
             <label class="block text-sm font-medium text-fg">
-                Tag
+                {{ words.tag }}
                 <select v-model="tag" :class="selectClass" @change="go()">
-                    <option value="">All tags</option>
+                    <option value="">{{ words.allTags }}</option>
                     <option
                         v-for="option in tags"
                         :key="option.id"
@@ -129,26 +126,17 @@ const selectClass =
         <div class="mt-4" role="status" data-test="ranking-result">
             <template v-if="result && isStudent">
                 <template v-if="you">
-                    <p class="text-lg text-fg">
-                        You are number
-                        <strong class="tabular-nums">{{ you.rank }}</strong>
-                        of
-                        <strong class="tabular-nums">{{ result.total }}</strong
-                        >, with
-                        <strong class="tabular-nums">{{
-                            pointsText(you.points)
-                        }}</strong
-                        >.
+                    <p class="text-lg font-medium text-fg tabular-nums">
+                        {{ words.you(you.rank, result.total, you.points) }}
                     </p>
                     <p
                         v-if="you.to_next !== null"
                         class="mt-1 text-sm text-fg-muted"
                     >
-                        {{ pointsText(you.to_next) }} to reach number
-                        {{ you.next_rank }}.
+                        {{ words.toNext(you.to_next, you.next_rank) }}
                     </p>
                 </template>
-                <p v-else class="text-fg-muted">You have no points here yet.</p>
+                <p v-else class="text-fg-muted">{{ words.noPoints }}</p>
             </template>
 
             <template v-else-if="list">
@@ -158,24 +146,26 @@ const selectClass =
                 >
                     <table class="w-full text-left text-sm text-fg">
                         <caption class="sr-only">
-                            Students in this ranking
+                            {{
+                                words.listCaption
+                            }}
                         </caption>
                         <thead class="text-fg-muted">
                             <tr class="border-b border-line">
                                 <th scope="col" class="p-3 font-medium">
-                                    Rank
+                                    {{ words.rank }}
                                 </th>
                                 <th scope="col" class="p-3 font-medium">
-                                    Name
+                                    {{ words.name }}
                                 </th>
                                 <th scope="col" class="p-3 font-medium">
-                                    Neptun code
+                                    {{ words.neptunCode }}
                                 </th>
                                 <th
                                     scope="col"
                                     class="p-3 text-right font-medium"
                                 >
-                                    Points
+                                    {{ words.points }}
                                 </th>
                             </tr>
                         </thead>
@@ -191,29 +181,27 @@ const selectClass =
                         </tbody>
                     </table>
                 </div>
-                <p v-else class="text-fg-muted">
-                    No students have points here yet.
-                </p>
+                <p v-else class="text-fg-muted">{{ words.noStudents }}</p>
 
                 <div
                     v-if="list.last_page > 1"
                     class="mt-3 flex items-center justify-between text-sm"
                 >
                     <span class="text-fg-muted">
-                        Page {{ list.page }} of {{ list.last_page }}
+                        {{ words.page(list.page, list.last_page) }}
                     </span>
                     <div class="flex gap-2">
                         <Btn
                             small
                             :disabled="list.page <= 1"
                             @click="go(list.page - 1)"
-                            >Previous</Btn
+                            >{{ words.previous }}</Btn
                         >
                         <Btn
                             small
                             :disabled="list.page >= list.last_page"
                             @click="go(list.page + 1)"
-                            >Next</Btn
+                            >{{ words.next }}</Btn
                         >
                     </div>
                 </div>
@@ -223,12 +211,12 @@ const selectClass =
                 <p class="text-fg">
                     {{
                         result.total
-                            ? studentsText(result.total)
-                            : "No students have points here yet."
+                            ? words.students(result.total)
+                            : words.noStudents
                     }}
                 </p>
                 <p class="mt-1 text-sm text-fg-muted">
-                    Names show for the areas you manage.
+                    {{ words.namesNote }}
                 </p>
             </template>
         </div>

@@ -34,6 +34,13 @@ it in the browser on the hall computer and press F11. It reads the feed `/hall/l
   next round tries again. Until the first data arrives the screen says "Leaderboards will appear
   here shortly."
 
+- **Staying awake:** the page asks the browser to keep the display on (Screen Wake Lock), also
+  while paused. Where the browser does not allow it, the display's own settings apply.
+
+Publishing a leaderboard asks first, and says that published leaderboards are shown on the hall
+screen and to anyone without signing in. The words of the hall screen, the time on it and *Where am
+I?* are in `resources/js/leaderboardWords.js`, ready for the translations of #95.
+
 ### Time on the hall screen
 
 | Who | Where | What |
