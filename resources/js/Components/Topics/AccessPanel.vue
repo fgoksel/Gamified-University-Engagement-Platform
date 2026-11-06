@@ -41,22 +41,22 @@ function inheritedGroups() {
         <div class="flex flex-wrap items-start justify-between gap-3">
             <div>
                 <h2 class="text-base font-semibold text-fg">
-                    {{ $t("topics.access.who_has_access") }}
+                    {{ $t("areas.access.who_has_access") }}
                 </h2>
                 <p class="mt-1 text-sm text-fg-muted">
-                    {{ $t("topics.access.a_role_given") }}
+                    {{ $t("areas.access.a_role_given") }}
                 </p>
                 <p
                     v-if="counts.people_effective !== undefined"
                     class="mt-2 text-sm text-fg"
                     data-testid="access-counts"
                 >
-                    <Trans k="topics.access.counts">
+                    <Trans k="areas.access.counts">
                         <template #people>
                             <strong>{{ counts.people_effective }}</strong>
                             {{
                                 $tc(
-                                    "topics.access.people_noun",
+                                    "areas.access.people_noun",
                                     counts.people_effective,
                                 )
                             }}
@@ -65,7 +65,7 @@ function inheritedGroups() {
                             <strong>{{ counts.assignments_effective }}</strong>
                             {{
                                 $tc(
-                                    "topics.access.assignments_noun",
+                                    "areas.access.assignments_noun",
                                     counts.assignments_effective,
                                 )
                             }}
@@ -73,7 +73,7 @@ function inheritedGroups() {
                     </Trans>
                     {{ " " }}
                     <span class="text-fg-muted">
-                        {{ $t("topics.access.one_person_with_two_roles") }}
+                        {{ $t("areas.access.one_person_with_two_roles") }}
                     </span>
                 </p>
             </div>
@@ -88,7 +88,7 @@ function inheritedGroups() {
                         :stroke-width="1.75"
                         aria-hidden="true"
                     />
-                    {{ $t("topics.access.import_students") }}
+                    {{ $t("areas.access.import_students") }}
                 </Btn>
                 <Btn
                     v-if="can.assign"
@@ -100,14 +100,14 @@ function inheritedGroups() {
                         :stroke-width="1.75"
                         aria-hidden="true"
                     />
-                    {{ $t("topics.access.give_a_role") }}
+                    {{ $t("areas.access.give_a_role") }}
                 </Btn>
             </div>
         </div>
 
         <section aria-labelledby="assigned-here">
             <h3 id="assigned-here" class="text-sm font-semibold text-fg">
-                {{ $t("topics.access.assigned_here") }}
+                {{ $t("areas.access.assigned_here") }}
             </h3>
             <ul
                 v-if="access.here.length"
@@ -124,14 +124,12 @@ function inheritedGroups() {
                             <span
                                 v-if="row.is_you"
                                 class="ml-1 rounded-full bg-info-soft px-2 py-0.5 text-xs text-info-fg"
-                                >{{ $t("topics.access.you") }}</span
+                                >{{ $t("areas.access.you") }}</span
                             >
                             <span
                                 v-if="!row.user.active"
                                 class="ml-1 rounded-full bg-warning-soft px-2 py-0.5 text-xs text-warning-fg"
-                                >{{
-                                    $t("topics.access.inactive_account")
-                                }}</span
+                                >{{ $t("areas.access.inactive_account") }}</span
                             >
                         </p>
                         <p class="text-sm text-fg-muted">
@@ -145,11 +143,11 @@ function inheritedGroups() {
                         <p class="mt-1.5 text-xs text-fg-muted">
                             {{
                                 row.granted_by
-                                    ? $t("topics.access.since_given_by", {
+                                    ? $t("areas.access.since_given_by", {
                                           date: formatDate(row.started_at),
                                           name: row.granted_by,
                                       })
-                                    : $t("topics.access.since", {
+                                    : $t("areas.access.since", {
                                           date: formatDate(row.started_at),
                                       })
                             }}
@@ -162,13 +160,13 @@ function inheritedGroups() {
                             @click="
                                 changing = { mode: 'replace', assignment: row }
                             "
-                            >{{ $t("topics.access.replace_holder") }}</Btn
+                            >{{ $t("areas.access.replace_holder") }}</Btn
                         >
                         <Btn
                             v-if="row.can_end"
                             small
                             @click="changing = { mode: 'end', assignment: row }"
-                            >{{ $t("topics.access.end_role") }}</Btn
+                            >{{ $t("areas.access.end_role") }}</Btn
                         >
                     </div>
                 </li>
@@ -177,7 +175,7 @@ function inheritedGroups() {
                 v-else
                 class="mt-2 rounded-card border border-dashed border-line px-4 py-6 text-center text-sm text-fg-muted"
             >
-                {{ $t("topics.access.nobody_has_a_role_assigned") }}
+                {{ $t("areas.access.nobody_has_a_role_assigned") }}
             </p>
         </section>
 
@@ -185,14 +183,14 @@ function inheritedGroups() {
             v-for="group in inheritedGroups()"
             :key="group.topic.id"
             :aria-label="
-                $t('topics.access.inherited_from', {
-                    topic: group.topic.title,
+                $t('areas.access.inherited_from', {
+                    area: group.topic.title,
                 })
             "
         >
             <h3 class="text-sm font-semibold text-fg">
-                <Trans k="topics.access.inherited_from">
-                    <template #topic>
+                <Trans k="areas.access.inherited_from">
+                    <template #area>
                         <Link
                             :href="`/topics/${group.topic.id}?tab=access`"
                             class="text-link underline"
@@ -210,12 +208,12 @@ function inheritedGroups() {
                         <span
                             v-if="row.is_you"
                             class="ml-1 rounded-full bg-info-soft px-2 py-0.5 text-xs text-info-fg"
-                            >{{ $t("topics.access.you") }}</span
+                            >{{ $t("areas.access.you") }}</span
                         >
                         <span
                             v-if="!row.user.active"
                             class="ml-1 rounded-full bg-warning-soft px-2 py-0.5 text-xs text-warning-fg"
-                            >{{ $t("topics.access.inactive_account") }}</span
+                            >{{ $t("areas.access.inactive_account") }}</span
                         >
                     </p>
                     <p class="text-sm text-fg">{{ row.role.name }}</p>
@@ -225,8 +223,8 @@ function inheritedGroups() {
                     />
                     <p class="mt-1.5 text-xs text-fg-muted">
                         {{
-                            $t("topics.access.change_it_at", {
-                                topic: group.topic.title,
+                            $t("areas.access.change_it_at", {
+                                area: group.topic.title,
                             })
                         }}
                     </p>
@@ -247,7 +245,7 @@ function inheritedGroups() {
                     aria-hidden="true"
                 />
                 {{
-                    $t("topics.access.ended_roles", {
+                    $t("areas.access.ended_roles", {
                         count: access.history.length,
                     })
                 }}
@@ -257,7 +255,7 @@ function inheritedGroups() {
                     <span class="font-medium text-fg">{{ row.user.name }}</span>
                     · {{ row.role.name }} ·
                     {{
-                        $t("topics.access.period", {
+                        $t("areas.access.period", {
                             from: formatDate(row.started_at),
                             to: formatDate(row.ended_at),
                         })
@@ -267,18 +265,18 @@ function inheritedGroups() {
                         }}<template v-if="row.ended_by">
                             ·
                             {{
-                                $t("topics.access.ended_by", {
+                                $t("areas.access.ended_by", {
                                     name: row.ended_by,
                                 })
                             }}</template
                         >
                         <template v-if="row.replaced_by_assignment_id">
-                            {{ $t("topics.access.handed_over") }}</template
+                            {{ $t("areas.access.handed_over") }}</template
                         >
                         <template v-if="row.granted_by">
                             ·
                             {{
-                                $t("topics.access.originally_given_by", {
+                                $t("areas.access.originally_given_by", {
                                     name: row.granted_by,
                                 })
                             }}</template

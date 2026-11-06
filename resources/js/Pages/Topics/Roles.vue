@@ -10,7 +10,7 @@ import RoleFormDialog from "../../Components/Topics/RoleFormDialog.vue";
 import Trans from "../../Components/Trans.vue";
 import { t } from "../../i18n.js";
 
-defineOptions({ layout: { title: t("topics.roles.roles") } });
+defineOptions({ layout: { title: t("areas.roles.roles") } });
 
 defineProps({
     roles: { type: Array, required: true },
@@ -44,24 +44,24 @@ function setArchived(role, archived) {
             class="inline-flex items-center gap-1 text-sm text-fg-muted hover:text-fg hover:underline"
         >
             <ArrowLeft class="size-4" :stroke-width="1.75" aria-hidden="true" />
-            {{ $t("topics.roles.back_to_topics") }}
+            {{ $t("areas.roles.back_to_areas") }}
         </Link>
 
         <div class="flex flex-wrap items-start justify-between gap-3">
             <p class="max-w-2xl text-sm text-fg-muted">
-                {{ $t("topics.roles.a_role_is_a_name") }}
+                {{ $t("areas.roles.a_role_is_a_name") }}
             </p>
             <Btn variant="primary" @click="editing = 'new'">
                 <Plus class="size-4" :stroke-width="2" aria-hidden="true" />
-                {{ $t("topics.roles.new_role") }}
+                {{ $t("areas.roles.new_role") }}
             </Btn>
         </div>
 
         <EmptyState
             v-if="roles.length === 0"
-            :title="$t('topics.roles.no_roles_yet')"
+            :title="$t('areas.roles.no_roles_yet')"
         >
-            {{ $t("topics.roles.create_the_first_role_then") }}
+            {{ $t("areas.roles.create_the_first_role_then") }}
         </EmptyState>
 
         <ul v-else class="space-y-3">
@@ -77,7 +77,7 @@ function setArchived(role, archived) {
                             <span
                                 v-if="role.archived"
                                 class="ml-2 rounded-full bg-surface-muted px-2 py-0.5 text-xs font-normal text-fg-muted"
-                                >{{ $t("topics.roles.archived") }}</span
+                                >{{ $t("areas.roles.archived") }}</span
                             >
                         </h2>
                         <p
@@ -90,15 +90,15 @@ function setArchived(role, archived) {
                             {{
                                 role.global
                                     ? $t(
-                                          "topics.roles.global_can_be_used_anywhere",
+                                          "areas.roles.global_can_be_used_anywhere",
                                       )
-                                    : $t("topics.roles.only_in_scope", {
+                                    : $t("areas.roles.only_in_scope", {
                                           scope: role.scope.title,
                                       })
                             }}
                             ·
                             {{
-                                $t("topics.roles.active_assignments", {
+                                $t("areas.roles.active_assignments", {
                                     count: role.active_assignments,
                                 })
                             }}
@@ -112,14 +112,14 @@ function setArchived(role, archived) {
                             v-if="!role.archived"
                             small
                             @click="archiving = role"
-                            >{{ $t("topics.roles.archive") }}</Btn
+                            >{{ $t("areas.roles.archive") }}</Btn
                         >
                         <Btn
                             v-else
                             small
                             :loading="busy"
                             @click="setArchived(role, false)"
-                            >{{ $t("topics.roles.restore") }}</Btn
+                            >{{ $t("areas.roles.restore") }}</Btn
                         >
                     </div>
                 </div>
@@ -142,12 +142,12 @@ function setArchived(role, archived) {
 
         <Modal
             v-if="archiving"
-            :title="$t('topics.roles.archive_this_role')"
+            :title="$t('areas.roles.archive_this_role')"
             @close="archiving = null"
         >
             <p class="text-sm text-fg">
                 <Trans
-                    k="topics.roles.archive_confirm"
+                    k="areas.roles.archive_confirm"
                     :params="{ count: archiving.active_assignments }"
                 >
                     <template #name>
@@ -161,7 +161,7 @@ function setArchived(role, archived) {
                     variant="danger"
                     :loading="busy"
                     @click="setArchived(archiving, true)"
-                    >{{ $t("topics.roles.archive_role") }}</Btn
+                    >{{ $t("areas.roles.archive_role") }}</Btn
                 >
             </template>
         </Modal>

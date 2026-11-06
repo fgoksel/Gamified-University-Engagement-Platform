@@ -60,7 +60,7 @@ class PointLedger
         }
 
         if ($this->access->isHidden($event->owningTopic)) {
-            return new EventActionRefused('topic_archived', __('ledger.the_topic_of_this_event'), 409);
+            return new EventActionRefused('topic_archived', __('ledger.the_area_of_this_event'), 409);
         }
 
         if (now()->lt($event->event_starts_at)) {

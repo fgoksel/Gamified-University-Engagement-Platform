@@ -65,22 +65,22 @@ function execute() {
     <!-- Checking -->
     <Modal
         v-if="stage === 'checking'"
-        :title="$t('topics.delete.delete_topic')"
+        :title="$t('areas.delete.delete_area')"
         @close="emit('close')"
     >
         <p class="text-sm text-fg-muted" role="status">
-            {{ $t("topics.delete.checking", { title: topic.title }) }}
+            {{ $t("areas.delete.checking", { title: topic.title }) }}
         </p>
     </Modal>
 
     <!-- Not allowed -->
     <Modal
         v-else-if="stage === 'blocked'"
-        :title="$t('topics.delete.this_topic_cannot_be_deleted')"
+        :title="$t('areas.delete.this_area_cannot_be_deleted')"
         @close="emit('close')"
     >
         <p class="text-sm text-fg">
-            <Trans k="topics.delete.used_so_archive">
+            <Trans k="areas.delete.used_so_archive">
                 <template #title>
                     <strong>{{ topic.title }}</strong>
                 </template>
@@ -101,7 +101,7 @@ function execute() {
                 v-if="canArchive && !topic.archived"
                 variant="primary"
                 @click="emit('archive')"
-                >{{ $t("topics.delete.archive_instead") }}</Btn
+                >{{ $t("areas.delete.archive_instead") }}</Btn
             >
         </template>
     </Modal>
@@ -109,29 +109,29 @@ function execute() {
     <!-- First confirmation -->
     <Modal
         v-else-if="stage === 'confirm1'"
-        :title="$t('topics.delete.delete_this_topic')"
+        :title="$t('areas.delete.delete_this_area')"
         danger
         :busy="busy"
         @close="emit('close')"
     >
         <p class="text-base text-fg">
-            <Trans k="topics.delete.confirm">
+            <Trans k="areas.delete.confirm">
                 <template #title>
                     <strong>{{ topic.title }}</strong>
                 </template>
             </Trans>
         </p>
         <ul class="mt-3 list-disc space-y-1 pl-5 text-sm text-fg-muted">
-            <li>{{ $t("topics.delete.it_is_empty_and_has") }}</li>
-            <li>{{ $t("topics.delete.deleting_removes_it_for_good") }}</li>
+            <li>{{ $t("areas.delete.it_is_empty_and_has") }}</li>
+            <li>{{ $t("areas.delete.deleting_removes_it_for_good") }}</li>
             <li>
-                {{ $t("topics.delete.if_you_only_want") }}
+                {{ $t("areas.delete.if_you_only_want") }}
             </li>
         </ul>
         <template #footer>
             <Btn @click="emit('close')">{{ $t("common.cancel") }}</Btn>
             <Btn variant="destructive" @click="stage = 'confirm2'">{{
-                $t("topics.delete.yes_continue")
+                $t("areas.delete.yes_continue")
             }}</Btn>
         </template>
     </Modal>
@@ -139,7 +139,7 @@ function execute() {
     <!-- Second, red warning -->
     <Modal
         v-else
-        :title="$t('topics.delete.final_warning_permanent_deletion')"
+        :title="$t('areas.delete.final_warning_permanent_deletion')"
         danger
         :busy="busy"
         @close="emit('close')"
@@ -156,16 +156,16 @@ function execute() {
             />
             <div class="text-sm">
                 <p class="font-semibold">
-                    {{ $t("topics.delete.this_is_important_topics_should") }}
+                    {{ $t("areas.delete.this_is_important_areas_should") }}
                 </p>
                 <p class="mt-1">
-                    {{ $t("topics.delete.permanent", { title: topic.title }) }}
+                    {{ $t("areas.delete.permanent", { title: topic.title }) }}
                 </p>
             </div>
         </div>
         <div class="mt-4">
             <label for="confirm-title" class="block text-sm font-medium text-fg"
-                ><Trans k="topics.delete.type_to_confirm">
+                ><Trans k="areas.delete.type_to_confirm">
                     <template #title>
                         <strong>{{ topic.title }}</strong>
                     </template>
@@ -200,7 +200,7 @@ function execute() {
                 :loading="busy"
                 :disabled="!matches"
                 @click="execute"
-                >{{ $t("topics.delete.delete_permanently") }}</Btn
+                >{{ $t("areas.delete.delete_permanently") }}</Btn
             >
         </template>
     </Modal>

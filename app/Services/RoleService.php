@@ -87,7 +87,7 @@ class RoleService
 
                 if ($usage['assignments'] > 0 && ! filter_var($data['acknowledge_affected'] ?? false, FILTER_VALIDATE_BOOLEAN)) {
                     throw ValidationException::withMessages([
-                        'capabilities' => __('topics.role_service.confirm_change', ['assignments' => $usage['assignments'], 'people' => $usage['people']]),
+                        'capabilities' => __('areas.role_service.confirm_change', ['assignments' => $usage['assignments'], 'people' => $usage['people']]),
                     ]);
                 }
             }
@@ -149,9 +149,9 @@ class RoleService
             'delegable' => ['array'],
             'delegable.*' => ['string', 'in:'.implode(',', Capability::values())],
         ], [
-            'name.required' => __('topics.role_service.give_the_role_a_name'),
-            'capabilities.required' => __('topics.role_service.choose_at_least_one_thing'),
-            'capabilities.min' => __('topics.role_service.choose_at_least_one_thing'),
+            'name.required' => __('areas.role_service.give_the_role_a_name'),
+            'capabilities.required' => __('areas.role_service.choose_at_least_one_thing'),
+            'capabilities.min' => __('areas.role_service.choose_at_least_one_thing'),
         ])->validate();
 
         $capabilities = Capability::normalise($clean['capabilities']);
@@ -165,14 +165,14 @@ class RoleService
             if ($missing !== []) {
                 $names = implode(', ', array_map(fn (string $m) => Capability::from($m)->label(), $missing));
                 throw ValidationException::withMessages([
-                    'capabilities' => __('topics.role_service.also_needs', ['power' => Capability::from($value)->label(), 'needs' => $names]),
+                    'capabilities' => __('areas.role_service.also_needs', ['power' => Capability::from($value)->label(), 'needs' => $names]),
                 ]);
             }
         }
 
         if (array_diff($delegable, $capabilities) !== []) {
             throw ValidationException::withMessages([
-                'delegable' => __('topics.role_service.a_role_can_only_pass'),
+                'delegable' => __('areas.role_service.a_role_can_only_pass'),
             ]);
         }
 

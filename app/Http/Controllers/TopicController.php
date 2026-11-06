@@ -87,7 +87,7 @@ class TopicController extends Controller
     {
         $topic = $this->topics->create($request->user(), null, $request->only(['title', 'code', 'description']));
 
-        return redirect()->route('topics.show', $topic)->with('success', __('topics.flash.created', ['title' => $topic->title]));
+        return redirect()->route('topics.show', $topic)->with('success', __('areas.flash.created', ['title' => $topic->title]));
     }
 
     public function storeChild(Request $request, Topic $topic): RedirectResponse
@@ -96,7 +96,7 @@ class TopicController extends Controller
 
         $child = $this->topics->create($request->user(), $topic, $request->only(['title', 'code', 'description']));
 
-        return redirect()->route('topics.show', $child)->with('success', __('topics.flash.added_under', ['title' => $child->title, 'parent' => $topic->title]));
+        return redirect()->route('topics.show', $child)->with('success', __('areas.flash.added_under', ['title' => $child->title, 'parent' => $topic->title]));
     }
 
     public function update(Request $request, Topic $topic): RedirectResponse
@@ -105,7 +105,7 @@ class TopicController extends Controller
 
         $this->topics->update($request->user(), $topic, $request->only(['title', 'code', 'description']));
 
-        return redirect()->route('topics.show', $topic)->with('success', __('topics.flash.topic_saved'));
+        return redirect()->route('topics.show', $topic)->with('success', __('areas.flash.area_saved'));
     }
 
     /**
@@ -119,10 +119,10 @@ class TopicController extends Controller
         $this->topics->archive($request->user(), $topic);
 
         // Tell the person what happened to the events in the branch (Task #66).
-        $message = __('topics.flash.archived', ['title' => $topic->title]);
+        $message = __('areas.flash.archived', ['title' => $topic->title]);
 
         if ($frozen > 0) {
-            $message .= ' '.trans_choice('topics.flash.events_frozen', $frozen);
+            $message .= ' '.trans_choice('areas.flash.events_frozen', $frozen);
         }
 
         return $this->after($request, $topic)->with('success', $message);
@@ -150,7 +150,7 @@ class TopicController extends Controller
 
         $this->topics->restore($request->user(), $topic);
 
-        return redirect()->route('topics.show', $topic)->with('success', __('topics.flash.restored', ['title' => $topic->title]));
+        return redirect()->route('topics.show', $topic)->with('success', __('areas.flash.restored', ['title' => $topic->title]));
     }
 
     /**
@@ -171,13 +171,13 @@ class TopicController extends Controller
         $data = $request->validate([
             'token' => ['required', 'string'],
             'confirm_title' => ['required', 'string'],
-        ], ['confirm_title.required' => __('topics.flash.type_the_topic_name')]);
+        ], ['confirm_title.required' => __('areas.flash.type_the_area_name')]);
 
         abort_unless($this->access->isSystemAdmin($request->user()), 404);
 
         $this->topics->executeDelete($request->user(), $data['token'], $data['confirm_title']);
 
-        return redirect()->route('topics.index', ['start' => 1])->with('success', __('topics.flash.the_topic_was_permanently_deleted'));
+        return redirect()->route('topics.index', ['start' => 1])->with('success', __('areas.flash.the_area_was_permanently_deleted'));
     }
 
     /**
@@ -198,7 +198,7 @@ class TopicController extends Controller
 
         $moved = $this->topics->move($request->user(), $topic, $this->destination($request));
 
-        return redirect()->route('topics.show', $moved)->with('success', __('topics.flash.moved', ['title' => $moved->title]));
+        return redirect()->route('topics.show', $moved)->with('success', __('areas.flash.moved', ['title' => $moved->title]));
     }
 
     /**

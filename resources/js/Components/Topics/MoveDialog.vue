@@ -25,7 +25,7 @@ const error = ref("");
 
 const destinationTitle = computed(() =>
     destination.value === null
-        ? t("topics.move.the_top_level")
+        ? t("areas.move.the_top_level")
         : destination.value?.title,
 );
 
@@ -76,14 +76,14 @@ function submit() {
 
 <template>
     <Modal
-        :title="$t('topics.move.move_topic')"
+        :title="$t('areas.move.move_area')"
         wide
         :busy="busy"
         @close="emit('close')"
     >
         <div class="space-y-4">
             <p class="text-sm text-fg">
-                <Trans k="topics.move.intro">
+                <Trans k="areas.move.intro">
                     <template #title>
                         <strong>{{ topic.title }}</strong>
                     </template>
@@ -94,14 +94,14 @@ function submit() {
                 <label
                     for="destination-search"
                     class="block text-sm font-medium text-fg"
-                    >{{ $t("topics.move.new_place") }}</label
+                    >{{ $t("areas.move.new_place") }}</label
                 >
                 <input
                     id="destination-search"
                     v-model="term"
                     type="search"
                     autocomplete="off"
-                    :placeholder="$t('topics.move.search_for_the_topic')"
+                    :placeholder="$t('areas.move.search_for_the_area')"
                     class="mt-1.5 block w-full rounded-control border border-line bg-surface px-3 py-2 text-fg focus:outline-2 focus:outline-offset-0 focus:outline-ring"
                     data-autofocus
                     @input="search"
@@ -110,7 +110,7 @@ function submit() {
                 <ul
                     v-if="results.length"
                     class="mt-1 divide-y divide-line rounded-control border border-line"
-                    :aria-label="$t('topics.move.possible_places')"
+                    :aria-label="$t('areas.move.possible_places')"
                 >
                     <li v-for="place in results" :key="place.id">
                         <button
@@ -125,7 +125,7 @@ function submit() {
                                 v-if="place.trail.length"
                                 class="text-fg-muted"
                                 >{{
-                                    $t("topics.explorer.in_trail", {
+                                    $t("areas.explorer.in_trail", {
                                         trail: place.trail.join(" › "),
                                     })
                                 }}</span
@@ -139,13 +139,13 @@ function submit() {
                     class="mt-2 text-sm text-link underline"
                     @click="choose(null)"
                 >
-                    {{ $t("topics.move.make_it_a_top_level") }}
+                    {{ $t("areas.move.make_it_a_top_level") }}
                 </button>
             </div>
 
             <div v-else class="space-y-3">
                 <p class="text-sm text-fg">
-                    <Trans k="topics.move.new_place_is">
+                    <Trans k="areas.move.new_place_is">
                         <template #place>
                             <strong>{{ destinationTitle }}</strong>
                         </template>
@@ -158,7 +158,7 @@ function submit() {
                             preview = null;
                         "
                     >
-                        {{ $t("topics.move.change") }}
+                        {{ $t("areas.move.change") }}
                     </button>
                 </p>
 
@@ -175,27 +175,27 @@ function submit() {
                     <ul v-else class="list-disc space-y-1 pl-5 text-sm text-fg">
                         <li>
                             {{
-                                $t("topics.move.topics_move", {
+                                $t("areas.move.areas_move", {
                                     count: preview.topics_moved,
                                 })
                             }}
                         </li>
                         <li>
                             {{
-                                $t("topics.move.gain", {
+                                $t("areas.move.gain", {
                                     count: preview.gain_people,
                                 })
                             }}
                         </li>
                         <li>
                             {{
-                                $t("topics.move.lose", {
+                                $t("areas.move.lose", {
                                     count: preview.lose_people,
                                 })
                             }}
                         </li>
                         <li>
-                            {{ $t("topics.move.roles_given_on_these_topics") }}
+                            {{ $t("areas.move.roles_given_on_these_areas") }}
                         </li>
                     </ul>
                 </template>
@@ -219,7 +219,7 @@ function submit() {
                 :loading="busy"
                 :disabled="!preview || preview.blocked.length > 0"
                 @click="submit"
-                >{{ $t("topics.move.move_topic") }}</Btn
+                >{{ $t("areas.move.move_area") }}</Btn
             >
         </template>
     </Modal>

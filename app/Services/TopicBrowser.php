@@ -241,10 +241,10 @@ class TopicBrowser
     private function noEventsMessage(User $user, Topic $topic, string $when): string
     {
         if (! $this->catalog->inBranch($user, $topic)->exists()) {
-            return __('topics.browser.no_events_yet');
+            return __('areas.browser.no_events_yet');
         }
 
-        return $when === 'past' ? __('topics.browser.no_past_events') : __('topics.browser.no_upcoming_events');
+        return $when === 'past' ? __('areas.browser.no_past_events') : __('areas.browser.no_upcoming_events');
     }
 
     /**
@@ -455,7 +455,7 @@ class TopicBrowser
                 ...$this->roleSummary($role),
                 'scope' => $role->topic_id === null ? null : [
                     'id' => $scopeVisible ? $role->topic_id : null,
-                    'title' => $scopeVisible ? $role->topic?->title : __('topics.browser.a_branch_above_your_access'),
+                    'title' => $scopeVisible ? $role->topic?->title : __('areas.browser.a_branch_above_your_access'),
                 ],
                 'active_assignments' => $role->active_assignments,
                 'editable' => $this->canEditRole($user, $role),

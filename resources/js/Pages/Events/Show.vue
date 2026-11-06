@@ -163,7 +163,7 @@ const showActions = computed(
                     <dd v-if="event.audience_topic" class="pl-6 text-fg-muted">
                         {{
                             $t("events.show.open_to", {
-                                topic: event.audience_topic,
+                                area: event.audience_topic,
                             })
                         }}
                     </dd>

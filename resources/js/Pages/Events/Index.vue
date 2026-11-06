@@ -133,7 +133,7 @@ function pageLabel(label) {
             <div class="grid gap-3 sm:grid-cols-3">
                 <label class="block text-sm">
                     <span class="font-medium text-fg">{{
-                        $t("events.index.topic_or_branch")
+                        $t("events.index.area_or_branch")
                     }}</span>
                     <select
                         :value="filters.topic ?? ''"
@@ -146,7 +146,7 @@ function pageLabel(label) {
                         "
                     >
                         <option value="">
-                            {{ $t("events.index.all_topics") }}
+                            {{ $t("events.index.all_areas") }}
                         </option>
                         <option
                             v-for="topic in topicOptions"
@@ -277,7 +277,7 @@ function pageLabel(label) {
             "
         >
             <template v-if="isFiltered()">
-                {{ $t("events.index.try_another_search_topic_category") }}
+                {{ $t("events.index.try_another_search_area_category") }}
             </template>
             <template v-else-if="filters.when === 'past'">
                 {{ $t("events.index.events_that_have_ended_will") }}

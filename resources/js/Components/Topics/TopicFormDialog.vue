@@ -24,10 +24,10 @@ const form = useForm({
 });
 
 const heading = computed(() => {
-    if (props.mode === "edit") return t("topics.form.edit_topic");
+    if (props.mode === "edit") return t("areas.form.edit_area");
     return props.parent
-        ? t("topics.form.new_topic")
-        : t("topics.form.new_top_level_topic");
+        ? t("areas.form.new_area")
+        : t("areas.form.new_top_level_area");
 });
 
 const url = computed(() => {
@@ -50,29 +50,29 @@ function submit() {
                 class="rounded-control bg-surface-muted px-3 py-2 text-sm text-fg-muted"
             >
                 <template v-if="parent">
-                    <Trans k="topics.form.adding_under">
+                    <Trans k="areas.form.adding_under">
                         <template #parent>
                             <strong class="text-fg">{{ parent.title }}</strong>
                         </template>
                     </Trans>
                 </template>
                 <template v-else>
-                    {{ $t("topics.form.a_top_level_topic_has") }}
+                    {{ $t("areas.form.a_top_level_area_has") }}
                 </template>
             </p>
 
             <TextField
                 v-model="form.title"
-                :label="$t('topics.form.name')"
+                :label="$t('areas.form.name')"
                 required
                 :error="form.errors.title"
                 data-autofocus
             />
             <TextField
                 v-model="form.code"
-                :label="$t('topics.form.code')"
+                :label="$t('areas.form.code')"
                 optional
-                :hint="$t('topics.form.a_short_reference_such')"
+                :hint="$t('areas.form.a_short_reference_such')"
                 :error="form.errors.code"
             />
 
@@ -80,7 +80,7 @@ function submit() {
                 <label
                     for="topic-description"
                     class="block text-sm font-medium text-fg"
-                    >{{ $t("topics.form.description") }}
+                    >{{ $t("areas.form.description") }}
                     <span class="font-normal text-fg-muted">{{
                         $t("fields.optional")
                     }}</span></label
@@ -118,8 +118,8 @@ function submit() {
             >
                 {{
                     mode === "edit"
-                        ? $t("topics.form.save_topic")
-                        : $t("topics.form.create_topic")
+                        ? $t("areas.form.save_area")
+                        : $t("areas.form.create_area")
                 }}
             </Btn>
         </template>

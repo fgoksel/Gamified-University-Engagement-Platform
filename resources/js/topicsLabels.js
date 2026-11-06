@@ -2,11 +2,11 @@ import { t, tc } from "./i18n.js";
 // Plain-language names of the capabilities in the registry
 // (App\Enums\Capability). The server sends the same list to the role builder.
 export const capabilityLabels = {
-    "topic.view": t("capabilities.view_topics"),
-    "topic.create": t("capabilities.add_topics"),
-    "topic.edit": t("capabilities.edit_any_topic"),
-    "topic.organise": t("capabilities.move_topics"),
-    "topic.archive": t("capabilities.archive_topics"),
+    "topic.view": t("capabilities.view_areas"),
+    "topic.create": t("capabilities.add_areas"),
+    "topic.edit": t("capabilities.edit_any_area"),
+    "topic.organise": t("capabilities.move_areas"),
+    "topic.archive": t("capabilities.archive_areas"),
     "access.view": t("capabilities.see_who_has_access"),
     "access.assign": t("capabilities.give_people_roles"),
     "access.end": t("capabilities.end_and_replace_roles"),
@@ -42,12 +42,12 @@ export function formatDate(iso) {
     });
 }
 
-// "1 topic", "2 topics"
-export const topicCount = (count) => tc("topics.count.topic", count);
+// "1 area", "2 areas"
+export const topicCount = (count) => tc("areas.count.area", count);
 
 // "1 person", "2 people"
-export const personCount = (count) => tc("topics.count.person", count);
+export const personCount = (count) => tc("areas.count.person", count);
 
 // "1 role assignment", "2 role assignments"
 export const assignmentCount = (count) =>
-    tc("topics.count.role_assignment", count);
+    tc("areas.count.role_assignment", count);

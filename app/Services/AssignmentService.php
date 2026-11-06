@@ -68,13 +68,13 @@ class AssignmentService
                 Gate::forUser($actor)->authorize($ability, [RoleAssignment::class, $topic, $role, $recipient]);
 
                 if ($role->isArchived()) {
-                    throw ValidationException::withMessages(['role_definition_id' => __('topics.assignment.this_role_is_archived')]);
+                    throw ValidationException::withMessages(['role_definition_id' => __('areas.assignment.this_role_is_archived')]);
                 }
 
                 $this->assertEligibleRecipient($recipient);
 
                 if (RoleAssignment::query()->active()->where(['user_id' => $recipient->id, 'role_definition_id' => $role->id, 'topic_id' => $topic->id])->exists()) {
-                    throw ValidationException::withMessages(['user_id' => __('topics.assignment.person_has_role', ['name' => $recipient->name])]);
+                    throw ValidationException::withMessages(['user_id' => __('areas.assignment.person_has_role', ['name' => $recipient->name])]);
                 }
 
                 $assignment = $this->create($actor, $topic, $role, $recipient, $semesterId === null ? [] : ['semester_id' => $semesterId], $authority);
@@ -84,7 +84,7 @@ class AssignmentService
                 return $assignment;
             });
         } catch (UniqueConstraintViolationException) {
-            throw ValidationException::withMessages(['user_id' => __('topics.assignment.this_person_already_has')]);
+            throw ValidationException::withMessages(['user_id' => __('areas.assignment.this_person_already_has')]);
         }
     }
 
@@ -100,11 +100,11 @@ class AssignmentService
         $reason = trim($reason);
 
         if ($reason === '') {
-            throw ValidationException::withMessages(['reason' => __('topics.assignment.give_a_reason')]);
+            throw ValidationException::withMessages(['reason' => __('areas.assignment.give_a_reason')]);
         }
 
         if (mb_strlen($reason) > 500) {
-            throw ValidationException::withMessages(['reason' => __('topics.assignment.the_reason_can')]);
+            throw ValidationException::withMessages(['reason' => __('areas.assignment.the_reason_can')]);
         }
 
         // Always work on the stored row, so the version in the token is the real one.
@@ -143,11 +143,11 @@ class AssignmentService
                 $this->access->flush();
 
                 if (! $assignment->isActive()) {
-                    throw ValidationException::withMessages(['confirmation' => __('topics.assignment.this_role_was_already_ended')]);
+                    throw ValidationException::withMessages(['confirmation' => __('areas.assignment.this_role_was_already_ended')]);
                 }
 
                 if ($assignment->version !== $payload['version']) {
-                    throw ValidationException::withMessages(['confirmation' => __('topics.assignment.this_role_changed_after')]);
+                    throw ValidationException::withMessages(['confirmation' => __('areas.assignment.this_role_changed_after')]);
                 }
 
                 $assignment->load(['role', 'topic', 'user']);
@@ -185,7 +185,7 @@ class AssignmentService
                 return ['ended' => $assignment, 'replacement' => $new];
             });
         } catch (UniqueConstraintViolationException) {
-            throw ValidationException::withMessages(['confirmation' => __('topics.assignment.this_change_was_already_made')]);
+            throw ValidationException::withMessages(['confirmation' => __('areas.assignment.this_change_was_already_made')]);
         }
     }
 
@@ -198,7 +198,7 @@ class AssignmentService
     private function check(User $actor, RoleAssignment $assignment, ?User $replacement): void
     {
         if (! $assignment->isActive()) {
-            throw ValidationException::withMessages(['confirmation' => __('topics.assignment.this_role_was_already_ended_2')]);
+            throw ValidationException::withMessages(['confirmation' => __('areas.assignment.this_role_was_already_ended_2')]);
         }
 
         if ($replacement === null) {
@@ -210,7 +210,7 @@ class AssignmentService
         Gate::forUser($actor)->authorize('replace', [$assignment, $replacement]);
 
         if ($replacement->id === $assignment->user_id) {
-            throw ValidationException::withMessages(['replacement_id' => __('topics.assignment.choose_a_different_person')]);
+            throw ValidationException::withMessages(['replacement_id' => __('areas.assignment.choose_a_different_person')]);
         }
 
         $this->assertEligibleRecipient($replacement, 'replacement_id');
@@ -220,7 +220,7 @@ class AssignmentService
             'role_definition_id' => $assignment->role_definition_id,
             'topic_id' => $assignment->topic_id,
         ])->exists()) {
-            throw ValidationException::withMessages(['replacement_id' => __('topics.assignment.person_has_role', ['name' => $replacement->name])]);
+            throw ValidationException::withMessages(['replacement_id' => __('areas.assignment.person_has_role', ['name' => $replacement->name])]);
         }
     }
 
@@ -259,7 +259,7 @@ class AssignmentService
     private function assertEligibleRecipient(User $user, string $field = 'user_id'): void
     {
         if ($user->status !== 'active') {
-            throw ValidationException::withMessages([$field => __('topics.assignment.only_active_accounts_can')]);
+            throw ValidationException::withMessages([$field => __('areas.assignment.only_active_accounts_can')]);
         }
     }
 
@@ -273,11 +273,11 @@ class AssignmentService
         try {
             $payload = json_decode(Crypt::decryptString($token), true, 4, JSON_THROW_ON_ERROR);
         } catch (DecryptException|\JsonException) {
-            throw ValidationException::withMessages(['confirmation' => __('topics.assignment.the_confirmation_is_not_valid')]);
+            throw ValidationException::withMessages(['confirmation' => __('areas.assignment.the_confirmation_is_not_valid')]);
         }
 
         if (($payload['actor'] ?? null) !== $actor->id || ($payload['expires'] ?? 0) < now()->timestamp) {
-            throw ValidationException::withMessages(['confirmation' => __('topics.assignment.the_confirmation_expired_nothing_was')]);
+            throw ValidationException::withMessages(['confirmation' => __('areas.assignment.the_confirmation_expired_nothing_was')]);
         }
 
         return $payload;
@@ -297,8 +297,8 @@ class AssignmentService
             'topic_id' => $assignment->topic_id,
             'replacement' => $replacement?->name,
             'reason' => $reason,
-            'remains' => __('topics.assignment.the_topic_everything_below'),
-            'loses' => __('topics.assignment.the_person_loses_only'),
+            'remains' => __('areas.assignment.the_area_everything_below'),
+            'loses' => __('areas.assignment.the_person_loses_only'),
         ];
     }
 

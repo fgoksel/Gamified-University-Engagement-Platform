@@ -67,12 +67,12 @@ function destroy() {
         <div class="flex flex-wrap items-start justify-between gap-3">
             <div class="min-w-0">
                 <h3 class="text-base font-semibold text-fg">
-                    {{ $t("topics.leaderboards_panel.leaderboards") }}
+                    {{ $t("areas.leaderboards_panel.leaderboards") }}
                 </h3>
                 <p class="mt-1 text-sm text-fg-muted">
                     {{
                         $t(
-                            "topics.leaderboards_panel.a_leaderboard_here_ranks_students",
+                            "areas.leaderboards_panel.a_leaderboard_here_ranks_students",
                             { title: topic.title },
                         )
                     }}
@@ -80,7 +80,7 @@ function destroy() {
             </div>
             <Btn v-if="manage" variant="primary" @click="creating = true">
                 <Plus class="size-4" :stroke-width="2" aria-hidden="true" />
-                {{ $t("topics.leaderboards_panel.new_leaderboard") }}
+                {{ $t("areas.leaderboards_panel.new_leaderboard") }}
             </Btn>
         </div>
 
@@ -105,16 +105,16 @@ function destroy() {
                             tone="info"
                             :icon="Globe"
                             >{{
-                                $t("topics.leaderboards_panel.published")
+                                $t("areas.leaderboards_panel.published")
                             }}</StatusChip
                         >
                         <StatusChip v-else :icon="Users">{{
-                            $t("topics.leaderboards_panel.area_only")
+                            $t("areas.leaderboards_panel.area_only")
                         }}</StatusChip>
                     </div>
                     <p class="text-sm text-fg-muted">
                         {{
-                            $t("topics.leaderboards_panel.shows", {
+                            $t("areas.leaderboards_panel.shows", {
                                 board: columnNames(board),
                             })
                         }}
@@ -122,7 +122,7 @@ function destroy() {
                 </div>
                 <div v-if="manage" class="flex flex-wrap gap-2">
                     <Btn small @click="editing = board">
-                        {{ $t("topics.leaderboards_panel.edit")
+                        {{ $t("areas.leaderboards_panel.edit")
                         }}<span class="sr-only"> {{ board.name }}</span>
                     </Btn>
                     <Btn
@@ -131,15 +131,15 @@ function destroy() {
                         :disabled="busy"
                         @click="unpublish(board)"
                     >
-                        {{ $t("topics.leaderboards_panel.unpublish")
+                        {{ $t("areas.leaderboards_panel.unpublish")
                         }}<span class="sr-only"> {{ board.name }}</span>
                     </Btn>
                     <Btn v-else small @click="publishing = board">
-                        {{ $t("topics.leaderboards_panel.publish")
+                        {{ $t("areas.leaderboards_panel.publish")
                         }}<span class="sr-only"> {{ board.name }}</span>
                     </Btn>
                     <Btn small @click="deleting = board">
-                        {{ $t("topics.leaderboards_panel.delete")
+                        {{ $t("areas.leaderboards_panel.delete")
                         }}<span class="sr-only"> {{ board.name }}</span>
                     </Btn>
                 </div>
@@ -149,7 +149,7 @@ function destroy() {
             v-else
             class="rounded-card border border-dashed border-line px-4 py-6 text-center text-sm text-fg-muted"
         >
-            {{ $t("topics.leaderboards_panel.no_leaderboards_here_yet") }}
+            {{ $t("areas.leaderboards_panel.no_leaderboards_here_yet") }}
         </p>
 
         <LeaderboardFormDialog
@@ -166,52 +166,52 @@ function destroy() {
 
         <Modal
             v-if="publishing"
-            :title="$t('topics.leaderboards_panel.publish_this_leaderboard')"
+            :title="$t('areas.leaderboards_panel.publish_this_leaderboard')"
             :busy="busy"
             @close="publishing = null"
         >
             <p class="text-base text-fg">
-                {{ $t("topics.leaderboards_panel.anyone_can_then_see") }}
+                {{ $t("areas.leaderboards_panel.anyone_can_then_see") }}
                 <strong>{{ publishing.name }}</strong
-                >{{ $t("topics.leaderboards_panel.without_signing_in_and_it") }}
+                >{{ $t("areas.leaderboards_panel.without_signing_in_and_it") }}
             </p>
             <p class="mt-3 text-sm text-fg" data-test="publish-warning">
                 {{ publishWarning }}
             </p>
             <p class="mt-3 text-sm text-fg-muted">
                 {{
-                    $t("topics.leaderboards_panel.it_shows_you_can_unpublish", {
+                    $t("areas.leaderboards_panel.it_shows_you_can_unpublish", {
                         publishing: columnNames(publishing),
                     })
                 }}
             </p>
             <template #footer>
                 <Btn :disabled="busy" @click="publishing = null">{{
-                    $t("topics.leaderboards_panel.cancel")
+                    $t("areas.leaderboards_panel.cancel")
                 }}</Btn>
                 <Btn variant="primary" :loading="busy" @click="publish">{{
-                    $t("topics.leaderboards_panel.publish_leaderboard")
+                    $t("areas.leaderboards_panel.publish_leaderboard")
                 }}</Btn>
             </template>
         </Modal>
 
         <Modal
             v-if="deleting"
-            :title="$t('topics.leaderboards_panel.delete_this_leaderboard')"
+            :title="$t('areas.leaderboards_panel.delete_this_leaderboard')"
             danger
             :busy="busy"
             @close="deleting = null"
         >
             <p class="text-base text-fg">
                 <strong>{{ deleting.name }}</strong>
-                {{ $t("topics.leaderboards_panel.goes_away_for_everybody_no") }}
+                {{ $t("areas.leaderboards_panel.goes_away_for_everybody_no") }}
             </p>
             <template #footer>
                 <Btn :disabled="busy" @click="deleting = null">{{
-                    $t("topics.leaderboards_panel.cancel_2")
+                    $t("areas.leaderboards_panel.cancel_2")
                 }}</Btn>
                 <Btn variant="destructive" :loading="busy" @click="destroy">{{
-                    $t("topics.leaderboards_panel.delete_leaderboard")
+                    $t("areas.leaderboards_panel.delete_leaderboard")
                 }}</Btn>
             </template>
         </Modal>

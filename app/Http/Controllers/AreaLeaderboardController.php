@@ -110,7 +110,7 @@ class AreaLeaderboardController extends Controller
 
         $board = $this->boards->create($request->user(), $topic, $this->validated($request, $topic));
 
-        return $this->backToTopic($topic)->with('success', __('topics.leaderboard_flash.created', ['name' => $board->name]));
+        return $this->backToTopic($topic)->with('success', __('areas.leaderboard_flash.created', ['name' => $board->name]));
     }
 
     public function update(Request $request, Leaderboard $leaderboard): RedirectResponse
@@ -120,7 +120,7 @@ class AreaLeaderboardController extends Controller
 
         $this->boards->update($request->user(), $leaderboard, $this->validated($request, $topic, $leaderboard));
 
-        return $this->backToTopic($topic)->with('success', __('topics.leaderboard_flash.saved'));
+        return $this->backToTopic($topic)->with('success', __('areas.leaderboard_flash.saved'));
     }
 
     public function publish(Request $request, Leaderboard $leaderboard): RedirectResponse
@@ -130,7 +130,7 @@ class AreaLeaderboardController extends Controller
 
         $this->boards->setPublished($request->user(), $leaderboard, true);
 
-        return $this->backToTopic($topic)->with('success', __('topics.leaderboard_flash.published', ['name' => $leaderboard->name]));
+        return $this->backToTopic($topic)->with('success', __('areas.leaderboard_flash.published', ['name' => $leaderboard->name]));
     }
 
     public function unpublish(Request $request, Leaderboard $leaderboard): RedirectResponse
@@ -140,7 +140,7 @@ class AreaLeaderboardController extends Controller
 
         $this->boards->setPublished($request->user(), $leaderboard, false);
 
-        return $this->backToTopic($topic)->with('success', __('topics.leaderboard_flash.unpublished', ['name' => $leaderboard->name]));
+        return $this->backToTopic($topic)->with('success', __('areas.leaderboard_flash.unpublished', ['name' => $leaderboard->name]));
     }
 
     public function destroy(Request $request, Leaderboard $leaderboard): RedirectResponse
@@ -150,7 +150,7 @@ class AreaLeaderboardController extends Controller
 
         $this->boards->delete($request->user(), $leaderboard);
 
-        return $this->backToTopic($topic)->with('success', __('topics.leaderboard_flash.deleted', ['name' => $leaderboard->name]));
+        return $this->backToTopic($topic)->with('success', __('areas.leaderboard_flash.deleted', ['name' => $leaderboard->name]));
     }
 
     private function authorizeManage(Request $request, Topic $topic): void
@@ -176,8 +176,8 @@ class AreaLeaderboardController extends Controller
             'show_last_name' => ['sometimes', 'boolean'],
             'hall_seconds' => ['nullable', 'integer', 'min:'.Leaderboard::HALL_SECONDS_MIN, 'max:'.Leaderboard::HALL_SECONDS_MAX],
         ], [
-            'name.required' => __('topics.leaderboard_flash.name_required'),
-            'name.unique' => __('topics.leaderboard_flash.name_unique'),
+            'name.required' => __('areas.leaderboard_flash.name_required'),
+            'name.unique' => __('areas.leaderboard_flash.name_unique'),
             'hall_seconds.*' => Leaderboard::hallSecondsMessage(),
         ]);
 
@@ -192,7 +192,7 @@ class AreaLeaderboardController extends Controller
         ];
 
         if (! $data['show_neptun_code'] && ! $data['show_first_name'] && ! $data['show_last_name']) {
-            throw ValidationException::withMessages(['columns' => __('topics.leaderboard_flash.tick_a_column')]);
+            throw ValidationException::withMessages(['columns' => __('areas.leaderboard_flash.tick_a_column')]);
         }
 
         return $data;

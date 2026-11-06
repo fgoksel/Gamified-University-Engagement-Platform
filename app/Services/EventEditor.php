@@ -106,7 +106,7 @@ class EventEditor
         }
 
         $locks = [
-            'owning_topic_id' => __('events.editor.the_topic_that_manages'),
+            'owning_topic_id' => __('events.editor.the_area_that_manages'),
             'is_hidden' => __('events.editor.the_surprise_setting_cannot_change'),
         ];
 

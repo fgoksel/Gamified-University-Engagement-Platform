@@ -6,7 +6,7 @@ import Btn from "./Btn.vue";
 import Trans from "../Trans.vue";
 
 // Archive a topic: it and everything below it leave normal browsing.
-// Nothing is deleted and it can be restored from "Archived topics".
+// Nothing is deleted and it can be restored from "Archived areas".
 const props = defineProps({
     topic: { type: Object, required: true },
 });
@@ -33,12 +33,12 @@ function submit() {
 
 <template>
     <Modal
-        :title="$t('topics.archive.archive_this_topic')"
+        :title="$t('areas.archive.archive_this_area')"
         :busy="busy"
         @close="emit('close')"
     >
         <p class="text-base text-fg">
-            <Trans k="topics.archive.confirm">
+            <Trans k="areas.archive.confirm">
                 <template #title>
                     <strong>{{ topic.title }}</strong>
                 </template>
@@ -46,19 +46,19 @@ function submit() {
         </p>
         <ul class="mt-3 list-disc space-y-1 pl-5 text-sm text-fg-muted">
             <li>
-                {{ $t("topics.archive.it_disappears_from_the_tree") }}
+                {{ $t("areas.archive.it_disappears_from_the_tree") }}
             </li>
             <li>
                 <strong class="text-fg">{{
-                    $t("topics.archive.nothing_is_deleted")
+                    $t("areas.archive.nothing_is_deleted")
                 }}</strong>
-                {{ $t("topics.archive.stay_as_they_are") }}
+                {{ $t("areas.archive.stay_as_they_are") }}
             </li>
-            <li>{{ $t("topics.archive.roles_inside_it_cannot") }}</li>
+            <li>{{ $t("areas.archive.roles_inside_it_cannot") }}</li>
             <li>
-                {{ $t("topics.archive.events_run_inside") }}
+                {{ $t("areas.archive.events_run_inside") }}
             </li>
-            <li>{{ $t("topics.archive.you_can_restore_it_any") }}</li>
+            <li>{{ $t("areas.archive.you_can_restore_it_any") }}</li>
         </ul>
         <p
             v-if="error"
@@ -72,7 +72,7 @@ function submit() {
                 $t("common.cancel")
             }}</Btn>
             <Btn variant="primary" :loading="busy" @click="submit">{{
-                $t("topics.archive.archive_topic")
+                $t("areas.archive.archive_area")
             }}</Btn>
         </template>
     </Modal>

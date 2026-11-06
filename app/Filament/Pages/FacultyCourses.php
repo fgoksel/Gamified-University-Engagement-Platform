@@ -86,7 +86,7 @@ class FacultyCourses extends Page implements HasTable
                     ->sortable(),
 
                 TextColumn::make('legacyTopic.title')
-                    ->label(__('admin.faculty_courses.linked_topic'))
+                    ->label(__('admin.faculty_courses.linked_area'))
                     ->placeholder(__('admin.faculty_courses.not_linked'))
                     ->badge()
                     ->color(fn (Course $record): string => $record->legacyTopic ? 'success' : 'gray')
@@ -108,7 +108,7 @@ class FacultyCourses extends Page implements HasTable
             ])
             ->actions([
                 Action::make('linkTopic')
-                    ->label(fn (Course $record): string => $record->legacyTopic ? __('admin.faculty_courses.change_link') : __('admin.faculty_courses.link_to_topic'))
+                    ->label(fn (Course $record): string => $record->legacyTopic ? __('admin.faculty_courses.change_link') : __('admin.faculty_courses.link_to_area'))
                     ->icon(Heroicon::OutlinedLink)
                     ->color('gray')
                     ->modalHeading(fn (Course $record): string => __('admin.faculty_courses.link_course_code', ['code' => $record->code]))
@@ -119,7 +119,7 @@ class FacultyCourses extends Page implements HasTable
                     ])
                     ->form(fn (Course $record): array => [
                         Select::make('topic_id')
-                            ->label(__('admin.faculty_courses.topic_node'))
+                            ->label(__('admin.faculty_courses.area_node'))
                             ->searchable()
                             ->preload()
                             ->options(function () use ($record): array {
@@ -135,7 +135,7 @@ class FacultyCourses extends Page implements HasTable
                                     ->pluck('title', 'id')
                                     ->all();
                             })
-                            ->placeholder(__('admin.faculty_courses.unlink_no_topic'))
+                            ->placeholder(__('admin.faculty_courses.unlink_no_area'))
                             ->nullable(),
                     ])
                     ->action(function (Course $record, array $data): void {
@@ -147,15 +147,15 @@ class FacultyCourses extends Page implements HasTable
 
                         if ($newTopicId !== null) {
                             Topic::where('id', $newTopicId)->update(['course_id' => $record->id]);
-                            $topicTitle = Topic::find($newTopicId)?->title ?? __('admin.faculty_courses.topic');
+                            $topicTitle = Topic::find($newTopicId)?->title ?? __('admin.faculty_courses.area');
                             Notification::make()
-                                ->title(__('admin.faculty_courses.course_linked_to_topic'))
+                                ->title(__('admin.faculty_courses.course_linked_to_area'))
                                 ->success()
-                                ->body(__('admin.faculty_courses.code_is_now_linked', ['code' => $record->code, 'topic_title' => $topicTitle]))
+                                ->body(__('admin.faculty_courses.code_is_now_linked', ['code' => $record->code, 'area_title' => $topicTitle]))
                                 ->send();
                         } else {
                             Notification::make()
-                                ->title(__('admin.faculty_courses.course_unlinked_from_topic'))
+                                ->title(__('admin.faculty_courses.course_unlinked_from_area'))
                                 ->success()
                                 ->body(__('admin.faculty_courses.code_is_no_longer_linked', ['code' => $record->code]))
                                 ->send();
@@ -168,7 +168,7 @@ class FacultyCourses extends Page implements HasTable
                     ->color('success')
                     ->visible(fn (Course $record): bool => $record->legacyTopic !== null)
                     ->modalHeading(fn (Course $record): string => __('admin.faculty_courses.import_enrolments_code_name', ['code' => $record->code, 'name' => $record->name]))
-                    ->modalDescription(__('admin.faculty_courses.choose_the_course_topic'))
+                    ->modalDescription(__('admin.faculty_courses.choose_the_course_area'))
                     ->modalSubmitActionLabel(__('admin.faculty_courses.execute_import'))
                     ->form(function (Course $record): array {
                         $topic = $record->legacyTopic;
@@ -234,7 +234,7 @@ class FacultyCourses extends Page implements HasTable
                         $targetTopicId = (int) $data['target_topic_id'];
                         if (CourseEnrollmentScope::destination($record, $targetTopicId) === null) {
                             throw ValidationException::withMessages([
-                                'target_topic_id' => __('admin.faculty_courses.choose_the_linked_course_topic'),
+                                'target_topic_id' => __('admin.faculty_courses.choose_the_linked_course_area'),
                             ]);
                         }
 

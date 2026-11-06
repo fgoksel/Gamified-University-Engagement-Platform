@@ -228,7 +228,7 @@ function post(action) {
                 <dt>
                     <Building2 class="mt-0.5 size-4 shrink-0 text-fg-muted" />
                     <span class="sr-only">{{
-                        $t("events.organized_card.topics")
+                        $t("events.organized_card.areas")
                     }}</span>
                 </dt>
                 <dd class="col-start-2 text-fg">
@@ -237,8 +237,8 @@ function post(action) {
                 <dd class="col-start-2 text-fg-muted">
                     {{
                         event.audience_topic
-                            ? $t("events.organized_card.open_to_topic", {
-                                  topic: event.audience_topic,
+                            ? $t("events.organized_card.open_to_area", {
+                                  area: event.audience_topic,
                               })
                             : $t("events.organized_card.invited_students_only")
                     }}

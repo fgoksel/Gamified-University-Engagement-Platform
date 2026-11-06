@@ -305,7 +305,7 @@ const selectClass = (field) => [
                     :class="selectClass('owning_topic_id')"
                 >
                     <option value="" disabled>
-                        {{ $t("events.form.choose_a_topic") }}
+                        {{ $t("events.form.choose_an_area") }}
                     </option>
                     <option v-for="t in topics" :key="t.id" :value="t.id">
                         {{ pathText(t.path) || t.title }}
@@ -349,7 +349,7 @@ const selectClass = (field) => [
                 <p v-else class="mt-1.5 text-sm text-fg-muted">
                     {{
                         locks.owning_topic_id ||
-                        $t("events.form.the_topic_whose_staff_manage")
+                        $t("events.form.the_area_whose_staff_manage")
                     }}
                 </p>
             </div>

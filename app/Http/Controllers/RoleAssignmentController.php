@@ -40,7 +40,7 @@ class RoleAssignmentController extends Controller
         $data = $request->validate([
             'user_id' => ['required', 'integer'],
             'role_definition_id' => ['required', 'integer'],
-        ], ['user_id.required' => __('topics.assignment_flash.choose_a_person'), 'role_definition_id.required' => __('topics.assignment_flash.choose_a_role')]);
+        ], ['user_id.required' => __('areas.assignment_flash.choose_a_person'), 'role_definition_id.required' => __('areas.assignment_flash.choose_a_role')]);
 
         $recipient = User::find($data['user_id']);
         $role = RoleDefinition::find($data['role_definition_id']);
@@ -51,7 +51,7 @@ class RoleAssignmentController extends Controller
 
         return redirect()
             ->route('topics.show', ['topic' => $topic, 'tab' => 'access'])
-            ->with('success', __('topics.assignment_flash.granted', ['person' => $recipient->name, 'role' => $role->name]));
+            ->with('success', __('areas.assignment_flash.granted', ['person' => $recipient->name, 'role' => $role->name]));
     }
 
     public function prepare(Request $request, RoleAssignment $assignment): JsonResponse
@@ -61,7 +61,7 @@ class RoleAssignmentController extends Controller
         $data = $request->validate([
             'reason' => ['required', 'string', 'max:500'],
             'replacement_id' => ['nullable', 'integer'],
-        ], ['reason.required' => __('topics.assignment_flash.give_a_reason')]);
+        ], ['reason.required' => __('areas.assignment_flash.give_a_reason')]);
 
         $replacement = null;
         if (! empty($data['replacement_id'])) {
@@ -80,8 +80,8 @@ class RoleAssignmentController extends Controller
 
         $topic = $result['ended']->topic;
         $message = $result['replacement'] === null
-            ? __('topics.assignment_flash.ended', ['person' => $result['ended']->user->name, 'role' => $result['ended']->role->name, 'topic' => $topic->title])
-            : __('topics.assignment_flash.replaced', ['replacement' => $result['replacement']->user->name, 'person' => $result['ended']->user->name, 'role' => $result['ended']->role->name, 'topic' => $topic->title]);
+            ? __('areas.assignment_flash.ended', ['person' => $result['ended']->user->name, 'role' => $result['ended']->role->name, 'area' => $topic->title])
+            : __('areas.assignment_flash.replaced', ['replacement' => $result['replacement']->user->name, 'person' => $result['ended']->user->name, 'role' => $result['ended']->role->name, 'area' => $topic->title]);
 
         return redirect()->route('topics.show', ['topic' => $topic, 'tab' => 'access'])->with('success', $message);
     }

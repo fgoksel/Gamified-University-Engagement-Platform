@@ -44,7 +44,7 @@ Laravel asks for one that is missing.
 
 ## What is not in the dictionary
 
-- User data: topic names, event titles, names of people, the names of roles an administrator
+- User data: area names, event titles, names of people, the names of roles an administrator
   typed.
 - The messages of a `LogicException`, `RuntimeException` and the like. They are for developers, and
   a person never reads them. Every other exception (`InvalidArgumentException`,

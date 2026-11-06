@@ -52,7 +52,7 @@ const profile = {
     icon: UserRound,
 };
 const topics = {
-    label: t("navigation.topics"),
+    label: t("navigation.areas"),
     href: "/topics",
     icon: FolderTree,
     needs: "available",

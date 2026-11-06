@@ -50,7 +50,7 @@ function submit() {
 
 <template>
     <Modal
-        :title="$t('topics.import_students.import_students')"
+        :title="$t('areas.import_students.import_students')"
         wide
         :busy="form.processing"
         @close="emit('close')"
@@ -60,7 +60,7 @@ function submit() {
             <p
                 class="rounded-control bg-info-soft px-3 py-2 text-sm text-info-fg"
             >
-                <Trans k="topics.import_students.intro">
+                <Trans k="areas.import_students.intro">
                     <template #title>
                         <strong>{{ topic.title }}</strong>
                     </template>
@@ -71,7 +71,7 @@ function submit() {
                 <label
                     :for="`${id}-file`"
                     class="block text-sm font-medium text-fg"
-                    >{{ $t("topics.import_students.file") }}</label
+                    >{{ $t("areas.import_students.file") }}</label
                 >
                 <input
                     :id="`${id}-file`"
@@ -84,10 +84,10 @@ function submit() {
                     @input="form.file = $event.target.files[0] ?? null"
                 />
                 <p :id="`${id}-file-hint`" class="mt-1.5 text-sm text-fg-muted">
-                    <Trans k="topics.import_students.csv_hint">
+                    <Trans k="areas.import_students.csv_hint">
                         <template #column>
                             <strong>{{
-                                $t("topics.import_students.neptun_code")
+                                $t("areas.import_students.neptun_code")
                             }}</strong>
                         </template>
                     </Trans>
@@ -102,13 +102,13 @@ function submit() {
 
             <fieldset>
                 <legend class="block text-sm font-medium text-fg">
-                    {{ $t("topics.import_students.role") }}
+                    {{ $t("areas.import_students.role") }}
                 </legend>
                 <p
                     v-if="options.roles.length === 0"
                     class="mt-1.5 text-sm text-fg-muted"
                 >
-                    {{ $t("topics.import_students.there_is_no_role") }}
+                    {{ $t("areas.import_students.there_is_no_role") }}
                 </p>
                 <div v-else class="mt-1.5 space-y-2">
                     <label
@@ -149,10 +149,10 @@ function submit() {
 
             <fieldset v-if="options.parents.length">
                 <legend class="block text-sm font-medium text-fg">
-                    {{ $t("topics.import_students.also_add_them") }}
+                    {{ $t("areas.import_students.also_add_them") }}
                 </legend>
                 <p class="mt-1 text-sm text-fg-muted">
-                    {{ $t("topics.import_students.tick_a_topic_above_if") }}
+                    {{ $t("areas.import_students.tick_an_area_above_if") }}
                 </p>
                 <div class="mt-1.5 space-y-2">
                     <label
@@ -175,7 +175,7 @@ function submit() {
             </fieldset>
 
             <p v-if="role" class="text-sm text-fg-muted" aria-live="polite">
-                {{ $t("topics.import_students.the_file_is_processed") }}
+                {{ $t("areas.import_students.the_file_is_processed") }}
             </p>
         </form>
 
@@ -189,7 +189,7 @@ function submit() {
                 variant="primary"
                 :disabled="options.roles.length === 0"
                 :loading="form.processing"
-                >{{ $t("topics.import_students.import") }}</Btn
+                >{{ $t("areas.import_students.import") }}</Btn
             >
         </template>
     </Modal>

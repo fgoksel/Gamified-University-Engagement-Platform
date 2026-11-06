@@ -40,7 +40,7 @@ async function request(method, url, body) {
         throw new ApiError(
             first ??
                 data.message ??
-                t("topics.api.something_went_wrong_nothing_was"),
+                t("areas.api.something_went_wrong_nothing_was"),
             response.status,
             errors,
         );

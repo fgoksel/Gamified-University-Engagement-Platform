@@ -18,8 +18,8 @@ const props = defineProps({
 });
 
 const filters = [
-    { when: "upcoming", label: t("topics.events_panel.upcoming_and_running") },
-    { when: "past", label: t("topics.events_panel.past") },
+    { when: "upcoming", label: t("areas.events_panel.upcoming_and_running") },
+    { when: "past", label: t("areas.events_panel.past") },
 ];
 
 const filterHref = (when) =>
@@ -27,7 +27,7 @@ const filterHref = (when) =>
 
 const range = computed(() => {
     const from = (props.events.page - 1) * props.events.per_page + 1;
-    return t("topics.events_panel.range", {
+    return t("areas.events_panel.range", {
         from,
         to: from + props.events.items.length - 1,
         total: props.events.total,
@@ -52,11 +52,11 @@ function goTo(page) {
         <div class="flex flex-wrap items-start justify-between gap-3">
             <div class="min-w-0">
                 <h3 class="text-base font-semibold text-fg">
-                    {{ $t("topics.events_panel.events") }}
+                    {{ $t("areas.events_panel.events") }}
                 </h3>
                 <p class="mt-1 text-sm text-fg-muted">
                     {{
-                        $t("topics.events_panel.events_in_and_in_everything", {
+                        $t("areas.events_panel.events_in_and_in_everything", {
                             title: topic.title,
                         })
                     }}
@@ -70,7 +70,7 @@ function goTo(page) {
         </div>
 
         <nav
-            :aria-label="$t('topics.events_panel.which_events')"
+            :aria-label="$t('areas.events_panel.which_events')"
             class="flex flex-wrap gap-2"
         >
             <Link
@@ -123,7 +123,7 @@ function goTo(page) {
                         {{
                             event.path.length
                                 ? event.path.join(" › ")
-                                : $t("topics.events_panel.this_area")
+                                : $t("areas.events_panel.this_area")
                         }}
                         · {{ event.starts }}
                     </p>
@@ -156,13 +156,13 @@ function goTo(page) {
                     small
                     :disabled="events.page <= 1"
                     @click="goTo(events.page - 1)"
-                    >{{ $t("topics.events_panel.previous") }}</Btn
+                    >{{ $t("areas.events_panel.previous") }}</Btn
                 >
                 <Btn
                     small
                     :disabled="events.page >= events.last_page"
                     @click="goTo(events.page + 1)"
-                    >{{ $t("topics.events_panel.next") }}</Btn
+                    >{{ $t("areas.events_panel.next") }}</Btn
                 >
             </div>
         </div>

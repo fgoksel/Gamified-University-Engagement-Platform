@@ -53,11 +53,11 @@ enum Capability: string
     public function label(): string
     {
         return match ($this) {
-            self::View => __('capabilities.view_topics'),
-            self::Create => __('capabilities.add_topics'),
-            self::Edit => __('capabilities.edit_any_topic'),
-            self::Organise => __('capabilities.move_topics'),
-            self::Archive => __('capabilities.archive_topics'),
+            self::View => __('capabilities.view_areas'),
+            self::Create => __('capabilities.add_areas'),
+            self::Edit => __('capabilities.edit_any_area'),
+            self::Organise => __('capabilities.move_areas'),
+            self::Archive => __('capabilities.archive_areas'),
             self::AccessView => __('capabilities.see_who_has_access'),
             self::AccessAssign => __('capabilities.give_people_roles'),
             self::AccessEnd => __('capabilities.end_and_replace_roles'),
@@ -77,11 +77,11 @@ enum Capability: string
     public function description(): string
     {
         return match ($this) {
-            self::View => __('capabilities.open_the_topic_and_everything'),
-            self::Create => __('capabilities.add_child_topics_and_edit'),
+            self::View => __('capabilities.open_the_area_and_everything'),
+            self::Create => __('capabilities.add_child_areas_and_edit'),
             self::Edit => __('capabilities.change_the_title_code'),
-            self::Organise => __('capabilities.move_a_topic_with_everything'),
-            self::Archive => __('capabilities.hide_a_topic_and_everything'),
+            self::Organise => __('capabilities.move_an_area_with_everything'),
+            self::Archive => __('capabilities.hide_an_area_and_everything'),
             self::AccessView => __('capabilities.see_the_people_and_roles'),
             self::AccessAssign => __('capabilities.give_an_existing_role'),
             self::AccessEnd => __('capabilities.end_or_hand_over'),

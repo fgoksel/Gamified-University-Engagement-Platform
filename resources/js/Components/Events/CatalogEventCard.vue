@@ -99,8 +99,8 @@ const status = computed(() => myStatus(props.event));
                         class="block text-fg-muted"
                     >
                         {{
-                            $t("events.catalog_card.open_to_topic", {
-                                topic: event.audience_topic,
+                            $t("events.catalog_card.open_to_area", {
+                                area: event.audience_topic,
                             })
                         }}
                     </span>

@@ -104,8 +104,8 @@ function submit() {
     <Modal
         :title="
             editing
-                ? $t('topics.role_form.edit_role', { name: role.name })
-                : $t('topics.role_form.new_role')
+                ? $t('areas.role_form.edit_role', { name: role.name })
+                : $t('areas.role_form.new_role')
         "
         wide
         :busy="form.processing"
@@ -118,7 +118,7 @@ function submit() {
                 role="status"
             >
                 {{
-                    $t("topics.role_form.usage_warning", {
+                    $t("areas.role_form.usage_warning", {
                         assignments: usage.assignments,
                         people: usage.people,
                     })
@@ -127,9 +127,9 @@ function submit() {
 
             <TextField
                 v-model="form.name"
-                :label="$t('topics.role_form.role_name')"
+                :label="$t('areas.role_form.role_name')"
                 required
-                :hint="$t('topics.role_form.any_title_you_like')"
+                :hint="$t('areas.role_form.any_title_you_like')"
                 :error="form.errors.name"
                 data-autofocus
             />
@@ -138,7 +138,7 @@ function submit() {
                 <label
                     for="role-description"
                     class="block text-sm font-medium text-fg"
-                    >{{ $t("topics.role_form.description") }}
+                    >{{ $t("areas.role_form.description") }}
                     <span class="font-normal text-fg-muted">{{
                         $t("fields.optional")
                     }}</span></label
@@ -155,7 +155,7 @@ function submit() {
                 <label
                     for="role-scope"
                     class="block text-sm font-medium text-fg"
-                    >{{ $t("topics.role_form.where_can_this_role") }}</label
+                    >{{ $t("areas.role_form.where_can_this_role") }}</label
                 >
                 <select
                     id="role-scope"
@@ -163,7 +163,7 @@ function submit() {
                     class="mt-1.5 block min-h-11 w-full rounded-control border border-line bg-surface px-3 py-2 text-fg focus:outline-2 focus:outline-offset-0 focus:outline-ring"
                 >
                     <option v-if="isAdmin" value="">
-                        {{ $t("topics.role_form.everywhere_global_role") }}
+                        {{ $t("areas.role_form.everywhere_global_role") }}
                     </option>
                     <option
                         v-for="scope in scopes"
@@ -172,25 +172,25 @@ function submit() {
                     >
                         {{
                             scope.trail.length
-                                ? $t("topics.role_form.scope_option_in", {
+                                ? $t("areas.role_form.scope_option_in", {
                                       title: scope.title,
                                       trail: scope.trail.join(" › "),
                                   })
-                                : $t("topics.roles.only_in_scope", {
+                                : $t("areas.roles.only_in_scope", {
                                       scope: scope.title,
                                   })
                         }}
                     </option>
                 </select>
                 <p class="mt-1.5 text-sm text-fg-muted">
-                    {{ $t("topics.role_form.a_role_for_one_branch") }}
+                    {{ $t("areas.role_form.a_role_for_one_branch") }}
                 </p>
             </div>
             <p v-else class="text-sm text-fg-muted">
                 {{
                     role.global
-                        ? $t("topics.role_form.used_everywhere")
-                        : $t("topics.role_form.used_only_in", {
+                        ? $t("areas.role_form.used_everywhere")
+                        : $t("areas.role_form.used_only_in", {
                               title: role.scope?.title,
                           })
                 }}
@@ -198,10 +198,10 @@ function submit() {
 
             <fieldset>
                 <legend class="text-sm font-medium text-fg">
-                    {{ $t("topics.role_form.what_this_role_can_do") }}
+                    {{ $t("areas.role_form.what_this_role_can_do") }}
                 </legend>
                 <p class="mt-1 text-sm text-fg-muted">
-                    {{ $t("topics.role_form.you_can_only_include_what") }}
+                    {{ $t("areas.role_form.you_can_only_include_what") }}
                 </p>
                 <ul
                     class="mt-2 divide-y divide-line rounded-card border border-line"
@@ -256,7 +256,7 @@ function submit() {
                                     )
                                 "
                             />
-                            {{ $t("topics.role_form.can_pass") }}
+                            {{ $t("areas.role_form.can_pass") }}
                         </label>
                     </li>
                 </ul>
@@ -293,7 +293,7 @@ function submit() {
                     class="mt-1 size-4 shrink-0"
                 />
                 <span class="text-fg">{{
-                    $t("topics.role_form.understand", {
+                    $t("areas.role_form.understand", {
                         people: usage.people,
                     })
                 }}</span>
@@ -311,8 +311,8 @@ function submit() {
                 :loading="form.processing"
                 >{{
                     editing
-                        ? $t("topics.role_form.save_role")
-                        : $t("topics.role_form.create_role")
+                        ? $t("areas.role_form.save_role")
+                        : $t("areas.role_form.create_role")
                 }}</Btn
             >
         </template>

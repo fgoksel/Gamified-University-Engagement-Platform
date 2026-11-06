@@ -63,7 +63,7 @@ function submit() {
 
 <template>
     <Modal
-        :title="$t('topics.assign.give_a_role')"
+        :title="$t('areas.assign.give_a_role')"
         wide
         :busy="form.processing"
         @close="emit('close')"
@@ -72,7 +72,7 @@ function submit() {
             <p
                 class="rounded-control bg-info-soft px-3 py-2 text-sm text-info-fg"
             >
-                <Trans k="topics.assign.given_at">
+                <Trans k="areas.assign.given_at">
                     <template #title>
                         <strong>{{ topic.title }}</strong>
                     </template>
@@ -83,7 +83,7 @@ function submit() {
                 <label
                     for="person-search"
                     class="block text-sm font-medium text-fg"
-                    >{{ $t("topics.assign.person") }}</label
+                    >{{ $t("areas.assign.person") }}</label
                 >
                 <div
                     v-if="chosen"
@@ -103,7 +103,7 @@ function submit() {
                             form.user_id = null;
                         "
                     >
-                        {{ $t("topics.assign.change") }}
+                        {{ $t("areas.assign.change") }}
                     </button>
                 </div>
                 <template v-else>
@@ -113,7 +113,7 @@ function submit() {
                         type="search"
                         autocomplete="off"
                         :placeholder="
-                            $t('topics.assign.search_active_accounts_by_name')
+                            $t('areas.assign.search_active_accounts_by_name')
                         "
                         class="mt-1.5 block w-full rounded-control border border-line bg-surface px-3 py-2 text-fg focus:outline-2 focus:outline-offset-0 focus:outline-ring"
                         data-autofocus
@@ -126,12 +126,12 @@ function submit() {
                         v-else-if="searching"
                         class="mt-1.5 text-sm text-fg-muted"
                     >
-                        {{ $t("topics.assign.searching") }}
+                        {{ $t("areas.assign.searching") }}
                     </p>
                     <ul
                         v-if="results.length"
                         class="mt-1 divide-y divide-line rounded-control border border-line"
-                        :aria-label="$t('topics.assign.matching_people')"
+                        :aria-label="$t('areas.assign.matching_people')"
                     >
                         <li v-for="person in results" :key="person.id">
                             <button
@@ -152,7 +152,7 @@ function submit() {
                         v-else-if="term.trim().length >= 2 && !searching"
                         class="mt-1.5 text-sm text-fg-muted"
                     >
-                        {{ $t("topics.assign.no_active_account_matches") }}
+                        {{ $t("areas.assign.no_active_account_matches") }}
                     </p>
                 </template>
                 <p
@@ -165,13 +165,13 @@ function submit() {
 
             <fieldset>
                 <legend class="block text-sm font-medium text-fg">
-                    {{ $t("topics.assign.role") }}
+                    {{ $t("areas.assign.role") }}
                 </legend>
                 <p
                     v-if="roles.length === 0"
                     class="mt-1.5 text-sm text-fg-muted"
                 >
-                    {{ $t("topics.assign.there_is_no_role") }}
+                    {{ $t("areas.assign.there_is_no_role") }}
                 </p>
                 <div v-else class="mt-1.5 space-y-2">
                     <label
@@ -213,11 +213,11 @@ function submit() {
 
             <p v-if="role" class="text-sm text-fg-muted" aria-live="polite">
                 {{
-                    $t("topics.assign.will_be_able", {
+                    $t("areas.assign.will_be_able", {
                         person: chosen
                             ? chosen.name
-                            : $t("topics.assign.the_person"),
-                        topic: topic.title,
+                            : $t("areas.assign.the_person"),
+                        area: topic.title,
                     })
                 }}
             </p>
@@ -232,7 +232,7 @@ function submit() {
                 form="assign-form"
                 variant="primary"
                 :loading="form.processing"
-                >{{ $t("topics.assign.give_role") }}</Btn
+                >{{ $t("areas.assign.give_role") }}</Btn
             >
         </template>
     </Modal>

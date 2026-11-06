@@ -461,6 +461,6 @@ class StudentManagement extends Page implements HasTable
 
         return $count === 0
             ? ''
-            : ' '.__('admin.students.they_hold_count_active_topic', ['count' => $count]);
+            : ' '.__('admin.students.they_hold_count_active_area', ['count' => $count]);
     }
 }

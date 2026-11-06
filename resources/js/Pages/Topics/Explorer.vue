@@ -177,7 +177,7 @@ const branchRange = computed(() => {
     const branch = props.selected?.branch;
     if (!branch || branch.total === 0) return "";
     const from = (branch.page - 1) * branch.per_page + 1;
-    return t("topics.explorer.branch_range", {
+    return t("areas.explorer.branch_range", {
         from,
         to: from + branch.items.length - 1,
         total: branch.total,
@@ -190,7 +190,7 @@ const branchRange = computed(() => {
         <!-- Page header -->
         <div class="flex flex-wrap items-center justify-between gap-3">
             <h1 class="text-2xl font-semibold tracking-tight text-fg">
-                {{ $t("topics.explorer.topics") }}
+                {{ $t("areas.explorer.areas") }}
             </h1>
             <div class="flex flex-wrap gap-2">
                 <Link
@@ -203,7 +203,7 @@ const branchRange = computed(() => {
                         :stroke-width="1.75"
                         aria-hidden="true"
                     />
-                    {{ $t("topics.explorer.roles") }}
+                    {{ $t("areas.explorer.roles") }}
                 </Link>
                 <Link
                     v-if="canSeeArchived"
@@ -215,11 +215,11 @@ const branchRange = computed(() => {
                         :stroke-width="1.75"
                         aria-hidden="true"
                     />
-                    {{ $t("topics.explorer.archived_topics") }}
+                    {{ $t("areas.explorer.archived_areas") }}
                 </Link>
                 <Btn v-if="isAdmin" variant="primary" @click="dialog = 'root'">
                     <Plus class="size-4" :stroke-width="2" aria-hidden="true" />
-                    {{ $t("topics.explorer.new_top_level_topic") }}
+                    {{ $t("areas.explorer.new_top_level_area") }}
                 </Btn>
             </div>
         </div>
@@ -246,7 +246,7 @@ const branchRange = computed(() => {
                 :stroke-width="1.75"
                 aria-hidden="true"
             />
-            {{ $t("topics.explorer.browse_topics") }}
+            {{ $t("areas.explorer.browse_areas") }}
         </button>
 
         <div class="flex items-start gap-0 lg:gap-0">
@@ -260,7 +260,7 @@ const branchRange = computed(() => {
             <!-- Left: structure -->
             <aside
                 id="topic-tree-panel"
-                :aria-label="$t('topics.explorer.topic_structure')"
+                :aria-label="$t('areas.explorer.area_structure')"
                 class="flex-col rounded-card border border-line bg-surface shadow-card lg:w-(--panel) lg:sticky lg:top-4 lg:flex lg:max-h-[calc(100vh-2rem)] lg:shrink-0"
                 :class="
                     drawerOpen
@@ -272,7 +272,7 @@ const branchRange = computed(() => {
             >
                 <div class="space-y-2 border-b border-line p-3" role="search">
                     <label for="topic-search" class="sr-only">{{
-                        $t("topics.explorer.search_topics")
+                        $t("areas.explorer.search_areas")
                     }}</label>
                     <div class="relative">
                         <Search
@@ -285,7 +285,7 @@ const branchRange = computed(() => {
                             v-model="term"
                             type="search"
                             autocomplete="off"
-                            :placeholder="$t('topics.explorer.search_topics')"
+                            :placeholder="$t('areas.explorer.search_areas')"
                             class="block min-h-11 w-full rounded-control border border-line bg-surface py-2 pr-3 pl-9 text-sm text-fg focus:outline-2 focus:outline-offset-0 focus:outline-ring"
                             @input="onSearchInput"
                         />
@@ -293,7 +293,7 @@ const branchRange = computed(() => {
                     <ul
                         v-if="results.length"
                         class="max-h-64 divide-y divide-line overflow-y-auto rounded-control border border-line"
-                        :aria-label="$t('topics.explorer.search_results')"
+                        :aria-label="$t('areas.explorer.search_results')"
                     >
                         <li v-for="result in results" :key="result.id">
                             <button
@@ -313,7 +313,7 @@ const branchRange = computed(() => {
                                     v-if="result.trail.length"
                                     class="text-xs text-fg-muted"
                                     >{{
-                                        $t("topics.explorer.in_trail", {
+                                        $t("areas.explorer.in_trail", {
                                             trail: result.trail.join(" › "),
                                         })
                                     }}</span
@@ -325,7 +325,7 @@ const branchRange = computed(() => {
                         v-else-if="term.trim().length >= 2 && !searching"
                         class="px-1 text-xs text-fg-muted"
                     >
-                        {{ $t("topics.explorer.no_match", { term }) }}
+                        {{ $t("areas.explorer.no_match", { term }) }}
                     </p>
                 </div>
 
@@ -340,7 +340,7 @@ const branchRange = computed(() => {
                         @select="go"
                     />
                     <p v-else class="px-2 py-4 text-sm text-fg-muted">
-                        {{ $t("topics.explorer.no_topics_to_show") }}
+                        {{ $t("areas.explorer.no_areas_to_show") }}
                     </p>
                 </div>
 
@@ -356,7 +356,7 @@ const branchRange = computed(() => {
                 class="mx-1 hidden h-24 w-1.5 shrink-0 cursor-col-resize self-center rounded-full bg-line hover:bg-fg-muted focus-visible:outline-2 focus-visible:outline-ring lg:block"
                 role="separator"
                 aria-orientation="vertical"
-                :aria-label="$t('topics.explorer.resize_the_topic_panel')"
+                :aria-label="$t('areas.explorer.resize_the_area_panel')"
                 :aria-valuenow="panelWidth"
                 aria-valuemin="240"
                 aria-valuemax="560"
@@ -372,20 +372,20 @@ const branchRange = computed(() => {
                     <EmptyState
                         v-if="entries.length === 0 && isAdmin"
                         :icon="FolderTree"
-                        :title="$t('topics.explorer.no_topics_yet')"
+                        :title="$t('areas.explorer.no_areas_yet')"
                     >
-                        {{ $t("topics.explorer.start_with_a_top_level") }}
+                        {{ $t("areas.explorer.start_with_a_top_level") }}
                     </EmptyState>
                     <EmptyState
                         v-else-if="entries.length === 0"
                         :icon="FolderTree"
-                        :title="$t('topics.explorer.no_topics_for_you_yet')"
+                        :title="$t('areas.explorer.no_areas_for_you_yet')"
                     >
-                        {{ $t("topics.explorer.you_do_not_have") }}
+                        {{ $t("areas.explorer.you_do_not_have") }}
                     </EmptyState>
                     <div v-else class="space-y-3">
                         <h2 class="text-base font-semibold text-fg">
-                            {{ $t("topics.explorer.where_would_you_like") }}
+                            {{ $t("areas.explorer.where_would_you_like") }}
                         </h2>
                         <ul class="grid gap-3 sm:grid-cols-2">
                             <li v-for="entry in entries" :key="entry.id">
@@ -402,7 +402,7 @@ const branchRange = computed(() => {
                                             class="block text-sm text-fg-muted"
                                             >{{
                                                 $tc(
-                                                    "topics.explorer.directly_inside",
+                                                    "areas.explorer.directly_inside",
                                                     entry.children_count,
                                                 )
                                             }}</span
@@ -424,7 +424,7 @@ const branchRange = computed(() => {
                     v-else
                     class="space-y-5 rounded-card border border-line bg-surface p-5 shadow-card lg:ml-2"
                 >
-                    <nav :aria-label="$t('topics.explorer.breadcrumb')">
+                    <nav :aria-label="$t('areas.explorer.breadcrumb')">
                         <ol
                             class="flex flex-wrap items-center gap-1 text-sm text-fg-muted"
                         >
@@ -432,7 +432,7 @@ const branchRange = computed(() => {
                                 <Link
                                     href="/topics?start=1"
                                     class="hover:text-fg hover:underline"
-                                    >{{ $t("topics.explorer.topics") }}</Link
+                                    >{{ $t("areas.explorer.areas") }}</Link
                                 >
                             </li>
                             <li
@@ -478,7 +478,7 @@ const branchRange = computed(() => {
                                 class="mt-0.5 text-sm text-fg-muted"
                             >
                                 {{
-                                    $t("topics.explorer.code", {
+                                    $t("areas.explorer.code", {
                                         code: selected.code,
                                     })
                                 }}
@@ -495,7 +495,7 @@ const branchRange = computed(() => {
                                     :stroke-width="2"
                                     aria-hidden="true"
                                 />
-                                {{ $t("topics.explorer.new_topic") }}
+                                {{ $t("areas.explorer.new_area") }}
                             </Btn>
                             <CreateEventLink
                                 v-if="selected.can.create_event"
@@ -521,7 +521,7 @@ const branchRange = computed(() => {
                                     :stroke-width="1.75"
                                     aria-hidden="true"
                                 />
-                                {{ $t("topics.explorer.move") }}
+                                {{ $t("areas.explorer.move") }}
                             </Btn>
                             <Btn
                                 v-if="selected.can.archive"
@@ -532,7 +532,7 @@ const branchRange = computed(() => {
                                     :stroke-width="1.75"
                                     aria-hidden="true"
                                 />
-                                {{ $t("topics.explorer.archive") }}
+                                {{ $t("areas.explorer.archive") }}
                             </Btn>
                             <Btn
                                 v-if="selected.can.delete"
@@ -543,14 +543,14 @@ const branchRange = computed(() => {
                                     :stroke-width="1.75"
                                     aria-hidden="true"
                                 />
-                                {{ $t("topics.explorer.delete") }}
+                                {{ $t("areas.explorer.delete") }}
                             </Btn>
                         </div>
                     </header>
 
                     <!-- Views -->
                     <nav
-                        :aria-label="$t('topics.explorer.topic_views')"
+                        :aria-label="$t('areas.explorer.area_views')"
                         class="flex gap-1 overflow-x-auto border-b border-line"
                     >
                         <Link
@@ -569,7 +569,7 @@ const branchRange = computed(() => {
                                     : undefined
                             "
                         >
-                            {{ $t("topics.explorer.direct_contents") }}
+                            {{ $t("areas.explorer.direct_contents") }}
                         </Link>
                         <Link
                             :href="`/topics/${selected.id}?view=branch`"
@@ -587,7 +587,7 @@ const branchRange = computed(() => {
                                     : undefined
                             "
                         >
-                            {{ $t("topics.explorer.whole_branch") }}
+                            {{ $t("areas.explorer.whole_branch") }}
                         </Link>
                         <Link
                             v-if="canSeeAccess"
@@ -604,7 +604,7 @@ const branchRange = computed(() => {
                                 tab === 'access' ? 'page' : undefined
                             "
                         >
-                            {{ $t("topics.explorer.access") }}
+                            {{ $t("areas.explorer.access") }}
                         </Link>
                         <Link
                             :href="`/topics/${selected.id}?tab=leaderboards`"
@@ -620,7 +620,7 @@ const branchRange = computed(() => {
                                 tab === 'leaderboards' ? 'page' : undefined
                             "
                         >
-                            {{ $t("topics.explorer.tab_leaderboards") }}
+                            {{ $t("areas.explorer.tab_leaderboards") }}
                         </Link>
                         <Link
                             :href="`/topics/${selected.id}?tab=events`"
@@ -636,7 +636,7 @@ const branchRange = computed(() => {
                                 tab === 'events' ? 'page' : undefined
                             "
                         >
-                            {{ $t("topics.explorer.tab_events") }}
+                            {{ $t("areas.explorer.tab_events") }}
                         </Link>
                     </nav>
 
@@ -674,7 +674,7 @@ const branchRange = computed(() => {
                         class="space-y-4"
                     >
                         <p class="text-sm text-fg-muted">
-                            <Trans k="topics.explorer.branch_help">
+                            <Trans k="areas.explorer.branch_help">
                                 <template #title>
                                     <strong class="text-fg">{{
                                         selected.title
@@ -687,8 +687,8 @@ const branchRange = computed(() => {
                             class="text-sm text-fg"
                             data-testid="branch-counts"
                         >
-                            <Trans k="topics.explorer.branch_counts">
-                                <template #topics>
+                            <Trans k="areas.explorer.branch_counts">
+                                <template #areas>
                                     <strong>{{
                                         topicCount(selected.counts.topics_below)
                                     }}</strong>
@@ -715,19 +715,19 @@ const branchRange = computed(() => {
                             @submit.prevent="searchBranch"
                         >
                             <label for="branch-search" class="sr-only">{{
-                                $t("topics.explorer.filter_this_branch")
+                                $t("areas.explorer.filter_this_branch")
                             }}</label>
                             <input
                                 id="branch-search"
                                 v-model="branchTerm"
                                 type="search"
                                 :placeholder="
-                                    $t('topics.explorer.filter_by_name_or_code')
+                                    $t('areas.explorer.filter_by_name_or_code')
                                 "
                                 class="min-h-11 w-full rounded-control border border-line bg-surface px-3 py-2 text-sm text-fg focus:outline-2 focus:outline-offset-0 focus:outline-ring"
                             />
                             <Btn type="submit">{{
-                                $t("topics.explorer.filter")
+                                $t("areas.explorer.filter")
                             }}</Btn>
                         </form>
 
@@ -757,7 +757,7 @@ const branchRange = computed(() => {
                                         v-if="item.trail.length"
                                         class="text-xs text-fg-muted"
                                         >{{
-                                            $t("topics.explorer.in_trail", {
+                                            $t("areas.explorer.in_trail", {
                                                 trail: item.trail.join(" › "),
                                             })
                                         }}</span
@@ -772,10 +772,10 @@ const branchRange = computed(() => {
                             {{
                                 search
                                     ? $t(
-                                          "topics.explorer.no_topic_in_this_branch",
+                                          "areas.explorer.no_area_in_this_branch",
                                       )
                                     : $t(
-                                          "topics.explorer.there_are_no_topics_below",
+                                          "areas.explorer.there_are_no_areas_below",
                                       )
                             }}
                         </p>
@@ -792,7 +792,7 @@ const branchRange = computed(() => {
                                     @click="
                                         branchPage(selected.branch.page - 1)
                                     "
-                                    >{{ $t("topics.explorer.previous") }}</Btn
+                                    >{{ $t("areas.explorer.previous") }}</Btn
                                 >
                                 <Btn
                                     small
@@ -803,7 +803,7 @@ const branchRange = computed(() => {
                                     @click="
                                         branchPage(selected.branch.page + 1)
                                     "
-                                    >{{ $t("topics.explorer.next") }}</Btn
+                                    >{{ $t("areas.explorer.next") }}</Btn
                                 >
                             </div>
                         </div>
@@ -816,7 +816,7 @@ const branchRange = computed(() => {
                                 id="about-heading"
                                 class="text-sm font-semibold text-fg"
                             >
-                                {{ $t("topics.explorer.about_this_topic") }}
+                                {{ $t("areas.explorer.about_this_area") }}
                             </h3>
                             <p
                                 v-if="selected.description"
@@ -825,7 +825,7 @@ const branchRange = computed(() => {
                                 {{ selected.description }}
                             </p>
                             <p v-else class="mt-1 text-sm text-fg-muted">
-                                {{ $t("topics.explorer.no_description_yet") }}
+                                {{ $t("areas.explorer.no_description_yet") }}
                             </p>
                             <p
                                 v-if="selected.counts.people_here !== undefined"
@@ -833,7 +833,7 @@ const branchRange = computed(() => {
                                 data-testid="here-counts"
                             >
                                 {{
-                                    $t("topics.explorer.here_counts", {
+                                    $t("areas.explorer.here_counts", {
                                         people: personCount(
                                             selected.counts.people_here,
                                         ),
@@ -851,7 +851,7 @@ const branchRange = computed(() => {
                                 class="text-sm font-semibold text-fg"
                             >
                                 {{
-                                    $t("topics.explorer.children_heading", {
+                                    $t("areas.explorer.children_heading", {
                                         count: selected.children.length,
                                     })
                                 }}
@@ -883,7 +883,7 @@ const branchRange = computed(() => {
                                                         : ""
                                                 }}{{
                                                     $tc(
-                                                        "topics.explorer.inside",
+                                                        "areas.explorer.inside",
                                                         child.children_count,
                                                     )
                                                 }}</span
@@ -901,7 +901,7 @@ const branchRange = computed(() => {
                                 v-else
                                 class="mt-2 rounded-card border border-dashed border-line px-4 py-6 text-center text-sm text-fg-muted"
                             >
-                                {{ $t("topics.explorer.nothing_inside") }}
+                                {{ $t("areas.explorer.nothing_inside") }}
                                 <Btn
                                     v-if="selected.can.create"
                                     class="mt-3"
@@ -909,7 +909,7 @@ const branchRange = computed(() => {
                                     @click="dialog = 'create'"
                                     >{{
                                         $t(
-                                            "topics.explorer.add_the_first_topic_here",
+                                            "areas.explorer.add_the_first_area_here",
                                         )
                                     }}</Btn
                                 >

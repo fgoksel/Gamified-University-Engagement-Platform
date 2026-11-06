@@ -389,6 +389,6 @@ class OrganizerManagement extends Page implements HasTable
 
         return $count === 0
             ? ''
-            : ' '.__('admin.organizers.they_hold_count_active_topic', ['count' => $count]);
+            : ' '.__('admin.organizers.they_hold_count_active_area', ['count' => $count]);
     }
 }

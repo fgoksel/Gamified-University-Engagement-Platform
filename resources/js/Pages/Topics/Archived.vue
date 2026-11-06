@@ -10,7 +10,7 @@ import Trans from "../../Components/Trans.vue";
 import { formatDate } from "../../topicsLabels.js";
 import { t } from "../../i18n.js";
 
-defineOptions({ layout: { title: t("topics.archived.archived_topics") } });
+defineOptions({ layout: { title: t("areas.archived.archived_areas") } });
 
 defineProps({
     topics: { type: Array, required: true },
@@ -46,18 +46,18 @@ function restore() {
             class="inline-flex items-center gap-1 text-sm text-fg-muted hover:text-fg hover:underline"
         >
             <ArrowLeft class="size-4" :stroke-width="1.75" aria-hidden="true" />
-            {{ $t("topics.archived.back_to_topics") }}
+            {{ $t("areas.archived.back_to_areas") }}
         </Link>
 
         <p class="max-w-2xl text-sm text-fg-muted">
-            {{ $t("topics.archived.archived_topics_and_everything_inside") }}
+            {{ $t("areas.archived.archived_areas_and_everything_inside") }}
         </p>
 
         <EmptyState
             v-if="topics.length === 0"
-            :title="$t('topics.archived.nothing_is_archived')"
+            :title="$t('areas.archived.nothing_is_archived')"
         >
-            {{ $t("topics.archived.topics_you_archive_appear_here") }}
+            {{ $t("areas.archived.areas_you_archive_appear_here") }}
         </EmptyState>
 
         <ul v-else class="space-y-3">
@@ -77,7 +77,7 @@ function restore() {
                     </h2>
                     <p v-if="topic.trail.length" class="text-sm text-fg-muted">
                         {{
-                            $t("topics.explorer.in_trail", {
+                            $t("areas.explorer.in_trail", {
                                 trail: topic.trail.join(" › "),
                             })
                         }}
@@ -86,7 +86,7 @@ function restore() {
                         {{
                             topic.archived_by
                                 ? $tc(
-                                      "topics.archived.summary_by",
+                                      "areas.archived.summary_by",
                                       topic.topics_inside,
                                       {
                                           date: formatDate(topic.archived_at),
@@ -94,7 +94,7 @@ function restore() {
                                       },
                                   )
                                 : $tc(
-                                      "topics.archived.summary",
+                                      "areas.archived.summary",
                                       topic.topics_inside,
                                       { date: formatDate(topic.archived_at) },
                                   )
@@ -108,7 +108,7 @@ function restore() {
                             :stroke-width="1.75"
                             aria-hidden="true"
                         />
-                        {{ $t("topics.archived.restore") }}
+                        {{ $t("areas.archived.restore") }}
                     </Btn>
                     <Btn
                         v-if="topic.can_delete"
@@ -120,7 +120,7 @@ function restore() {
                             :stroke-width="1.75"
                             aria-hidden="true"
                         />
-                        {{ $t("topics.archived.delete") }}
+                        {{ $t("areas.archived.delete") }}
                     </Btn>
                 </div>
             </li>
@@ -128,12 +128,12 @@ function restore() {
 
         <Modal
             v-if="restoring"
-            :title="$t('topics.archived.restore_this_topic')"
+            :title="$t('areas.archived.restore_this_area')"
             :busy="busy"
             @close="restoring = null"
         >
             <p class="text-sm text-fg">
-                <Trans k="topics.archived.restore_confirm">
+                <Trans k="areas.archived.restore_confirm">
                     <template #title>
                         <strong>{{ restoring.title }}</strong>
                     </template>
@@ -151,7 +151,7 @@ function restore() {
                     $t("common.cancel")
                 }}</Btn>
                 <Btn variant="primary" :loading="busy" @click="restore">{{
-                    $t("topics.archived.restore_topic")
+                    $t("areas.archived.restore_area")
                 }}</Btn>
             </template>
         </Modal>

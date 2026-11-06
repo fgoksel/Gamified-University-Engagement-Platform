@@ -38,8 +38,8 @@ const columns = [
 
 const heading = computed(() =>
     props.board
-        ? t("topics.leaderboard_form.edit_leaderboard")
-        : t("topics.leaderboard_form.new_leaderboard"),
+        ? t("areas.leaderboard_form.edit_leaderboard")
+        : t("areas.leaderboard_form.new_leaderboard"),
 );
 
 function submit() {
@@ -55,14 +55,14 @@ function submit() {
             <p
                 class="rounded-control bg-surface-muted px-3 py-2 text-sm text-fg-muted"
             >
-                {{ $t("topics.leaderboard_form.it_counts_the_points_from") }}
+                {{ $t("areas.leaderboard_form.it_counts_the_points_from") }}
                 <strong class="text-fg">{{ topic.title }}</strong>
-                {{ $t("topics.leaderboard_form.and_in_all_areas_below") }}
+                {{ $t("areas.leaderboard_form.and_in_all_areas_below") }}
             </p>
 
             <TextField
                 v-model="form.name"
-                :label="$t('topics.leaderboard_form.name')"
+                :label="$t('areas.leaderboard_form.name')"
                 required
                 :error="form.errors.name"
                 data-autofocus
@@ -74,11 +74,11 @@ function submit() {
                 "
             >
                 <legend class="text-sm font-medium text-fg">
-                    {{ $t("topics.leaderboard_form.columns_to_show") }}
+                    {{ $t("areas.leaderboard_form.columns_to_show") }}
                 </legend>
                 <p id="lb-columns-hint" class="mt-1 text-sm text-fg-muted">
                     {{
-                        $t("topics.leaderboard_form.by_default_only_the_neptun")
+                        $t("areas.leaderboard_form.by_default_only_the_neptun")
                     }}
                 </p>
                 <div class="mt-1.5">
@@ -117,7 +117,7 @@ function submit() {
 
         <template #footer>
             <Btn :disabled="form.processing" @click="emit('close')">{{
-                $t("topics.leaderboard_form.cancel")
+                $t("areas.leaderboard_form.cancel")
             }}</Btn>
             <Btn
                 type="submit"
@@ -127,8 +127,8 @@ function submit() {
             >
                 {{
                     board
-                        ? $t("topics.leaderboard_form.save_leaderboard")
-                        : $t("topics.leaderboard_form.create_leaderboard")
+                        ? $t("areas.leaderboard_form.save_leaderboard")
+                        : $t("areas.leaderboard_form.create_leaderboard")
                 }}
             </Btn>
         </template>

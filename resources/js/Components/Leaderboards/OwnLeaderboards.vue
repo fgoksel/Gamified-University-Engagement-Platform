@@ -191,7 +191,7 @@ const students = (n) => tc("leaderboards.own.students_listed", n);
                 :icon="Trophy"
                 :title="$t('leaderboards.own.no_leaderboards_for_you_yet')"
             >
-                {{ $t("leaderboards.own.when_a_topic_you_belong") }}
+                {{ $t("leaderboards.own.when_an_area_you_belong") }}
             </EmptyState>
         </section>
     </div>

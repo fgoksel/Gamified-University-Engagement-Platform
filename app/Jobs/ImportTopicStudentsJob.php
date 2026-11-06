@@ -80,7 +80,7 @@ class ImportTopicStudentsJob extends ImportCsvJob
 
     protected function title(): string
     {
-        return __('jobs.topic_students.student_import');
+        return __('jobs.area_students.student_import');
     }
 
     /**
@@ -91,7 +91,7 @@ class ImportTopicStudentsJob extends ImportCsvJob
     {
         // Not a technical problem to retry: the same missing file would fail again.
         if ($this->path === '' || ! Storage::disk($this->disk)->fileExists($this->path)) {
-            throw new InvalidArgumentException(__('jobs.topic_students.file_not_found'));
+            throw new InvalidArgumentException(__('jobs.area_students.file_not_found'));
         }
 
         $stream = Storage::disk($this->disk)->readStream($this->path);
@@ -114,11 +114,11 @@ class ImportTopicStudentsJob extends ImportCsvJob
         $this->importer = User::find($this->adminId);
 
         if ($this->topic === null) {
-            throw new InvalidArgumentException(__('jobs.topic_students.topic_gone'));
+            throw new InvalidArgumentException(__('jobs.area_students.area_gone'));
         }
 
         if ($this->role === null || $this->importer === null) {
-            throw new InvalidArgumentException(__('jobs.topic_students.role_gone'));
+            throw new InvalidArgumentException(__('jobs.area_students.role_gone'));
         }
 
         // Only topics that are still above this one count.
@@ -138,7 +138,7 @@ class ImportTopicStudentsJob extends ImportCsvJob
         $neptun = Str::upper(trim((string) ($row['neptun_code'] ?? '')));
 
         if ($neptun === '') {
-            $this->skip($line, __('jobs.topic_students.the_neptun_code_is_empty'));
+            $this->skip($line, __('jobs.area_students.the_neptun_code_is_empty'));
 
             return;
         }
@@ -146,7 +146,7 @@ class ImportTopicStudentsJob extends ImportCsvJob
         $student = User::role(UserRole::Student)->where('neptun_code', $neptun)->first();
 
         if ($student === null) {
-            $this->skip($line, __('jobs.topic_students.no_account', ['code' => $neptun]));
+            $this->skip($line, __('jobs.area_students.no_account', ['code' => $neptun]));
 
             return;
         }
@@ -166,17 +166,17 @@ class ImportTopicStudentsJob extends ImportCsvJob
                 app(AssignmentService::class)->import($this->importer, $target, $this->role, $student, $this->semesterId);
             } catch (ValidationException $e) {
                 // About the student (for example an account that is not active yet): the same everywhere.
-                $this->skip($line, __('jobs.topic_students.row_problem', ['neptun' => $neptun, 'reason' => collect($e->errors())->flatten()->first()]));
+                $this->skip($line, __('jobs.area_students.row_problem', ['neptun' => $neptun, 'reason' => collect($e->errors())->flatten()->first()]));
 
                 return;
             } catch (AuthorizationException $e) {
                 if ($here) {
-                    $this->skip($line, __('jobs.topic_students.row_problem', ['neptun' => $neptun, 'reason' => $e->getMessage()]));
+                    $this->skip($line, __('jobs.area_students.row_problem', ['neptun' => $neptun, 'reason' => $e->getMessage()]));
 
                     return;
                 }
 
-                $this->note($line, __('jobs.topic_students.not_added', ['code' => $neptun, 'topic' => $target->title, 'reason' => $e->getMessage()]));
+                $this->note($line, __('jobs.area_students.not_added', ['code' => $neptun, 'area' => $target->title, 'reason' => $e->getMessage()]));
 
                 continue;
             }
@@ -191,14 +191,14 @@ class ImportTopicStudentsJob extends ImportCsvJob
 
     protected function summary(): string
     {
-        $text = __('jobs.topic_students.added', ['count' => $this->added, 'role' => $this->role->name, 'topic' => $this->topic->title]);
+        $text = __('jobs.area_students.added', ['count' => $this->added, 'role' => $this->role->name, 'area' => $this->topic->title]);
 
         if ($this->already > 0) {
-            $text .= ' '.__('jobs.topic_students.already', ['count' => $this->already]);
+            $text .= ' '.__('jobs.area_students.already', ['count' => $this->already]);
         }
 
         foreach ($this->parents as $parent) {
-            $text .= ' '.__('jobs.topic_students.also_added', ['topic' => $parent->title, 'count' => $this->addedAbove[$parent->id] ?? 0]);
+            $text .= ' '.__('jobs.area_students.also_added', ['area' => $parent->title, 'count' => $this->addedAbove[$parent->id] ?? 0]);
         }
 
         return $text;
