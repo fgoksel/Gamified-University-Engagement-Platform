@@ -86,7 +86,7 @@ class TopicController extends Controller
     {
         $topic = $this->topics->create($request->user(), null, $request->only(['title', 'code', 'description']));
 
-        return redirect()->route('topics.show', $topic)->with('success', "Topic \"{$topic->title}\" created.");
+        return redirect()->route('topics.show', $topic)->with('success', "Area \"{$topic->title}\" created.");
     }
 
     public function storeChild(Request $request, Topic $topic): RedirectResponse
@@ -95,7 +95,7 @@ class TopicController extends Controller
 
         $child = $this->topics->create($request->user(), $topic, $request->only(['title', 'code', 'description']));
 
-        return redirect()->route('topics.show', $child)->with('success', "Topic \"{$child->title}\" added under \"{$topic->title}\".");
+        return redirect()->route('topics.show', $child)->with('success', "Area \"{$child->title}\" added under \"{$topic->title}\".");
     }
 
     public function update(Request $request, Topic $topic): RedirectResponse
@@ -104,7 +104,7 @@ class TopicController extends Controller
 
         $this->topics->update($request->user(), $topic, $request->only(['title', 'code', 'description']));
 
-        return redirect()->route('topics.show', $topic)->with('success', 'Topic saved.');
+        return redirect()->route('topics.show', $topic)->with('success', 'Area saved.');
     }
 
     /**
@@ -122,7 +122,7 @@ class TopicController extends Controller
             ? ' 1 event in it is frozen until you restore it.'
             : " {$frozen} events in it are frozen until you restore it.");
 
-        return $this->after($request, $topic)->with('success', "\"{$topic->title}\" archived. Nothing was deleted; find it under Archived topics to restore it.{$events}");
+        return $this->after($request, $topic)->with('success', "\"{$topic->title}\" archived. Nothing was deleted; find it under Archived areas to restore it.{$events}");
     }
 
     /**
@@ -168,13 +168,13 @@ class TopicController extends Controller
         $data = $request->validate([
             'token' => ['required', 'string'],
             'confirm_title' => ['required', 'string'],
-        ], ['confirm_title.required' => 'Type the topic name to confirm.']);
+        ], ['confirm_title.required' => 'Type the area name to confirm.']);
 
         abort_unless($this->access->isSystemAdmin($request->user()), 404);
 
         $this->topics->executeDelete($request->user(), $data['token'], $data['confirm_title']);
 
-        return redirect()->route('topics.index', ['start' => 1])->with('success', 'The topic was permanently deleted.');
+        return redirect()->route('topics.index', ['start' => 1])->with('success', 'The area was permanently deleted.');
     }
 
     /**
@@ -260,7 +260,7 @@ class TopicController extends Controller
     {
         $user = $request->user();
         $view = $request->query('view') === 'branch' ? 'branch' : 'contents';
-        $tab = in_array($request->query('tab'), ['access', 'leaderboards'], true) ? $request->query('tab') : 'topic';
+        $tab = in_array($request->query('tab'), ['access', 'leaderboards', 'events'], true) ? $request->query('tab') : 'topic';
 
         $selected = null;
 
@@ -283,6 +283,9 @@ class TopicController extends Controller
                 'access' => $tab === 'access' ? $this->browser->access($user, $topic) : null,
                 'leaderboards' => $tab === 'leaderboards'
                     ? $this->leaderboards->at($topic)->map(fn (Leaderboard $board) => $this->leaderboards->summary($board))->values()->all()
+                    : null,
+                'events' => $tab === 'events'
+                    ? $this->browser->events($user, $topic, $request->query('when') === 'past' ? 'past' : 'upcoming', max(1, (int) $request->query('page', 1)))
                     : null,
             ];
         }

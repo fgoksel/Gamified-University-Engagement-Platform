@@ -165,7 +165,7 @@ class ImportController extends Controller
             Course::findOrFail($courseId), (int) $request->input('target_topic_id'),
         ) === null) {
             throw ValidationException::withMessages([
-                'target_topic_id' => 'Choose the linked course topic or an active descendant as the import destination.',
+                'target_topic_id' => 'Choose the linked course area or an active descendant as the import destination.',
             ]);
         }
 

@@ -80,12 +80,12 @@ const students = (n) => (n === 1 ? "1 student listed" : `${n} students listed`);
             </h3>
             <p class="mt-1 text-sm text-fg-muted">
                 <template v-if="isStudent">
-                    The published leaderboards, and those of the topics you
+                    The published leaderboards, and those of the areas you
                     belong to. Each one counts the points from the events of its
                     area.
                 </template>
                 <template v-else>
-                    The published leaderboards, and those of the topics you
+                    The published leaderboards, and those of the areas you
                     belong to. Teachers are not ranked.
                 </template>
             </p>
@@ -177,7 +177,7 @@ const students = (n) => (n === 1 ? "1 student listed" : `${n} students listed`);
                 :icon="Trophy"
                 title="No leaderboards for you yet"
             >
-                When a topic you belong to makes a leaderboard, or one is
+                When an area you belong to makes a leaderboard, or one is
                 published, it appears here.
             </EmptyState>
         </section>

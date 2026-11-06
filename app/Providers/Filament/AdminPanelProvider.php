@@ -46,11 +46,11 @@ class AdminPanelProvider extends PanelProvider
             // Topics and roles are managed in the explorer, which uses the same
             // policies for System Admins and everyone else.
             ->navigationItems([
-                NavigationItem::make('Topics')
+                NavigationItem::make('Areas')
                     ->url('/topics')
                     ->icon(Heroicon::OutlinedRectangleGroup)
                     ->sort(8),
-                NavigationItem::make('Topic roles')
+                NavigationItem::make('Area roles')
                     ->url('/topics/roles')
                     ->icon(Heroicon::OutlinedKey)
                     ->sort(9),

@@ -140,14 +140,19 @@ class EventController extends Controller
     }
 
     /**
-     * The Event Form for a new event (Task #38, UC-1.3).
+     * The Event Form for a new event (Task #38, UC-1.3). "Create event here" in the explorer
+     * sends ?area=: kept only if the person may use that topic, otherwise ignored (Task #73).
      */
     public function create(Request $request, EventPlacement $placement): Response
     {
         Gate::forUser($request->user())->authorize('create', Event::class);
 
+        $owningTopics = $placement->formOptions($request->user());
+        $area = $request->integer('area');
+
         return Inertia::render('Events/Create', [
-            'owningTopics' => $placement->formOptions($request->user()),
+            'owningTopics' => $owningTopics,
+            'initialTopic' => in_array($area, array_column($owningTopics, 'id'), true) ? $area : null,
             'tags' => TopicTag::query()
                 ->where('is_active', true)
                 ->orderBy('category')

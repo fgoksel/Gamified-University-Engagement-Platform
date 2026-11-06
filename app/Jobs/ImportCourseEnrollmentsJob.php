@@ -123,7 +123,7 @@ class ImportCourseEnrollmentsJob extends ImportCsvJob
                 : null;
 
             if ($this->destination === null) {
-                throw new InvalidArgumentException('Choose the linked course topic or an active descendant as the import destination.');
+                throw new InvalidArgumentException('Choose the linked course area or an active descendant as the import destination.');
             }
         }
 
@@ -253,8 +253,8 @@ class ImportCourseEnrollmentsJob extends ImportCsvJob
         }
 
         if ($this->notLinked !== []) {
-            $text .= ' Skipped '.array_sum($this->notLinked).' rows because the course is not linked to a topic ('
-                .implode(', ', array_keys($this->notLinked)).'). Link the course to a topic in the topic tree first; students are never attached to another topic automatically.';
+            $text .= ' Skipped '.array_sum($this->notLinked).' rows because the course is not linked to an area ('
+                .implode(', ', array_keys($this->notLinked)).'). Link the course to an area in the area tree first; students are never attached to another area automatically.';
         }
 
         if ($this->roleUnavailable > 0) {

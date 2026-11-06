@@ -23,6 +23,8 @@ import ArchiveDialog from "../../Components/Topics/ArchiveDialog.vue";
 import DeleteTopicDialog from "../../Components/Topics/DeleteTopicDialog.vue";
 import AccessPanel from "../../Components/Topics/AccessPanel.vue";
 import LeaderboardsPanel from "../../Components/Topics/LeaderboardsPanel.vue";
+import EventsPanel from "../../Components/Topics/EventsPanel.vue";
+import CreateEventLink from "../../Components/Topics/CreateEventLink.vue";
 import { api, debounce } from "../../topicsApi.js";
 import { plural } from "../../topicsLabels.js";
 
@@ -177,9 +179,7 @@ const branchRange = computed(() => {
     <div class="space-y-4">
         <!-- Page header -->
         <div class="flex flex-wrap items-center justify-between gap-3">
-            <h1 class="text-2xl font-semibold tracking-tight text-fg">
-                Topics
-            </h1>
+            <h1 class="text-2xl font-semibold tracking-tight text-fg">Areas</h1>
             <div class="flex flex-wrap gap-2">
                 <Link
                     v-if="canSeeRoles"
@@ -203,11 +203,11 @@ const branchRange = computed(() => {
                         :stroke-width="1.75"
                         aria-hidden="true"
                     />
-                    Archived topics
+                    Archived areas
                 </Link>
                 <Btn v-if="isAdmin" variant="primary" @click="dialog = 'root'">
                     <Plus class="size-4" :stroke-width="2" aria-hidden="true" />
-                    New top-level topic
+                    New top-level area
                 </Btn>
             </div>
         </div>
@@ -234,7 +234,7 @@ const branchRange = computed(() => {
                 :stroke-width="1.75"
                 aria-hidden="true"
             />
-            Browse topics
+            Browse areas
         </button>
 
         <div class="flex items-start gap-0 lg:gap-0">
@@ -248,7 +248,7 @@ const branchRange = computed(() => {
             <!-- Left: structure -->
             <aside
                 id="topic-tree-panel"
-                aria-label="Topic structure"
+                aria-label="Area structure"
                 class="flex-col rounded-card border border-line bg-surface shadow-card lg:w-(--panel) lg:sticky lg:top-4 lg:flex lg:max-h-[calc(100vh-2rem)] lg:shrink-0"
                 :class="
                     drawerOpen
@@ -260,7 +260,7 @@ const branchRange = computed(() => {
             >
                 <div class="space-y-2 border-b border-line p-3" role="search">
                     <label for="topic-search" class="sr-only"
-                        >Search topics</label
+                        >Search areas</label
                     >
                     <div class="relative">
                         <Search
@@ -273,7 +273,7 @@ const branchRange = computed(() => {
                             v-model="term"
                             type="search"
                             autocomplete="off"
-                            placeholder="Search topics"
+                            placeholder="Search areas"
                             class="block min-h-11 w-full rounded-control border border-line bg-surface py-2 pr-3 pl-9 text-sm text-fg focus:outline-2 focus:outline-offset-0 focus:outline-ring"
                             @input="onSearchInput"
                         />
@@ -309,7 +309,7 @@ const branchRange = computed(() => {
                         v-else-if="term.trim().length >= 2 && !searching"
                         class="px-1 text-xs text-fg-muted"
                     >
-                        No topic matches “{{ term }}”.
+                        No area matches “{{ term }}”.
                     </p>
                 </div>
 
@@ -324,7 +324,7 @@ const branchRange = computed(() => {
                         @select="go"
                     />
                     <p v-else class="px-2 py-4 text-sm text-fg-muted">
-                        No topics to show.
+                        No areas to show.
                     </p>
                 </div>
 
@@ -338,7 +338,7 @@ const branchRange = computed(() => {
                 class="mx-1 hidden h-24 w-1.5 shrink-0 cursor-col-resize self-center rounded-full bg-line hover:bg-fg-muted focus-visible:outline-2 focus-visible:outline-ring lg:block"
                 role="separator"
                 aria-orientation="vertical"
-                aria-label="Resize the topic panel"
+                aria-label="Resize the area panel"
                 :aria-valuenow="panelWidth"
                 aria-valuemin="240"
                 aria-valuemax="560"
@@ -354,19 +354,19 @@ const branchRange = computed(() => {
                     <EmptyState
                         v-if="entries.length === 0 && isAdmin"
                         :icon="FolderTree"
-                        title="No topics yet"
+                        title="No areas yet"
                     >
-                        Start with a top-level topic, such as a country, a
+                        Start with a top-level area, such as a country, a
                         university or a subject. There are no required levels:
                         you decide the names and the nesting.
                     </EmptyState>
                     <EmptyState
                         v-else-if="entries.length === 0"
                         :icon="FolderTree"
-                        title="No topics for you yet"
+                        title="No areas for you yet"
                     >
-                        You do not have a role on any topic. An administrator
-                        can give you one.
+                        You do not have a role in any area. An administrator can
+                        give you one.
                     </EmptyState>
                     <div v-else class="space-y-3">
                         <h2 class="text-base font-semibold text-fg">
@@ -388,7 +388,7 @@ const branchRange = computed(() => {
                                             >{{
                                                 plural(
                                                     entry.children_count,
-                                                    "topic",
+                                                    "area",
                                                 )
                                             }}
                                             directly inside</span
@@ -418,7 +418,7 @@ const branchRange = computed(() => {
                                 <Link
                                     href="/topics?start=1"
                                     class="hover:text-fg hover:underline"
-                                    >Topics</Link
+                                    >Areas</Link
                                 >
                             </li>
                             <li
@@ -477,8 +477,12 @@ const branchRange = computed(() => {
                                     :stroke-width="2"
                                     aria-hidden="true"
                                 />
-                                New topic
+                                New area
                             </Btn>
+                            <CreateEventLink
+                                v-if="selected.can.create_event"
+                                :topic-id="selected.id"
+                            />
                             <Btn
                                 v-if="selected.can.edit"
                                 @click="dialog = 'edit'"
@@ -528,7 +532,7 @@ const branchRange = computed(() => {
 
                     <!-- Views -->
                     <nav
-                        aria-label="Topic views"
+                        aria-label="Area views"
                         class="flex gap-1 overflow-x-auto border-b border-line"
                     >
                         <Link
@@ -600,6 +604,22 @@ const branchRange = computed(() => {
                         >
                             Leaderboards
                         </Link>
+                        <Link
+                            :href="`/topics/${selected.id}?tab=events`"
+                            :only="only"
+                            preserve-state
+                            class="-mb-px min-h-11 shrink-0 border-b-2 px-3 py-2.5 text-sm font-medium focus-visible:outline-2 focus-visible:outline-ring"
+                            :class="
+                                tab === 'events'
+                                    ? 'border-primary text-fg'
+                                    : 'border-transparent text-fg-muted hover:text-fg'
+                            "
+                            :aria-current="
+                                tab === 'events' ? 'page' : undefined
+                            "
+                        >
+                            Events
+                        </Link>
                     </nav>
 
                     <!-- Access -->
@@ -621,13 +641,22 @@ const branchRange = computed(() => {
                         :can="selected.can"
                     />
 
+                    <!-- Events (Task #73) -->
+                    <EventsPanel
+                        v-else-if="tab === 'events' && selected.events"
+                        :topic="selected"
+                        :events="selected.events"
+                        :can="selected.can"
+                        :only="only"
+                    />
+
                     <!-- Whole branch -->
                     <div
                         v-else-if="view === 'branch' && selected.branch"
                         class="space-y-4"
                     >
                         <p class="text-sm text-fg-muted">
-                            Every topic below
+                            Every area below
                             <strong class="text-fg">{{
                                 selected.title
                             }}</strong>
@@ -640,7 +669,7 @@ const branchRange = computed(() => {
                             data-testid="branch-counts"
                         >
                             <strong>{{
-                                plural(selected.counts.topics_below, "topic")
+                                plural(selected.counts.topics_below, "area")
                             }}</strong>
                             below ·
                             <strong>{{
@@ -713,8 +742,8 @@ const branchRange = computed(() => {
                         >
                             {{
                                 search
-                                    ? "No topic in this branch matches the filter."
-                                    : "There are no topics below this one."
+                                    ? "No area in this branch matches the filter."
+                                    : "There are no areas below this one."
                             }}
                         </p>
 
@@ -754,7 +783,7 @@ const branchRange = computed(() => {
                                 id="about-heading"
                                 class="text-sm font-semibold text-fg"
                             >
-                                About this topic
+                                About this area
                             </h3>
                             <p
                                 v-if="selected.description"
@@ -793,7 +822,7 @@ const branchRange = computed(() => {
                                 id="children-heading"
                                 class="text-sm font-semibold text-fg"
                             >
-                                Topics directly inside ({{
+                                Areas directly inside ({{
                                     selected.children.length
                                 }})
                             </h3>
@@ -825,7 +854,7 @@ const branchRange = computed(() => {
                                                 }}{{
                                                     plural(
                                                         child.children_count,
-                                                        "topic",
+                                                        "area",
                                                     )
                                                 }}
                                                 inside</span
@@ -843,13 +872,13 @@ const branchRange = computed(() => {
                                 v-else
                                 class="mt-2 rounded-card border border-dashed border-line px-4 py-6 text-center text-sm text-fg-muted"
                             >
-                                Nothing inside this topic yet.
+                                Nothing inside this area yet.
                                 <Btn
                                     v-if="selected.can.create"
                                     class="mt-3"
                                     variant="primary"
                                     @click="dialog = 'create'"
-                                    >Add the first topic here</Btn
+                                    >Add the first area here</Btn
                                 >
                             </div>
                         </section>

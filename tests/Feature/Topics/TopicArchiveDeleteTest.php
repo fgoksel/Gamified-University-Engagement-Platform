@@ -282,7 +282,7 @@ class TopicArchiveDeleteTest extends TopicTestCase
         // children
         $this->assertCount(2, $this->service()->deleteBlockers($this->branch) ?: [1, 2]);
         $reasons = $this->service()->deleteBlockers($this->branch);
-        $this->assertStringContainsString('1 topic(s) inside', $reasons[0]);
+        $this->assertStringContainsString('1 area(s) inside', $reasons[0]);
         $this->assertStringContainsString('Archive it instead', end($reasons));
 
         // assignments, even ended ones

@@ -48,7 +48,7 @@ class TopicService
 
             if ($depth >= config('topics.max_depth')) {
                 throw ValidationException::withMessages([
-                    'title' => 'Topics can be nested at most '.config('topics.max_depth').' levels deep.',
+                    'title' => 'Areas can be nested at most '.config('topics.max_depth').' levels deep.',
                 ]);
             }
 
@@ -216,7 +216,7 @@ class TopicService
             Gate::forUser($actor)->authorize('archive', $topic);
 
             if ($topic->isArchived() || $this->access->isHidden($topic)) {
-                throw ValidationException::withMessages(['topic' => 'This topic is already archived.']);
+                throw ValidationException::withMessages(['topic' => 'This area is already archived.']);
             }
 
             $below = DB::table('topic_closure')->where('ancestor_id', $topic->id)->where('distance', '>', 0)->count();
@@ -250,7 +250,7 @@ class TopicService
             Gate::forUser($actor)->authorize('restore', $topic);
 
             if (! $topic->isArchived()) {
-                throw ValidationException::withMessages(['topic' => 'This topic is not archived.']);
+                throw ValidationException::withMessages(['topic' => 'This area is not archived.']);
             }
 
             $insideArchived = DB::table('topic_closure as c')
@@ -261,7 +261,7 @@ class TopicService
                 ->exists();
 
             if ($insideArchived) {
-                throw ValidationException::withMessages(['topic' => 'This topic sits inside another archived topic. Restore that one first.']);
+                throw ValidationException::withMessages(['topic' => 'This area sits inside another archived area. Restore that one first.']);
             }
 
             $before = $this->snapshot($topic);
@@ -286,7 +286,7 @@ class TopicService
 
         $children = Topic::query()->where('parent_id', $topic->id)->count();
         if ($children > 0) {
-            $blockers[] = "It has {$children} topic(s) inside it (archived ones count too).";
+            $blockers[] = "It has {$children} area(s) inside it (archived ones count too).";
         }
 
         $assignments = RoleAssignment::query()->where('topic_id', $topic->id)->count();
@@ -370,14 +370,14 @@ class TopicService
             $topic = Topic::query()->whereKey($payload['topic'])->lockForUpdate()->first();
 
             if ($topic === null) {
-                throw ValidationException::withMessages(['confirmation' => 'This topic is already gone. Nothing was changed.']);
+                throw ValidationException::withMessages(['confirmation' => 'This area is already gone. Nothing was changed.']);
             }
 
             $this->access->flush();
             Gate::forUser($actor)->authorize('delete', $topic);
 
             if ($topic->updated_at?->getTimestamp() !== $payload['stamp']) {
-                throw ValidationException::withMessages(['confirmation' => 'This topic changed after you opened it. Nothing was deleted; please start again.']);
+                throw ValidationException::withMessages(['confirmation' => 'This area changed after you opened it. Nothing was deleted; please start again.']);
             }
 
             $blockers = $this->deleteBlockers($topic);
@@ -386,7 +386,7 @@ class TopicService
             }
 
             if (trim($typedTitle) !== $topic->title) {
-                throw ValidationException::withMessages(['confirm_title' => 'Type the topic name exactly to confirm.']);
+                throw ValidationException::withMessages(['confirm_title' => 'Type the area name exactly to confirm.']);
             }
 
             $before = $this->snapshot($topic);
@@ -406,15 +406,15 @@ class TopicService
     private function moveProblems(Topic $topic, ?Topic $destination): array
     {
         if ($destination !== null && $destination->id === $topic->id) {
-            return ['A topic cannot be moved into itself.'];
+            return ['An area cannot be moved into itself.'];
         }
 
         if ($destination !== null && $destination->isWithin($topic)) {
-            return ['A topic cannot be moved into one of its own descendants.'];
+            return ['An area cannot be moved into one of its own descendants.'];
         }
 
         if (($destination?->id) === $topic->parent_id) {
-            return ['The topic is already there.'];
+            return ['The area is already there.'];
         }
 
         $problems = [];
@@ -422,7 +422,7 @@ class TopicService
         $height = (int) DB::table('topic_closure')->where('ancestor_id', $topic->id)->max('distance');
 
         if ($newDepth + $height >= config('topics.max_depth')) {
-            $problems[] = 'The topic and everything below it would be nested deeper than '.config('topics.max_depth').' levels.';
+            $problems[] = 'The area and everything below it would be nested deeper than '.config('topics.max_depth').' levels.';
         }
 
         // A branch-only role must still sit inside its own branch after the move.
@@ -445,7 +445,7 @@ class TopicService
                     ->exists();
 
             if (! $stillCovered) {
-                $problems[] = "\"{$assignment->role->name}\" is held at a topic that would end up outside the branch this role belongs to. End or replace that role first.";
+                $problems[] = "\"{$assignment->role->name}\" is held in an area that would end up outside the branch this role belongs to. End or replace that role first.";
             }
         }
 
@@ -472,7 +472,7 @@ class TopicService
             'code' => ['nullable', 'string', 'max:50'],
             'description' => ['nullable', 'string', 'max:5000'],
         ], [
-            'title.required' => 'Give the topic a name.',
+            'title.required' => 'Give the area a name.',
         ])->validate();
 
         return [

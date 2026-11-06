@@ -64,13 +64,13 @@ class StoreEventRequest extends FormRequest
                 $owning = Topic::find($this->integer('owning_topic_id'));
 
                 if (! $placement->mayOwn($this->user(), $owning)) {
-                    $validator->errors()->add('owning_topic_id', 'You cannot create events at this topic.');
+                    $validator->errors()->add('owning_topic_id', 'You cannot create events in this area.');
 
                     return;
                 }
 
                 if ($this->input('action') === 'publish' && ! $placement->mayPublish($this->user(), $owning)) {
-                    $validator->errors()->add('action', 'You may save this event as a draft. Publishing needs the "Manage events" permission at this topic.');
+                    $validator->errors()->add('action', 'You may save this event as a draft. Publishing needs the "Manage events" permission in this area.');
 
                     return;
                 }
@@ -78,7 +78,7 @@ class StoreEventRequest extends FormRequest
                 $audience = $this->input('audience_topic_id');
 
                 if ($audience !== null && ! in_array((int) $audience, $placement->audienceIds($owning), true)) {
-                    $validator->errors()->add('audience_topic_id', 'The audience must be the owning topic or a topic above it.');
+                    $validator->errors()->add('audience_topic_id', 'The audience must be the owning area or an area above it.');
                 }
             },
         ];

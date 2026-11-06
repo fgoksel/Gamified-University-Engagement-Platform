@@ -1,5 +1,7 @@
 # Topics: the abstract topic tree (Sprint 1)
 
+In the interface this is called an area; in the code it is still Topic.
+
 This document records what was built, why, how the old faculty tree was carried over, and what is
 deliberately left for later. It is the decision record for review; nothing here claims team or
 supervisor approval.
@@ -10,22 +12,22 @@ supervisor approval.
 
 ## 1. What a user sees
 
-- **Topics** in the menu opens an explorer: the tree on the left, the selected topic on the right.
+- **Areas** in the menu opens an explorer: the tree on the left, the selected area on the right.
   Expanding a branch (chevron, or the Right arrow key) never changes the selection; selecting (click,
   Enter) does. Every selection is a URL (`/topics/{id}`, plus `?view=branch`, `?tab=access`), so back,
   forward, reload and links work.
-- A **root** is just a topic without a parent. There can be several. No level has a required meaning:
+- A **root** is just an area without a parent. There can be several. No level has a required meaning:
   names such as Hungary, Pécs, Programming or Database are examples the user types.
-- **Direct contents** shows the immediate children. **Whole branch** lists every topic below that the
-  person may see, with the path from the selected topic, a filter and paging. The stored tree is never
+- **Direct contents** shows the immediate children. **Whole branch** lists every area below that the
+  person may see, with the path from the selected area, a filter and paging. The stored tree is never
   flattened.
 - **Access** (only for people who may see who has access) shows *Assigned here* and *Inherited from
   [ancestor]*. Ancestors above the person's own access are never named. Counts separate **people** from
   **role assignments** (one person with two roles is one person and two assignments).
 - **Roles** (menu, for people who define or give roles) is the role builder.
-- System Admins use the same screens (menu entries "Topics" and "Topic roles" in the admin panel) plus a
+- System Admins use the same screens (menu entries "Areas" and "Area roles" in the admin panel) plus a
   Filament page **System admins** to appoint, remove and replace System Admins.
-- Phone width: the tree becomes a drawer opened by "Browse topics"; the topic panel width can be resized
+- Phone width: the tree becomes a drawer opened by "Browse areas"; the area panel width can be resized
   by mouse or by the Left/Right keys on the separator and is remembered, as are expanded branches
   (browser storage only; access is re-checked on every load).
 

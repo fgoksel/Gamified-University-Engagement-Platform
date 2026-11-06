@@ -1,11 +1,11 @@
 // Plain-language names of the capabilities in the registry
 // (App\Enums\Capability). The server sends the same list to the role builder.
 export const capabilityLabels = {
-    "topic.view": "View topics",
-    "topic.create": "Add topics",
-    "topic.edit": "Edit any topic",
-    "topic.organise": "Move topics",
-    "topic.archive": "Archive topics",
+    "topic.view": "View areas",
+    "topic.create": "Add areas",
+    "topic.edit": "Edit any area",
+    "topic.organise": "Move areas",
+    "topic.archive": "Archive areas",
     "access.view": "See who has access",
     "access.assign": "Give people roles",
     "access.end": "End and replace roles",

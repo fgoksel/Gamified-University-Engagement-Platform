@@ -66,7 +66,7 @@ class TopicImportController extends Controller
         $parents = array_values(array_unique(array_map('intval', $data['parent_topic_ids'] ?? [])));
 
         if (array_diff($parents, $offered) !== []) {
-            throw ValidationException::withMessages(['parent_topic_ids' => 'You can only add students to topics above this one where you may import them.']);
+            throw ValidationException::withMessages(['parent_topic_ids' => 'You can only add students to areas above this one where you may import them.']);
         }
 
         foreach (Topic::query()->whereIn('id', $parents)->get() as $parent) {

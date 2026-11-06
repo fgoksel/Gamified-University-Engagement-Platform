@@ -64,7 +64,7 @@ class TopicLifecycleEventsTest extends EventTestCase
         $this->actingAs($this->student)->get("/events/{$this->event->id}")->assertNotFound();
         $this->assertFalse(Gate::forUser($this->student)->allows('apply', $this->event->fresh()));
         $this->actingAs($this->student)->post("/events/{$this->event->id}/apply")
-            ->assertSessionHasErrors(['event' => 'Applications are frozen because this topic is archived.']);
+            ->assertSessionHasErrors(['event' => 'Applications are frozen because this area is archived.']);
     }
 
     public function test_archiving_freezes_management_and_points(): void

@@ -139,7 +139,7 @@ class TopicActionsHttpTest extends TopicTestCase
         $this->assertSame($this->other->id, $leaf->fresh()->parent_id);
 
         $this->postJson("/topics/{$leaf->id}/move/preview", ['destination_id' => $leaf->id])
-            ->assertOk()->assertJsonPath('blocked.0', 'A topic cannot be moved into itself.');
+            ->assertOk()->assertJsonPath('blocked.0', 'An area cannot be moved into itself.');
         $this->postJson("/topics/{$leaf->id}/move", ['destination_id' => $leaf->id])->assertStatus(422);
     }
 

@@ -446,6 +446,6 @@ class StudentManagement extends Page implements HasTable
 
         return $count === 0
             ? ''
-            : " They hold {$count} active topic role(s). These stay in place (nothing is removed); hand them over in Topics when needed.";
+            : " They hold {$count} active area role(s). These stay in place (nothing is removed); hand them over in Areas when needed.";
     }
 }

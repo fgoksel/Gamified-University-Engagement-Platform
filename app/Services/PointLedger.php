@@ -60,7 +60,7 @@ class PointLedger
         }
 
         if ($this->access->isHidden($event->owningTopic)) {
-            return new EventActionRefused('topic_archived', 'The topic of this event is archived, so nothing can be credited.', 409);
+            return new EventActionRefused('topic_archived', 'The area of this event is archived, so nothing can be credited.', 409);
         }
 
         if (now()->lt($event->event_starts_at)) {

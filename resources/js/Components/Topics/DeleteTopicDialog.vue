@@ -64,7 +64,7 @@ function execute() {
     <!-- Checking -->
     <Modal
         v-if="stage === 'checking'"
-        title="Delete topic"
+        title="Delete area"
         @close="emit('close')"
     >
         <p class="text-sm text-fg-muted" role="status">
@@ -75,7 +75,7 @@ function execute() {
     <!-- Not allowed -->
     <Modal
         v-else-if="stage === 'blocked'"
-        title="This topic cannot be deleted"
+        title="This area cannot be deleted"
         @close="emit('close')"
     >
         <p class="text-sm text-fg">
@@ -105,7 +105,7 @@ function execute() {
     <!-- First confirmation -->
     <Modal
         v-else-if="stage === 'confirm1'"
-        title="Delete this topic?"
+        title="Delete this area?"
         danger
         :busy="busy"
         @close="emit('close')"
@@ -151,7 +151,7 @@ function execute() {
             />
             <div class="text-sm">
                 <p class="font-semibold">
-                    This is important: topics should almost never be deleted.
+                    This is important: areas should almost never be deleted.
                 </p>
                 <p class="mt-1">
                     “{{ topic.title }}” will be permanently removed and cannot

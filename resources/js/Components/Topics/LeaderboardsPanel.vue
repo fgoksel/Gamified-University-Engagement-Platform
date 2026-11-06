@@ -69,7 +69,7 @@ function destroy() {
                 <p class="mt-1 text-sm text-fg-muted">
                     A leaderboard here ranks students by the points from events
                     in
-                    {{ topic.title }} and in all topics below it.
+                    {{ topic.title }} and in all areas below it.
                 </p>
             </div>
             <Btn v-if="manage" variant="primary" @click="creating = true">

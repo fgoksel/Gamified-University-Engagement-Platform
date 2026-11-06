@@ -176,7 +176,7 @@ provide("topicTree", {
     <ul
         ref="tree"
         role="tree"
-        aria-label="Topics"
+        aria-label="Areas"
         class="space-y-0.5"
         @keydown="onKeydown"
     >

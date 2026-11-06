@@ -214,7 +214,7 @@ function post(action) {
             <div class="grid grid-cols-[auto_1fr] content-start gap-x-2">
                 <dt>
                     <Building2 class="mt-0.5 size-4 shrink-0 text-fg-muted" />
-                    <span class="sr-only">Topics</span>
+                    <span class="sr-only">Areas</span>
                 </dt>
                 <dd class="col-start-2 text-fg">
                     {{ event.owning_topic }}

@@ -73,7 +73,7 @@ class TopicEventRules
         $more = $stranded->count() > 3 ? ' and '.($stranded->count() - 3).' more' : '';
 
         return [
-            "{$stranded->count()} event(s) in this branch are announced to a topic that would no longer be above them: {$examples}{$more}. "
+            "{$stranded->count()} event(s) in this branch are announced to an area that would no longer be above them: {$examples}{$more}. "
             .'Change their audience, or cancel them, before moving.',
         ];
     }

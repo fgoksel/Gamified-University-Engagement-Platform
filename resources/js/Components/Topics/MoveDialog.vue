@@ -71,7 +71,7 @@ function submit() {
 </script>
 
 <template>
-    <Modal title="Move topic" wide :busy="busy" @close="emit('close')">
+    <Modal title="Move area" wide :busy="busy" @close="emit('close')">
         <div class="space-y-4">
             <p class="text-sm text-fg">
                 Move <strong>{{ topic.title }}</strong> and everything below it.
@@ -90,7 +90,7 @@ function submit() {
                     v-model="term"
                     type="search"
                     autocomplete="off"
-                    placeholder="Search for the topic to move it into"
+                    placeholder="Search for the area to move it into"
                     class="mt-1.5 block w-full rounded-control border border-line bg-surface px-3 py-2 text-fg focus:outline-2 focus:outline-offset-0 focus:outline-ring"
                     data-autofocus
                     @input="search"
@@ -124,7 +124,7 @@ function submit() {
                     class="mt-2 text-sm text-link underline"
                     @click="choose(null)"
                 >
-                    Make it a top-level topic
+                    Make it a top-level area
                 </button>
             </div>
 
@@ -155,7 +155,7 @@ function submit() {
                     </ul>
                     <ul v-else class="list-disc space-y-1 pl-5 text-sm text-fg">
                         <li>
-                            {{ preview.topics_moved }} topic(s) move together.
+                            {{ preview.topics_moved }} area(s) move together.
                         </li>
                         <li>
                             {{ preview.gain_people }} person/people will gain
@@ -165,7 +165,7 @@ function submit() {
                             {{ preview.lose_people }} person/people will lose
                             access they had through the old parents.
                         </li>
-                        <li>Roles given on these topics stay with them.</li>
+                        <li>Roles given in these areas stay with them.</li>
                     </ul>
                 </template>
             </div>
@@ -186,7 +186,7 @@ function submit() {
                 :loading="busy"
                 :disabled="!preview || preview.blocked.length > 0"
                 @click="submit"
-                >Move topic</Btn
+                >Move area</Btn
             >
         </template>
     </Modal>
