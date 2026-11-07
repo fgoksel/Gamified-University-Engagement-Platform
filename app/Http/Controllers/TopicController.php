@@ -10,7 +10,7 @@ use App\Services\AreaLeaderboards;
 use App\Services\TopicAccess;
 use App\Services\TopicBrowser;
 use App\Services\TopicEventRules;
-use App\Services\TopicService;
+use App\Services\TopicService; 
 use App\Support\Like;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;

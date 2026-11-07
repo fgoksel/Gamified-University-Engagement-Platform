@@ -1,18 +1,24 @@
 <script setup>
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { Link } from "@inertiajs/vue3";
-import { ArrowLeft, Globe, Trophy, Users } from "@lucide/vue";
+import { ArrowLeft, Globe, Trophy } from "@lucide/vue";
+import AlertMessage from "../../Components/AlertMessage.vue";
 import EmptyState from "../../Components/EmptyState.vue";
+import HighlightButton from "../../Components/Leaderboards/HighlightButton.vue";
 import StatusChip from "../../Components/StatusChip.vue";
 import { leaderboardColumnLabels } from "../../topicsLabels.js";
 
 // One leaderboard (Task #89): the top 10, about 10 places around the person
 // when they are further down, and how many students are listed (L5, 27
-// October). Only the columns its creator chose reach this page (L6).
+// October). Only the columns its creator chose reach this page (L6). The star highlights it
+// for the person, so that it is listed first (D6, 7 November).
 const props = defineProps({
     leaderboard: { type: Object, required: true },
     standings: { type: Object, required: true },
 });
+
+// What the server said when the star was refused, e.g. the limit
+const highlightError = ref("");
 
 const columns = computed(() =>
     props.leaderboard.columns.map((key) => ({
@@ -59,20 +65,28 @@ const groups = computed(() => [
                     v-if="leaderboard.is_public"
                     tone="info"
                     :icon="Globe"
-                    >Published</StatusChip
+                    >On the hall screen</StatusChip
                 >
-                <StatusChip v-else :icon="Users">Area only</StatusChip>
+                <HighlightButton
+                    :board="leaderboard"
+                    variant="text"
+                    @error="highlightError = $event"
+                />
             </div>
+            <AlertMessage
+                v-if="highlightError"
+                type="error"
+                data-test="highlight-error"
+            >
+                {{ highlightError }}
+            </AlertMessage>
             <p class="text-sm text-fg-muted">
                 Points from every event in
                 <Link
-                    v-if="leaderboard.can_open_topic"
                     :href="`/topics/${leaderboard.topic.id}?tab=leaderboards`"
                     class="font-medium text-link hover:underline focus-visible:outline-2 focus-visible:outline-ring"
                     >{{ leaderboard.topic.title }}</Link
-                ><strong v-else class="font-medium text-fg">{{
-                    leaderboard.topic.title
-                }}</strong>
+                >
                 and in all areas below it.
             </p>
             <p v-if="standings.total" class="text-sm text-fg">

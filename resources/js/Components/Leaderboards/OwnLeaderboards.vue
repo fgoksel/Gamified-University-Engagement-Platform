@@ -1,20 +1,25 @@
 <script setup>
-import { Link } from "@inertiajs/vue3";
-import { ChevronRight, Globe, Trophy, Users } from "@lucide/vue";
+import { computed, ref } from "vue";
+import { Trophy } from "@lucide/vue";
+import AlertMessage from "../AlertMessage.vue";
 import EmptyState from "../EmptyState.vue";
-import StatusChip from "../StatusChip.vue";
+import BoardRow from "./BoardRow.vue";
 import { categoryLabel } from "../../categoryColors.js";
 
 // "My leaderboard" (Task #54, UC-1.2 and UC-2.2). A student sees their own points in total and
 // per category, and on each leaderboard they may see their rank and points there. Everyone else
 // sees the leaderboards they may see and how many students each lists. Each one opens the full
-// leaderboard (top 10 and the places around the student).
-defineProps({
+// leaderboard (top 10 and the places around the student). The page is the same for everyone: the
+// same leaderboards and the same lists (D3, 7 November); a student also sees their own points and
+// rank. A star highlights a leaderboard, and the highlighted ones are listed first (D6).
+const props = defineProps({
     isStudent: { type: Boolean, default: false },
     // { total, academic, scientific, sports, community }, null for people who earn no points
     points: { type: Object, default: null },
-    // [{ id, name, is_public, topic: { id, title }, students, you: { rank, points, categories } | null }]
+    // [{ id, name, highlighted, is_public, topic: { id, title }, students, you: { rank, points, categories } | null }]
     leaderboards: { type: Array, required: true },
+    // How many leaderboards one person can highlight
+    highlightLimit: { type: Number, default: 5 },
 });
 
 const categories = ["academic", "scientific", "sports", "community"];
@@ -27,7 +32,29 @@ const tileClass = {
     community: "bg-cat-community-soft text-cat-community-fg",
 };
 
-const students = (n) => (n === 1 ? "1 student listed" : `${n} students listed`);
+// What the server said when a star was refused, e.g. the limit
+const highlightError = ref("");
+
+const hint = computed(() =>
+    props.highlightLimit === 1
+        ? "Use the star to highlight one leaderboard. It is listed first."
+        : `Use the star to highlight up to ${props.highlightLimit} leaderboards. They are listed first.`,
+);
+
+// The highlighted leaderboards come first, under their own heading; without any, one plain list
+const groups = computed(() => {
+    const starred = props.leaderboards.filter((board) => board.highlighted);
+    const others = props.leaderboards.filter((board) => !board.highlighted);
+
+    if (!starred.length) {
+        return [{ key: "all", title: null, boards: others }];
+    }
+
+    return [
+        { key: "highlighted", title: "Highlighted", boards: starred },
+        { key: "others", title: "Other leaderboards", boards: others },
+    ].filter((group) => group.boards.length);
+});
 </script>
 
 <template>
@@ -79,97 +106,44 @@ const students = (n) => (n === 1 ? "1 student listed" : `${n} students listed`);
                 Leaderboards
             </h3>
             <p class="mt-1 text-sm text-fg-muted">
-                <template v-if="isStudent">
-                    The published leaderboards, and those of the areas you
-                    belong to. Each one counts the points from the events of its
-                    area.
-                </template>
-                <template v-else>
-                    The published leaderboards, and those of the areas you
-                    belong to. Teachers are not ranked.
-                </template>
+                The leaderboards of the areas you belong to. Each one counts the
+                points from the events of its area.
             </p>
 
-            <ul
-                v-if="leaderboards.length"
-                class="mt-3 divide-y divide-line rounded-card border border-line bg-surface"
-            >
-                <li
-                    v-for="board in leaderboards"
-                    :key="board.id"
-                    :data-test="`board-${board.id}`"
-                >
-                    <Link
-                        :href="`/leaderboards/${board.id}`"
-                        class="flex min-h-11 items-center justify-between gap-3 p-3 hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-ring"
-                    >
-                        <span class="min-w-0 space-y-1">
-                            <span class="block font-medium text-fg">{{
-                                board.name
-                            }}</span>
-                            <span class="block text-sm text-fg-muted">
-                                {{ board.topic.title }} ·
-                                {{ students(board.students) }}
-                            </span>
+            <div v-if="leaderboards.length" class="mt-3 space-y-4">
+                <p class="text-sm text-fg-muted" data-test="highlight-hint">
+                    {{ hint }}
+                </p>
 
-                            <template v-if="isStudent">
-                                <span
-                                    v-if="board.you"
-                                    class="block text-sm text-fg"
-                                    data-test="you"
-                                >
-                                    You are number
-                                    <strong>{{ board.you.rank }}</strong>
-                                    of <strong>{{ board.students }}</strong
-                                    >, with
-                                    <strong>{{ board.you.points }}</strong>
-                                    points here.
-                                </span>
-                                <span
-                                    v-if="board.you"
-                                    class="flex flex-wrap gap-x-4 text-sm text-fg-muted"
-                                    data-test="you-categories"
-                                >
-                                    <span
-                                        v-for="category in categories"
-                                        :key="category"
-                                    >
-                                        {{ categoryLabel[category] }}
-                                        <span class="tabular-nums">{{
-                                            board.you.categories[category]
-                                        }}</span>
-                                    </span>
-                                </span>
-                                <span
-                                    v-else
-                                    class="block text-sm text-fg-muted"
-                                    data-test="not-listed"
-                                >
-                                    You are not on this leaderboard yet. It
-                                    counts the points from events in
-                                    {{ board.topic.title }}.
-                                </span>
-                            </template>
-                        </span>
-                        <span class="flex shrink-0 items-center gap-2">
-                            <StatusChip
-                                v-if="board.is_public"
-                                tone="info"
-                                :icon="Globe"
-                                >Published</StatusChip
-                            >
-                            <StatusChip v-else :icon="Users"
-                                >Area only</StatusChip
-                            >
-                            <ChevronRight
-                                class="size-5 text-fg-muted"
-                                :stroke-width="1.75"
-                                aria-hidden="true"
-                            />
-                        </span>
-                    </Link>
-                </li>
-            </ul>
+                <AlertMessage
+                    v-if="highlightError"
+                    type="error"
+                    data-test="highlight-error"
+                >
+                    {{ highlightError }}
+                </AlertMessage>
+
+                <div v-for="group in groups" :key="group.key">
+                    <h4
+                        v-if="group.title"
+                        class="mb-2 text-sm font-semibold text-fg"
+                        :data-test="`group-${group.key}`"
+                    >
+                        {{ group.title }}
+                    </h4>
+                    <ul
+                        class="divide-y divide-line rounded-card border border-line bg-surface"
+                    >
+                        <BoardRow
+                            v-for="board in group.boards"
+                            :key="board.id"
+                            :board="board"
+                            :is-student="isStudent"
+                            @error="highlightError = $event"
+                        />
+                    </ul>
+                </div>
+            </div>
 
             <EmptyState
                 v-else
@@ -177,8 +151,7 @@ const students = (n) => (n === 1 ? "1 student listed" : `${n} students listed`);
                 :icon="Trophy"
                 title="No leaderboards for you yet"
             >
-                When an area you belong to makes a leaderboard, or one is
-                published, it appears here.
+                When an area you belong to makes a leaderboard, it appears here.
             </EmptyState>
         </section>
     </div>

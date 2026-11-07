@@ -5,18 +5,41 @@
 Everyone who is signed in sees their own leaderboard, in the menu under **Leaderboards**
 (`/leaderboards`). Teachers also start there (`/`); students start on their home page.
 
-- **A student** sees *Your points*: the total and the four categories, added up from the whole
-  ledger with no period (L3). Below that, every leaderboard open to them, each with their rank
-  ("You are number 2 of 4"), their points there per category, and how many students are listed.
-  A student with no points in the area of a board is told they are not on it yet.
-- **A teacher** earns no points. They see the leaderboards open to them and how many students
-  each lists.
-- **Which leaderboards:** the published ones, and the area-only ones of the topics the person can
-  open (`AreaLeaderboards::openTo()`, L4). Nobody sees a leaderboard they may not see. On this
+The page is the same for everyone (D3, 7 November): the same leaderboards, and on each one the same
+list. There is no lighter version for students and no separate one for teachers. A person's own
+numbers are added where they exist:
+
+- **A student** also sees *Your points*: the total and the four categories, added up from the whole
+  ledger with no period (L3). On every leaderboard open to them they see their rank ("You are
+  number 2 of 4") and their points there per category, next to how many students are listed. A
+  student with no points in the area of a board is told they are not on it yet.
+- **A teacher** earns no points, so there is no rank to show. They see the same leaderboards and
+  how many students each lists, and open the same list.
+- **Which leaderboards (D4, 7 November):** the ones of the areas the person can open: the areas
+  they are assigned to and every area below them (`AreaLeaderboards::openTo()`). A leaderboard of
+  an area above, beside or elsewhere does not show, and its address says "not found". Publishing
+  changes nothing here: a published leaderboard is only also on the hall screen (below). On this
   page a student only gets their own row; the other students appear on the full leaderboard, as
   that leaderboard's settings allow (#89).
 - Each board opens the full leaderboard (`/leaderboards/{id}`): the top 10 and the places around
   the student (L5).
+
+### Highlighted leaderboards (D6, 7 November)
+
+A star in front of each leaderboard, and a *Highlight* button on its page, highlights it for the
+person who clicks. The highlighted ones are listed first, under *Highlighted*; the rest follow under
+*Other leaderboards*. Each group stays in name order, and without a highlight there is one plain
+list.
+
+- **Limit:** five leaderboards for each person (`Leaderboard::HIGHLIGHT_LIMIT`). At the limit the
+  server says "You can highlight up to 5 leaderboards. Remove a highlight first." and changes
+  nothing. A highlight of a leaderboard the person can no longer open (their area changed, or it
+  was archived) stays in the table but neither shows nor counts.
+- **Personal:** the table `leaderboard_user` holds one row for each person and leaderboard, and
+  nobody else sees it. It goes away with the account and with the leaderboard.
+- **Who:** everyone who can open the leaderboard, students and teachers. `POST` and `DELETE`
+  `/leaderboards/{id}/highlight` add and remove the star; a leaderboard the person cannot open is
+  "not found". Highlighting twice, or removing a star that is not there, changes nothing.
 
 The data comes from `App\Services\OwnLeaderboards`; the page is `Components/Leaderboards/OwnLeaderboards.vue`.
 
@@ -24,6 +47,8 @@ The data comes from `App\Services\OwnLeaderboards`; the page is `Components/Lead
 
 `/hall` shows every published leaderboard on a public display, one at a time, without login. Open
 it in the browser on the hall computer and press F11. It reads the feed `/hall/leaderboards`.
+Publishing is the only thing that puts a leaderboard there; it does not open the leaderboard to
+other areas on the signed-in pages (D4).
 
 - **What it shows:** the name, the area, the top 10 with the columns the leaderboard allows, how
   many students are listed, and which board this is ("2 of 4"). Students with equal points share a

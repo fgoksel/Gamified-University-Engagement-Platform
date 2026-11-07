@@ -20,8 +20,8 @@ use Inertia\Response;
 
 /**
  * Area leaderboards (Task #89): topic admins create, edit, publish and delete them on the
- * topic's Leaderboards tab; people open the ones they may see; the hall screen (#56) reads
- * the published ones without login.
+ * topic's Leaderboards tab; people open the ones of the areas they can open and highlight a few
+ * of them (D4 and D6, 7 November); the hall screen (#56) reads the published ones without login.
  */
 class AreaLeaderboardController extends Controller
 {
@@ -62,10 +62,36 @@ class AreaLeaderboardController extends Controller
         return Inertia::render('Leaderboards/Show', [
             'leaderboard' => [
                 ...$this->boards->summary($leaderboard),
-                'can_open_topic' => $this->access->canView($user, $leaderboard->topic),
+                'highlighted' => $this->boards->isHighlightedBy($user, $leaderboard),
             ],
             'standings' => $this->standings->view($leaderboard, $user),
         ]);
+    }
+
+    /**
+     * Highlight a leaderboard for the signed-in person (D6, 7 November): it is listed first, up to
+     * Leaderboard::HIGHLIGHT_LIMIT of them. Not allowed looks exactly like not existing.
+     */
+    public function highlight(Request $request, Leaderboard $leaderboard): RedirectResponse
+    {
+        $user = $request->user();
+
+        abort_unless($this->boards->canSee($user, $leaderboard), 404);
+
+        $this->boards->highlight($user, $leaderboard);
+
+        return back();
+    }
+
+    public function removeHighlight(Request $request, Leaderboard $leaderboard): RedirectResponse
+    {
+        $user = $request->user();
+
+        abort_unless($this->boards->canSee($user, $leaderboard), 404);
+
+        $this->boards->removeHighlight($user, $leaderboard);
+
+        return back();
     }
 
     /**

@@ -11,6 +11,7 @@ defineProps({
     isStudent: { type: Boolean, default: false },
     points: { type: Object, default: null },
     leaderboards: { type: Array, default: () => [] },
+    highlightLimit: { type: Number, default: 5 },
 });
 
 const page = usePage();
@@ -27,6 +28,7 @@ const page = usePage();
             :is-student="isStudent"
             :points="points"
             :leaderboards="leaderboards"
+            :highlight-limit="highlightLimit"
         />
     </div>
 </template>
