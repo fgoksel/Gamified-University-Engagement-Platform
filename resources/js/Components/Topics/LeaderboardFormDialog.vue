@@ -104,7 +104,7 @@ function submit() {
                 </p>
             </fieldset>
 
-            <!-- Task #56: how long it stays on the hall screen once published -->
+            <!-- Task #56: how long it stays on the hall screen once the system admin switches it on -->
             <TextField
                 v-model="form.hall_seconds"
                 :label="screenTimeWords.label"

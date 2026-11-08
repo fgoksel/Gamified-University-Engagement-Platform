@@ -17,7 +17,7 @@ class Leaderboard extends Model
     /** Not on the hall screen. Like every leaderboard, only people who can open the topic see it (D4). */
     public const AREA = 'area';
 
-    /** Published: also on the hall screen, which needs no login. */
+    /** Switched on by the system admin: also on the hall screen, which needs no login (D7). */
     public const PUBLIC = 'public';
 
     /** How long a leaderboard stays on the hall screen, in seconds, until a super admin chooses (Task #56). */
@@ -116,7 +116,7 @@ class Leaderboard extends Model
     }
 
     /**
-     * What the hall screen shows (#56): published leaderboards of topics in normal browsing.
+     * What the hall screen shows (#56): the switched-on leaderboards of topics in normal browsing.
      *
      * @param  Builder<Leaderboard>  $query
      */

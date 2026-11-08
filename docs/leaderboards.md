@@ -17,8 +17,8 @@ numbers are added where they exist:
   how many students each lists, and open the same list.
 - **Which leaderboards (D4, 7 November):** the ones of the areas the person can open: the areas
   they are assigned to and every area below them (`AreaLeaderboards::openTo()`). A leaderboard of
-  an area above, beside or elsewhere does not show, and its address says "not found". Publishing
-  changes nothing here: a published leaderboard is only also on the hall screen (below). On this
+  an area above, beside or elsewhere does not show, and its address says "not found". Being
+  on the hall screen (below) changes nothing here. On this
   page a student only gets their own row; the other students appear on the full leaderboard, as
   that leaderboard's settings allow (#89).
 - Each board opens the full leaderboard (`/leaderboards/{id}`): the top 10 and the places around
@@ -45,10 +45,11 @@ The data comes from `App\Services\OwnLeaderboards`; the page is `Components/Lead
 
 ## The hall screen (Task #56)
 
-`/hall` shows every published leaderboard on a public display, one at a time, without login. Open
+`/hall` shows the leaderboards the system admin switched on, on a public display, one at a time, without login. Open
 it in the browser on the hall computer and press F11. It reads the feed `/hall/leaderboards`.
-Publishing is the only thing that puts a leaderboard there; it does not open the leaderboard to
-other areas on the signed-in pages (D4).
+Only the system admin puts a leaderboard there, with the *On the hall screen* switch on the admin
+panel's *Hall screen* page (D7, Task #110). Being there does not open the leaderboard to other areas
+on the signed-in pages (D4).
 
 - **What it shows:** the name, the area, the top 10 with the columns the leaderboard allows, how
   many students are listed, and which board this is ("2 of 4"). Students with equal points share a
@@ -62,8 +63,7 @@ other areas on the signed-in pages (D4).
 - **Staying awake:** the page asks the browser to keep the display on (Screen Wake Lock), also
   while paused. Where the browser does not allow it, the display's own settings apply.
 
-Publishing a leaderboard asks first, and says that published leaderboards are shown on the hall
-screen and to anyone without signing in. The words of the hall screen, the time on it and *Where am
+The words of the hall screen, the time on it and *Where am
 I?* are in `resources/js/leaderboardWords.js`, which reads them from the dictionary
 (`docs/translations.md`).
 
@@ -79,7 +79,7 @@ default is the one row of the `settings` table (`App\Models\Setting`); without a
 
 ## Where am I? (Task #56)
 
-On `/leaderboards`, under *Where am I?* (for teachers: *Rankings*), a person picks an area they can
+On `/leaderboards`, under *Where am I?*, a student picks an area they can
 open and, if they like, a category and a tag. The choice is in the address
 (`?area=&category=&tag=`), so it can be shared and reloaded. An area they may not open gives "not
 found", and a category or tag that does not fit is dropped. Tags are narrowed to the chosen category.
@@ -91,10 +91,9 @@ found", and a category or tag that does not fit is dropped. Tags are narrowed to
   to draw level with the next place up ("15 points to reach number 3", none in first place). No
   other student's name, Neptun code or row leaves the server. With no points there: "You have no
   points here yet."
-- **The person's area of control:** someone who holds *Manage events*, *Manage leaderboards* or
-  *See who has access* at that area or above it gets the full list: rank, name, Neptun code and
-  points, 50 per page.
-- **Everyone else**, such as a teacher with a view-only role, gets the count alone.
+- **Only students** get this section (Task #112). A ranked list exists only on a leaderboard that an
+  admin created (D1 and D3, 7 November), so teachers and staff see no *Where am I?* and their
+  `rankings` prop is `null`; an `?area=` in their address is ignored.
 
 The data comes from `App\Services\RankingExplorer`; the section is `Components/Leaderboards/WhereAmI.vue`.
 

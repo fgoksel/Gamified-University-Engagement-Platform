@@ -52,7 +52,7 @@ Route::middleware('guest')->group(function () {
 Route::get('/auth/activate/{token}', [SetPasswordController::class, 'create'])->name('password.setup');
 Route::post('/auth/set-password', [SetPasswordController::class, 'store'])->name('password.setup.store');
 
-// Task #89: what the hall screen (#56) reads, without login. Published leaderboards only.
+// Task #89: what the hall screen (#56) reads, without login. Only the leaderboards the system admin switched on.
 Route::get('/hall/leaderboards', [AreaLeaderboardController::class, 'hall'])
     ->middleware('throttle:60,1')
     ->name('hall.leaderboards');

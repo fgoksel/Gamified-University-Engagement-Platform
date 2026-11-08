@@ -139,7 +139,7 @@ capabilities; use the System Admin or a role with `topic.archive` to show this.)
 
 ## Leaderboards and the hall screen (Task #56)
 
-The seeder publishes three leaderboards, with the points of the demo events: **University total**,
+The seeder puts three leaderboards on the hall screen, with the points of the demo events: **University total**,
 **Informatics total** (with names) and **Sport total**. A database seeded earlier gets them by
 running the seeder again; nothing else changes. A second run adds nothing.
 
@@ -147,15 +147,15 @@ running the seeder again; nothing else changes. A second run adds nothing.
 |---|---|---|
 | The hall screen | `/hall` in a private window | nobody: it needs no login |
 | *Where am I?*, own numbers only | `/leaderboards`, area Databases | Anna, or Erik with area Athletics Club |
-| *Rankings*, the full list | `/leaderboards`, area Faculty of Informatics | Ivan |
-| A refused area | `/leaderboards?area=` with the id of Faculty of Sport | Ivan ("not found") |
-| Publishing a leaderboard, with its warning | Topics → Faculty of Informatics → Leaderboards | Ivan |
+| A refused area | `/leaderboards?area=` with the id of Faculty of Sport | Anna ("not found") |
+| Making a leaderboard | Topics → Faculty of Informatics → Leaderboards | Ivan |
+| Choosing the leaderboards on the hall screen | Admin panel → Hall screen, *On the hall screen* | System Admin |
 | The default time on the hall screen | Admin panel → Hall screen | System Admin |
 | Highlighting a leaderboard (the star, up to five) | `/leaderboards`, click the star of a board | Ivan, once Faculty of Informatics has two or more boards |
 
 A person sees the leaderboards of the areas they can open (D4): Anna, assigned to Databases, sees a
 leaderboard only once one exists on Databases, and nobody sees the leaderboard of an area above or
-beside theirs. Publishing only puts a leaderboard on the hall screen.
+beside theirs. Being on the hall screen does not change that.
 
 ## 4. Regression of Sprint 1
 

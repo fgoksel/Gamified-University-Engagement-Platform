@@ -12,7 +12,8 @@ defineProps({
     points: { type: Object, default: null },
     leaderboards: { type: Array, required: true },
     highlightLimit: { type: Number, default: 5 },
-    rankings: { type: Object, required: true },
+    // Only students get "Where am I?" (Task #112).
+    rankings: { type: Object, default: null },
 });
 </script>
 
@@ -24,6 +25,6 @@ defineProps({
             :leaderboards="leaderboards"
             :highlight-limit="highlightLimit"
         />
-        <WhereAmI :is-student="isStudent" :rankings="rankings" />
+        <WhereAmI v-if="rankings" :rankings="rankings" />
     </div>
 </template>

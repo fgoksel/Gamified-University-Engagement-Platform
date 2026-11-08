@@ -60,7 +60,7 @@ class Sprint2DemoSeeder extends Seeder
     ];
 
     /**
-     * Published leaderboards for the hall screen and "Where am I?" (Task #56):
+     * Leaderboards on the hall screen, also for "Where am I?" (Task #56):
      * name => [area, or null for the university, show first and last names].
      *
      * @var array<string, array{0: ?string, 1: bool}>
@@ -366,7 +366,7 @@ class Sprint2DemoSeeder extends Seeder
 
         $this->command?->line('Faculty of Informatics: Ivan organises; Anna, Bence, Csilla, Dániel and Eszter are students.');
         $this->command?->line('Faculty of Sport: Sara organises; Erik and Fanni are students.');
-        $this->command?->line('Hall screen: /hall, three published leaderboards. Where am I?: /leaderboards.');
+        $this->command?->line('Hall screen: /hall, three leaderboards. Where am I?: /leaderboards.');
         $this->command?->line('Walkthrough: docs/sprint2-demo.md');
     }
 }
