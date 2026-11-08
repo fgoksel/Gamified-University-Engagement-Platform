@@ -22,8 +22,6 @@ export const screenTimeWords = {
     hint: (seconds) => t("leaderboards.screen_time.hint", { seconds }),
 };
 
-export const publishWarning = t("leaderboards.publish_warning");
-
 export const whereAmIWords = {
     titleStudent: t("leaderboards.where_am_i.title_student"),
     titleOthers: t("leaderboards.where_am_i.title_others"),

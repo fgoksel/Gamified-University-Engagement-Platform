@@ -13,6 +13,7 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
@@ -56,9 +57,14 @@ class HallScreen extends Page implements HasTable
                 TextColumn::make('topic.title')
                     ->label(__('admin.hall_screen.area')),
 
-                TextColumn::make('visibility')
-                    ->label(__('admin.hall_screen.shown'))
-                    ->formatStateUsing(fn (string $state): string => $state === Leaderboard::PUBLIC ? __('admin.hall_screen.published') : __('admin.hall_screen.area_only')),
+                ToggleColumn::make('on_hall_screen')
+                    ->label(__('admin.hall_screen.on_hall_screen'))
+                    ->getStateUsing(fn (Leaderboard $record): bool => $record->isPublic())
+                    ->updateStateUsing(function (Leaderboard $record, bool $state): bool {
+                        app(AreaLeaderboards::class)->setPublished(Auth::user(), $record, $state);
+
+                        return $state;
+                    }),
 
                 TextColumn::make('hall_seconds')
                     ->label(__('admin.hall_screen.time'))

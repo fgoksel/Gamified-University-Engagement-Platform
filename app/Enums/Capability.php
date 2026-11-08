@@ -94,7 +94,7 @@ enum Capability: string
             self::ApplicationsManage => __('capabilities.review_accept_waitlist_or_reject'),
             self::PointsCredit => __('capabilities.confirm_attendance_and_credit'),
             self::QrCodesManage => __('capabilities.create_configure_and_print'),
-            self::LeaderboardsManage => __('capabilities.create_edit_publish_and_delete'),
+            self::LeaderboardsManage => __('capabilities.create_edit_and_delete_leaderboards'),
         };
     }
 
