@@ -49,7 +49,7 @@ The data comes from `App\Services\OwnLeaderboards`; the page is `Components/Lead
 it in the browser on the hall computer and press F11. It reads the feed `/hall/leaderboards`.
 Only the system admin puts a leaderboard there, with the *On the hall screen* switch on the admin
 panel's *Hall screen* page (D7, Task #110). Being there does not open the leaderboard to other areas
-on the signed-in pages (D4).
+on the signed-in pages (D4). On that page, the name of a leaderboard opens it in a new tab.
 
 - **What it shows:** the name, the area, the top 10 with the columns the leaderboard allows, how
   many students are listed, and which board this is ("2 of 4"). Students with equal points share a
