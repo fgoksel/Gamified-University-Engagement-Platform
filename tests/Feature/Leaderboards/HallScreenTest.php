@@ -176,11 +176,27 @@ class HallScreenTest extends EventTestCase
         $this->actingAs($this->admin)->get('/admin/hall-screen')->assertOk();
     }
 
-    public function test_the_publish_step_warns_that_the_leaderboard_goes_public(): void
+    public function test_the_system_admin_switches_a_board_on_and_off(): void
     {
-        $this->assertSame('Published leaderboards are shown on the hall screen and to anyone without signing in.', __('leaderboards.publish_warning'));
-        $this->assertStringContainsString('leaderboards.publish_warning', file_get_contents(resource_path('js/leaderboardWords.js')));
-        $this->assertStringContainsString('{{ publishWarning }}', file_get_contents(resource_path('js/Components/Topics/LeaderboardsPanel.vue')));
+        $board = $this->board($this->faculty, 'Chosen', ['visibility' => Leaderboard::AREA]);
+        $this->getJson('/hall/leaderboards')->assertJsonCount(0, 'leaderboards');
+
+        Livewire::actingAs($this->admin)->test(HallScreen::class)
+            ->call('updateTableColumnState', 'on_hall_screen', (string) $board->id, true);
+        $this->getJson('/hall/leaderboards')->assertJsonPath('leaderboards.0.name', 'Chosen');
+
+        Livewire::actingAs($this->admin)->test(HallScreen::class)
+            ->call('updateTableColumnState', 'on_hall_screen', (string) $board->id, false);
+        $this->getJson('/hall/leaderboards')->assertJsonCount(0, 'leaderboards');
+    }
+
+    public function test_an_area_admin_can_no_longer_publish(): void
+    {
+        $board = $this->board($this->faculty, 'Not chosen', ['visibility' => Leaderboard::AREA]);
+
+        $this->actingAs($this->areaAdmin())->post("/leaderboards/{$board->id}/publish")->assertNotFound();
+
+        $this->assertFalse($board->fresh()->isPublic());
     }
 
     private function areaAdmin(): User

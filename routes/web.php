@@ -273,8 +273,6 @@ Route::middleware('auth')->group(function () {
             Route::get('/', [AreaLeaderboardController::class, 'index'])->name('index');
             Route::get('/{leaderboard}', [AreaLeaderboardController::class, 'show'])->whereNumber('leaderboard')->name('show');
             Route::put('/{leaderboard}', [AreaLeaderboardController::class, 'update'])->whereNumber('leaderboard')->name('update');
-            Route::post('/{leaderboard}/publish', [AreaLeaderboardController::class, 'publish'])->whereNumber('leaderboard')->name('publish');
-            Route::post('/{leaderboard}/unpublish', [AreaLeaderboardController::class, 'unpublish'])->whereNumber('leaderboard')->name('unpublish');
             // D6: a person's own star on a leaderboard they can see.
             Route::post('/{leaderboard}/highlight', [AreaLeaderboardController::class, 'highlight'])->whereNumber('leaderboard')->name('highlight');
             Route::delete('/{leaderboard}/highlight', [AreaLeaderboardController::class, 'removeHighlight'])->whereNumber('leaderboard')->name('unhighlight');

@@ -149,26 +149,6 @@ class AreaLeaderboardController extends Controller
         return $this->backToTopic($topic)->with('success', __('areas.leaderboard_flash.saved'));
     }
 
-    public function publish(Request $request, Leaderboard $leaderboard): RedirectResponse
-    {
-        $topic = $leaderboard->topic;
-        $this->authorizeManage($request, $topic);
-
-        $this->boards->setPublished($request->user(), $leaderboard, true);
-
-        return $this->backToTopic($topic)->with('success', __('areas.leaderboard_flash.published', ['name' => $leaderboard->name]));
-    }
-
-    public function unpublish(Request $request, Leaderboard $leaderboard): RedirectResponse
-    {
-        $topic = $leaderboard->topic;
-        $this->authorizeManage($request, $topic);
-
-        $this->boards->setPublished($request->user(), $leaderboard, false);
-
-        return $this->backToTopic($topic)->with('success', __('areas.leaderboard_flash.unpublished', ['name' => $leaderboard->name]));
-    }
-
     public function destroy(Request $request, Leaderboard $leaderboard): RedirectResponse
     {
         $topic = $leaderboard->topic;

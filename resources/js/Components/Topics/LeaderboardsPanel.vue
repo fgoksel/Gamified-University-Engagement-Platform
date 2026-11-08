@@ -1,18 +1,17 @@
 <script setup>
 import { computed, ref } from "vue";
 import { Link, router } from "@inertiajs/vue3";
-import { Globe, Plus, Users } from "@lucide/vue";
+import { Globe, Plus } from "@lucide/vue";
 import StatusChip from "../StatusChip.vue";
 import Btn from "./Btn.vue";
 import Modal from "./Modal.vue";
 import LeaderboardFormDialog from "./LeaderboardFormDialog.vue";
-import { publishWarning } from "../../leaderboardWords.js";
 import { leaderboardColumnLabels } from "../../topicsLabels.js";
 
 // The Leaderboards tab of a topic (Task #89). Everyone who can open the topic
 // sees the list; people with "Manage leaderboards" here or above also create,
-// edit, publish and delete. Publishing asks first, because a Neptun code is
-// still a personal identifier and a published leaderboard needs no login.
+// edit and delete. Only the system admin puts a leaderboard on the hall screen,
+// in the admin panel (D7, Task #110); the chip shows which ones are there.
 const props = defineProps({
     topic: { type: Object, required: true },
     leaderboards: { type: Array, required: true },
@@ -21,7 +20,6 @@ const props = defineProps({
 
 const creating = ref(false);
 const editing = ref(null);
-const publishing = ref(null);
 const deleting = ref(null);
 const busy = ref(false);
 
@@ -40,18 +38,6 @@ function options(onDone) {
         onSuccess: onDone,
         onFinish: () => (busy.value = false),
     };
-}
-
-function publish() {
-    router.post(
-        `/leaderboards/${publishing.value.id}/publish`,
-        {},
-        options(() => (publishing.value = null)),
-    );
-}
-
-function unpublish(board) {
-    router.post(`/leaderboards/${board.id}/unpublish`, {}, options());
 }
 
 function destroy() {
@@ -105,12 +91,9 @@ function destroy() {
                             tone="info"
                             :icon="Globe"
                             >{{
-                                $t("areas.leaderboards_panel.published")
+                                $t("areas.leaderboards_panel.on_hall_screen")
                             }}</StatusChip
                         >
-                        <StatusChip v-else :icon="Users">{{
-                            $t("areas.leaderboards_panel.area_only")
-                        }}</StatusChip>
                     </div>
                     <p class="text-sm text-fg-muted">
                         {{
@@ -123,19 +106,6 @@ function destroy() {
                 <div v-if="manage" class="flex flex-wrap gap-2">
                     <Btn small @click="editing = board">
                         {{ $t("areas.leaderboards_panel.edit")
-                        }}<span class="sr-only"> {{ board.name }}</span>
-                    </Btn>
-                    <Btn
-                        v-if="board.is_public"
-                        small
-                        :disabled="busy"
-                        @click="unpublish(board)"
-                    >
-                        {{ $t("areas.leaderboards_panel.unpublish")
-                        }}<span class="sr-only"> {{ board.name }}</span>
-                    </Btn>
-                    <Btn v-else small @click="publishing = board">
-                        {{ $t("areas.leaderboards_panel.publish")
                         }}<span class="sr-only"> {{ board.name }}</span>
                     </Btn>
                     <Btn small @click="deleting = board">
@@ -163,37 +133,6 @@ function destroy() {
             :board="editing"
             @close="editing = null"
         />
-
-        <Modal
-            v-if="publishing"
-            :title="$t('areas.leaderboards_panel.publish_this_leaderboard')"
-            :busy="busy"
-            @close="publishing = null"
-        >
-            <p class="text-base text-fg">
-                {{ $t("areas.leaderboards_panel.anyone_can_then_see") }}
-                <strong>{{ publishing.name }}</strong
-                >{{ $t("areas.leaderboards_panel.without_signing_in_and_it") }}
-            </p>
-            <p class="mt-3 text-sm text-fg" data-test="publish-warning">
-                {{ publishWarning }}
-            </p>
-            <p class="mt-3 text-sm text-fg-muted">
-                {{
-                    $t("areas.leaderboards_panel.it_shows_you_can_unpublish", {
-                        publishing: columnNames(publishing),
-                    })
-                }}
-            </p>
-            <template #footer>
-                <Btn :disabled="busy" @click="publishing = null">{{
-                    $t("areas.leaderboards_panel.cancel")
-                }}</Btn>
-                <Btn variant="primary" :loading="busy" @click="publish">{{
-                    $t("areas.leaderboards_panel.publish_leaderboard")
-                }}</Btn>
-            </template>
-        </Modal>
 
         <Modal
             v-if="deleting"

@@ -131,9 +131,7 @@ class AreaLeaderboardTest extends EventTestCase
         $board = Leaderboard::where('name', 'From above')->firstOrFail();
         $this->actingAs($this->areaAdmin)->put("/leaderboards/{$board->id}", ['name' => 'Renamed'])->assertRedirect();
         $this->assertRefused($this->actingAs($reader)->put("/leaderboards/{$board->id}", ['name' => 'Hacked']));
-        $this->assertRefused($this->actingAs($reader)->post("/leaderboards/{$board->id}/publish"));
         $this->assertRefused($this->actingAs($reader)->delete("/leaderboards/{$board->id}"));
-        $this->actingAs($courseAdmin)->post("/leaderboards/{$board->id}/publish")->assertNotFound();
 
         $board->refresh();
         $this->assertSame('Renamed', $board->name);
@@ -252,10 +250,8 @@ class AreaLeaderboardTest extends EventTestCase
 
         $this->get('/hall/leaderboards')->assertOk()->assertExactJson(['leaderboards' => []]);
 
-        $this->actingAs($this->areaAdmin)->post("/leaderboards/{$board->id}/publish")->assertRedirect();
+        app(AreaLeaderboards::class)->setPublished($this->admin, $board, true);
         $this->assertTrue($board->fresh()->isPublic());
-
-        auth()->logout();
 
         $this->get('/hall/leaderboards')->assertOk()->assertExactJson(['leaderboards' => [[
             'id' => $board->id,
@@ -268,10 +264,8 @@ class AreaLeaderboardTest extends EventTestCase
             'rows' => [['position' => 1, 'rank' => 1, 'points' => 20, 'neptun_code' => 'ANNA01']],
         ]]]);
 
-        $this->actingAs($this->areaAdmin)->post("/leaderboards/{$board->id}/unpublish")->assertRedirect();
+        app(AreaLeaderboards::class)->setPublished($this->admin, $board, false);
         $this->assertFalse($board->fresh()->isPublic());
-
-        auth()->logout();
 
         $this->get('/hall/leaderboards')->assertOk()->assertExactJson(['leaderboards' => []]);
     }
@@ -313,7 +307,6 @@ class AreaLeaderboardTest extends EventTestCase
         $this->get('/hall/leaderboards')->assertOk()->assertExactJson(['leaderboards' => []]);
 
         $this->actingAs($this->areaAdmin)->get("/leaderboards/{$board->id}")->assertNotFound();
-        $this->actingAs($this->areaAdmin)->post("/leaderboards/{$board->id}/unpublish")->assertNotFound();
         $this->actingAs($this->areaAdmin)->get('/leaderboards')
             ->assertInertia(fn (Assert $page) => $page->where('leaderboards', []));
     }
