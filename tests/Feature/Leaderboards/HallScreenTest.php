@@ -176,6 +176,17 @@ class HallScreenTest extends EventTestCase
         $this->actingAs($this->admin)->get('/admin/hall-screen')->assertOk();
     }
 
+    public function test_the_name_of_a_leaderboard_opens_it_in_a_new_tab(): void
+    {
+        $board = $this->board($this->faculty, 'Open me', ['visibility' => Leaderboard::AREA]);
+
+        $html = Livewire::actingAs($this->admin)->test(HallScreen::class)->html();
+
+        $this->assertMatchesRegularExpression('#<a[^>]*href="/leaderboards/'.$board->id.'"[^>]*target="_blank"|<a[^>]*target="_blank"[^>]*href="/leaderboards/'.$board->id.'"#', $html);
+
+        $this->actingAs($this->admin)->get("/leaderboards/{$board->id}")->assertOk();
+    }
+
     public function test_the_system_admin_switches_a_board_on_and_off(): void
     {
         $board = $this->board($this->faculty, 'Chosen', ['visibility' => Leaderboard::AREA]);
