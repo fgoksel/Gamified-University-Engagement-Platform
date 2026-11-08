@@ -15,11 +15,12 @@ import EmptyState from "../Components/EmptyState.vue";
 import StatusChip from "../Components/StatusChip.vue";
 import { categoryDot, categoryLabel } from "../categoryColors.js";
 import { places } from "../eventWords.js";
+import { t, tc } from "../i18n.js";
 
 // The student's home page (Task #92, 26 Oct, section 4): points this semester in the
 // four categories, the next event with a countdown, events open for applications and
 // recent points. Each part links to the page that has all of it.
-defineOptions({ layout: { title: "Home" } });
+defineOptions({ layout: { title: t("home.title") } });
 
 const props = defineProps({
     name: { type: String, default: "" },
@@ -75,12 +76,16 @@ function inWords(seconds) {
     const rest = minutes % 60;
 
     if (days > 0) {
-        return hours > 0 ? `${days} d ${hours} h` : `${days} d`;
+        return hours > 0
+            ? t("home.countdown.days_hours", { days, hours })
+            : t("home.countdown.days", { days });
     }
     if (hours > 0) {
-        return rest > 0 ? `${hours} h ${rest} min` : `${hours} h`;
+        return rest > 0
+            ? t("home.countdown.hours_minutes", { hours, rest })
+            : t("home.countdown.hours", { hours });
     }
-    return `${rest} min`;
+    return t("home.countdown.minutes", { rest });
 }
 
 // The same, written out for screen readers
@@ -89,29 +94,31 @@ function inFullWords(seconds) {
     const days = Math.floor(minutes / 1440);
     const hours = Math.floor((minutes % 1440) / 60);
     const rest = minutes % 60;
-    const part = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
+    const parts = [
+        days > 0 ? tc("home.full_words.days", days) : null,
+        hours > 0 ? tc("home.full_words.hours", hours) : null,
+        days === 0 && rest > 0 ? tc("home.full_words.minutes", rest) : null,
+    ].filter(Boolean);
 
-    return [
-        days > 0 ? part(days, "day") : null,
-        hours > 0 ? part(hours, "hour") : null,
-        days === 0 && rest > 0 ? part(rest, "minute") : null,
-    ]
-        .filter(Boolean)
-        .join(" and ");
+    return parts.length === 2
+        ? t("home.full_words.two", { first: parts[0], second: parts[1] })
+        : (parts[0] ?? "");
 }
 
 const countdown = computed(() => {
     if (!props.next || over.value) return null;
     if (running.value) {
         return {
-            short: "Happening now",
-            full: `Happening now, ends in ${inFullWords(props.next.ends_in - elapsed.value)}`,
+            short: t("home.countdown.happening_now"),
+            full: t("home.countdown.happening_now_ends_in", {
+                time: inFullWords(props.next.ends_in - elapsed.value),
+            }),
         };
     }
     const left = props.next.starts_in - elapsed.value;
     return {
-        short: `Starts in ${inWords(left)}`,
-        full: `Starts in ${inFullWords(left)}`,
+        short: t("home.countdown.starts_in_short", { time: inWords(left) }),
+        full: t("home.countdown.starts_in_full", { time: inFullWords(left) }),
     };
 });
 
@@ -128,7 +135,11 @@ const linkClass =
 
         <header>
             <h2 class="text-xl font-semibold text-fg sm:text-2xl">
-                {{ firstName ? `Hello, ${firstName}` : "Hello" }}
+                {{
+                    firstName
+                        ? $t("home.hello_name", { name: firstName })
+                        : $t("home.hello")
+                }}
             </h2>
         </header>
 
@@ -140,7 +151,7 @@ const linkClass =
         >
             <div class="flex flex-wrap items-baseline justify-between gap-2">
                 <h3 id="home-points" class="text-base font-semibold text-fg">
-                    Points this semester
+                    {{ $t("home.points_this_semester") }}
                 </h3>
                 <span v-if="semester" class="text-sm text-fg-muted">
                     {{ semester }}
@@ -154,32 +165,34 @@ const linkClass =
                 >
                     {{ points.total }}
                 </span>
-                <span class="text-fg-muted">points in total</span>
+                <span class="text-fg-muted">{{
+                    $t("home.points_in_total")
+                }}</span>
             </p>
 
             <ul class="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
                 <li
-                    v-for="category in categories"
-                    :key="category"
+                    v-for="area in categories"
+                    :key="area"
                     class="rounded-control p-3"
-                    :class="tileClass[category]"
-                    :data-test="`points-${category}`"
+                    :class="tileClass[area]"
+                    :data-test="`points-${area}`"
                 >
                     <span class="block text-sm font-medium">
-                        {{ categoryLabel[category] }}
+                        {{ categoryLabel[area] }}
                     </span>
                     <span class="block text-2xl font-semibold tabular-nums">
-                        {{ points[category] }}
+                        {{ points[area] }}
                     </span>
                 </li>
             </ul>
 
             <p v-if="!semester" class="mt-3 text-sm text-fg-muted">
-                No semester is running right now.
+                {{ $t("home.no_semester_is_running_right") }}
             </p>
 
             <Link href="/leaderboards" :class="[linkClass, 'mt-2']">
-                See the leaderboards
+                {{ $t("home.see_the_leaderboards") }}
                 <ArrowRight class="size-4" aria-hidden="true" />
             </Link>
         </section>
@@ -192,7 +205,7 @@ const linkClass =
                 data-test="next"
             >
                 <h3 id="home-next" class="text-base font-semibold text-fg">
-                    Your next event
+                    {{ $t("home.your_next_event") }}
                 </h3>
 
                 <div v-if="next && !over" class="mt-3">
@@ -215,7 +228,7 @@ const linkClass =
 
                     <dl class="mt-2 space-y-1 text-sm text-fg">
                         <div class="flex items-start gap-2">
-                            <dt class="sr-only">When</dt>
+                            <dt class="sr-only">{{ $t("home.when") }}</dt>
                             <CalendarDays
                                 class="mt-0.5 size-4 shrink-0 text-fg-muted"
                                 aria-hidden="true"
@@ -226,7 +239,7 @@ const linkClass =
                             v-if="next.location"
                             class="flex items-start gap-2"
                         >
-                            <dt class="sr-only">Where</dt>
+                            <dt class="sr-only">{{ $t("home.where") }}</dt>
                             <MapPin
                                 class="mt-0.5 size-4 shrink-0 text-fg-muted"
                                 aria-hidden="true"
@@ -234,19 +247,25 @@ const linkClass =
                             <dd>{{ next.location }}</dd>
                         </div>
                         <div class="flex items-start gap-2">
-                            <dt class="sr-only">Points</dt>
+                            <dt class="sr-only">{{ $t("home.points") }}</dt>
                             <Trophy
                                 class="mt-0.5 size-4 shrink-0 text-fg-muted"
                                 aria-hidden="true"
                             />
-                            <dd>{{ next.points }} points</dd>
+                            <dd>
+                                {{
+                                    $t("home.points_2", { points: next.points })
+                                }}
+                            </dd>
                         </div>
                     </dl>
                 </div>
 
                 <p v-else class="mt-3 text-sm text-fg-muted">
-                    You have no place at an upcoming event yet.
-                    <Link href="/events" :class="linkClass">Find an event</Link>
+                    {{ $t("home.you_have_no_place_at") }}
+                    <Link href="/events" :class="linkClass">{{
+                        $t("home.find_an_event")
+                    }}</Link>
                 </p>
             </section>
 
@@ -257,7 +276,7 @@ const linkClass =
                 data-test="recent"
             >
                 <h3 id="home-recent" class="text-base font-semibold text-fg">
-                    Recent points
+                    {{ $t("home.recent_points") }}
                 </h3>
 
                 <ul
@@ -282,7 +301,7 @@ const linkClass =
                                 {{ categoryLabel[row.category] }} ·
                                 {{ row.at }}
                                 <template v-if="row.correction">
-                                    · correction</template
+                                    {{ $t("home.correction") }}</template
                                 >
                             </span>
                         </span>
@@ -294,7 +313,7 @@ const linkClass =
                     </li>
                 </ul>
                 <p v-else class="mt-3 text-sm text-fg-muted">
-                    Points you earn at events show up here.
+                    {{ $t("home.points_you_earn_at_events") }}
                 </p>
 
                 <Link
@@ -302,7 +321,7 @@ const linkClass =
                     href="/my-events"
                     :class="[linkClass, 'mt-2']"
                 >
-                    All my events
+                    {{ $t("home.all_my_events") }}
                     <ArrowRight class="size-4" aria-hidden="true" />
                 </Link>
             </section>
@@ -312,10 +331,10 @@ const linkClass =
         <section aria-labelledby="home-open" data-test="open">
             <div class="flex flex-wrap items-center justify-between gap-2">
                 <h3 id="home-open" class="text-base font-semibold text-fg">
-                    Open for applications
+                    {{ $t("home.open_for_applications") }}
                 </h3>
                 <Link href="/events" :class="linkClass">
-                    All events
+                    {{ $t("home.all_events") }}
                     <ArrowRight class="size-4" aria-hidden="true" />
                 </Link>
             </div>
@@ -350,7 +369,7 @@ const linkClass =
                     </h4>
                     <dl class="mt-3 space-y-1.5 text-sm text-fg">
                         <div class="flex items-start gap-2">
-                            <dt class="sr-only">When</dt>
+                            <dt class="sr-only">{{ $t("home.when_2") }}</dt>
                             <CalendarDays
                                 class="mt-0.5 size-4 shrink-0 text-fg-muted"
                                 aria-hidden="true"
@@ -358,12 +377,17 @@ const linkClass =
                             <dd>
                                 {{ event.starts }}
                                 <span class="block text-fg-muted">
-                                    Apply by {{ event.applications_close }}
+                                    {{
+                                        $t("home.apply_by", {
+                                            applications_close:
+                                                event.applications_close,
+                                        })
+                                    }}
                                 </span>
                             </dd>
                         </div>
                         <div class="flex items-start gap-2">
-                            <dt class="sr-only">Places</dt>
+                            <dt class="sr-only">{{ $t("home.places") }}</dt>
                             <Users
                                 class="mt-0.5 size-4 shrink-0 text-fg-muted"
                                 aria-hidden="true"
@@ -371,19 +395,29 @@ const linkClass =
                             <dd>{{ places(event) }}</dd>
                         </div>
                         <div class="flex items-start gap-2">
-                            <dt class="sr-only">Points</dt>
+                            <dt class="sr-only">{{ $t("home.points_3") }}</dt>
                             <Trophy
                                 class="mt-0.5 size-4 shrink-0 text-fg-muted"
                                 aria-hidden="true"
                             />
-                            <dd>{{ event.points }} points</dd>
+                            <dd>
+                                {{
+                                    $t("home.points_4", {
+                                        points: event.points,
+                                    })
+                                }}
+                            </dd>
                         </div>
                     </dl>
                 </li>
             </ul>
 
-            <EmptyState v-else :icon="Sparkles" title="Nothing open right now">
-                New events show up here as soon as you can apply.
+            <EmptyState
+                v-else
+                :icon="Sparkles"
+                :title="$t('home.nothing_open_right_now')"
+            >
+                {{ $t("home.new_events_show_up_here") }}
             </EmptyState>
         </section>
     </div>

@@ -17,7 +17,7 @@ defineProps({
             v-if="showName"
             class="text-lg font-semibold tracking-tight text-fg"
         >
-            Campus Engage
+            {{ $t("app.name") }}
         </span>
     </span>
 </template>

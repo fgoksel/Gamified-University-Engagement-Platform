@@ -96,15 +96,15 @@ class LiveAttendanceQr
         $this->authorise($actor, $event);
 
         if ($event->is_hidden) {
-            throw new EventActionRefused('surprise', 'A surprise event has no check-in: its points are given only by import.', 409);
+            throw new EventActionRefused('surprise', __('qr.live.surprise_has_no_check_in'), 409);
         }
 
         if (! $event->qr_enabled) {
-            throw new EventActionRefused('qr_disabled', 'QR codes are not enabled for this event.');
+            throw new EventActionRefused('qr_disabled', __('qr.live.qr_codes_are_not_enabled'));
         }
 
         if ($event->isOnHold() || ! in_array($event->status, [Event::STATUS_PUBLISHED, Event::STATUS_COMPLETED], true)) {
-            throw new EventActionRefused('inactive', 'This event is no longer active.', 409);
+            throw new EventActionRefused('inactive', __('qr.live.this_event_is_no_longer'), 409);
         }
 
         return DB::transaction(function () use ($actor, $event) {
@@ -239,7 +239,7 @@ class LiveAttendanceQr
      */
     public function redeem(User $student, string $payload): array
     {
-        $invalid = new EventActionRefused('invalid', 'Invalid QR code.');
+        $invalid = new EventActionRefused('invalid', __('qr.live.invalid_qr_code'));
 
         if (! preg_match('/^'.self::PREFIX.'\.(\d+)\.(\d+)\.([a-f0-9]{32})$/', trim($payload), $m)) {
             throw $invalid;
@@ -255,11 +255,11 @@ class LiveAttendanceQr
         $event = $session->event;
 
         if ($session->isClosed()) {
-            throw new EventActionRefused('closed', 'Check-in for this event has ended.', 409);
+            throw new EventActionRefused('closed', __('qr.live.check_in_for_this_event'), 409);
         }
 
         if ($session->isPaused()) {
-            throw new EventActionRefused('paused', 'Check-in is paused. Wait until the organiser shows the code again.', 409);
+            throw new EventActionRefused('paused', __('qr.live.check_in_is_paused_wait'), 409);
         }
 
         $step = $this->step();
@@ -277,15 +277,15 @@ class LiveAttendanceQr
         $justReplaced = (int) $slot === $current - 1 && $seconds % $step < $this->margin();
 
         if (! $showing && ! $justReplaced) {
-            throw new EventActionRefused('expired', 'This code has expired. Scan the code that is showing now.', 409);
+            throw new EventActionRefused('expired', __('qr.live.this_code_has_expired_scan'), 409);
         }
 
         if ($student->is($session->issuer)) {
-            throw new EventActionRefused('own_code', 'You cannot check in with a code that you are showing yourself.', 403);
+            throw new EventActionRefused('own_code', __('qr.live.you_cannot_check'), 403);
         }
 
         if (! $event->qr_enabled || $event->isOnHold() || ! in_array($event->status, [Event::STATUS_PUBLISHED, Event::STATUS_COMPLETED], true)) {
-            throw new EventActionRefused('inactive', 'This event is no longer active.', 409);
+            throw new EventActionRefused('inactive', __('qr.live.this_event_is_no_longer'), 409);
         }
 
         if ($refusal = $this->ledger->refusalFor($event)) {
@@ -299,14 +299,14 @@ class LiveAttendanceQr
             ->exists();
 
         if (! $accepted) {
-            throw new EventActionRefused('not_registered', 'You are not registered or selected for this event.', 403);
+            throw new EventActionRefused('not_registered', __('qr.live.you_are_not_registered'), 403);
         }
 
         try {
             $row = $this->ledger->credit($event, $student, $session->issuer, PointLedger::QR_LIVE);
         } catch (EventActionRefused $refused) {
             if ($refused->reason === 'already_credited') {
-                throw new EventActionRefused('already_claimed', 'You have already checked in. Your points for this event are credited.', 409);
+                throw new EventActionRefused('already_claimed', __('qr.live.you_have_already_checked'), 409);
             }
 
             throw $refused;
@@ -314,7 +314,7 @@ class LiveAttendanceQr
 
         return [
             'outcome' => 'credited',
-            'message' => "Check-in recorded. {$row->points} points credited.",
+            'message' => __('qr.live.recorded', ['points' => $row->points]),
             'event' => $event->title,
             'points' => $row->points,
             'category' => $row->category,
@@ -326,7 +326,7 @@ class LiveAttendanceQr
     private function authorise(User $actor, Event $event): void
     {
         if (! Gate::forUser($actor)->allows('manageQr', $event)) {
-            throw new EventActionRefused('forbidden', 'You cannot manage QR codes for this event.', 403);
+            throw new EventActionRefused('forbidden', __('qr.live.you_cannot_manage_qr_codes'), 403);
         }
     }
 

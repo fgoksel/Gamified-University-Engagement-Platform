@@ -239,10 +239,10 @@ class EventCatalog
         return [
             ...$this->present($user, $event, $mine),
             'status' => $event->status,
-            'ends_full' => $event->event_ends_at->format('D j M Y, H:i'),
-            'applications_open_full' => $event->applicationsOpenFrom()?->format('D j M Y, H:i'),
-            'applications_close_full' => $event->application_deadline->format('D j M Y, H:i'),
-            'completion_deadline' => $event->completion_deadline->format('D j M Y, H:i'),
+            'ends_full' => $event->event_ends_at->translatedFormat('D j M Y, H:i'),
+            'applications_open_full' => $event->applicationsOpenFrom()?->translatedFormat('D j M Y, H:i'),
+            'applications_close_full' => $event->application_deadline->translatedFormat('D j M Y, H:i'),
+            'completion_deadline' => $event->completion_deadline->translatedFormat('D j M Y, H:i'),
         ];
     }
 
@@ -267,9 +267,9 @@ class EventCatalog
             'owning_topic' => $event->owningTopic?->title,
             'audience_topic' => $event->audienceTopic?->title,
             // Formatted here: the dates are stored as typed, so the browser must not shift them.
-            'starts' => $event->event_starts_at->format('D j M Y, H:i'),
+            'starts' => $event->event_starts_at->translatedFormat('D j M Y, H:i'),
             'ends' => $event->event_ends_at->format('H:i'),
-            'applications_close' => $event->application_deadline->format('j M, H:i'),
+            'applications_close' => $event->application_deadline->translatedFormat('j M, H:i'),
             'capacity' => $event->capacity,
             'places_left' => max(0, $event->capacity - (int) $event->accepted_count),
             'application_type' => $event->application_type,

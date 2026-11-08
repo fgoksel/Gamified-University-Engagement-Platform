@@ -19,7 +19,7 @@ const { selectedArea, clearSelection } = useSubjectAreaFilter();
         <button
             type="button"
             class="inline-flex size-11 shrink-0 items-center justify-center rounded-full text-fg-muted hover:bg-surface-muted hover:text-fg focus-visible:outline-2 focus-visible:outline-ring"
-            aria-label="Clear subject area filter"
+            :aria-label="$t('subject_areas.clear_filter')"
             @click="clearSelection"
         >
             <X class="size-3.5" :stroke-width="2" />

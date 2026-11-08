@@ -48,7 +48,7 @@ class QrTokenService
         $this->assertCanIssue($issuer, $event);
 
         if ($count < 1 || $count > self::MAX_SLIPS) {
-            throw new EventActionRefused('invalid_count', 'Make between 1 and '.self::MAX_SLIPS.' slips at a time.');
+            throw new EventActionRefused('invalid_count', __('qr.token.make_between', ['max' => self::MAX_SLIPS]));
         }
 
         $batch = (string) Str::uuid();
@@ -72,7 +72,7 @@ class QrTokenService
     public function revoke(User $actor, QrToken $token): void
     {
         if (! Gate::forUser($actor)->allows('manageQr', $token->event)) {
-            throw new EventActionRefused('forbidden', 'You cannot manage QR codes for this event.', 403);
+            throw new EventActionRefused('forbidden', __('qr.token.you_cannot_manage_qr_codes'), 403);
         }
 
         $token->forceFill(['revoked_at' => $token->revoked_at ?? now()])->save();
@@ -99,7 +99,7 @@ class QrTokenService
      */
     public function resolve(string $payload): QrToken
     {
-        $invalid = new EventActionRefused('invalid', 'Invalid QR code.');
+        $invalid = new EventActionRefused('invalid', __('qr.token.invalid_qr_code'));
         [$code, $signature] = array_pad(explode('.', trim($payload), 2), 2, '');
 
         if ($code === '' || ! hash_equals($this->signature($code), $signature)) {
@@ -114,7 +114,7 @@ class QrTokenService
 
         // The signature proves that the code was issued, so saying why it stopped working gives nothing away.
         if ($token->revoked_at !== null) {
-            throw new EventActionRefused('withdrawn', 'The organiser has withdrawn this code, so it no longer works.', 409);
+            throw new EventActionRefused('withdrawn', __('qr.token.withdrawn'), 409);
         }
 
         return $token;
@@ -141,19 +141,19 @@ class QrTokenService
         $event = $token->event;
 
         if (! $token->isSlip()) {
-            throw new EventActionRefused('retired', 'This printed code is no longer used. Scan the code shown at the event, or a printed slip.', 409);
+            throw new EventActionRefused('retired', __('qr.token.retired'), 409);
         }
 
         if ($student->is($token->issuer)) {
-            throw new EventActionRefused('own_code', 'You cannot redeem a code that you issued yourself.', 403);
+            throw new EventActionRefused('own_code', __('qr.token.you_cannot_redeem_a_code'), 403);
         }
 
         if (! $event->qr_enabled || $event->isOnHold() || ! in_array($event->status, [Event::STATUS_PUBLISHED, Event::STATUS_COMPLETED], true)) {
-            throw new EventActionRefused('inactive', 'This event is no longer active.', 409);
+            throw new EventActionRefused('inactive', __('qr.token.this_event_is_no_longer'), 409);
         }
 
         if ($token->expires_at !== null && $token->expires_at->isPast()) {
-            throw new EventActionRefused('expired', 'This slip has expired.', 409);
+            throw new EventActionRefused('expired', __('qr.token.this_qr_code_has_expired'), 409);
         }
 
         if ($refusal = $this->ledger->refusalFor($event)) {
@@ -167,7 +167,7 @@ class QrTokenService
             ->exists();
 
         if (! $accepted) {
-            throw new EventActionRefused('not_registered', 'You are not registered or selected for this event. The slip has not been used.', 403);
+            throw new EventActionRefused('not_registered', __('qr.token.you_are_not_registered'), 403);
         }
 
         try {
@@ -177,9 +177,9 @@ class QrTokenService
         } catch (EventActionRefused $refused) {
             // The ledger speaks to the organiser ("Points have already been credited to Anna"); this is the student.
             throw match ($refused->reason) {
-                'already_credited' => new EventActionRefused('already_credited', 'You already have the points for this event. The slip has not been used.', 409),
+                'already_credited' => new EventActionRefused('already_credited', __('qr.token.already_credited'), 409),
                 // Only if the application changed since the check above.
-                'not_registered' => new EventActionRefused('not_registered', 'You are not registered or selected for this event. The slip has not been used.', 403),
+                'not_registered' => new EventActionRefused('not_registered', __('qr.token.you_are_not_registered'), 403),
                 default => $refused,
             };
         }
@@ -207,7 +207,7 @@ class QrTokenService
 
         return [
             'outcome' => 'credited',
-            'message' => "Completion recorded! {$row->points} points credited.",
+            'message' => __('qr.token.completion_recorded', ['points' => $row->points]),
             'event' => $event->title,
             'points' => $row->points,
             'category' => $row->category,
@@ -224,8 +224,8 @@ class QrTokenService
         $own = QrRedemption::query()->where('qr_token_id', $token->id)->where('student_id', $student->id)->exists();
 
         return $own
-            ? new EventActionRefused('already_claimed', 'You have already used this slip.', 409)
-            : new EventActionRefused('already_used', 'This slip has already been used. Each slip works only once.', 409);
+            ? new EventActionRefused('already_claimed', __('qr.token.you_have_already_used_this_slip'), 409)
+            : new EventActionRefused('already_used', __('qr.token.this_slip_has_already_been_used'), 409);
     }
 
     /**
@@ -237,23 +237,23 @@ class QrTokenService
     private function assertCanIssue(User $issuer, Event $event): void
     {
         if (! Gate::forUser($issuer)->allows('manageQr', $event)) {
-            throw new EventActionRefused('forbidden', 'You cannot manage QR codes for this event.', 403);
+            throw new EventActionRefused('forbidden', __('qr.token.you_cannot_manage_qr_codes'), 403);
         }
 
         if ($event->is_hidden) {
-            throw new EventActionRefused('surprise', 'A surprise event has no QR codes: its points are given only by import.', 409);
+            throw new EventActionRefused('surprise', __('qr.token.surprise_has_no_codes'), 409);
         }
 
         if (! $event->qr_enabled) {
-            throw new EventActionRefused('qr_disabled', 'QR codes are not enabled for this event.');
+            throw new EventActionRefused('qr_disabled', __('qr.token.qr_codes_are_not_enabled'));
         }
 
         if ($event->isOnHold() || ! in_array($event->status, [Event::STATUS_PUBLISHED, Event::STATUS_COMPLETED], true)) {
-            throw new EventActionRefused('inactive', 'This event is no longer active.', 409);
+            throw new EventActionRefused('inactive', __('qr.token.this_event_is_no_longer'), 409);
         }
 
         if (now()->gt($event->completion_deadline)) {
-            throw new EventActionRefused('deadline_passed', "This event's completion deadline has passed, so new slips would not work.", 409);
+            throw new EventActionRefused('deadline_passed', __('qr.token.completion_deadline_passed'), 409);
         }
     }
 

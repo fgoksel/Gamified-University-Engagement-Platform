@@ -51,7 +51,7 @@ class ApplicantController extends Controller
             (bool) ($data['expand_capacity'] ?? false),
         );
 
-        return back()->with('success', 'Applicant selections successfully saved.');
+        return back()->with('success', __('events.applicants.applicant_selections_successfully_saved'));
     }
 
     public function reject(Request $request, Event $event, EventApplication $application): RedirectResponse
@@ -61,7 +61,7 @@ class ApplicantController extends Controller
 
         $this->review->reject($request->user(), $event, $application);
 
-        return back()->with('success', 'The student was removed from the event.');
+        return back()->with('success', __('events.applicants.the_student_was_removed'));
     }
 
     private function authorizeReview(Request $request, Event $event): void

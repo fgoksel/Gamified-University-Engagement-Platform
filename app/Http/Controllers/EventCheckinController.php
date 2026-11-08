@@ -87,7 +87,7 @@ class EventCheckinController extends Controller
                 'id' => $event->id,
                 'title' => $event->title,
                 'points' => $event->points_value,
-                'starts' => $event->event_starts_at->format('D j M Y, H:i'),
+                'starts' => $event->event_starts_at->translatedFormat('D j M Y, H:i'),
             ],
             'checkin' => $live->state($request->user(), $event),
         ]);

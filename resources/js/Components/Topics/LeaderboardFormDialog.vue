@@ -4,6 +4,7 @@ import { useForm } from "@inertiajs/vue3";
 import Modal from "./Modal.vue";
 import Btn from "./Btn.vue";
 import TextField from "../TextField.vue";
+import { t } from "../../i18n.js";
 import { screenTimeWords } from "../../leaderboardWords.js";
 import { leaderboardColumnLabels } from "../../topicsLabels.js";
 
@@ -36,7 +37,9 @@ const columns = [
 ];
 
 const heading = computed(() =>
-    props.board ? "Edit leaderboard" : "New leaderboard",
+    props.board
+        ? t("areas.leaderboard_form.edit_leaderboard")
+        : t("areas.leaderboard_form.new_leaderboard"),
 );
 
 function submit() {
@@ -52,15 +55,14 @@ function submit() {
             <p
                 class="rounded-control bg-surface-muted px-3 py-2 text-sm text-fg-muted"
             >
-                It counts the points from every event in
-                <strong class="text-fg">{{ topic.title }}</strong> and in all
-                areas below it. To rank a smaller set, make the leaderboard on
-                an area lower down.
+                {{ $t("areas.leaderboard_form.it_counts_the_points_from") }}
+                <strong class="text-fg">{{ topic.title }}</strong>
+                {{ $t("areas.leaderboard_form.and_in_all_areas_below") }}
             </p>
 
             <TextField
                 v-model="form.name"
-                label="Name"
+                :label="$t('areas.leaderboard_form.name')"
                 required
                 :error="form.errors.name"
                 data-autofocus
@@ -72,11 +74,12 @@ function submit() {
                 "
             >
                 <legend class="text-sm font-medium text-fg">
-                    Columns to show
+                    {{ $t("areas.leaderboard_form.columns_to_show") }}
                 </legend>
                 <p id="lb-columns-hint" class="mt-1 text-sm text-fg-muted">
-                    By default only the Neptun code shows. Names stay hidden
-                    unless you tick them.
+                    {{
+                        $t("areas.leaderboard_form.by_default_only_the_neptun")
+                    }}
                 </p>
                 <div class="mt-1.5">
                     <label
@@ -113,14 +116,20 @@ function submit() {
         </form>
 
         <template #footer>
-            <Btn :disabled="form.processing" @click="emit('close')">Cancel</Btn>
+            <Btn :disabled="form.processing" @click="emit('close')">{{
+                $t("areas.leaderboard_form.cancel")
+            }}</Btn>
             <Btn
                 type="submit"
                 form="leaderboard-form"
                 variant="primary"
                 :loading="form.processing"
             >
-                {{ board ? "Save leaderboard" : "Create leaderboard" }}
+                {{
+                    board
+                        ? $t("areas.leaderboard_form.save_leaderboard")
+                        : $t("areas.leaderboard_form.create_leaderboard")
+                }}
             </Btn>
         </template>
     </Modal>

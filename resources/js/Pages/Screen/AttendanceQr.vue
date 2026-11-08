@@ -13,6 +13,7 @@ import {
 } from "@lucide/vue";
 import Btn from "../../Components/Topics/Btn.vue";
 import { api, ApiError } from "../../topicsApi.js";
+import { t } from "../../i18n.js";
 
 // "Show attendance QR" (Task #81, meeting of 26 Oct, section 3): the organiser shows the
 // live code full-screen on a projector or their own phone, at the moment they choose. The
@@ -74,23 +75,26 @@ const codeVisible = computed(
 
 const placeholder = computed(() => {
     if (state.value.open) {
-        return { title: "Getting the next code…", text: "" };
+        return {
+            title: t("screen.attendance.getting_the_next_code"),
+            text: "",
+        };
     }
     if (state.value.paused) {
         return {
-            title: "Check-in is paused",
-            text: "Scans are not accepted until you show the code again.",
+            title: t("screen.attendance.check_in_is_paused"),
+            text: t("screen.attendance.scans_are_not_accepted_until"),
         };
     }
     if (ended.value) {
         return {
-            title: "Check-in has ended",
-            text: "The code no longer works.",
+            title: t("screen.attendance.check_in_has_ended"),
+            text: t("screen.attendance.the_code_no_longer_works"),
         };
     }
     return {
-        title: "Check-in is not open",
-        text: "Press Show attendance QR when you are ready. Students then scan the code with the app.",
+        title: t("screen.attendance.check_in_is_not_open"),
+        text: t("screen.attendance.press_show_attendance_qr_when"),
     };
 });
 
@@ -188,7 +192,7 @@ function failed(problem) {
     ) {
         fatal.value = true;
         error.value = [401, 419].includes(problem.status)
-            ? "You are no longer logged in. Log in again to show the code."
+            ? t("screen.attendance.you_are_no_longer_logged")
             : problem.message;
         state.value = { ...state.value, open: false };
         setPicture(null);
@@ -224,7 +228,7 @@ async function act(action) {
         error.value =
             problem instanceof ApiError
                 ? problem.message
-                : "The server cannot be reached. Check the connection and try again.";
+                : t("screen.attendance.the_server_cannot_be_reached");
         return false;
     } finally {
         busy.value = false;
@@ -308,7 +312,9 @@ function onVisibilityChange() {
 
 onMounted(() => {
     canFullscreen.value = document.fullscreenEnabled === true;
-    document.title = `Attendance QR – ${props.event.title}`;
+    document.title = t("screen.attendance.document_title", {
+        event: props.event.title,
+    });
     clock = setInterval(tick, 200);
     document.addEventListener("visibilitychange", onVisibilityChange);
     document.addEventListener("fullscreenchange", onFullscreenChange);
@@ -340,7 +346,7 @@ onBeforeUnmount(() => {
                 class="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-control px-2 text-sm font-medium text-fg-muted hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
             >
                 <ArrowLeft class="size-4" aria-hidden="true" />
-                My events
+                {{ $t("screen.attendance.my_events") }}
             </Link>
             <h1
                 class="min-w-0 flex-1 truncate text-center text-base font-semibold sm:text-lg"
@@ -359,7 +365,11 @@ onBeforeUnmount(() => {
                     aria-hidden="true"
                 />
                 <Maximize v-else class="size-4" aria-hidden="true" />
-                {{ isFullscreen ? "Exit full screen" : "Full screen" }}
+                {{
+                    isFullscreen
+                        ? $t("screen.attendance.exit_full_screen")
+                        : $t("screen.attendance.full_screen")
+                }}
             </Btn>
         </header>
 
@@ -374,7 +384,7 @@ onBeforeUnmount(() => {
                 <img
                     v-if="codeVisible"
                     :src="picture"
-                    alt="Attendance QR code"
+                    :alt="$t('screen.attendance.attendance_qr_code')"
                     class="size-full"
                 />
                 <div
@@ -397,12 +407,16 @@ onBeforeUnmount(() => {
                     <p
                         class="flex items-baseline justify-between gap-3 text-fg-muted"
                     >
-                        <span>Next code in</span>
+                        <span>{{ $t("screen.attendance.next_code") }}</span>
                         <span
                             class="text-3xl font-semibold text-fg tabular-nums"
                             aria-hidden="true"
                         >
-                            {{ secondsLeft }} s
+                            {{
+                                $t("screen.attendance.seconds_short", {
+                                    count: secondsLeft,
+                                })
+                            }}
                         </span>
                     </p>
                     <div
@@ -414,12 +428,14 @@ onBeforeUnmount(() => {
                         />
                     </div>
                     <p class="sr-only">
-                        The code changes every
-                        {{ state.step_seconds }} seconds.
+                        {{
+                            $t("screen.attendance.code_changes_every", {
+                                seconds: state.step_seconds,
+                            })
+                        }}
                     </p>
                     <p class="mt-3 text-sm text-fg-muted">
-                        Students: open the app, tap Scan and point the camera at
-                        the code.
+                        {{ $t("screen.attendance.students_open_the_app_tap") }}
                     </p>
                 </div>
 
@@ -430,9 +446,7 @@ onBeforeUnmount(() => {
                     >
                         {{ state.checked_in }}
                     </span>
-                    of {{ state.accepted }} accepted
-                    {{ state.accepted === 1 ? "student" : "students" }} checked
-                    in
+                    {{ $tc("screen.attendance.checked_in_of", state.accepted) }}
                 </p>
 
                 <p
@@ -440,7 +454,11 @@ onBeforeUnmount(() => {
                     class="rounded-control bg-warning-soft p-3 text-sm text-warning-fg"
                     data-test="refusal"
                 >
-                    Scans do not count right now. {{ state.refusal }}
+                    {{
+                        $t("screen.attendance.scans_do_not_count", {
+                            reason: state.refusal,
+                        })
+                    }}
                 </p>
                 <p
                     v-if="offline"
@@ -451,8 +469,7 @@ onBeforeUnmount(() => {
                         class="mt-0.5 size-4 shrink-0"
                         aria-hidden="true"
                     />
-                    No connection to the server. The code comes back when the
-                    connection does.
+                    {{ $t("screen.attendance.no_connection_to_the_server") }}
                 </p>
                 <p
                     v-if="error"
@@ -477,8 +494,8 @@ onBeforeUnmount(() => {
                         <Play class="size-4" aria-hidden="true" />
                         {{
                             state.paused
-                                ? "Show the code again"
-                                : "Show attendance QR"
+                                ? $t("screen.attendance.show_the_code_again")
+                                : $t("screen.attendance.show_attendance_qr")
                         }}
                     </Btn>
                     <Btn
@@ -488,7 +505,7 @@ onBeforeUnmount(() => {
                         @click="pause"
                     >
                         <Pause class="size-4" aria-hidden="true" />
-                        Pause
+                        {{ $t("screen.attendance.pause") }}
                     </Btn>
                     <Btn
                         v-if="state.open || state.paused"
@@ -498,7 +515,7 @@ onBeforeUnmount(() => {
                         @click="confirmingStop = true"
                     >
                         <Square class="size-4" aria-hidden="true" />
-                        Stop check-in
+                        {{ $t("screen.attendance.stop_check") }}
                     </Btn>
                 </div>
                 <div
@@ -507,8 +524,7 @@ onBeforeUnmount(() => {
                     data-test="confirm-stop"
                 >
                     <p class="text-sm">
-                        Stop check-in? The code stops working at once. You can
-                        start a new check-in later.
+                        {{ $t("screen.attendance.stop_check_in_the_code") }}
                     </p>
                     <div class="mt-3 flex flex-wrap gap-3">
                         <Btn
@@ -517,16 +533,15 @@ onBeforeUnmount(() => {
                             data-test="confirm-stop-yes"
                             @click="stop"
                         >
-                            Stop check-in
+                            {{ $t("screen.attendance.stop_check") }}
                         </Btn>
                         <Btn :disabled="busy" @click="confirmingStop = false">
-                            Keep showing
+                            {{ $t("screen.attendance.keep_showing") }}
                         </Btn>
                     </div>
                 </div>
                 <p v-if="state.open" class="text-sm text-fg-muted">
-                    Check-in stays open until you pause or stop it, also if you
-                    leave this page.
+                    {{ $t("screen.attendance.check_in_stays_open_until") }}
                 </p>
             </div>
         </main>

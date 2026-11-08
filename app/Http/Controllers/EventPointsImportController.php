@@ -39,7 +39,7 @@ class EventPointsImportController extends Controller
                 'category' => $event->category,
                 'is_surprise' => (bool) $event->is_hidden,
                 'area' => $this->ledger->importArea($event)->title,
-                'points_until' => $event->completion_deadline->format('D j M Y, H:i'),
+                'points_until' => $event->completion_deadline->translatedFormat('D j M Y, H:i'),
             ],
             // Why points cannot be given right now, or null
             'refusal' => $this->ledger->refusalFor($event)?->getMessage(),
@@ -79,15 +79,13 @@ class EventPointsImportController extends Controller
         }
 
         $count = count($result['credited']);
-        $points = $event->points_value === 1 ? '1 point' : "{$event->points_value} points";
+        $points = trans_choice('events.import.points', $event->points_value);
 
         return response()->json([
             ...$result,
-            'message' => match ($count) {
-                0 => 'Nobody received points: everyone on the list was skipped or already had them.',
-                1 => "1 student received {$points}.",
-                default => "{$count} students received {$points} each.",
-            },
+            'message' => $count === 0
+                ? __('events.import_flash.nobody_received_points_everyone')
+                : trans_choice('events.import_flash.students_received', $count, ['points' => $points]),
             'credited_count' => $this->creditedCount($event),
         ]);
     }
@@ -101,15 +99,15 @@ class EventPointsImportController extends Controller
             // 2 MB: the upload limit of PHP as set up here, and far more than a list of codes needs.
             'file' => ['required', 'file', 'max:2048'],
         ], [
-            'file.required' => 'Choose a file.',
-            'file.uploaded' => 'The file could not be uploaded. Files up to 2 MB are accepted.',
-            'file.max' => 'The file is larger than 2 MB.',
+            'file.required' => __('events.import_flash.choose_a_file'),
+            'file.uploaded' => __('events.import_flash.the_file_could'),
+            'file.max' => __('events.import_flash.the_file_is_larger_than'),
         ]);
 
         $file = $request->file('file');
 
         if (! in_array(strtolower($file->getClientOriginalExtension()), ['csv', 'txt'], true)) {
-            throw ValidationException::withMessages(['file' => 'The file must be a CSV file (.csv or .txt).']);
+            throw ValidationException::withMessages(['file' => __('events.import_flash.the_file_must')]);
         }
 
         return NeptunCodeFile::read($file);

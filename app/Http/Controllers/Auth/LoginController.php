@@ -41,7 +41,7 @@ class LoginController extends Controller
 
         if (! Auth::attempt([...$credentials, 'status' => 'active'])) {
             throw ValidationException::withMessages([
-                'email' => 'Incorrect username or password.',
+                'email' => __('auth.login.failed'),
             ]);
         }
 

@@ -34,14 +34,14 @@ class StudentInvitationNotification extends Notification implements ShouldQueue
         $activationUrl = url('/auth/activate/'.$this->activationToken);
 
         return (new MailMessage)
-            ->subject('Student Invitation to Gamified University Engagement Platform')
-            ->greeting('Hello '.$notifiable->name.'!')
-            ->line('You have been registered as a student in the Gamified University Engagement Platform.')
-            ->line('Your Neptun code is: '.($notifiable->neptun_code ?? 'N/A'))
-            ->line('Please activate your account and set your permanent password using the button below.')
-            ->action('Activate Student Account', $activationUrl)
-            ->line("This activation link is valid for {$this->expiresInHours} hours.")
-            ->line('If you did not expect this invitation, no action is required.');
+            ->subject(__('mail.student_invitation.subject'))
+            ->greeting(__('mail.greeting', ['name' => $notifiable->name]))
+            ->line(__('mail.student_invitation.registered'))
+            ->line(__('mail.student_invitation.neptun_code', ['code' => $notifiable->neptun_code ?? __('common.not_available')]))
+            ->line(__('mail.student_invitation.activate_prompt'))
+            ->action(__('mail.student_invitation.action'), $activationUrl)
+            ->line(trans_choice('mail.student_invitation.valid', $this->expiresInHours))
+            ->line(__('mail.student_invitation.ignore'));
     }
 
     /**

@@ -27,12 +27,12 @@ class TopicTagRequestApprovedNotification extends Notification implements Should
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('Topic Tag Request Approved')
-            ->greeting("Hello {$notifiable->name},")
-            ->line("Your topic tag request for \"{$this->proposedName}\" has been approved.")
-            ->line('The tag is now active and immediately selectable in the Topic Tag dropdown when creating events.')
-            ->line('Thank you for contributing to the university engagement taxonomy.')
-            ->salutation('Best regards, University Engagement Team');
+            ->subject(__('mail.tag_approved.topic_tag_request_approved'))
+            ->greeting(__('mail.greeting_comma', ['name' => $notifiable->name]))
+            ->line(__('mail.tag_approved.approved_text', ['name' => $this->proposedName]))
+            ->line(__('mail.tag_approved.the_tag_is_now_active'))
+            ->line(__('mail.tag_approved.thank_you_for_contributing'))
+            ->salutation(__('mail.salutation'));
     }
 
     /**

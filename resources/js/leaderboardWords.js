@@ -1,59 +1,60 @@
-// Plain words for the hall screen, the time on it and "Where am I?" (Task #56), in one place so
-// the translations of #95 can move all of them into the dictionary in one go, like eventWords.js.
+// Plain words for the hall screen, the time on it and "Where am I?" (Task #56), in one place and
+// read from the dictionary (Task #95), like eventWords.js.
+import { t, tc } from "./i18n.js";
 
-const pointsText = (n) => (n === 1 ? "1 point" : `${n} points`);
+const pointsText = (n) => tc("leaderboards.points_count", n);
 
 export const hallWords = {
-    title: "Leaderboards",
-    waiting: "Leaderboards will appear here shortly.",
-    empty: "No leaderboards are published yet.",
-    noPoints: "No points on this leaderboard yet.",
-    rank: "Rank",
-    points: "Points",
-    pause: "Pause",
-    resume: "Resume",
-    students: (n) =>
-        n === 1
-            ? "1 student on this leaderboard"
-            : `${n} students on this leaderboard`,
-    position: (at, of) => `${at} of ${of}`,
+    title: t("leaderboards.hall.title"),
+    waiting: t("leaderboards.hall.waiting"),
+    empty: t("leaderboards.hall.empty"),
+    noPoints: t("leaderboards.hall.no_points"),
+    rank: t("leaderboards.hall.rank"),
+    points: t("leaderboards.hall.points"),
+    pause: t("leaderboards.hall.pause"),
+    resume: t("leaderboards.hall.resume"),
+    students: (n) => tc("leaderboards.hall.students", n),
+    position: (at, of) => t("leaderboards.hall.position", { at, of }),
 };
 
 export const screenTimeWords = {
-    label: "Time on the hall screen",
-    hint: (seconds) =>
-        `Empty: use the default (${seconds} s). Otherwise 5 to 120 seconds.`,
+    label: t("leaderboards.screen_time.label"),
+    hint: (seconds) => t("leaderboards.screen_time.hint", { seconds }),
 };
 
-export const publishWarning =
-    "Published leaderboards are shown on the hall screen and to anyone without signing in.";
+export const publishWarning = t("leaderboards.publish_warning");
 
 export const whereAmIWords = {
-    titleStudent: "Where am I?",
-    titleOthers: "Rankings",
-    intro: "Pick an area, and a category or tag if you like.",
-    area: "Area",
-    chooseArea: "Choose an area…",
-    category: "Category",
-    allCategories: "All categories",
-    tag: "Tag",
-    allTags: "All tags",
+    titleStudent: t("leaderboards.where_am_i.title_student"),
+    titleOthers: t("leaderboards.where_am_i.title_others"),
+    intro: t("leaderboards.where_am_i.intro"),
+    area: t("leaderboards.where_am_i.area"),
+    chooseArea: t("leaderboards.where_am_i.choose_area"),
+    categoryLabel: t("leaderboards.where_am_i.category"),
+    allCategories: t("leaderboards.where_am_i.all_categories"),
+    tag: t("leaderboards.where_am_i.tag"),
+    allTags: t("leaderboards.where_am_i.all_tags"),
     you: (rank, of, points) =>
-        `You are number ${rank} of ${of}, with ${pointsText(points)}.`,
-    toNext: (points, rank) => `${pointsText(points)} to reach number ${rank}.`,
-    noPoints: "You have no points here yet.",
-    noStudents: "No students have points here yet.",
-    students: (n) =>
-        n === 1
-            ? "1 student has points here."
-            : `${n} students have points here.`,
-    namesNote: "Names show for the areas you manage.",
-    listCaption: "Students in this ranking",
-    rank: "Rank",
-    name: "Name",
-    neptunCode: "Neptun code",
-    points: "Points",
-    page: (page, of) => `Page ${page} of ${of}`,
-    previous: "Previous",
-    next: "Next",
+        t("leaderboards.where_am_i.you", {
+            rank,
+            of,
+            points: pointsText(points),
+        }),
+    toNext: (points, rank) =>
+        t("leaderboards.where_am_i.to_next", {
+            points: pointsText(points),
+            rank,
+        }),
+    noPoints: t("leaderboards.where_am_i.no_points"),
+    noStudents: t("leaderboards.where_am_i.no_students"),
+    students: (n) => tc("leaderboards.where_am_i.students", n),
+    namesNote: t("leaderboards.where_am_i.names_note"),
+    listCaption: t("leaderboards.where_am_i.list_caption"),
+    rank: t("leaderboards.where_am_i.rank"),
+    name: t("leaderboards.where_am_i.name"),
+    neptunCode: t("leaderboards.where_am_i.neptun_code"),
+    points: t("leaderboards.where_am_i.points"),
+    page: (page, of) => t("leaderboards.where_am_i.page", { page, of }),
+    previous: t("leaderboards.where_am_i.previous"),
+    next: t("leaderboards.where_am_i.next"),
 };

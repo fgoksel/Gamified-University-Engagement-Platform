@@ -44,9 +44,9 @@ class ProfileController extends Controller
         $request->validate([
             'avatar' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ], [
-            'avatar.image' => 'The photo must be an image.',
-            'avatar.mimes' => 'The photo must be a JPG, PNG or WebP file.',
-            'avatar.max' => 'The photo cannot be larger than 2 MB.',
+            'avatar.image' => __('profile.photo.not_an_image'),
+            'avatar.mimes' => __('profile.photo.wrong_type'),
+            'avatar.max' => __('profile.photo.too_large'),
         ]);
 
         $user = $request->user();
@@ -56,7 +56,7 @@ class ProfileController extends Controller
             'avatar' => $request->file('avatar')->store('avatars', 'public'),
         ]);
 
-        return back()->with('success', 'Your profile photo has been updated.');
+        return back()->with('success', __('profile.photo.updated'));
     }
 
     /**
@@ -68,7 +68,7 @@ class ProfileController extends Controller
         $this->deleteAvatarFile($user->avatar);
         $user->update(['avatar' => null]);
 
-        return back()->with('success', 'Your profile photo has been removed.');
+        return back()->with('success', __('profile.photo.removed'));
     }
 
     /**
@@ -81,7 +81,7 @@ class ProfileController extends Controller
             'must_change_password' => false,
         ])->save();
 
-        return back()->with('success', 'Your password has been changed.');
+        return back()->with('success', __('auth.change_password.changed'));
     }
 
     private function deleteAvatarFile(?string $path): void

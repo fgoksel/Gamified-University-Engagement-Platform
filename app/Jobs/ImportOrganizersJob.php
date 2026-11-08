@@ -37,7 +37,7 @@ class ImportOrganizersJob extends ImportCsvJob
 
     protected function title(): string
     {
-        return 'Organizer import';
+        return __('jobs.organizers.organizer_import');
     }
 
     protected function prepare(): void
@@ -57,19 +57,19 @@ class ImportOrganizersJob extends ImportCsvJob
         $email = Str::lower((string) ($row['email'] ?? ''));
 
         if ($name === '') {
-            $this->skip($line, 'The full name is missing.');
+            $this->skip($line, __('jobs.organizers.the_full_name_is_missing'));
 
             return;
         }
 
         if (Validator::make(['email' => $email], ['email' => ['required', 'email', 'max:255']])->fails()) {
-            $this->skip($line, 'Invalid email address format.');
+            $this->skip($line, __('jobs.organizers.invalid_email_address_format'));
 
             return;
         }
 
         if (User::where('email', $email)->exists()) {
-            $this->skip($line, 'This email address is already registered in the system.');
+            $this->skip($line, __('jobs.organizers.this_email_address_is_already'));
 
             return;
         }
@@ -81,7 +81,7 @@ class ImportOrganizersJob extends ImportCsvJob
             $facultyId = $this->faculties[Str::lower($faculty)] ?? null;
 
             if ($facultyId === null) {
-                $this->note($line, "Faculty \"{$faculty}\" was not found, the organizer was imported without a faculty.");
+                $this->note($line, __('jobs.organizers.faculty_not_found', ['faculty' => $faculty]));
             }
         }
 
@@ -111,6 +111,6 @@ class ImportOrganizersJob extends ImportCsvJob
 
     protected function summary(): string
     {
-        return 'Successfully imported '.number_format($this->imported).' organizers.';
+        return __('jobs.organizers.imported', ['count' => number_format($this->imported)]);
     }
 }

@@ -20,6 +20,6 @@ defineProps({
         "
     >
         <CalendarPlus class="size-4" :stroke-width="1.75" aria-hidden="true" />
-        Create event here
+        {{ $t("areas.create_event_link.create_event_here") }}
     </Link>
 </template>

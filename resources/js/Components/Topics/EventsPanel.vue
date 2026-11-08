@@ -6,6 +6,7 @@ import CreateEventLink from "./CreateEventLink.vue";
 import StatusChip from "../StatusChip.vue";
 import { categoryDot, categoryLabel } from "../../categoryColors.js";
 import { eventStatusLabel, eventStatusTone } from "../../eventStatus.js";
+import { t } from "../../i18n.js";
 
 // The Events tab of a topic (Task #73): the events of this topic and everything
 // below it that the person may see. The server decides what is listed.
@@ -17,8 +18,8 @@ const props = defineProps({
 });
 
 const filters = [
-    { when: "upcoming", label: "Upcoming and running" },
-    { when: "past", label: "Past" },
+    { when: "upcoming", label: t("areas.events_panel.upcoming_and_running") },
+    { when: "past", label: t("areas.events_panel.past") },
 ];
 
 const filterHref = (when) =>
@@ -26,7 +27,11 @@ const filterHref = (when) =>
 
 const range = computed(() => {
     const from = (props.events.page - 1) * props.events.per_page + 1;
-    return `${from}–${from + props.events.items.length - 1} of ${props.events.total}`;
+    return t("areas.events_panel.range", {
+        from,
+        to: from + props.events.items.length - 1,
+        total: props.events.total,
+    });
 });
 
 function goTo(page) {
@@ -46,9 +51,15 @@ function goTo(page) {
     <div class="space-y-4">
         <div class="flex flex-wrap items-start justify-between gap-3">
             <div class="min-w-0">
-                <h3 class="text-base font-semibold text-fg">Events</h3>
+                <h3 class="text-base font-semibold text-fg">
+                    {{ $t("areas.events_panel.events") }}
+                </h3>
                 <p class="mt-1 text-sm text-fg-muted">
-                    Events in {{ topic.title }} and in everything below it.
+                    {{
+                        $t("areas.events_panel.events_in_and_in_everything", {
+                            title: topic.title,
+                        })
+                    }}
                 </p>
             </div>
             <CreateEventLink
@@ -58,7 +69,10 @@ function goTo(page) {
             />
         </div>
 
-        <nav aria-label="Which events" class="flex flex-wrap gap-2">
+        <nav
+            :aria-label="$t('areas.events_panel.which_events')"
+            class="flex flex-wrap gap-2"
+        >
             <Link
                 v-for="filter in filters"
                 :key="filter.when"
@@ -109,7 +123,7 @@ function goTo(page) {
                         {{
                             event.path.length
                                 ? event.path.join(" › ")
-                                : "This area"
+                                : $t("areas.events_panel.this_area")
                         }}
                         · {{ event.starts }}
                     </p>
@@ -142,13 +156,13 @@ function goTo(page) {
                     small
                     :disabled="events.page <= 1"
                     @click="goTo(events.page - 1)"
-                    >Previous</Btn
+                    >{{ $t("areas.events_panel.previous") }}</Btn
                 >
                 <Btn
                     small
                     :disabled="events.page >= events.last_page"
                     @click="goTo(events.page + 1)"
-                    >Next</Btn
+                    >{{ $t("areas.events_panel.next") }}</Btn
                 >
             </div>
         </div>

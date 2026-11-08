@@ -4,9 +4,12 @@ import { Clock, Plus, Tag, CheckCircle2, XCircle } from "@lucide/vue";
 import EmptyState from "../../Components/EmptyState.vue";
 import StatusChip from "../../Components/StatusChip.vue";
 import TopicTagRequestModal from "../../Components/TopicTagRequestModal.vue";
-import { categoryDot } from "../../categoryColors.js";
+import { categoryDot, categoryLabel } from "../../categoryColors.js";
+import { t } from "../../i18n.js";
 
-defineOptions({ layout: { title: "Topic Tag Requests" } });
+defineOptions({
+    layout: { title: t("tag_requests.index.topic_tag_requests") },
+});
 
 const props = defineProps({
     requests: {
@@ -35,11 +38,10 @@ function formatDate(isoString) {
         >
             <div>
                 <h1 class="text-2xl font-bold tracking-tight text-fg">
-                    Topic Tag Requests
+                    {{ $t("tag_requests.index.topic_tag_requests") }}
                 </h1>
                 <p class="mt-1 text-sm text-fg-muted">
-                    Request new taxonomy tags for university events. Requests
-                    are reviewed and approved by administrators.
+                    {{ $t("tag_requests.index.request_new_taxonomy_tags") }}
                 </p>
             </div>
             <button
@@ -48,7 +50,7 @@ function formatDate(isoString) {
                 @click="showModal = true"
             >
                 <Plus class="size-4" :stroke-width="2" />
-                Request a new tag
+                {{ $t("tag_requests.index.request_a_new_tag") }}
             </button>
         </div>
 
@@ -56,10 +58,9 @@ function formatDate(isoString) {
         <EmptyState
             v-if="requests.length === 0"
             :icon="Tag"
-            title="No tag requests yet"
+            :title="$t('tag_requests.index.no_tag_requests_yet')"
         >
-            Suggest a new topic tag if none of the existing event categories fit
-            your needs.
+            {{ $t("tag_requests.index.suggest_a_new_tag") }}
             <div class="mt-6">
                 <button
                     type="button"
@@ -67,7 +68,7 @@ function formatDate(isoString) {
                     @click="showModal = true"
                 >
                     <Plus class="size-4" />
-                    Request a new tag
+                    {{ $t("tag_requests.index.request_a_new_tag") }}
                 </button>
             </div>
         </EmptyState>
@@ -95,7 +96,7 @@ function formatDate(isoString) {
                                     :class="categoryDot[req.category]"
                                 />
                                 <span class="capitalize">{{
-                                    req.category
+                                    categoryLabel[req.category]
                                 }}</span>
                             </span>
                         </div>
@@ -111,21 +112,21 @@ function formatDate(isoString) {
                             tone="warning"
                             :icon="Clock"
                         >
-                            Pending Review
+                            {{ $t("tag_requests.index.pending_review") }}
                         </StatusChip>
                         <StatusChip
                             v-else-if="req.status === 'approved'"
                             tone="success"
                             :icon="CheckCircle2"
                         >
-                            Approved
+                            {{ $t("tag_requests.index.approved") }}
                         </StatusChip>
                         <StatusChip
                             v-else-if="req.status === 'rejected'"
                             tone="neutral"
                             :icon="XCircle"
                         >
-                            Rejected
+                            {{ $t("tag_requests.index.rejected") }}
                         </StatusChip>
                     </div>
                 </div>
@@ -135,7 +136,9 @@ function formatDate(isoString) {
                     v-if="req.status === 'rejected' && req.rejection_reason"
                     class="mt-4 rounded-control border border-rose-500/20 bg-rose-500/5 p-3 text-xs text-rose-800 dark:text-rose-300"
                 >
-                    <span class="font-semibold">Administrator reason:</span>
+                    <span class="font-semibold">{{
+                        $t("tag_requests.index.administrator_reason")
+                    }}</span>
                     {{ req.rejection_reason }}
                 </div>
 
@@ -143,12 +146,18 @@ function formatDate(isoString) {
                     v-if="req.status === 'approved' && req.resolved_topic_tag"
                     class="mt-4 rounded-control border border-emerald-500/20 bg-emerald-500/5 p-3 text-xs text-emerald-800 dark:text-emerald-300"
                 >
-                    <span class="font-semibold">Active Tag Created:</span>
+                    <span class="font-semibold">{{
+                        $t("tag_requests.index.active_tag_created")
+                    }}</span>
                     {{ req.resolved_topic_tag.name }}
                 </div>
 
                 <div class="mt-3 text-xs text-fg-muted">
-                    Submitted on {{ formatDate(req.created_at) }}
+                    {{
+                        $t("tag_requests.index.submitted_on", {
+                            date: formatDate(req.created_at),
+                        })
+                    }}
                 </div>
             </div>
         </div>

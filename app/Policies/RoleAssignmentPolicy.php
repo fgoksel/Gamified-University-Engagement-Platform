@@ -34,11 +34,11 @@ class RoleAssignmentPolicy
     public function grant(User $user, Topic $topic, RoleDefinition $role, User $recipient): Response
     {
         if (! $this->access->isActive($user)) {
-            return Response::deny('Your account is not active.');
+            return Response::deny(__('policies.assignment.your_account_is_not_active'));
         }
 
         if ($recipient->id === $user->id) {
-            return Response::deny('You cannot give a role to yourself.');
+            return Response::deny(__('policies.assignment.you_cannot_give_a_role'));
         }
 
         return $this->giveRole($user, $topic, $role);
@@ -51,11 +51,11 @@ class RoleAssignmentPolicy
     public function giveRole(User $user, Topic $topic, RoleDefinition $role): Response
     {
         if (! $this->access->isActive($user)) {
-            return Response::deny('Your account is not active.');
+            return Response::deny(__('policies.assignment.your_account_is_not_active'));
         }
 
         if (! $this->access->can($user, Capability::AccessAssign, $topic)) {
-            return Response::deny('You cannot give roles here.');
+            return Response::deny(__('policies.assignment.you_cannot_give_roles_here'));
         }
 
         return $this->withinPowers($user, $topic, $role);
@@ -67,11 +67,11 @@ class RoleAssignmentPolicy
     public function import(User $user, Topic $topic, RoleDefinition $role, User $recipient): Response
     {
         if (! $this->access->isActive($user)) {
-            return Response::deny('Your account is not active.');
+            return Response::deny(__('policies.assignment.your_account_is_not_active'));
         }
 
         if ($recipient->id === $user->id) {
-            return Response::deny('You cannot give a role to yourself.');
+            return Response::deny(__('policies.assignment.you_cannot_give_a_role'));
         }
 
         return $this->importRole($user, $topic, $role);
@@ -85,11 +85,11 @@ class RoleAssignmentPolicy
     public function importRole(User $user, Topic $topic, RoleDefinition $role): Response
     {
         if (! $this->access->isActive($user)) {
-            return Response::deny('Your account is not active.');
+            return Response::deny(__('policies.assignment.your_account_is_not_active'));
         }
 
         if (! $this->access->can($user, Capability::AccessImport, $topic)) {
-            return Response::deny('You cannot import students here.');
+            return Response::deny(__('policies.assignment.you_cannot_import_students_here'));
         }
 
         return $this->withinPowers($user, $topic, $role);
@@ -101,7 +101,7 @@ class RoleAssignmentPolicy
     private function withinPowers(User $user, Topic $topic, RoleDefinition $role): Response
     {
         if (! $role->isGlobal() && ! $topic->isWithin($role->topic)) {
-            return Response::deny('This role belongs to a different branch and cannot be used here.');
+            return Response::deny(__('policies.assignment.this_role_belongs'));
         }
 
         $exceeding = array_values(array_diff($role->capabilityList(), $this->access->delegable($user, $topic)));
@@ -109,7 +109,7 @@ class RoleAssignmentPolicy
         if ($exceeding !== []) {
             $names = implode(', ', array_map(fn (string $value) => Capability::from($value)->label(), $exceeding));
 
-            return Response::deny("You cannot pass on these powers here: {$names}.");
+            return Response::deny(__('policies.cannot_pass_on_here', ['powers' => $names]));
         }
 
         return Response::allow();
@@ -118,21 +118,21 @@ class RoleAssignmentPolicy
     public function end(User $user, RoleAssignment $assignment): Response
     {
         if (! $this->access->isActive($user)) {
-            return Response::deny('Your account is not active.');
+            return Response::deny(__('policies.assignment.your_account_is_not_active'));
         }
 
         if ($assignment->user_id === $user->id) {
-            return Response::deny('You cannot end or replace your own role. Another authorised person must do it.');
+            return Response::deny(__('policies.assignment.you_cannot_end_or_replace'));
         }
 
         $topic = $assignment->topic;
 
         if (! $this->access->can($user, Capability::AccessEnd, $topic)) {
-            return Response::deny('You cannot end roles here.');
+            return Response::deny(__('policies.assignment.you_cannot_end_roles_here'));
         }
 
         if ($this->suppliesAuthorityOf($user, $assignment)) {
-            return Response::deny('This role gave you your own authority, so it cannot be changed by you.');
+            return Response::deny(__('policies.assignment.this_role_gave'));
         }
 
         $exceeding = array_values(array_diff($assignment->role->capabilityList(), $this->access->delegable($user, $topic)));
@@ -140,7 +140,7 @@ class RoleAssignmentPolicy
         if ($exceeding !== []) {
             $names = implode(', ', array_map(fn (string $value) => Capability::from($value)->label(), $exceeding));
 
-            return Response::deny("This role has powers you cannot pass on, so you cannot end it: {$names}.");
+            return Response::deny(__('policies.assignment.cannot_end_powers', ['powers' => $names]));
         }
 
         return Response::allow();

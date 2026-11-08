@@ -49,7 +49,7 @@ onBeforeUnmount(() => {
         >
             <div class="flex h-16 items-center px-5">
                 <!-- The name starts with the words on screen, so voice control can find the link (Task #61, WCAG 2.5.3) -->
-                <Link href="/" aria-label="Campus Engage, home">
+                <Link href="/" :aria-label="$t('layout.campus_engage_home')">
                     <AppLogo />
                 </Link>
             </div>
@@ -60,13 +60,13 @@ onBeforeUnmount(() => {
         <header
             class="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-line bg-surface px-4 lg:hidden"
         >
-            <Link href="/" aria-label="Campus Engage, home">
+            <Link href="/" :aria-label="$t('layout.campus_engage_home')">
                 <AppLogo />
             </Link>
             <button
                 type="button"
                 class="inline-flex size-11 items-center justify-center rounded-control text-fg hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-ring"
-                aria-label="Open menu"
+                :aria-label="$t('layout.open_menu')"
                 :aria-expanded="mobileMenuOpen"
                 @click="mobileMenuOpen = true"
             >
@@ -83,14 +83,14 @@ onBeforeUnmount(() => {
             ></div>
             <aside
                 class="relative flex h-full w-72 max-w-[85%] flex-col bg-surface shadow-popover"
-                aria-label="Menu"
+                :aria-label="$t('layout.menu')"
             >
                 <div class="flex h-16 items-center justify-between px-4">
                     <AppLogo />
                     <button
                         type="button"
                         class="inline-flex size-11 items-center justify-center rounded-control text-fg hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-ring"
-                        aria-label="Close menu"
+                        :aria-label="$t('layout.close_menu')"
                         @click="closeMobileMenu"
                     >
                         <X class="size-6" :stroke-width="1.75" />

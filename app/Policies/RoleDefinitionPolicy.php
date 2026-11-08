@@ -28,17 +28,17 @@ class RoleDefinitionPolicy
     public function create(User $user, ?Topic $scope, array $capabilities, array $delegable): Response
     {
         if (! $this->access->isActive($user)) {
-            return Response::deny('Your account is not active.');
+            return Response::deny(__('policies.role.your_account_is_not_active'));
         }
 
         if ($scope === null) {
             return $this->access->isSystemAdmin($user)
                 ? Response::allow()
-                : Response::deny('Only a System Admin can define roles for the whole system.');
+                : Response::deny(__('policies.role.only_a_system_admin_can'));
         }
 
         if (! $this->access->can($user, Capability::DefineRoles, $scope)) {
-            return Response::deny('You cannot define roles here.');
+            return Response::deny(__('policies.role.you_cannot_define_roles_here'));
         }
 
         return $this->withinCeiling($user, $scope, [...$capabilities, ...$delegable]);
@@ -53,19 +53,19 @@ class RoleDefinitionPolicy
     public function update(User $user, RoleDefinition $role, array $capabilities, array $delegable, bool $changesPower): Response
     {
         if (! $this->access->isActive($user)) {
-            return Response::deny('Your account is not active.');
+            return Response::deny(__('policies.role.your_account_is_not_active'));
         }
 
         if ($role->isGlobal()) {
             return $this->access->isSystemAdmin($user)
                 ? $this->notOwnRole($user, $role, $changesPower)
-                : Response::deny('Only a System Admin can change a role that applies everywhere.');
+                : Response::deny(__('policies.role.only_a_system_admin_can_2'));
         }
 
         $scope = $role->topic;
 
         if (! $this->access->can($user, Capability::DefineRoles, $scope)) {
-            return Response::deny('You cannot change roles here.');
+            return Response::deny(__('policies.role.you_cannot_change_roles_here'));
         }
 
         $own = $this->notOwnRole($user, $role, $changesPower);
@@ -90,7 +90,7 @@ class RoleDefinitionPolicy
     private function notOwnRole(User $user, RoleDefinition $role, bool $changesPower): Response
     {
         if ($changesPower && $this->access->assignmentsOf($user)->contains('role_definition_id', $role->id)) {
-            return Response::deny('You hold this role yourself, so another person must change its powers.');
+            return Response::deny(__('policies.role.you_hold_this_role_yourself'));
         }
 
         return Response::allow();
@@ -107,7 +107,7 @@ class RoleDefinitionPolicy
         if ($exceeding !== []) {
             $names = implode(', ', array_map(fn (string $value) => Capability::from($value)->label(), $exceeding));
 
-            return Response::deny("You cannot pass on these powers here: {$names}.");
+            return Response::deny(__('policies.cannot_pass_on_here', ['powers' => $names]));
         }
 
         return Response::allow();

@@ -31,7 +31,7 @@ class EventQrController extends Controller
             'total_steps' => ['prohibited'],
             'expires_at' => ['nullable', 'date', 'after:now'],
         ], [
-            'type.in' => 'Only printed single-use slips can be made.',
+            'type.in' => __('events.qr_flash.only_slips'),
         ]);
 
         try {

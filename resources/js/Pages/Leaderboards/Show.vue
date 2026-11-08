@@ -4,6 +4,7 @@ import { Link } from "@inertiajs/vue3";
 import { ArrowLeft, Globe, Trophy, Users } from "@lucide/vue";
 import EmptyState from "../../Components/EmptyState.vue";
 import StatusChip from "../../Components/StatusChip.vue";
+import { tc } from "../../i18n.js";
 import { leaderboardColumnLabels } from "../../topicsLabels.js";
 
 // One leaderboard (Task #89): the top 10, about 10 places around the person
@@ -25,9 +26,7 @@ const columns = computed(() =>
 const columnCount = computed(() => columns.value.length + 2);
 
 const studentsOnList = computed(() =>
-    props.standings.total === 1
-        ? "1 student on this leaderboard"
-        : `${props.standings.total} students on this leaderboard`,
+    tc("leaderboards.show.students_on_board", props.standings.total),
 );
 
 const groups = computed(() => [
@@ -47,7 +46,7 @@ const groups = computed(() => [
             class="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-link hover:underline focus-visible:outline-2 focus-visible:outline-ring"
         >
             <ArrowLeft class="size-4" :stroke-width="1.75" aria-hidden="true" />
-            All leaderboards
+            {{ $t("leaderboards.show.all_leaderboards") }}
         </Link>
 
         <header class="space-y-2">
@@ -59,12 +58,14 @@ const groups = computed(() => [
                     v-if="leaderboard.is_public"
                     tone="info"
                     :icon="Globe"
-                    >Published</StatusChip
+                    >{{ $t("leaderboards.show.published") }}</StatusChip
                 >
-                <StatusChip v-else :icon="Users">Area only</StatusChip>
+                <StatusChip v-else :icon="Users">{{
+                    $t("leaderboards.show.area_only")
+                }}</StatusChip>
             </div>
             <p class="text-sm text-fg-muted">
-                Points from every event in
+                {{ $t("leaderboards.show.points_from_every_event_in") }}
                 <Link
                     v-if="leaderboard.can_open_topic"
                     :href="`/topics/${leaderboard.topic.id}?tab=leaderboards`"
@@ -73,14 +74,17 @@ const groups = computed(() => [
                 ><strong v-else class="font-medium text-fg">{{
                     leaderboard.topic.title
                 }}</strong>
-                and in all areas below it.
+                {{ $t("leaderboards.show.and_in_all_areas_below") }}
             </p>
             <p v-if="standings.total" class="text-sm text-fg">
                 <template v-if="standings.you">
-                    You are number
-                    <strong>{{ standings.you.rank }}</strong> of
+                    {{ $t("leaderboards.show.you_are_number") }}
+                    <strong>{{ standings.you.rank }}</strong>
+                    {{ $t("leaderboards.show.of") }}
                     <strong>{{ standings.total }}</strong
-                    >, with <strong>{{ standings.you.points }}</strong> points.
+                    >{{ $t("leaderboards.show.with") }}
+                    <strong>{{ standings.you.points }}</strong>
+                    {{ $t("leaderboards.show.points") }}
                 </template>
                 <template v-else>{{ studentsOnList }}.</template>
             </p>
@@ -89,10 +93,9 @@ const groups = computed(() => [
         <EmptyState
             v-if="standings.total === 0"
             :icon="Trophy"
-            title="No points yet"
+            :title="$t('leaderboards.show.no_points_yet')"
         >
-            Students appear here as soon as they earn points from an event in
-            this area.
+            {{ $t("leaderboards.show.students_appear_here_as_soon") }}
         </EmptyState>
 
         <div
@@ -110,7 +113,9 @@ const groups = computed(() => [
                 </caption>
                 <thead class="border-b border-line text-fg-muted">
                     <tr>
-                        <th scope="col" class="px-3 py-2 font-medium">Rank</th>
+                        <th scope="col" class="px-3 py-2 font-medium">
+                            {{ $t("leaderboards.show.rank") }}
+                        </th>
                         <th
                             v-for="column in columns"
                             :key="column.key"
@@ -123,7 +128,7 @@ const groups = computed(() => [
                             scope="col"
                             class="px-3 py-2 text-right font-medium"
                         >
-                            Points
+                            {{ $t("leaderboards.show.points_2") }}
                         </th>
                     </tr>
                 </thead>
@@ -137,7 +142,11 @@ const groups = computed(() => [
                             :colspan="columnCount"
                             class="px-3 py-2 text-center text-fg-muted"
                         >
-                            Some places are not shown
+                            {{
+                                $t(
+                                    "leaderboards.show.some_places_are_not_shown",
+                                )
+                            }}
                         </td>
                     </tr>
                     <tr
@@ -155,7 +164,7 @@ const groups = computed(() => [
                                 v-if="row.is_you"
                                 tone="info"
                                 class="ml-1"
-                                >You</StatusChip
+                                >{{ $t("leaderboards.show.you") }}</StatusChip
                             >
                         </td>
                         <td

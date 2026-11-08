@@ -35,11 +35,11 @@ class PasswordResetNotification extends Notification implements ShouldQueue
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('Set a new password for Campus Engage')
-            ->greeting('Hello '.$notifiable->name.'!')
-            ->line('We received a request to set a new password for your account.')
-            ->action('Set new password', route('password.setup', $this->token))
-            ->line("This link is valid for {$this->expiresInHours} hours and can be used once.")
-            ->line('If you did not ask for this, you can ignore this email. Your password will not change.');
+            ->subject(__('mail.password_reset.subject'))
+            ->greeting(__('mail.greeting', ['name' => $notifiable->name]))
+            ->line(__('mail.password_reset.request'))
+            ->action(__('mail.password_reset.action'), route('password.setup', $this->token))
+            ->line(trans_choice('mail.password_reset.valid', $this->expiresInHours))
+            ->line(__('mail.password_reset.ignore'));
     }
 }

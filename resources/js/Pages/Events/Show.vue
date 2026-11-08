@@ -19,15 +19,16 @@ import ApplyAction from "../../Components/Events/ApplyAction.vue";
 import CheckinBanner from "../../Components/Events/CheckinBanner.vue";
 import EventAccessPanel from "../../Components/Events/EventAccessPanel.vue";
 import StatusChip from "../../Components/StatusChip.vue";
-import { categoryDot } from "../../categoryColors.js";
-import { eventStatusTone } from "../../eventStatus.js";
+import { categoryDot, categoryLabel } from "../../categoryColors.js";
+import { eventStatusLabel, eventStatusTone } from "../../eventStatus.js";
 import { useRole } from "../../composables/useRole.js";
 import { applicationType, myStatus, places } from "../../eventWords.js";
+import { t } from "../../i18n.js";
 
 // One event's detail page, also reached by its direct URL (Task #40),
 // with the Apply button (Task #49).
 // The server only sends it when EventPolicy::view allows it.
-defineOptions({ layout: { title: "Event" } });
+defineOptions({ layout: { title: t("events.show.event") } });
 
 const props = defineProps({
     event: { type: Object, required: true },
@@ -58,7 +59,7 @@ const showActions = computed(
             href="/events"
             class="inline-flex items-center gap-1 text-sm text-fg-muted hover:text-fg"
         >
-            <ArrowLeft class="size-4" /> All events
+            <ArrowLeft class="size-4" /> {{ $t("events.show.all_events") }}
         </Link>
 
         <!-- Task #82: while the organiser shows the attendance code, an accepted student is told to scan it.
@@ -84,27 +85,27 @@ const showActions = computed(
                         class="size-2 rounded-full"
                         :class="categoryDot[event.category]"
                     />
-                    {{ event.tag ?? event.category }}
+                    {{ event.tag ?? categoryLabel[event.category] }}
                 </span>
                 <StatusChip
                     v-if="event.is_surprise"
                     tone="info"
                     :icon="Sparkles"
                 >
-                    Surprise event
+                    {{ $t("events.show.surprise_event") }}
                 </StatusChip>
                 <StatusChip
                     v-if="event.status !== 'published'"
                     :tone="eventStatusTone[event.status] ?? 'neutral'"
                     class="capitalize"
                 >
-                    {{ event.status.replace("_", " ") }}
+                    {{ eventStatusLabel[event.status] }}
                 </StatusChip>
                 <StatusChip
                     v-else-if="!event.is_open && !event.is_surprise"
                     tone="neutral"
                 >
-                    Applications closed
+                    {{ $t("events.show.applications_closed") }}
                 </StatusChip>
             </div>
 
@@ -127,7 +128,7 @@ const showActions = computed(
                 <div>
                     <dt class="flex items-start gap-2 text-fg-muted">
                         <CalendarClock class="mt-0.5 size-4 shrink-0" />
-                        When
+                        {{ $t("events.show.when") }}
                     </dt>
                     <dd class="pl-6 text-fg">
                         {{ event.starts }} – {{ event.ends_full }}
@@ -136,7 +137,7 @@ const showActions = computed(
                 <div v-if="!event.is_surprise">
                     <dt class="flex items-start gap-2 text-fg-muted">
                         <Clock class="mt-0.5 size-4 shrink-0" />
-                        Applications close
+                        {{ $t("events.show.applications_close") }}
                     </dt>
                     <dd class="pl-6 text-fg">
                         {{ event.applications_close_full }}
@@ -145,7 +146,7 @@ const showActions = computed(
                 <div v-if="event.location">
                     <dt class="flex items-start gap-2 text-fg-muted">
                         <MapPin class="mt-0.5 size-4 shrink-0" />
-                        Location
+                        {{ $t("events.show.location") }}
                     </dt>
                     <dd class="pl-6 text-fg">
                         {{ event.location }}
@@ -154,22 +155,26 @@ const showActions = computed(
                 <div>
                     <dt class="flex items-start gap-2 text-fg-muted">
                         <Building2 class="mt-0.5 size-4 shrink-0" />
-                        Organised by
+                        {{ $t("events.show.organised") }}
                     </dt>
                     <dd class="pl-6 text-fg">
                         {{ event.owning_topic }}
                     </dd>
                     <dd v-if="event.audience_topic" class="pl-6 text-fg-muted">
-                        Open to {{ event.audience_topic }}
+                        {{
+                            $t("events.show.open_to", {
+                                area: event.audience_topic,
+                            })
+                        }}
                     </dd>
                     <dd v-else class="pl-6 text-fg-muted">
-                        Invited students only
+                        {{ $t("events.show.invited_students_only") }}
                     </dd>
                 </div>
                 <div v-if="path.length" class="sm:col-span-2">
                     <dt class="flex items-start gap-2 text-fg-muted">
                         <FolderTree class="mt-0.5 size-4 shrink-0" />
-                        Path in the tree
+                        {{ $t("events.show.path_in_the_tree") }}
                     </dt>
                     <dd class="pl-6 text-fg">
                         <ol
@@ -206,7 +211,7 @@ const showActions = computed(
                 <div v-if="!event.is_surprise">
                     <dt class="flex items-start gap-2 text-fg-muted">
                         <Users class="mt-0.5 size-4 shrink-0" />
-                        Places
+                        {{ $t("events.show.places") }}
                     </dt>
                     <dd class="pl-6 text-fg">
                         {{ places(event) }}
@@ -215,7 +220,7 @@ const showActions = computed(
                 <div v-if="!event.is_surprise">
                     <dt class="flex items-start gap-2 text-fg-muted">
                         <ListChecks class="mt-0.5 size-4 shrink-0" />
-                        How places are given
+                        {{ $t("events.show.how_places_are_given") }}
                     </dt>
                     <dd class="pl-6 text-fg">
                         {{ applicationType(event) }}
@@ -224,19 +229,25 @@ const showActions = computed(
                 <div>
                     <dt class="flex items-start gap-2 text-fg-muted">
                         <Trophy class="mt-0.5 size-4 shrink-0" />
-                        Points
+                        {{ $t("events.show.points") }}
                     </dt>
                     <dd class="pl-6 text-fg">
-                        {{ event.points }} points, given until
-                        {{ event.completion_deadline }}
+                        {{
+                            $t("events.show.points_given_until", {
+                                points: event.points,
+                                date: event.completion_deadline,
+                            })
+                        }}
                     </dd>
                 </div>
                 <div v-if="event.qr_enabled">
                     <dt class="flex items-start gap-2 text-fg-muted">
                         <QrCode class="mt-0.5 size-4 shrink-0" />
-                        Attendance
+                        {{ $t("events.show.attendance") }}
                     </dt>
-                    <dd class="pl-6 text-fg">Confirmed with a QR code</dd>
+                    <dd class="pl-6 text-fg">
+                        {{ $t("events.show.confirmed_with_a_qr_code") }}
+                    </dd>
                 </div>
             </dl>
 

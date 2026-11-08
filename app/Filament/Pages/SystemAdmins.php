@@ -31,60 +31,74 @@ class SystemAdmins extends Page implements HasTable
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedShieldCheck;
 
-    protected static ?string $navigationLabel = 'System admins';
-
-    protected static ?string $title = 'System admins';
-
     protected static ?string $slug = 'system-admins';
 
     protected static ?int $navigationSort = 10;
 
     protected string $view = 'filament.pages.system-admins';
 
+    public static function getNavigationLabel(): string
+    {
+        return __('admin.system_admins.navigation');
+    }
+
+    public function getTitle(): string
+    {
+        return __('admin.system_admins.title');
+    }
+
     public function table(Table $table): Table
     {
         return $table
             ->query(User::query()->role(UserRole::Admin)->orderBy('name'))
+            ->modelLabel(__('admin.models.user'))
+            ->pluralModelLabel(__('admin.models.users'))
             ->columns([
-                TextColumn::make('name')->label('Name')->searchable()->sortable(),
-                TextColumn::make('email')->label('Email')->searchable(),
+                TextColumn::make('name')->label(__('admin.system_admins.name'))->searchable()->sortable(),
+                TextColumn::make('email')->label(__('admin.system_admins.email'))->searchable(),
                 TextColumn::make('status')
-                    ->label('Status')
+                    ->label(__('admin.system_admins.status'))
                     ->badge()
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        'active' => __('admin.status.active'),
+                        'invited' => __('admin.status.invited'),
+                        'inactive' => __('admin.status.inactive'),
+                        default => $state,
+                    })
                     ->color(fn (string $state): string => $state === 'active' ? 'success' : 'gray'),
             ])
             ->actions([
                 Action::make('replace')
-                    ->label('Replace')
+                    ->label(__('admin.system_admins.replace'))
                     ->icon(Heroicon::OutlinedArrowsRightLeft)
-                    ->modalHeading(fn (User $record): string => "Replace {$record->name} as System Admin?")
-                    ->modalDescription('Step 1 of 2. Choose who takes over and why. The new System Admin is appointed and this one is removed in one step; nothing else changes.')
-                    ->modalSubmitActionLabel('Yes, continue')
+                    ->modalHeading(fn (User $record): string => __('admin.system_admins.replace_name_as_system_admin', ['name' => $record->name]))
+                    ->modalDescription(__('admin.system_admins.step_1_of_2_choose'))
+                    ->modalSubmitActionLabel(__('admin.system_admins.yes_continue'))
                     ->disabled(fn (User $record): bool => $record->id === auth()->id())
-                    ->tooltip(fn (User $record): ?string => $record->id === auth()->id() ? 'You cannot replace yourself. Another System Admin must do it.' : null)
+                    ->tooltip(fn (User $record): ?string => $record->id === auth()->id() ? __('admin.system_admins.you_cannot_replace_yourself_another') : null)
                     ->form([
                         Select::make('incoming')
-                            ->label('New System Admin')
+                            ->label(__('admin.system_admins.new_system_admin'))
                             ->options(fn (): array => $this->candidates())
                             ->searchable()
                             ->required(),
-                        Textarea::make('reason')->label('Reason')->required()->maxLength(500),
+                        Textarea::make('reason')->label(__('admin.system_admins.reason'))->required()->maxLength(500),
                     ])
                     ->action(function (User $record, array $data): void {
                         $this->replaceMountedAction('confirmReplace', ['outgoing' => $record->id, 'incoming' => $data['incoming'], 'reason' => $data['reason']]);
                     }),
 
                 Action::make('remove')
-                    ->label('Remove')
+                    ->label(__('admin.system_admins.remove'))
                     ->icon(Heroicon::OutlinedUserMinus)
                     ->color('danger')
-                    ->modalHeading(fn (User $record): string => "Are you sure you want to remove {$record->name} as System Admin?")
-                    ->modalDescription('Step 1 of 2. They keep their account and any area roles; they lose administrator authority.')
-                    ->modalSubmitActionLabel('Yes, continue')
+                    ->modalHeading(fn (User $record): string => __('admin.system_admins.are_you_sure_you_want', ['name' => $record->name]))
+                    ->modalDescription(__('admin.system_admins.step_1_of_2_they'))
+                    ->modalSubmitActionLabel(__('admin.system_admins.yes_continue'))
                     ->disabled(fn (User $record): bool => $record->id === auth()->id())
-                    ->tooltip(fn (User $record): ?string => $record->id === auth()->id() ? 'You cannot remove yourself. Another System Admin must do it.' : null)
+                    ->tooltip(fn (User $record): ?string => $record->id === auth()->id() ? __('admin.system_admins.you_cannot_remove_yourself_another') : null)
                     ->form([
-                        Textarea::make('reason')->label('Reason')->required()->maxLength(500),
+                        Textarea::make('reason')->label(__('admin.system_admins.reason'))->required()->maxLength(500),
                     ])
                     ->action(function (User $record, array $data): void {
                         $this->replaceMountedAction('confirmRemove', ['outgoing' => $record->id, 'reason' => $data['reason']]);
@@ -96,20 +110,20 @@ class SystemAdmins extends Page implements HasTable
     {
         return [
             Action::make('appoint')
-                ->label('Appoint System Admin')
+                ->label(__('admin.system_admins.appoint_system_admin'))
                 ->icon(Heroicon::OutlinedPlus)
-                ->modalHeading('Appoint a System Admin')
-                ->modalDescription('The person gets full administrator authority. Only active accounts can be appointed.')
-                ->modalSubmitActionLabel('Appoint')
+                ->modalHeading(__('admin.system_admins.appoint_a_system_admin'))
+                ->modalDescription(__('admin.system_admins.the_person_gets_full_administrator'))
+                ->modalSubmitActionLabel(__('admin.system_admins.appoint'))
                 ->form([
                     Select::make('user')
-                        ->label('Account')
+                        ->label(__('admin.system_admins.account'))
                         ->options(fn (): array => $this->candidates())
                         ->searchable()
                         ->required(),
                 ])
                 ->action(function (array $data): void {
-                    $this->run(fn () => app(SystemAdminService::class)->appoint(auth()->user(), User::findOrFail($data['user'])), 'System Admin appointed');
+                    $this->run(fn () => app(SystemAdminService::class)->appoint(auth()->user(), User::findOrFail($data['user'])), __('admin.system_admins.system_admin_appointed'));
                 }),
         ];
     }
@@ -122,11 +136,11 @@ class SystemAdmins extends Page implements HasTable
         return Action::make('confirmRemove')
             ->requiresConfirmation()
             ->color('danger')
-            ->modalHeading(fn (array $arguments): string => 'Confirm removing '.User::find($arguments['outgoing'])?->name.' as System Admin?')
-            ->modalDescription(fn (array $arguments): string => 'Step 2 of 2. Reason: '.$arguments['reason'].'. At least one active System Admin always remains; this is checked again when you confirm.')
-            ->modalSubmitActionLabel('Confirm, remove System Admin')
+            ->modalHeading(fn (array $arguments): string => __('admin.system_admins.confirm_removing', ['name' => User::find($arguments['outgoing'])?->name]))
+            ->modalDescription(fn (array $arguments): string => __('admin.system_admins.step_2_remove', ['reason' => $arguments['reason']]))
+            ->modalSubmitActionLabel(__('admin.system_admins.confirm_remove_system_admin'))
             ->action(function (array $arguments): void {
-                $this->run(fn () => app(SystemAdminService::class)->remove(auth()->user(), User::findOrFail($arguments['outgoing']), $arguments['reason']), 'System Admin removed');
+                $this->run(fn () => app(SystemAdminService::class)->remove(auth()->user(), User::findOrFail($arguments['outgoing']), $arguments['reason']), __('admin.system_admins.system_admin_removed'));
             });
     }
 
@@ -138,16 +152,16 @@ class SystemAdmins extends Page implements HasTable
         return Action::make('confirmReplace')
             ->requiresConfirmation()
             ->color('danger')
-            ->modalHeading(fn (array $arguments): string => 'Confirm replacing '.User::find($arguments['outgoing'])?->name.' with '.User::find($arguments['incoming'])?->name.'?')
-            ->modalDescription(fn (array $arguments): string => 'Step 2 of 2. Reason: '.$arguments['reason'].'. Nothing else changes; this is checked again when you confirm.')
-            ->modalSubmitActionLabel('Confirm replacement')
+            ->modalHeading(fn (array $arguments): string => __('admin.system_admins.confirm_replacing', ['outgoing' => User::find($arguments['outgoing'])?->name, 'incoming' => User::find($arguments['incoming'])?->name]))
+            ->modalDescription(fn (array $arguments): string => __('admin.system_admins.step_2_replace', ['reason' => $arguments['reason']]))
+            ->modalSubmitActionLabel(__('admin.system_admins.confirm_replacement'))
             ->action(function (array $arguments): void {
                 $this->run(fn () => app(SystemAdminService::class)->replace(
                     auth()->user(),
                     User::findOrFail($arguments['outgoing']),
                     User::findOrFail($arguments['incoming']),
                     $arguments['reason'],
-                ), 'System Admin replaced');
+                ), __('admin.system_admins.system_admin_replaced'));
             });
     }
 
@@ -173,11 +187,11 @@ class SystemAdmins extends Page implements HasTable
         try {
             $change();
         } catch (AuthorizationException $exception) {
-            Notification::make()->title('Action not allowed')->danger()->body($exception->getMessage())->send();
+            Notification::make()->title(__('admin.system_admins.action_not_allowed'))->danger()->body($exception->getMessage())->send();
 
             return;
         } catch (ValidationException $exception) {
-            Notification::make()->title('Nothing was changed')->danger()->body(collect($exception->errors())->flatten()->first())->send();
+            Notification::make()->title(__('admin.system_admins.nothing_was_changed'))->danger()->body(collect($exception->errors())->flatten()->first())->send();
 
             return;
         }

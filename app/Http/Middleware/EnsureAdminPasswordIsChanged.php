@@ -31,7 +31,7 @@ class EnsureAdminPasswordIsChanged
         }
 
         Notification::make()
-            ->title('Please change your temporary password first.')
+            ->title(__('auth.admin.please_change_your_temporary_password'))
             ->warning()
             ->send();
 

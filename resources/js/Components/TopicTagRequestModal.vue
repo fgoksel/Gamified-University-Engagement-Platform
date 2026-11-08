@@ -4,6 +4,7 @@ import Modal from "./Topics/Modal.vue";
 import Btn from "./Topics/Btn.vue";
 import TextField from "./TextField.vue";
 import { categoryDot } from "../categoryColors.js";
+import { t } from "../i18n.js";
 
 const emit = defineEmits(["close", "submitted"]);
 
@@ -14,10 +15,10 @@ const form = useForm({
 });
 
 const categories = [
-    { value: "academic", label: "Academic" },
-    { value: "scientific", label: "Scientific" },
-    { value: "sports", label: "Sports" },
-    { value: "community", label: "Community" },
+    { value: "academic", label: t("tag_requests.modal.academic") },
+    { value: "scientific", label: t("tag_requests.modal.scientific") },
+    { value: "sports", label: t("tag_requests.modal.sports") },
+    { value: "community", label: t("tag_requests.modal.community") },
 ];
 
 function submit() {
@@ -34,21 +35,19 @@ function submit() {
 
 <template>
     <Modal
-        title="Request a New Topic Tag"
+        :title="$t('tag_requests.modal.request_a_new_topic_tag')"
         :busy="form.processing"
         @close="emit('close')"
     >
         <form id="tag-request-form" class="space-y-4" @submit.prevent="submit">
             <p class="text-sm text-fg-muted">
-                Suggest a new tag for categorizing university events. If
-                approved by an administrator, it will be added to the taxonomy
-                and available for events.
+                {{ $t("tag_requests.modal.suggest_a_new_tag") }}
             </p>
 
             <TextField
                 v-model="form.proposed_name"
-                label="Proposed Name"
-                placeholder="e.g. Robotics Workshop"
+                :label="$t('tag_requests.modal.proposed_name')"
+                :placeholder="$t('tag_requests.modal.e_g_robotics_workshop')"
                 :error="form.errors.proposed_name"
                 data-autofocus
             />
@@ -58,7 +57,7 @@ function submit() {
                     for="tag-category"
                     class="block text-sm font-medium text-fg"
                 >
-                    Category
+                    {{ $t("tag_requests.modal.category") }}
                 </label>
                 <div class="relative mt-1.5">
                     <select
@@ -74,7 +73,9 @@ function submit() {
                             form.errors.category ? 'true' : undefined
                         "
                     >
-                        <option value="" disabled>Select a category...</option>
+                        <option value="" disabled>
+                            {{ $t("tag_requests.modal.select_a_category") }}
+                        </option>
                         <option
                             v-for="cat in categories"
                             :key="cat.value"
@@ -98,7 +99,11 @@ function submit() {
                         class="size-2.5 rounded-full"
                         :class="categoryDot[form.category]"
                     />
-                    <span>Category color: {{ form.category }}</span>
+                    <span>{{
+                        $t("tag_requests.modal.category_color", {
+                            category: form.category,
+                        })
+                    }}</span>
                 </div>
             </div>
 
@@ -107,13 +112,15 @@ function submit() {
                     for="tag-justification"
                     class="block text-sm font-medium text-fg"
                 >
-                    Justification
+                    {{ $t("tag_requests.modal.justification") }}
                 </label>
                 <textarea
                     id="tag-justification"
                     v-model="form.justification"
                     rows="4"
-                    placeholder="Explain why this topic tag is needed and what events will use it..."
+                    :placeholder="
+                        $t('tag_requests.modal.explain_why_this_topic_tag')
+                    "
                     class="mt-1.5 block w-full rounded-control border bg-surface px-3 py-2 text-fg focus:outline-2 focus:outline-offset-0 focus:outline-ring"
                     :class="
                         form.errors.justification
@@ -134,14 +141,16 @@ function submit() {
         </form>
 
         <template #footer>
-            <Btn :disabled="form.processing" @click="emit('close')">Cancel</Btn>
+            <Btn :disabled="form.processing" @click="emit('close')">{{
+                $t("common.cancel")
+            }}</Btn>
             <Btn
                 type="submit"
                 form="tag-request-form"
                 variant="primary"
                 :loading="form.processing"
             >
-                Submit Request
+                {{ $t("tag_requests.modal.submit_request") }}
             </Btn>
         </template>
     </Modal>
