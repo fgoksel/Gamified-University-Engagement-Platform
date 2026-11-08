@@ -2,9 +2,7 @@
 
 namespace App\Services;
 
-use App\Enums\Capability;
 use App\Enums\TaxonomyCategory;
-use App\Enums\UserRole;
 use App\Models\Topic;
 use App\Models\TopicTag;
 use App\Models\User;
@@ -16,17 +14,12 @@ use Illuminate\Support\Facades\DB;
  * like. The counting is an area leaderboard's (PointCalculationService), and the areas on offer
  * are the ones the explorer opens for them (TopicAccess).
  *
- * A student only ever gets their own numbers: no other student's name, Neptun code or row leaves
- * the server. The full list is for the person's area of control: they hold one of the rights
- * below at that area or above it. Everyone else gets the count alone.
+ * Only students use it, and they only ever get their own numbers: no other student's name,
+ * Neptun code or row leaves the server. A ranked list exists only on a leaderboard that an admin
+ * created (D1 and D3, 7 November), so nobody gets one here (Task #112).
  */
 class RankingExplorer
 {
-    public const PER_PAGE = 50;
-
-    /** Any of these at the area, or above it, opens the full list with names and Neptun codes. */
-    private const CONTROL = [Capability::EventsManage, Capability::LeaderboardsManage, Capability::AccessView];
-
     /** The most areas a picker lists; the address still opens any area the person can open. */
     private const AREA_LIMIT = 500;
 
@@ -41,7 +34,7 @@ class RankingExplorer
      *
      * @return array{areas: list<array{id: int, path: list<string>}>, tags: list<array{id: int, name: string, category: string}>, filters: array{area: ?int, category: ?string, tag: ?int}, result: array<string, mixed>|null}
      */
-    public function for(User $user, ?Topic $area, string $category, int $tagId, int $page): array
+    public function for(User $user, ?Topic $area, string $category, int $tagId): array
     {
         $tags = TopicTag::query()->where('is_active', true)->orderBy('name')->get(['id', 'name', 'category']);
 
@@ -54,32 +47,18 @@ class RankingExplorer
             'areas' => $this->areas($user),
             'tags' => $tags->map(fn (TopicTag $tag) => $tag->only(['id', 'name', 'category']))->values()->all(),
             'filters' => $filters,
-            'result' => $area === null ? null : $this->result($user, $area, $category, $tag?->id, $page),
+            'result' => $area === null ? null : $this->result($user, $area, $category, $tag?->id),
         ];
     }
 
     /**
-     * @return array<string, mixed>
+     * @return array{total: int, you: array{rank: int, points: int, to_next: ?int, next_rank: ?int}|null}
      */
-    private function result(User $user, Topic $area, ?string $category, ?int $tagId, int $page): array
+    private function result(User $user, Topic $area, ?string $category, ?int $tagId): array
     {
         $listed = collect($this->points->standings($area->id, $category, $tagId));
 
-        if ($user->hasRole(UserRole::Student)) {
-            return ['total' => $listed->count(), 'you' => $this->you($user, $listed)];
-        }
-
-        return $this->inControl($user, $area)
-            ? ['list' => $this->fullList($listed, $page)]
-            : ['total' => $listed->count()];
-    }
-
-    /**
-     * TopicAccess::can() already covers the areas above, as in the explorer.
-     */
-    private function inControl(User $user, Topic $area): bool
-    {
-        return collect(self::CONTROL)->contains(fn (Capability $capability) => $this->access->can($user, $capability, $area));
+        return ['total' => $listed->count(), 'you' => $this->you($user, $listed)];
     }
 
     /**
@@ -106,32 +85,6 @@ class RankingExplorer
             'points' => $mine['points'],
             'to_next' => $next === null ? null : $next['points'] - $mine['points'],
             'next_rank' => $next['rank'] ?? null,
-        ];
-    }
-
-    /**
-     * A student's account id stays on the server here too.
-     *
-     * @param  Collection<int, array<string, mixed>>  $listed
-     * @return array{items: list<array<string, mixed>>, total: int, page: int, last_page: int, per_page: int}
-     */
-    private function fullList(Collection $listed, int $page): array
-    {
-        return [
-            'items' => $listed->forPage($page, self::PER_PAGE)
-                ->map(fn (array $row) => [
-                    'position' => $row['position'],
-                    'rank' => $row['rank'],
-                    'name' => $row['name'],
-                    'neptun_code' => $row['neptun_code'],
-                    'points' => $row['points'],
-                ])
-                ->values()
-                ->all(),
-            'total' => $listed->count(),
-            'page' => $page,
-            'last_page' => max(1, (int) ceil($listed->count() / self::PER_PAGE)),
-            'per_page' => self::PER_PAGE,
         ];
     }
 

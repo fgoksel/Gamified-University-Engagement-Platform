@@ -9,15 +9,14 @@ use App\Models\Topic;
 use App\Models\TopicTag;
 use App\Models\User;
 use App\Services\PointCalculationService;
-use App\Services\RankingExplorer;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Testing\TestResponse;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\Feature\Events\EventTestCase;
 
 /**
- * Task #56: "Where am I?" counts like an area leaderboard, narrowed by category and tag. A student
- * only ever gets their own numbers; teachers get the full list for the areas they can open.
+ * Task #56: "Where am I?" counts like an area leaderboard, narrowed by category and tag. Only students
+ * get it, and only their own numbers; nobody gets a ranked list here (D1, D3, Task #112).
  */
 class RankingExplorerTest extends EventTestCase
 {
@@ -186,72 +185,6 @@ class RankingExplorerTest extends EventTestCase
             ->where('rankings.result', null));
     }
 
-    /**
-     * @param  list<Capability>  $rights
-     */
-    private function staffAt(Topic $area, array $rights): User
-    {
-        $person = $this->makeUser(UserRole::Teacher);
-        $this->assign($person, $this->role('Staff '.uniqid(), [Capability::View, ...$rights]), $area);
-
-        return $person;
-    }
-
-    /**
-     * What the response may hold when the person only gets the count.
-     */
-    private function assertCountOnly(TestResponse $response, int $total): void
-    {
-        $response->assertOk()->assertInertia(fn (Assert $page) => $page->where('rankings.result', ['total' => $total]));
-
-        foreach (['Anna Nagy', 'ANNA01'] as $hidden) {
-            $this->assertStringNotContainsString($hidden, $response->getContent());
-        }
-    }
-
-    public function test_each_right_opens_the_full_list_at_the_area_and_below(): void
-    {
-        $this->credit($this->anna, 10);
-
-        foreach ([Capability::EventsManage, Capability::LeaderboardsManage, Capability::AccessView] as $right) {
-            $person = $this->staffAt($this->faculty, [$right]);
-
-            foreach ([$this->faculty, $this->course] as $area) {
-                $this->visit($person, ['area' => $area->id])
-                    ->assertInertia(fn (Assert $page) => $page->where('rankings.result.list.items.0.name', 'Anna Nagy'));
-            }
-        }
-    }
-
-    public function test_a_right_in_one_area_gives_no_names_in_a_sibling_area(): void
-    {
-        $web = $this->topic('Web', $this->faculty);
-        $this->credit($this->anna, 10, $web);
-
-        // Opens the whole faculty, but manages only Databases.
-        $person = $this->staffAt($this->faculty, []);
-        $this->assign($person, $this->role('Databases lead', [Capability::EventsManage]), $this->course);
-
-        $this->assertCountOnly($this->visit($person, ['area' => $web->id]), 1);
-    }
-
-    public function test_a_right_below_the_area_gives_no_names_above_it(): void
-    {
-        $this->credit($this->anna, 10);
-
-        $person = $this->staffAt($this->faculty, []);
-        $this->assign($person, $this->role('Databases lead', [Capability::EventsManage]), $this->course);
-
-        $this->assertCountOnly($this->visit($person, ['area' => $this->faculty->id]), 1);
-    }
-
-    public function test_a_view_only_role_gets_the_count_alone(): void
-    {
-        $this->credit($this->anna, 10);
-
-        $this->assertCountOnly($this->visit($this->staffAt($this->faculty, []), ['area' => $this->faculty->id]), 1);
-    }
-
     public function test_a_student_never_gets_the_list_even_with_the_rights(): void
     {
         $this->credit($this->bela, 10);
@@ -263,31 +196,14 @@ class RankingExplorerTest extends EventTestCase
         $this->assertStringNotContainsString('BELA02', $response->getContent());
     }
 
-    public function test_a_teacher_sees_the_full_list_only_for_areas_they_can_open(): void
+    public function test_nobody_gets_a_ranked_list_here(): void
     {
         $this->credit($this->anna, 10);
 
-        $this->visit($this->teacher, ['area' => $this->faculty->id])
-            ->assertInertia(fn (Assert $page) => $page
-                ->where('rankings.result.list.total', 1)
-                ->where('rankings.result.list.items.0', ['position' => 1, 'rank' => 1, 'name' => 'Anna Nagy', 'neptun_code' => 'ANNA01', 'points' => 10]));
+        $response = $this->visit($this->teacher, ['area' => $this->faculty->id]);
 
-        $this->visit($this->teacher, ['area' => $this->sport->id])->assertNotFound()->assertDontSee('Sport');
-    }
-
-    public function test_the_full_list_has_fifty_rows_a_page(): void
-    {
-        foreach (range(1, RankingExplorer::PER_PAGE + 2) as $i) {
-            $this->credit($this->member("Student {$i}", sprintf('S%05d', $i)), 100 - $i);
-        }
-        $area = ['area' => $this->faculty->id];
-
-        $this->visit($this->teacher, $area)->assertInertia(fn (Assert $page) => $page
-            ->has('rankings.result.list.items', RankingExplorer::PER_PAGE)
-            ->where('rankings.result.list.last_page', 2));
-
-        $this->visit($this->teacher, [...$area, 'page' => 2])->assertInertia(fn (Assert $page) => $page
-            ->has('rankings.result.list.items', 2));
+        $response->assertOk()->assertInertia(fn (Assert $page) => $page->where('rankings', null));
+        $this->assertStringNotContainsString('ANNA01', $response->getContent());
     }
 
     public function test_a_new_credit_shows_at_once(): void

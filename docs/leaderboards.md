@@ -79,7 +79,7 @@ default is the one row of the `settings` table (`App\Models\Setting`); without a
 
 ## Where am I? (Task #56)
 
-On `/leaderboards`, under *Where am I?* (for teachers: *Rankings*), a person picks an area they can
+On `/leaderboards`, under *Where am I?*, a student picks an area they can
 open and, if they like, a category and a tag. The choice is in the address
 (`?area=&category=&tag=`), so it can be shared and reloaded. An area they may not open gives "not
 found", and a category or tag that does not fit is dropped. Tags are narrowed to the chosen category.
@@ -91,10 +91,9 @@ found", and a category or tag that does not fit is dropped. Tags are narrowed to
   to draw level with the next place up ("15 points to reach number 3", none in first place). No
   other student's name, Neptun code or row leaves the server. With no points there: "You have no
   points here yet."
-- **The person's area of control:** someone who holds *Manage events*, *Manage leaderboards* or
-  *See who has access* at that area or above it gets the full list: rank, name, Neptun code and
-  points, 50 per page.
-- **Everyone else**, such as a teacher with a view-only role, gets the count alone.
+- **Only students** get this section (Task #112). A ranked list exists only on a leaderboard that an
+  admin created (D1 and D3, 7 November), so teachers and staff see no *Where am I?* and their
+  `rankings` prop is `null`; an `?area=` in their address is ignored.
 
 The data comes from `App\Services\RankingExplorer`; the section is `Components/Leaderboards/WhereAmI.vue`.
 

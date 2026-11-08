@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\UserRole;
 use App\Models\Leaderboard;
 use App\Models\Setting;
 use App\Models\Topic;
@@ -39,16 +40,20 @@ class AreaLeaderboardController extends Controller
     public function index(Request $request, OwnLeaderboards $own, RankingExplorer $rankings): Response
     {
         $user = $request->user();
+        // "Where am I?" is only for students: their own place, never a ranked list (D1, D3, Task #112).
+        $student = $user->hasRole(UserRole::Student);
         $area = null;
 
-        if ($request->filled('area')) {
+        if ($student && $request->filled('area')) {
             $area = Topic::find($request->integer('area'));
             abort_unless($area !== null && $this->access->canView($user, $area), 404);
         }
 
         return Inertia::render('Leaderboards/Index', [
             ...$own->for($user),
-            'rankings' => $rankings->for($user, $area, $request->string('category')->toString(), $request->integer('tag'), max(1, $request->integer('page', 1))),
+            'rankings' => $student
+                ? $rankings->for($user, $area, $request->string('category')->toString(), $request->integer('tag'))
+                : null,
         ]);
     }
 

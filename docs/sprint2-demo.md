@@ -147,8 +147,7 @@ running the seeder again; nothing else changes. A second run adds nothing.
 |---|---|---|
 | The hall screen | `/hall` in a private window | nobody: it needs no login |
 | *Where am I?*, own numbers only | `/leaderboards`, area Databases | Anna, or Erik with area Athletics Club |
-| *Rankings*, the full list | `/leaderboards`, area Faculty of Informatics | Ivan |
-| A refused area | `/leaderboards?area=` with the id of Faculty of Sport | Ivan ("not found") |
+| A refused area | `/leaderboards?area=` with the id of Faculty of Sport | Anna ("not found") |
 | Publishing a leaderboard, with its warning | Topics → Faculty of Informatics → Leaderboards | Ivan |
 | The default time on the hall screen | Admin panel → Hall screen | System Admin |
 | Highlighting a leaderboard (the star, up to five) | `/leaderboards`, click the star of a board | Ivan, once Faculty of Informatics has two or more boards |
