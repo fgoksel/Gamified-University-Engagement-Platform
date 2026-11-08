@@ -12,9 +12,10 @@ import {
 import { BrowserQRCodeReader } from "@zxing/library";
 import Btn from "../../Components/Topics/Btn.vue";
 import { categoryDot } from "../../categoryColors.js";
+import { t } from "../../i18n.js";
 
 // Organizer: QR Passport scanner & point crediting (UC-1.7, Task #43)
-defineOptions({ layout: { title: "Attendance scanner" } });
+defineOptions({ layout: { title: t("events.scan.attendance_scanner") } });
 
 const props = defineProps({
     event: { type: Object, required: true },
@@ -89,7 +90,7 @@ async function initCamera() {
         videoDevices.value = devices;
 
         if (devices.length === 0) {
-            cameraError.value = "No camera devices detected on this device.";
+            cameraError.value = t("events.scan.no_camera_devices_detected");
             return;
         }
 
@@ -108,8 +109,7 @@ async function initCamera() {
 
         await startScanning();
     } catch (err) {
-        cameraError.value =
-            "Camera access required to scan QR Passports. Please enable camera permissions in browser settings.";
+        cameraError.value = t("events.scan.camera_access_required_to_scan");
         cameraActive.value = false;
     }
 }
@@ -129,8 +129,7 @@ async function startScanning() {
             },
         );
     } catch (err) {
-        cameraError.value =
-            "Camera access required to scan QR Passports. Please enable camera permissions in browser settings.";
+        cameraError.value = t("events.scan.camera_access_required_to_scan");
         cameraActive.value = false;
     }
 }
@@ -187,7 +186,7 @@ async function submitCredit(identifier) {
             playSuccessBeep();
             feedback.value = {
                 type: "success",
-                title: "Attendance Credited!",
+                title: t("events.scan.attendance_credited"),
                 message: data.message,
                 student: data.student,
             };
@@ -201,7 +200,7 @@ async function submitCredit(identifier) {
             playErrorBeep();
             feedback.value = {
                 type: "warning",
-                title: "Already Credited",
+                title: t("events.scan.already_credited"),
                 message: data.message,
                 student: data.student,
             };
@@ -209,7 +208,7 @@ async function submitCredit(identifier) {
             playErrorBeep();
             feedback.value = {
                 type: "error",
-                title: "Not Registered or Selected",
+                title: t("events.scan.not_registered_or_selected"),
                 message: data.message,
                 student: data.student,
             };
@@ -217,7 +216,7 @@ async function submitCredit(identifier) {
             playErrorBeep();
             feedback.value = {
                 type: "error",
-                title: "Self-Crediting Prohibited",
+                title: t("events.scan.self_crediting_prohibited"),
                 message: data.message,
                 student: data.student,
             };
@@ -225,17 +224,18 @@ async function submitCredit(identifier) {
             playErrorBeep();
             feedback.value = {
                 type: "error",
-                title: "Scan Failed",
+                title: t("events.scan.scan_failed"),
                 message:
-                    data.message || "Could not process this passport scan.",
+                    data.message ||
+                    t("events.scan.could_not_process_this_passport"),
                 student: data.student,
             };
         }
     } catch (err) {
         feedback.value = {
             type: "error",
-            title: "Connection Error",
-            message: "Failed to communicate with the server. Please try again.",
+            title: t("events.scan.connection_error"),
+            message: t("events.scan.failed_to_communicate"),
         };
     } finally {
         processing.value = false;
@@ -257,14 +257,15 @@ onUnmounted(() => {
                 href="/my-events"
                 class="inline-flex min-h-11 items-center gap-1.5 text-sm text-fg-muted hover:text-fg transition focus-visible:outline-2 focus-visible:outline-ring rounded-control"
             >
-                <ArrowLeft class="size-4" /> Back to my events
+                <ArrowLeft class="size-4" />
+                {{ $t("events.scan.back_to_my_events") }}
             </Link>
 
             <Link
                 :href="`/events/${event.id}/applicants`"
                 class="inline-flex min-h-11 items-center gap-1.5 text-sm text-fg-muted hover:text-fg transition focus-visible:outline-2 focus-visible:outline-ring rounded-control"
             >
-                View applicants list
+                {{ $t("events.scan.view_applicants_list") }}
             </Link>
         </div>
 
@@ -286,8 +287,11 @@ onUnmounted(() => {
                         </h1>
                     </div>
                     <p class="text-xs sm:text-sm text-fg-muted mt-0.5">
-                        Attendance Verification &bull; {{ event.points_value }}
-                        points per student
+                        {{
+                            $t("events.scan.verification_points", {
+                                points: event.points_value,
+                            })
+                        }}
                     </p>
                 </div>
 
@@ -298,7 +302,11 @@ onUnmounted(() => {
                             {{ creditedCount }} / {{ acceptedCount }}
                         </div>
                         <div class="text-xs text-fg-muted">
-                            Students Credited ({{ progressPercent }}%)
+                            {{
+                                $t("events.scan.students_credited_percent", {
+                                    percent: progressPercent,
+                                })
+                            }}
                         </div>
                     </div>
                 </div>
@@ -353,7 +361,7 @@ onUnmounted(() => {
                 <button
                     type="button"
                     class="text-xs opacity-60 hover:opacity-100 transition p-1"
-                    aria-label="Dismiss feedback"
+                    :aria-label="$t('events.scan.dismiss_feedback')"
                     @click="feedback = null"
                 >
                     &times;
@@ -414,13 +422,15 @@ onUnmounted(() => {
                     >
                         <Camera class="size-6" />
                     </div>
-                    <h3 class="font-semibold text-fg">Camera Unavailable</h3>
+                    <h3 class="font-semibold text-fg">
+                        {{ $t("events.scan.camera_unavailable") }}
+                    </h3>
                     <p class="text-xs sm:text-sm text-fg-muted max-w-md">
                         {{ cameraError }}
                     </p>
                     <div class="flex gap-2 pt-2">
                         <Btn variant="primary" @click="initCamera">
-                            Retry Camera
+                            {{ $t("events.scan.retry_camera") }}
                         </Btn>
                     </div>
                 </div>
@@ -431,7 +441,7 @@ onUnmounted(() => {
                     class="absolute inset-0 bg-black/40 flex items-center justify-center text-white gap-2 font-medium z-20"
                 >
                     <RotateCw class="size-5 animate-spin" />
-                    <span>Verifying Passport...</span>
+                    <span>{{ $t("events.scan.verifying_passport") }}</span>
                 </div>
             </div>
 
@@ -440,9 +450,9 @@ onUnmounted(() => {
                 v-if="videoDevices.length > 1"
                 class="flex items-center justify-between text-xs text-fg-muted px-1"
             >
-                <label for="camera-select" class="font-medium"
-                    >Active Camera:</label
-                >
+                <label for="camera-select" class="font-medium">{{
+                    $t("events.scan.active_camera")
+                }}</label>
                 <select
                     id="camera-select"
                     v-model="selectedDeviceId"
@@ -456,7 +466,9 @@ onUnmounted(() => {
                     >
                         {{
                             device.label ||
-                            `Camera ${device.deviceId.slice(0, 5)}`
+                            $t("events.scan.camera_n", {
+                                id: device.deviceId.slice(0, 5),
+                            })
                         }}
                     </option>
                 </select>

@@ -33,6 +33,6 @@ class ChangePasswordController extends Controller
         ])->save();
 
         // Shown as a pop-up message on the Home page.
-        return redirect()->route('home')->with('success', 'Your password has been changed.');
+        return redirect()->route('home')->with('success', __('auth.change_password.changed'));
     }
 }

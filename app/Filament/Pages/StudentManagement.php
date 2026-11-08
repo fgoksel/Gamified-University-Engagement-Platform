@@ -8,6 +8,7 @@ use App\Models\Faculty;
 use App\Models\User;
 use App\Notifications\StudentInvitationNotification;
 use App\Services\SystemAdminService;
+use App\Support\AdminUpload;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\FileUpload;
@@ -23,7 +24,6 @@ use Filament\Tables\Table;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 
 /**
@@ -37,53 +37,67 @@ class StudentManagement extends Page implements HasTable
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedAcademicCap;
 
-    protected static ?string $navigationLabel = 'Students';
-
-    protected static ?string $title = 'Student Management';
-
     protected static ?string $slug = 'students';
 
     protected static ?int $navigationSort = 2;
 
     protected string $view = 'filament.pages.student-management';
 
+    public static function getNavigationLabel(): string
+    {
+        return __('admin.students.navigation');
+    }
+
+    public function getTitle(): string
+    {
+        return __('admin.students.title');
+    }
+
     public function table(Table $table): Table
     {
         return $table
             ->query(User::role(UserRole::Student)->latest())
+            ->modelLabel(__('admin.models.user'))
+            ->pluralModelLabel(__('admin.models.users'))
             ->columns([
                 TextColumn::make('name')
-                    ->label('Name')
+                    ->label(__('admin.students.name'))
                     ->searchable()
                     ->sortable(),
 
                 TextColumn::make('neptun_code')
-                    ->label('Neptun Code')
+                    ->label(__('admin.students.neptun_code'))
                     ->searchable()
                     ->sortable(),
 
                 TextColumn::make('email')
-                    ->label('Email')
+                    ->label(__('admin.students.email'))
                     ->searchable()
                     ->sortable(),
 
                 TextColumn::make('major')
-                    ->label('Major')
+                    ->label(__('admin.students.major'))
                     ->searchable()
                     ->sortable(),
 
                 TextColumn::make('year_of_study')
-                    ->label('Year')
+                    ->label(__('admin.students.year'))
                     ->sortable(),
 
                 TextColumn::make('faculty.name')
-                    ->label('Faculty')
+                    ->label(__('admin.students.faculty'))
                     ->placeholder('—')
                     ->sortable(),
 
                 TextColumn::make('status')
-                    ->label('Status')
+                    ->label(__('admin.students.status'))
                     ->badge()
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        'active' => __('admin.status.active'),
+                        'invited' => __('admin.status.invited'),
+                        'inactive' => __('admin.status.inactive'),
+                        default => $state,
+                    })
                     ->color(fn (string $state): string => match ($state) {
                         'active' => 'success',
                         'invited' => 'warning',
@@ -92,17 +106,17 @@ class StudentManagement extends Page implements HasTable
                     }),
 
                 TextColumn::make('created_at')
-                    ->label('Registration Date')
+                    ->label(__('admin.students.registration_date'))
                     ->dateTime()
                     ->sortable(),
             ])
             ->actions([
                 // UC-3.2.2: Edit student details (pencil icon).
                 Action::make('edit')
-                    ->label('Edit')
+                    ->label(__('admin.students.edit'))
                     ->icon(Heroicon::OutlinedPencilSquare)
-                    ->modalHeading('Edit Student')
-                    ->modalSubmitActionLabel('Save Changes')
+                    ->modalHeading(__('admin.students.edit_student'))
+                    ->modalSubmitActionLabel(__('admin.students.save_changes'))
                     ->fillForm(fn (User $record): array => [
                         'name' => $record->name,
                         'email' => $record->email,
@@ -113,12 +127,12 @@ class StudentManagement extends Page implements HasTable
                     ])
                     ->form([
                         TextInput::make('name')
-                            ->label('Full Name')
+                            ->label(__('admin.students.full_name'))
                             ->required()
                             ->maxLength(255),
 
                         TextInput::make('email')
-                            ->label('Institutional Email')
+                            ->label(__('admin.students.institutional_email'))
                             ->email()
                             ->required()
                             ->maxLength(255)
@@ -128,12 +142,12 @@ class StudentManagement extends Page implements HasTable
                                 ignoreRecord: true,
                             )
                             ->validationMessages([
-                                'unique' => 'This email address is already registered in the system.',
-                                'email' => 'Invalid email address format.',
+                                'unique' => __('admin.students.this_email_address_is_already'),
+                                'email' => __('admin.students.invalid_email_address_format'),
                             ]),
 
                         TextInput::make('neptun_code')
-                            ->label('Neptun Code')
+                            ->label(__('admin.students.neptun_code'))
                             ->required()
                             ->length(6)
                             ->regex('/^[A-Za-z0-9]{6}$/')
@@ -143,24 +157,24 @@ class StudentManagement extends Page implements HasTable
                                 ignoreRecord: true,
                             )
                             ->validationMessages([
-                                'unique' => 'This Neptun code is already registered in the system.',
-                                'regex' => 'The Neptun code must be exactly 6 alphanumeric characters.',
+                                'unique' => __('admin.students.this_neptun_code_is_already'),
+                                'regex' => __('admin.students.the_neptun_code_must'),
                             ]),
 
                         TextInput::make('major')
-                            ->label('Major / Programme')
+                            ->label(__('admin.students.major_programme'))
                             ->required()
                             ->maxLength(255),
 
                         TextInput::make('year_of_study')
-                            ->label('Year of Study')
+                            ->label(__('admin.students.year_of_study'))
                             ->numeric()
                             ->required()
                             ->minValue(1)
                             ->maxValue(6),
 
                         Select::make('faculty_id')
-                            ->label('Organizational Unit / Faculty')
+                            ->label(__('admin.students.organizational_unit_faculty'))
                             ->options(fn (): array => Faculty::query()->pluck('name', 'id')->all())
                             ->searchable()
                             ->nullable()
@@ -177,21 +191,21 @@ class StudentManagement extends Page implements HasTable
                         ]);
 
                         Notification::make()
-                            ->title('Student Updated')
+                            ->title(__('admin.students.student_updated'))
                             ->success()
-                            ->body("{$record->name}'s details have been successfully updated.")
+                            ->body(__('admin.students.name_s_details_have_been', ['name' => $record->name]))
                             ->send();
                     }),
 
                 // UC-3.2.2: Resend activation email for invited student.
                 Action::make('resend_invitation')
-                    ->label('Resend Invite')
+                    ->label(__('admin.students.resend_invite'))
                     ->icon(Heroicon::OutlinedEnvelope)
                     ->color('info')
                     ->requiresConfirmation()
-                    ->modalHeading('Resend Invitation')
-                    ->modalDescription(fn (User $record): string => "Generate a new activation link and resend the invitation email to {$record->email}?")
-                    ->modalSubmitActionLabel('Yes, Resend')
+                    ->modalHeading(__('admin.students.resend_invitation'))
+                    ->modalDescription(fn (User $record): string => __('admin.students.generate_a_new_activation_link', ['email' => $record->email]))
+                    ->modalSubmitActionLabel(__('admin.students.yes_resend'))
                     ->visible(fn (User $record): bool => $record->status === 'invited')
                     ->action(function (User $record): void {
                         $token = Str::random(64);
@@ -204,9 +218,9 @@ class StudentManagement extends Page implements HasTable
                         $record->notify(new StudentInvitationNotification($token, 24));
 
                         Notification::make()
-                            ->title('Invitation Resent')
+                            ->title(__('admin.students.invitation_resent'))
                             ->success()
-                            ->body('Activation link successfully resent.')
+                            ->body(__('admin.students.activation_link_successfully_resent'))
                             ->send();
                     }),
 
@@ -215,21 +229,21 @@ class StudentManagement extends Page implements HasTable
                 // after the account has been deactivated.
                 // Guarded by AdminPolicy (Technical Specification Table 25, Task #32).
                 Action::make('deactivate')
-                    ->label('Deactivate')
+                    ->label(__('admin.students.deactivate'))
                     ->icon(Heroicon::OutlinedNoSymbol)
                     ->color('danger')
                     ->requiresConfirmation()
-                    ->modalHeading('Deactivate Student')
-                    ->modalDescription(fn (User $record): string => "Are you sure you want to deactivate {$record->name}?".static::topicRolesNote($record))
-                    ->modalSubmitActionLabel('Yes, Deactivate')
+                    ->modalHeading(__('admin.students.deactivate_student'))
+                    ->modalDescription(fn (User $record): string => __('admin.students.are_you_sure_you_want', ['name' => $record->name]).static::topicRolesNote($record))
+                    ->modalSubmitActionLabel(__('admin.students.yes_deactivate'))
                     ->visible(fn (User $record): bool => $record->status === 'active')
                     ->disabled(fn (User $record): bool => ! auth()->user()?->can('deactivate', $record))
                     ->tooltip(function (User $record): ?string {
                         if ($record->id === auth()->id()) {
-                            return 'You cannot deactivate your own account.';
+                            return __('admin.students.you_cannot_deactivate_your_own');
                         }
                         if ($record->hasRole(UserRole::Admin) && User::role(UserRole::Admin)->where('status', 'active')->count() <= 1) {
-                            return 'Cannot deactivate the last remaining Administrator.';
+                            return __('admin.students.cannot_deactivate_the_last_remaining');
                         }
 
                         return null;
@@ -237,11 +251,11 @@ class StudentManagement extends Page implements HasTable
                     ->action(function (User $record): void {
                         if (! auth()->user()?->can('deactivate', $record)) {
                             Notification::make()
-                                ->title('Action Not Allowed')
+                                ->title(__('admin.students.action_not_allowed'))
                                 ->danger()
                                 ->body($record->id === auth()->id()
-                                    ? 'You cannot deactivate your own account.'
-                                    : 'Cannot deactivate the last remaining Administrator.')
+                                    ? __('admin.students.you_cannot_deactivate_your_own')
+                                    : __('admin.students.cannot_deactivate_the_last_remaining'))
                                 ->send();
 
                             return;
@@ -252,30 +266,30 @@ class StudentManagement extends Page implements HasTable
                         try {
                             app(SystemAdminService::class)->deactivate(auth()->user(), $record);
                         } catch (AuthorizationException $exception) {
-                            Notification::make()->title('Action Not Allowed')->danger()->body($exception->getMessage())->send();
+                            Notification::make()->title(__('admin.students.action_not_allowed'))->danger()->body($exception->getMessage())->send();
 
                             return;
                         }
 
                         Notification::make()
-                            ->title('Student Deactivated')
+                            ->title(__('admin.students.student_deactivated'))
                             ->warning()
-                            ->body("{$record->name} has been deactivated and can no longer log in.")
+                            ->body(__('admin.students.name_has_been_deactivated', ['name' => $record->name]))
                             ->send();
                     }),
 
                 // UC-3.2.2: Activate a previously deactivated student (green checkmark).
                 // If the user never activated (email_verified_at is null), put them back to invited and send a fresh link.
                 Action::make('activate')
-                    ->label('Activate')
+                    ->label(__('admin.students.activate'))
                     ->icon(Heroicon::OutlinedCheckCircle)
                     ->color('success')
                     ->requiresConfirmation()
-                    ->modalHeading('Activate Student')
+                    ->modalHeading(__('admin.students.activate_student'))
                     ->modalDescription(fn (User $record): string => ($record->email_verified_at === null || $record->must_change_password)
-                        ? "Activate {$record->name} ({$record->neptun_code})? Since this account has not activated yet, their status will become Invited and a fresh activation email will be sent."
-                        : "Activate {$record->name} ({$record->neptun_code})? They will be able to log in again with their existing password.")
-                    ->modalSubmitActionLabel('Yes, Activate')
+                        ? __('admin.students.activate_name_neptun_code_since', ['name' => $record->name, 'neptun_code' => $record->neptun_code])
+                        : __('admin.students.activate_name_neptun_code_they', ['name' => $record->name, 'neptun_code' => $record->neptun_code]))
+                    ->modalSubmitActionLabel(__('admin.students.yes_activate'))
                     ->visible(fn (User $record): bool => $record->status === 'inactive')
                     ->action(function (User $record): void {
                         if ($record->email_verified_at === null || $record->must_change_password) {
@@ -290,17 +304,17 @@ class StudentManagement extends Page implements HasTable
                             $record->notify(new StudentInvitationNotification($token, 24));
 
                             Notification::make()
-                                ->title('Student Activated')
+                                ->title(__('admin.students.student_activated'))
                                 ->success()
-                                ->body("{$record->name} has not activated yet. Their status was set to Invited and a new activation link has been sent.")
+                                ->body(__('admin.students.name_has_not_activated_yet', ['name' => $record->name]))
                                 ->send();
                         } else {
                             $record->update(['status' => 'active']);
 
                             Notification::make()
-                                ->title('Student Activated')
+                                ->title(__('admin.students.student_activated'))
                                 ->success()
-                                ->body("{$record->name} ({$record->neptun_code}) has been activated and can log in again.")
+                                ->body(__('admin.students.name_neptun_code_has_been', ['name' => $record->name, 'neptun_code' => $record->neptun_code]))
                                 ->send();
                         }
                     }),
@@ -311,19 +325,19 @@ class StudentManagement extends Page implements HasTable
     {
         return [
             Action::make('invite')
-                ->label('Invite Student')
+                ->label(__('admin.students.invite_student'))
                 ->icon(Heroicon::OutlinedEnvelope)
-                ->modalHeading('Invite New Student')
-                ->modalDescription('Send an activation invitation email to a student.')
-                ->modalSubmitActionLabel('Send Invitation')
+                ->modalHeading(__('admin.students.invite_new_student'))
+                ->modalDescription(__('admin.students.send_an_activation_invitation_email'))
+                ->modalSubmitActionLabel(__('admin.students.send_invitation'))
                 ->form([
                     TextInput::make('name')
-                        ->label('Full Name')
+                        ->label(__('admin.students.full_name'))
                         ->required()
                         ->maxLength(255),
 
                     TextInput::make('email')
-                        ->label('Institutional Email')
+                        ->label(__('admin.students.institutional_email'))
                         ->email()
                         ->required()
                         ->maxLength(255)
@@ -332,12 +346,12 @@ class StudentManagement extends Page implements HasTable
                             column: 'email',
                         )
                         ->validationMessages([
-                            'unique' => 'This email address is already registered in the system.',
-                            'email' => 'Invalid email address format.',
+                            'unique' => __('admin.students.this_email_address_is_already'),
+                            'email' => __('admin.students.invalid_email_address_format'),
                         ]),
 
                     TextInput::make('neptun_code')
-                        ->label('Neptun Code')
+                        ->label(__('admin.students.neptun_code'))
                         ->required()
                         ->length(6)
                         ->regex('/^[A-Za-z0-9]{6}$/')
@@ -346,24 +360,24 @@ class StudentManagement extends Page implements HasTable
                             column: 'neptun_code',
                         )
                         ->validationMessages([
-                            'unique' => 'This Neptun code is already registered in the system.',
-                            'regex' => 'The Neptun code must be exactly 6 alphanumeric characters.',
+                            'unique' => __('admin.students.this_neptun_code_is_already'),
+                            'regex' => __('admin.students.the_neptun_code_must'),
                         ]),
 
                     TextInput::make('major')
-                        ->label('Major / Programme')
+                        ->label(__('admin.students.major_programme'))
                         ->required()
                         ->maxLength(255),
 
                     TextInput::make('year_of_study')
-                        ->label('Year of Study')
+                        ->label(__('admin.students.year_of_study'))
                         ->numeric()
                         ->required()
                         ->minValue(1)
                         ->maxValue(6),
 
                     Select::make('faculty_id')
-                        ->label('Organizational Unit / Faculty')
+                        ->label(__('admin.students.organizational_unit_faculty'))
                         ->options(fn (): array => Faculty::query()->pluck('name', 'id')->all())
                         ->searchable()
                         ->nullable()
@@ -392,23 +406,24 @@ class StudentManagement extends Page implements HasTable
                         $user->notify(new StudentInvitationNotification($token, 24));
 
                         Notification::make()
-                            ->title('Invitation Sent')
+                            ->title(__('admin.students.invitation_sent'))
                             ->success()
-                            ->body("Invitation successfully sent to {$user->email}.")
+                            ->body(__('admin.students.invitation_successfully_sent_to_email', ['email' => $user->email]))
                             ->send();
                     });
                 }),
 
             // UC-3.2.1: Bulk CSV import for students (Task #27)
             Action::make('import')
-                ->label('Import Students (CSV)')
+                ->label(__('admin.students.import_students_csv'))
                 ->icon(Heroicon::OutlinedArrowUpTray)
-                ->modalHeading('Bulk Import Students (CSV)')
-                ->modalDescription('Upload a Neptun CSV file (max 10 MB) containing student accounts (Full Name, Email, Neptun Code, optional Major, and optional Year of Study).')
-                ->modalSubmitActionLabel('Execute Import')
+                ->modalHeading(__('admin.students.bulk_import_students_csv'))
+                ->modalDescription(__('admin.students.upload_a_neptun_csv_file'))
+                ->modalSubmitActionLabel(__('admin.students.execute_import'))
                 ->form([
                     FileUpload::make('file')
-                        ->label('CSV File')
+                        ->placeholder(AdminUpload::placeholder())
+                        ->label(__('admin.students.csv_file'))
                         ->disk('local')
                         ->directory('imports')
                         ->acceptedFileTypes([
@@ -422,16 +437,16 @@ class StudentManagement extends Page implements HasTable
                         ->maxFiles(1)
                         ->maxSize(10240) // 10MB per Technical Spec 7.3.1
                         ->required()
-                        ->helperText(new HtmlString('<a href="/admin/sample-csv/students" class="text-primary-600 underline font-medium" download>Download sample CSV template</a>')),
+                        ->helperText(AdminUpload::sampleLink('/admin/sample-csv/students', __('admin.students.download_sample_csv_template'))),
                 ])
                 ->action(function (array $data): void {
                     $path = $data['file'];
                     ImportStudentsJob::dispatch($path, auth()->id());
 
                     Notification::make()
-                        ->title('Student Import Queued')
+                        ->title(__('admin.students.student_import_queued'))
                         ->success()
-                        ->body('The CSV file was uploaded and background import has been queued. You will receive a panel notification when the import finishes.')
+                        ->body(__('admin.students.the_csv_file_was_uploaded'))
                         ->send();
                 }),
         ];
@@ -446,6 +461,6 @@ class StudentManagement extends Page implements HasTable
 
         return $count === 0
             ? ''
-            : " They hold {$count} active area role(s). These stay in place (nothing is removed); hand them over in Areas when needed.";
+            : ' '.__('admin.students.they_hold_count_active_area', ['count' => $count]);
     }
 }

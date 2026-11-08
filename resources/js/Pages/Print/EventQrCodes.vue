@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from "vue";
 import { Link } from "@inertiajs/vue3";
 import { Printer } from "@lucide/vue";
+import { t, tc } from "../../i18n.js";
 
 // Print sheet for one batch of printed QR slips (Task #84; Task #44 had posters too),
 // using the server-drawn SVG images of Task #46: 12 slips per A4 page to cut out.
@@ -31,7 +32,10 @@ function print() {
 }
 
 onMounted(() => {
-    document.title = `${props.event.title} – QR slips, ${props.batch}`;
+    document.title = t("events.qr_slips_print.document_title", {
+        event: props.event.title,
+        batch: props.batch,
+    });
 });
 </script>
 
@@ -45,16 +49,17 @@ onMounted(() => {
                 :href="`/events/${event.id}/qr-codes`"
                 class="text-blue-700 underline"
             >
-                ← Back to QR slips
+                {{ $t("events.qr_slips_print.back") }}
             </Link>
             <span class="ml-3 text-gray-600">
-                {{ batch }} · {{ codes.length }}
-                {{ codes.length === 1 ? "slip" : "slips" }} · A4
+                {{
+                    $tc("events.qr_slips_print.count", codes.length, {
+                        batch,
+                    })
+                }}
             </span>
             <p class="mt-1 text-gray-600">
-                Each slip works once. Hand out one copy of each: a second
-                printed copy of the same slip stops working once the first is
-                used.
+                {{ $t("events.qr_slips_print.help") }}
             </p>
         </div>
         <button
@@ -64,7 +69,7 @@ onMounted(() => {
             @click="print"
         >
             <Printer class="size-4" aria-hidden="true" />
-            Print or save as PDF
+            {{ $t("events.qr_slips_print.print") }}
         </button>
     </div>
 
@@ -72,8 +77,7 @@ onMounted(() => {
         v-if="codes.length === 0"
         class="p-10 text-center text-gray-600 print:hidden"
     >
-        Every slip of this batch has been used, withdrawn or has expired, so
-        there is nothing to print.
+        {{ $t("events.qr_slips_print.nothing_to_print") }}
     </p>
 
     <!-- 12 slips per page, cut along the dashed lines -->
@@ -95,18 +99,31 @@ onMounted(() => {
             <div class="w-[38mm]">
                 <img
                     :src="code.image"
-                    :alt="`QR slip ${code.number} for ${event.title}`"
+                    :alt="
+                        $t('events.qr_slips_print.alt', {
+                            number: code.number,
+                            event: event.title,
+                        })
+                    "
                     class="block h-auto w-full"
                     @load="drawn++"
                     @error="drawn++"
                 />
             </div>
             <p class="text-xs font-semibold text-gray-900">
-                {{ event.points }} points · works once
+                {{
+                    $t("events.qr_slips_print.points_once", {
+                        points: event.points,
+                    })
+                }}
             </p>
             <p class="text-[10px] leading-tight text-gray-700">
-                Scan in Campus Engage by {{ event.expires }} · No.
-                {{ code.number }}
+                {{
+                    $t("events.qr_slips_print.scan_by", {
+                        expires: event.expires,
+                        number: code.number,
+                    })
+                }}
             </p>
         </article>
     </section>

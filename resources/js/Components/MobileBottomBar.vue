@@ -22,7 +22,7 @@ function isActive(href) {
 <template>
     <nav
         v-if="items.length > 0"
-        aria-label="Main"
+        :aria-label="$t('navigation.bottom_bar.main')"
         class="fixed inset-x-0 bottom-0 z-30 flex h-[calc(4rem+env(safe-area-inset-bottom))] items-center justify-around border-t border-line bg-surface px-2 pb-[env(safe-area-inset-bottom)] lg:hidden"
     >
         <template v-for="item in items" :key="item.label">
@@ -34,7 +34,7 @@ function isActive(href) {
                 <Link
                     :href="item.href"
                     class="-mt-5 flex size-14 items-center justify-center rounded-full bg-primary text-on-primary shadow-popover transition hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-                    aria-label="Scan QR code"
+                    :aria-label="$t('navigation.bottom_bar.scan_qr_code')"
                     :aria-current="isActive(item.href) ? 'page' : undefined"
                 >
                     <component

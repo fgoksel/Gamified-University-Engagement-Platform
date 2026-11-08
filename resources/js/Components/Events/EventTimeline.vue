@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from "vue";
+import { t } from "../../i18n.js";
 
 // The three windows of an event (Task #79, 26 Oct, section 2), drawn on one time line
 // as the organiser types: applications, the event itself, and points. The same dates
@@ -29,7 +30,7 @@ const formatter = new Intl.DateTimeFormat("en-GB", {
 });
 const words = (ms) => formatter.format(new Date(ms));
 
-const t = computed(() => ({
+const moments = computed(() => ({
     opens: time(props.opensAt),
     closes: time(props.closesAt),
     starts: time(props.startsAt),
@@ -41,18 +42,18 @@ const t = computed(() => ({
 const now = Date.now();
 
 const windows = computed(() => {
-    const { opens, closes, starts, ends, until } = t.value;
+    const { opens, closes, starts, ends, until } = moments.value;
     return [
         {
             key: "applications",
-            label: "Applications",
+            label: t("events.timeline.window_applications"),
             from: opens ?? (closes !== null ? Math.min(now, closes) : null),
             to: closes,
             bar: "bg-info-fg",
         },
         {
             key: "event",
-            label: "Event",
+            label: t("events.timeline.window_event"),
             from: starts,
             to: ends,
             bar: "bg-primary",
@@ -60,7 +61,7 @@ const windows = computed(() => {
         // Points start exactly when the event starts (26 Oct, Q3).
         {
             key: "points",
-            label: "Points",
+            label: t("events.timeline.window_points"),
             from: starts,
             to: until,
             bar: "bg-success-fg",
@@ -94,49 +95,62 @@ function place(window) {
 
 // The order the server checks too, said in plain words while typing.
 const problems = computed(() => {
-    const { opens, closes, starts, ends, until } = t.value;
+    const { opens, closes, starts, ends, until } = moments.value;
     const list = [];
     if (starts !== null && ends !== null && ends <= starts) {
-        list.push("The event must end after it starts.");
+        list.push(t("events.timeline.problem_end_after_start"));
     }
     if (opens !== null && closes !== null && opens >= closes) {
-        list.push("Applications must open before they close.");
+        list.push(t("events.timeline.problem_open_before_close"));
     }
     if (closes !== null && ends !== null && closes > ends) {
-        list.push("Applications must close before the event ends.");
+        list.push(t("events.timeline.problem_close_before_end"));
     }
     if (until !== null && ends !== null && until < ends) {
-        list.push('"Points can be given until" cannot be before the end.');
+        list.push(t("events.timeline.problem_until_before_end"));
     }
     return list;
 });
 
 const description = computed(() => {
-    const { opens, closes, starts, ends, until } = t.value;
+    const { opens, closes, starts, ends, until } = moments.value;
     return [
         {
             key: "applications",
-            label: "Applications",
+            label: t("events.timeline.window_applications"),
             text:
                 closes === null
-                    ? "Choose when applications close."
-                    : `${opens === null ? "Open when you publish" : `Open ${words(opens)}`}, close ${words(closes)}.`,
+                    ? t("events.timeline.choose_when_applications_close")
+                    : opens === null
+                      ? t("events.timeline.applications_open_on_publish", {
+                            closes: words(closes),
+                        })
+                      : t("events.timeline.applications_open_close", {
+                            opens: words(opens),
+                            closes: words(closes),
+                        }),
         },
         {
             key: "event",
-            label: "Event",
+            label: t("events.timeline.window_event"),
             text:
                 starts === null || ends === null
-                    ? "Choose when the event starts and ends."
-                    : `${words(starts)} to ${words(ends)}.`,
+                    ? t("events.timeline.choose_when_event_starts_ends")
+                    : t("events.timeline.event_from_to", {
+                          starts: words(starts),
+                          ends: words(ends),
+                      }),
         },
         {
             key: "points",
-            label: "Points",
+            label: t("events.timeline.window_points"),
             text:
                 starts === null || until === null
-                    ? "Points start when the event starts. Choose until when they can be given."
-                    : `From the start, ${words(starts)}, until ${words(until)}.`,
+                    ? t("events.timeline.choose_points_until")
+                    : t("events.timeline.points_from_until", {
+                          starts: words(starts),
+                          until: words(until),
+                      }),
         },
     ];
 });
@@ -147,7 +161,9 @@ const description = computed(() => {
         class="rounded-control border border-line bg-surface-muted p-4"
         data-test="timeline"
     >
-        <p class="text-sm font-medium text-fg">Timeline</p>
+        <p class="text-sm font-medium text-fg">
+            {{ $t("events.timeline.timeline") }}
+        </p>
 
         <!-- The drawing: one row per window on a shared time line. Decoration only. -->
         <div v-if="axis" class="mt-3 space-y-2" aria-hidden="true">
@@ -189,7 +205,7 @@ const description = computed(() => {
             <li v-for="problem in problems" :key="problem">{{ problem }}</li>
         </ul>
         <p v-else-if="!complete" class="sr-only" role="status">
-            The timeline is not complete yet.
+            {{ $t("events.timeline.the_timeline_is_not_complete") }}
         </p>
     </div>
 </template>

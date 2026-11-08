@@ -30,20 +30,20 @@ class EventStatusController extends Controller
         Gate::authorize('manage', $event);
 
         if ($event->status !== Event::STATUS_DRAFT) {
-            return back()->with('error', 'Only a draft can be published.');
+            return back()->with('error', __('events.status.only_a_draft_can'));
         }
 
         if ($event->event_starts_at->isPast() || $event->application_deadline->isPast()) {
-            return back()->with('error', 'This draft has dates in the past. Change them before publishing.');
+            return back()->with('error', __('events.status.this_draft_has_dates'));
         }
 
         if ($event->topic_tag_id === null) {
-            return back()->with('error', 'Choose a topic tag before publishing.');
+            return back()->with('error', __('events.status.choose_a_topic_tag_before'));
         }
 
         $event->update(['status' => Event::STATUS_PUBLISHED, 'published_at' => now()]);
 
-        return back()->with('success', "“{$event->title}” is published.");
+        return back()->with('success', __('events.status.title_published', ['title' => $event->title]));
     }
 
     public function hold(Event $event): RedirectResponse
@@ -51,13 +51,13 @@ class EventStatusController extends Controller
         Gate::authorize('manage', $event);
 
         if ($event->status !== Event::STATUS_PUBLISHED) {
-            return back()->with('error', 'Only a published event can be put on hold.');
+            return back()->with('error', __('events.status.only_a_published_event_can'));
         }
 
         $event->update(['status' => Event::STATUS_ON_HOLD]);
         $this->notifyApplicants($event, EventStatusChangedNotification::ON_HOLD);
 
-        return back()->with('success', "“{$event->title}” is on hold. Students no longer see it.");
+        return back()->with('success', __('events.status.title_on_hold', ['title' => $event->title]));
     }
 
     public function restore(Event $event): RedirectResponse
@@ -65,13 +65,13 @@ class EventStatusController extends Controller
         Gate::authorize('manage', $event);
 
         if ($event->status !== Event::STATUS_ON_HOLD) {
-            return back()->with('error', 'Only an event on hold can be restored.');
+            return back()->with('error', __('events.status.only_an_event_on_hold'));
         }
 
         $event->update(['status' => Event::STATUS_PUBLISHED]);
         $this->notifyApplicants($event, EventStatusChangedNotification::RESTORED);
 
-        return back()->with('success', "“{$event->title}” is published again.");
+        return back()->with('success', __('events.status.title_published_again', ['title' => $event->title]));
     }
 
     public function cancel(Request $request, Event $event): RedirectResponse
@@ -81,11 +81,11 @@ class EventStatusController extends Controller
         $data = $request->validate([
             'reason' => ['required', 'string', 'max:500'],
         ], [
-            'reason.required' => 'Tell students why the event is cancelled.',
+            'reason.required' => __('events.status.tell_students_why_the_event'),
         ]);
 
         if (in_array($event->status, [Event::STATUS_CANCELLED, Event::STATUS_COMPLETED], true)) {
-            return back()->with('error', 'This event can no longer be cancelled.');
+            return back()->with('error', __('events.status.this_event_can_no_longer'));
         }
 
         $event->update([
@@ -95,7 +95,7 @@ class EventStatusController extends Controller
         ]);
         $this->notifyApplicants($event, EventStatusChangedNotification::CANCELLED, $event->cancellation_reason);
 
-        return back()->with('success', "“{$event->title}” is cancelled.");
+        return back()->with('success', __('events.status.title_cancelled', ['title' => $event->title]));
     }
 
     public function destroy(Event $event): RedirectResponse
@@ -104,12 +104,12 @@ class EventStatusController extends Controller
 
         // The database refuses these deletes too; this gives a readable message instead.
         if ($event->applications()->exists() || $event->qrTokens()->exists() || $event->pointTransactions()->exists()) {
-            return back()->with('error', 'This event already has applications or attendance, so it cannot be deleted. Cancel it instead.');
+            return back()->with('error', __('events.status.this_event_already_has_applications'));
         }
 
         $event->delete();
 
-        return back()->with('success', "“{$event->title}” is deleted.");
+        return back()->with('success', __('events.status.title_deleted', ['title' => $event->title]));
     }
 
     /**

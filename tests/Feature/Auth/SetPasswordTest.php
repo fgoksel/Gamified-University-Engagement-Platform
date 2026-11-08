@@ -84,7 +84,7 @@ class SetPasswordTest extends TestCase
         foreach (['old-token', 'made-up-token'] as $token) {
             $this->get('/auth/activate/'.$token)
                 ->assertRedirect('/login')
-                ->assertSessionHas('error', SetPasswordController::EXPIRED_MESSAGE);
+                ->assertSessionHas('error', SetPasswordController::expiredMessage());
         }
     }
 
@@ -118,7 +118,7 @@ class SetPasswordTest extends TestCase
 
         $this->post('/auth/set-password', $form)
             ->assertRedirect('/login')
-            ->assertSessionHas('error', SetPasswordController::EXPIRED_MESSAGE);
+            ->assertSessionHas('error', SetPasswordController::expiredMessage());
     }
 
     public function test_passwords_must_match_and_be_long_enough(): void
@@ -161,7 +161,7 @@ class SetPasswordTest extends TestCase
             $this->from('/forgot-password')
                 ->post('/forgot-password', ['email' => $email])
                 ->assertRedirect('/forgot-password')
-                ->assertSessionHas('success', ForgotPasswordController::SENT_MESSAGE);
+                ->assertSessionHas('success', ForgotPasswordController::sentMessage());
         }
 
         Notification::assertSentTo($user, PasswordResetNotification::class);
@@ -221,7 +221,7 @@ class SetPasswordTest extends TestCase
         $user = User::factory()->create(['status' => 'inactive']);
 
         $this->post('/forgot-password', ['email' => $user->email])
-            ->assertSessionHas('success', ForgotPasswordController::SENT_MESSAGE);
+            ->assertSessionHas('success', ForgotPasswordController::sentMessage());
 
         Notification::assertNothingSent();
     }

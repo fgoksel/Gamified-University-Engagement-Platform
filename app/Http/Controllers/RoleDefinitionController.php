@@ -50,14 +50,14 @@ class RoleDefinitionController extends Controller
 
         $role = $this->roles->create($request->user(), $scope, $request->only(['name', 'description', 'capabilities', 'delegable']));
 
-        return redirect()->route('topics.roles.index')->with('success', "Role \"{$role->name}\" created. It is not given to anyone yet.");
+        return redirect()->route('topics.roles.index')->with('success', __('areas.role_flash.created', ['name' => $role->name]));
     }
 
     public function update(Request $request, RoleDefinition $role): RedirectResponse
     {
         $this->roles->update($request->user(), $role, $request->only(['name', 'description', 'capabilities', 'delegable', 'acknowledge_affected']));
 
-        return redirect()->route('topics.roles.index')->with('success', "Role \"{$role->name}\" saved.");
+        return redirect()->route('topics.roles.index')->with('success', __('areas.role_flash.saved', ['name' => $role->name]));
     }
 
     public function archive(Request $request, RoleDefinition $role): RedirectResponse
@@ -67,8 +67,8 @@ class RoleDefinitionController extends Controller
         $this->roles->setArchived($request->user(), $role, $archived);
 
         return redirect()->route('topics.roles.index')->with('success', $archived
-            ? "Role \"{$role->name}\" archived. People who have it keep it; it cannot be given to anyone new."
-            : "Role \"{$role->name}\" can be given again.");
+            ? __('areas.role_flash.archived', ['name' => $role->name])
+            : __('areas.role_flash.restored', ['name' => $role->name]));
     }
 
     public function usage(Request $request, RoleDefinition $role): JsonResponse

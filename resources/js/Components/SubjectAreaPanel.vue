@@ -8,6 +8,8 @@ import {
     useSubjectAreaFilter,
 } from "../composables/useSubjectAreaFilter.js";
 import { categoryDot } from "../categoryColors.js";
+import { t } from "../i18n.js";
+import Trans from "./Trans.vue";
 
 // Teacher's Subject Area panel (UC-1.2): faculty -> subject area tree,
 // "My areas / All areas" switch and search. Picking an area filters the
@@ -28,8 +30,8 @@ const {
 const id = useId();
 
 const scopes = [
-    { value: "mine", label: "My areas" },
-    { value: "all", label: "All areas" },
+    { value: "mine", label: t("subject_areas.scope.mine") },
+    { value: "all", label: t("subject_areas.scope.all") },
 ];
 
 const tree = computed(
@@ -89,14 +91,14 @@ const noFaculty = computed(
             class="flex items-center gap-3 px-3 py-2 text-xs font-medium tracking-wide text-fg-muted uppercase"
         >
             <FolderTree class="size-5 shrink-0" :stroke-width="1.75" />
-            Subject areas
+            {{ $t("subject_areas.title") }}
         </h2>
 
         <!-- Scope switch -->
         <div
             class="mt-2 grid grid-cols-2 gap-1 rounded-control bg-surface-muted p-1"
             role="group"
-            aria-label="Which subject areas to show"
+            :aria-label="$t('subject_areas.scope.label')"
         >
             <button
                 v-for="option in scopes"
@@ -117,7 +119,7 @@ const noFaculty = computed(
 
         <!-- Search -->
         <label class="relative mt-3 block">
-            <span class="sr-only">Search subject areas</span>
+            <span class="sr-only">{{ $t("subject_areas.search.label") }}</span>
             <Search
                 class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-fg-muted"
                 :stroke-width="1.75"
@@ -125,7 +127,7 @@ const noFaculty = computed(
             <input
                 v-model="search"
                 type="search"
-                placeholder="Name or code"
+                :placeholder="$t('subject_areas.search.placeholder')"
                 class="w-full rounded-control border border-line bg-surface py-2 pr-3 pl-9 text-sm text-fg placeholder:text-fg-muted focus-visible:outline-2 focus-visible:outline-ring"
                 :aria-controls="`${id}-tree`"
             />
@@ -142,16 +144,20 @@ const noFaculty = computed(
             "
         >
             <span class="min-w-0 flex-1 truncate">
-                <template v-if="selectedArea">
-                    Filtering by <strong>{{ selectedArea.title }}</strong>
-                </template>
-                <template v-else>No subject area selected</template>
+                <Trans v-if="selectedArea" k="subject_areas.filtering_by">
+                    <template #title>
+                        <strong>{{ selectedArea.title }}</strong>
+                    </template>
+                </Trans>
+                <template v-else>{{
+                    $t("subject_areas.none_selected")
+                }}</template>
             </span>
             <button
                 v-if="selectedArea"
                 type="button"
                 class="rounded-control p-1 hover:bg-surface focus-visible:outline-2 focus-visible:outline-ring"
-                aria-label="Clear subject area filter"
+                :aria-label="$t('subject_areas.clear_filter')"
                 @click="clearSelection"
             >
                 <X class="size-3.5" :stroke-width="2" />
@@ -229,7 +235,7 @@ const noFaculty = computed(
 
         <!-- Empty states -->
         <p v-if="!hasAnyAreas" class="mt-3 px-3 text-xs text-fg-muted">
-            No subject areas yet. The administrator adds them.
+            {{ $t("subject_areas.empty.none_yet") }}
         </p>
         <p
             v-else-if="visibleGroups.length === 0"
@@ -238,16 +244,17 @@ const noFaculty = computed(
         >
             {{
                 searching
-                    ? `No subject areas match "${search.trim()}".`
-                    : "No subject areas here. Try All areas."
+                    ? $t("subject_areas.empty.no_match", {
+                          query: search.trim(),
+                      })
+                    : $t("subject_areas.empty.none_here")
             }}
         </p>
         <p
             v-if="noFaculty && hasAnyAreas"
             class="mt-3 px-3 text-xs text-fg-muted"
         >
-            Your account has no faculty yet, so My areas shows only
-            university-wide areas.
+            {{ $t("subject_areas.no_faculty") }}
         </p>
     </section>
 </template>

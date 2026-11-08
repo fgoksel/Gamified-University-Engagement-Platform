@@ -52,13 +52,13 @@ class EventApplicationService
                     EventApplication::WAITLISTED,
                 ], true)) {
                     throw ValidationException::withMessages([
-                        'event' => 'You have already applied to this event.',
+                        'event' => __('events.application.you_have_already_applied'),
                     ]);
                 }
 
                 if ($existing->status === EventApplication::REJECTED) {
                     throw ValidationException::withMessages([
-                        'event' => 'Your application was previously rejected and cannot be resubmitted.',
+                        'event' => __('events.application.your_application_was_previously_rejected'),
                     ]);
                 }
             }
@@ -111,9 +111,9 @@ class EventApplicationService
                 'to_status' => $toStatus,
                 'actor_id' => $student->id,
                 'reason' => match (true) {
-                    $wasUndone => 'Applied again after undo',
-                    $fromStatus === EventApplication::WITHDRAWN => 'Re-applied after withdrawal',
-                    default => 'Initial application',
+                    $wasUndone => __('events.application.applied_again_after_undo'),
+                    $fromStatus === EventApplication::WITHDRAWN => __('events.application.re_applied_after_withdrawal'),
+                    default => __('events.application.initial_application'),
                 },
                 'created_at' => now(),
             ]);
@@ -194,8 +194,8 @@ class EventApplicationService
             if (! $application || ($undo && $application->status === EventApplication::WITHDRAWN)) {
                 throw ValidationException::withMessages([
                     'event' => $undo
-                        ? 'You have no application to undo.'
-                        : 'You do not have an application for this event.',
+                        ? __('events.application.no_application_to_undo')
+                        : __('events.application.you_do_not_have'),
                 ]);
             }
 
@@ -206,32 +206,32 @@ class EventApplicationService
                 || $application->applied_at->lt(now()->subSeconds(EventApplication::UNDO_SECONDS))
             )) {
                 throw ValidationException::withMessages([
-                    'event' => "It's too late to undo. You can leave the event from My events.",
+                    'event' => __('events.application.too_late_to_undo'),
                 ]);
             }
 
             if ($application->status === EventApplication::WITHDRAWN) {
                 throw ValidationException::withMessages([
-                    'event' => 'You have already left this event.',
+                    'event' => __('events.application.you_have_already_withdrawn'),
                 ]);
             }
 
             if ($application->status === EventApplication::REJECTED) {
                 throw ValidationException::withMessages([
-                    'event' => 'You were not selected for this event, so there is nothing to leave.',
+                    'event' => __('events.application.you_cannot_withdraw_a_rejected'),
                 ]);
             }
 
             if ($application->isCredited()) {
                 throw ValidationException::withMessages([
-                    'event' => 'You already have the points for this event, so you cannot leave it.',
+                    'event' => __('events.application.you_cannot_withdraw'),
                 ]);
             }
 
             // Undo is only possible in the first minute, so it is not blocked once the event runs.
             if (! $undo && now()->gt($lockedEvent->event_starts_at)) {
                 throw ValidationException::withMessages([
-                    'event' => 'The event has started, so you can\'t leave it any more.',
+                    'event' => __('events.application.you_cannot_withdraw_2'),
                 ]);
             }
 
@@ -246,7 +246,7 @@ class EventApplicationService
                 'from_status' => $fromStatus,
                 'to_status' => EventApplication::WITHDRAWN,
                 'actor_id' => $student->id,
-                'reason' => $undo ? 'Undone by the student' : 'Student withdrawal',
+                'reason' => $undo ? __('events.application.undone_by_the_student') : __('events.application.student_withdrawal'),
                 'created_at' => now(),
             ]);
 
@@ -281,7 +281,7 @@ class EventApplicationService
                         'from_status' => EventApplication::WAITLISTED,
                         'to_status' => EventApplication::ACCEPTED,
                         'actor_id' => null,
-                        'reason' => 'Promoted from waitlist upon vacancy',
+                        'reason' => __('events.application.promoted_from_waitlist_upon_vacancy'),
                         'created_at' => now(),
                     ]);
 
@@ -311,19 +311,19 @@ class EventApplicationService
     {
         if ($student->status !== 'active') {
             throw ValidationException::withMessages([
-                'student' => 'Only active accounts may apply to events.',
+                'student' => __('events.application.only_active_accounts_may_apply'),
             ]);
         }
 
         if (empty($student->neptun_code)) {
             throw ValidationException::withMessages([
-                'student' => 'A valid Neptun code is required to apply to events.',
+                'student' => __('events.application.a_valid_neptun_code'),
             ]);
         }
 
         if ($event->status !== Event::STATUS_PUBLISHED) {
             throw ValidationException::withMessages([
-                'event' => 'This event is not open for applications.',
+                'event' => __('events.application.this_event_is_not_open'),
             ]);
         }
 
@@ -332,7 +332,7 @@ class EventApplicationService
         if (($event->owningTopic && $access->isHidden($event->owningTopic))
             || ($event->audienceTopic && $access->isHidden($event->audienceTopic))) {
             throw ValidationException::withMessages([
-                'event' => 'Applications are frozen because this area is archived.',
+                'event' => __('events.application.applications_are_frozen_because'),
             ]);
         }
 
@@ -340,7 +340,7 @@ class EventApplicationService
         // answer is the one any event that is not open gives and says nothing about it.
         if ($event->is_hidden) {
             throw ValidationException::withMessages([
-                'event' => 'This event is not open for applications.',
+                'event' => __('events.application.this_event_is_not_open'),
             ]);
         }
 
@@ -349,26 +349,26 @@ class EventApplicationService
         $opensAt = $event->applicationsOpenFrom();
         if ($opensAt !== null && now()->lt($opensAt)) {
             throw ValidationException::withMessages([
-                'event' => 'Applications for this event are not open yet.',
+                'event' => __('events.application.applications_for_this_event'),
             ]);
         }
 
         if ($event->application_deadline !== null && now()->gt($event->application_deadline)) {
             throw ValidationException::withMessages([
-                'event' => 'The application deadline for this event has passed.',
+                'event' => __('events.application.the_application_deadline'),
             ]);
         }
 
         if (now()->gt($event->event_ends_at)) {
             throw ValidationException::withMessages([
-                'event' => 'This event has already ended.',
+                'event' => __('events.application.this_event_has_already_ended'),
             ]);
         }
 
         // Audience membership check (D01 & D03)
         if ($event->audience_topic_id === null) {
             throw ValidationException::withMessages([
-                'event' => 'This event is by invitation only.',
+                'event' => __('events.application.this_event_is_by_invitation'),
             ]);
         }
 
@@ -384,7 +384,7 @@ class EventApplicationService
         // ...and be allowed to apply there (events.apply, Task #65).
         if (! $isMember || ! Gate::forUser($student)->allows('apply', $event)) {
             throw ValidationException::withMessages([
-                'event' => 'You do not belong to the audience for this event.',
+                'event' => __('events.application.you_do_not_belong'),
             ]);
         }
     }

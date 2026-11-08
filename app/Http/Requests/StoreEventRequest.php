@@ -64,13 +64,13 @@ class StoreEventRequest extends FormRequest
                 $owning = Topic::find($this->integer('owning_topic_id'));
 
                 if (! $placement->mayOwn($this->user(), $owning)) {
-                    $validator->errors()->add('owning_topic_id', 'You cannot create events in this area.');
+                    $validator->errors()->add('owning_topic_id', __('events.validation.you_cannot_create_events'));
 
                     return;
                 }
 
                 if ($this->input('action') === 'publish' && ! $placement->mayPublish($this->user(), $owning)) {
-                    $validator->errors()->add('action', 'You may save this event as a draft. Publishing needs the "Manage events" permission in this area.');
+                    $validator->errors()->add('action', __('events.validation.you_may_save_this_event'));
 
                     return;
                 }
@@ -78,7 +78,7 @@ class StoreEventRequest extends FormRequest
                 $audience = $this->input('audience_topic_id');
 
                 if ($audience !== null && ! in_array((int) $audience, $placement->audienceIds($owning), true)) {
-                    $validator->errors()->add('audience_topic_id', 'The audience must be the owning area or an area above it.');
+                    $validator->errors()->add('audience_topic_id', __('events.validation.the_audience_must'));
                 }
             },
         ];
@@ -90,15 +90,15 @@ class StoreEventRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'topic_tag_id.required' => 'Choose a topic tag.',
-            'topic_tag_id.exists' => 'This topic tag is no longer available.',
-            'owning_topic_id.required' => 'Choose where the event is managed from.',
-            'event_starts_at.after' => 'The event must start in the future.',
-            'event_ends_at.after' => 'The event must end after it starts.',
-            'application_deadline.after' => 'The application deadline must be in the future.',
-            'applications_open_at.before' => 'Applications must open before they close.',
-            'application_deadline.before_or_equal' => 'Applications must close before the event ends.',
-            'completion_deadline.after_or_equal' => 'The completion deadline cannot be before the event ends.',
+            'topic_tag_id.required' => __('events.validation.choose_a_topic_tag'),
+            'topic_tag_id.exists' => __('events.validation.this_topic_tag'),
+            'owning_topic_id.required' => __('events.validation.choose_where_the_event'),
+            'event_starts_at.after' => __('events.validation.the_event_must_start'),
+            'event_ends_at.after' => __('events.validation.the_event_must_end_after'),
+            'application_deadline.after' => __('events.validation.the_application_deadline_must'),
+            'applications_open_at.before' => __('events.validation.applications_must_open_before_they'),
+            'application_deadline.before_or_equal' => __('events.validation.applications_must_close_before'),
+            'completion_deadline.after_or_equal' => __('events.validation.the_completion_deadline_cannot'),
         ];
     }
 
@@ -110,7 +110,7 @@ class StoreEventRequest extends FormRequest
         return [
             'event_starts_at' => 'start',
             'event_ends_at' => 'end',
-            'applications_open_at' => 'application opening',
+            'applications_open_at' => __('events.validation.application_opening'),
             'points_value' => 'points',
         ];
     }

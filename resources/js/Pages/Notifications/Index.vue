@@ -4,9 +4,10 @@ import { Link, router } from "@inertiajs/vue3";
 import { Bell, CheckCheck } from "@lucide/vue";
 import EmptyState from "../../Components/EmptyState.vue";
 import Btn from "../../Components/Topics/Btn.vue";
+import { t } from "../../i18n.js";
 
 // In-app notifications of the signed-in person (Task #53, UC-1.6 / UC-2.3).
-defineOptions({ layout: { title: "Notifications" } });
+defineOptions({ layout: { title: t("notifications.title") } });
 
 const props = defineProps({
     notifications: { type: Object, required: true },
@@ -47,17 +48,16 @@ function markAllRead() {
                 @click="markAllRead"
             >
                 <CheckCheck class="size-4" />
-                Mark all as read
+                {{ $t("notifications.mark_all_read") }}
             </Btn>
         </div>
 
         <EmptyState
             v-if="items.length === 0"
             :icon="Bell"
-            title="No notifications"
+            :title="$t('notifications.empty.title')"
         >
-            When your application changes, or an event you applied to is
-            cancelled, put on hold or restored, you will see it here.
+            {{ $t("notifications.empty.description") }}
         </EmptyState>
 
         <ul
@@ -77,7 +77,11 @@ function markAllRead() {
                         :class="
                             notification.read ? 'bg-transparent' : 'bg-primary'
                         "
-                        :aria-label="notification.read ? 'Read' : 'Unread'"
+                        :aria-label="
+                            notification.read
+                                ? $t('notifications.read')
+                                : $t('notifications.unread')
+                        "
                     ></span>
                     <span class="min-w-0 flex-1">
                         <span
@@ -106,7 +110,7 @@ function markAllRead() {
         <nav
             v-if="notifications.last_page > 1"
             class="flex items-center justify-between text-sm"
-            aria-label="Pages"
+            :aria-label="$t('notifications.pages')"
         >
             <Link
                 v-if="notifications.prev_page_url"
@@ -114,12 +118,16 @@ function markAllRead() {
                 class="rounded-control border border-line px-3 py-1.5 hover:bg-surface-muted"
                 preserve-scroll
             >
-                Newer
+                {{ $t("notifications.newer") }}
             </Link>
             <span v-else></span>
             <span class="text-fg-muted">
-                Page {{ notifications.current_page }} of
-                {{ notifications.last_page }}
+                {{
+                    $t("notifications.page_of", {
+                        page: notifications.current_page,
+                        total: notifications.last_page,
+                    })
+                }}
             </span>
             <Link
                 v-if="notifications.next_page_url"
@@ -127,7 +135,7 @@ function markAllRead() {
                 class="rounded-control border border-line px-3 py-1.5 hover:bg-surface-muted"
                 preserve-scroll
             >
-                Older
+                {{ $t("notifications.older") }}
             </Link>
             <span v-else></span>
         </nav>

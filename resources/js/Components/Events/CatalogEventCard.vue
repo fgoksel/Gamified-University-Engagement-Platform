@@ -12,7 +12,7 @@ import {
 } from "@lucide/vue";
 import { Link } from "@inertiajs/vue3";
 import StatusChip from "../StatusChip.vue";
-import { categoryDot } from "../../categoryColors.js";
+import { categoryDot, categoryLabel } from "../../categoryColors.js";
 import { applicationType, myStatus, places } from "../../eventWords.js";
 
 // One event in "All events" (Task #40). The Apply button (Task #49) goes in
@@ -37,13 +37,13 @@ const status = computed(() => myStatus(props.event));
                     class="size-2 rounded-full"
                     :class="categoryDot[event.category]"
                 />
-                {{ event.tag ?? event.category }}
+                {{ event.tag ?? categoryLabel[event.category] }}
             </span>
             <StatusChip v-if="event.is_surprise" tone="info" :icon="Sparkles">
-                Surprise event
+                {{ $t("events.catalog_card.surprise_event") }}
             </StatusChip>
             <StatusChip v-if="!event.is_open" tone="neutral">
-                Applications closed
+                {{ $t("events.catalog_card.applications_closed") }}
             </StatusChip>
         </div>
 
@@ -62,24 +62,32 @@ const status = computed(() => myStatus(props.event));
 
         <dl class="mt-4 space-y-2 text-sm">
             <div class="flex items-start gap-2">
-                <dt class="sr-only">When</dt>
+                <dt class="sr-only">{{ $t("events.catalog_card.when") }}</dt>
                 <CalendarClock class="mt-0.5 size-4 shrink-0 text-fg-muted" />
                 <dd>
                     <span class="text-fg"
                         >{{ event.starts }}–{{ event.ends }}</span
                     >
                     <span v-if="event.is_open" class="block text-fg-muted">
-                        Apply by {{ event.applications_close }}
+                        {{
+                            $t("events.catalog_card.apply_by", {
+                                date: event.applications_close,
+                            })
+                        }}
                     </span>
                 </dd>
             </div>
             <div v-if="event.location" class="flex items-start gap-2">
-                <dt class="sr-only">Location</dt>
+                <dt class="sr-only">
+                    {{ $t("events.catalog_card.location") }}
+                </dt>
                 <MapPin class="mt-0.5 size-4 shrink-0 text-fg-muted" />
                 <dd class="text-fg">{{ event.location }}</dd>
             </div>
             <div class="flex items-start gap-2">
-                <dt class="sr-only">Organised by</dt>
+                <dt class="sr-only">
+                    {{ $t("events.catalog_card.organised") }}
+                </dt>
                 <Building2 class="mt-0.5 size-4 shrink-0 text-fg-muted" />
                 <dd class="text-fg">
                     {{ event.owning_topic }}
@@ -90,30 +98,41 @@ const status = computed(() => myStatus(props.event));
                         "
                         class="block text-fg-muted"
                     >
-                        Open to {{ event.audience_topic }}
+                        {{
+                            $t("events.catalog_card.open_to_area", {
+                                area: event.audience_topic,
+                            })
+                        }}
                     </span>
                 </dd>
             </div>
             <div class="flex items-start gap-2">
-                <dt class="sr-only">Places</dt>
+                <dt class="sr-only">{{ $t("events.catalog_card.places") }}</dt>
                 <Users class="mt-0.5 size-4 shrink-0 text-fg-muted" />
                 <dd class="text-fg">{{ places(event) }}</dd>
             </div>
             <div v-if="!event.is_surprise" class="flex items-start gap-2">
-                <dt class="sr-only">How places are given</dt>
+                <dt class="sr-only">
+                    {{ $t("events.catalog_card.how_places_are_given") }}
+                </dt>
                 <ListChecks class="mt-0.5 size-4 shrink-0 text-fg-muted" />
                 <dd class="text-fg">{{ applicationType(event) }}</dd>
             </div>
             <div class="flex items-start gap-2">
-                <dt class="sr-only">Points</dt>
+                <dt class="sr-only">{{ $t("events.catalog_card.points") }}</dt>
                 <Trophy class="mt-0.5 size-4 shrink-0 text-fg-muted" />
                 <dd class="text-fg">
-                    {{ event.points }} points
+                    {{
+                        $t("events.catalog_card.points_text", {
+                            points: event.points,
+                        })
+                    }}
                     <span
                         v-if="event.qr_enabled"
                         class="inline-flex items-center gap-1 text-fg-muted"
                     >
-                        · <QrCode class="size-3.5" /> QR attendance
+                        · <QrCode class="size-3.5" />
+                        {{ $t("events.catalog_card.qr_attendance") }}
                     </span>
                 </dd>
             </div>

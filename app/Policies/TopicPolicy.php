@@ -27,18 +27,18 @@ class TopicPolicy
     public function create(User $user, ?Topic $parent = null): Response
     {
         if (! $this->access->isActive($user)) {
-            return Response::deny('Your account is not active.');
+            return Response::deny(__('policies.area.your_account_is_not_active'));
         }
 
         if ($parent === null) {
             return $this->access->isSystemAdmin($user)
                 ? Response::allow()
-                : Response::deny('Only a System Admin can start a new top-level area.');
+                : Response::deny(__('policies.area.only_a_system_admin_can'));
         }
 
         return $this->access->can($user, Capability::Create, $parent)
             ? Response::allow()
-            : Response::deny('You cannot add areas here.');
+            : Response::deny(__('policies.area.you_cannot_add_areas_here'));
     }
 
     /**
@@ -55,7 +55,7 @@ class TopicPolicy
             return Response::allow();
         }
 
-        return Response::deny('You cannot edit this area.');
+        return Response::deny(__('policies.area.you_cannot_edit_this_area'));
     }
 
     /**
@@ -65,18 +65,18 @@ class TopicPolicy
     public function move(User $user, Topic $topic, ?Topic $destination): Response
     {
         if (! $this->access->can($user, Capability::Organise, $topic)) {
-            return Response::deny('You cannot move this area.');
+            return Response::deny(__('policies.area.you_cannot_move_this_area'));
         }
 
         if ($destination === null) {
             return $this->access->isSystemAdmin($user)
                 ? Response::allow()
-                : Response::deny('Only a System Admin can make an area top-level.');
+                : Response::deny(__('policies.area.only_a_system_admin_can_2'));
         }
 
         return $this->access->can($user, Capability::Organise, $destination)
             ? Response::allow()
-            : Response::deny('You cannot move areas into that place.');
+            : Response::deny(__('policies.area.you_cannot_move_areas'));
     }
 
     /**
@@ -94,7 +94,7 @@ class TopicPolicy
     {
         return $this->access->can($user, Capability::Archive, $topic)
             ? Response::allow()
-            : Response::deny('You cannot archive areas here.');
+            : Response::deny(__('policies.area.you_cannot_archive_areas_here'));
     }
 
     /**
@@ -104,7 +104,7 @@ class TopicPolicy
     {
         return $this->access->can($user, Capability::Archive, $topic)
             ? Response::allow()
-            : Response::deny('You cannot restore areas here.');
+            : Response::deny(__('policies.area.you_cannot_restore_areas_here'));
     }
 
     /**
@@ -115,6 +115,6 @@ class TopicPolicy
     {
         return $this->access->isSystemAdmin($user)
             ? Response::allow()
-            : Response::deny('Only a System Admin can permanently delete an area.');
+            : Response::deny(__('policies.area.only_a_system_admin_can_3'));
     }
 }

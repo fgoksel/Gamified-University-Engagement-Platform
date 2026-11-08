@@ -28,12 +28,10 @@ const linkClass =
                 class="size-4 shrink-0 text-fg-muted"
                 aria-hidden="true"
             />
-            Who has access
+            {{ $t("events.access_panel.who_has_access") }}
         </h3>
         <p class="mt-1 text-sm text-fg-muted">
-            The people who can manage this event, and where their right comes
-            from. A right is given on a place in the tree and covers the events
-            there and below, never one event on its own.
+            {{ $t("events.access_panel.the_people_who_can_manage") }}
         </p>
 
         <ul v-if="managers.length" class="mt-3 divide-y divide-line">
@@ -45,8 +43,10 @@ const linkClass =
             >
                 <p class="font-medium text-fg">
                     {{ person.name }}
-                    <span v-if="person.is_you" class="font-normal text-fg-muted"
-                        >(you)</span
+                    <span
+                        v-if="person.is_you"
+                        class="font-normal text-fg-muted"
+                        >{{ $t("events.access_panel.you") }}</span
                     >
                 </p>
                 <ul class="mt-1 space-y-0.5 text-sm text-fg-muted">
@@ -54,7 +54,11 @@ const linkClass =
                         v-for="source in person.sources"
                         :key="`${source.role}-${source.node.id ?? 'above'}`"
                     >
-                        {{ source.role }}, from
+                        {{
+                            $t("events.access_panel.from", {
+                                role: source.role,
+                            })
+                        }}
                         <Link
                             v-if="source.node.id"
                             :href="`/topics/${source.node.id}?tab=access`"
@@ -67,12 +71,13 @@ const linkClass =
             </li>
         </ul>
         <p v-else class="mt-3 text-sm text-fg-muted" data-test="no-managers">
-            Nobody holds "Manage events" on this place or above it at the
-            moment.
+            {{ $t("events.access_panel.nobody_holds_manage_events_on") }}
         </p>
 
         <p class="mt-3 text-xs text-fg-muted">
-            System administrators can manage every event and are not listed.
+            {{
+                $t("events.access_panel.system_administrators_can_manage_every")
+            }}
         </p>
     </section>
 </template>

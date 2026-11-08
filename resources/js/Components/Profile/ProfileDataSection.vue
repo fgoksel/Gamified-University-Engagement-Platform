@@ -2,6 +2,7 @@
 import { computed, ref } from "vue";
 import { router, useForm, usePage } from "@inertiajs/vue3";
 import { ImageUp, LoaderCircle, Trash2 } from "@lucide/vue";
+import { t } from "../../i18n.js";
 import SettingsSection from "./SettingsSection.vue";
 
 const props = defineProps({
@@ -20,21 +21,30 @@ const initials = computed(() =>
         .join(""),
 );
 
-const roleLabels = { teacher: "Teacher", student: "Student" };
+const roleLabels = {
+    teacher: t("profile.data.role_teacher"),
+    student: t("profile.data.role_student"),
+};
 
 // Read-only details from the Neptun import; empty ones are hidden
 const details = computed(() =>
     [
-        { label: "Name", value: props.profile.name },
-        { label: "Email", value: props.profile.email },
+        { label: t("profile.data.name"), value: props.profile.name },
+        { label: t("profile.data.email"), value: props.profile.email },
         {
-            label: "Role",
+            label: t("profile.data.role"),
             value: roleLabels[props.profile.role] ?? props.profile.role,
         },
-        { label: "Faculty", value: props.profile.faculty },
-        { label: "Neptun code", value: props.profile.neptunCode },
-        { label: "Major", value: props.profile.major },
-        { label: "Year of study", value: props.profile.yearOfStudy },
+        { label: t("profile.data.faculty"), value: props.profile.faculty },
+        {
+            label: t("profile.data.neptun_code"),
+            value: props.profile.neptunCode,
+        },
+        { label: t("profile.data.major"), value: props.profile.major },
+        {
+            label: t("profile.data.year_of_study"),
+            value: props.profile.yearOfStudy,
+        },
     ].filter((item) => item.value !== null && item.value !== ""),
 );
 
@@ -72,15 +82,15 @@ function removePhoto() {
 
 <template>
     <SettingsSection
-        title="Profile data"
-        description="Your details come from the university records. To correct them, contact the administrator."
+        :title="$t('profile.data.title')"
+        :description="$t('profile.data.description')"
     >
         <!-- Photo -->
         <div class="flex flex-wrap items-center gap-4">
             <img
                 v-if="avatar"
                 :src="avatar"
-                alt="Your profile photo"
+                :alt="$t('profile.data.photo_alt')"
                 class="size-16 rounded-full object-cover"
             />
             <span
@@ -113,7 +123,11 @@ function removePhoto() {
                         :stroke-width="2"
                     />
                     <ImageUp v-else class="size-4" :stroke-width="1.75" />
-                    {{ avatar ? "Change photo" : "Upload photo" }}
+                    {{
+                        avatar
+                            ? $t("profile.data.change_photo")
+                            : $t("profile.data.upload_photo")
+                    }}
                 </button>
                 <button
                     v-if="avatar"
@@ -123,7 +137,7 @@ function removePhoto() {
                     @click="removePhoto"
                 >
                     <Trash2 class="size-4" :stroke-width="1.75" />
-                    Remove
+                    {{ $t("profile.data.remove_photo") }}
                 </button>
             </div>
         </div>
@@ -135,7 +149,7 @@ function removePhoto() {
             {{ form.errors.avatar }}
         </p>
         <p v-else class="mt-2 text-sm text-fg-muted">
-            JPG, PNG or WebP, up to 2 MB.
+            {{ $t("profile.data.photo_hint") }}
         </p>
 
         <!-- Details -->

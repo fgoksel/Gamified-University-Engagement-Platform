@@ -15,7 +15,10 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
  */
 class SystemOverview extends StatsOverviewWidget
 {
-    protected ?string $heading = 'System overview';
+    protected function getHeading(): ?string
+    {
+        return __('admin.overview.heading');
+    }
 
     protected function getColumns(): int
     {
@@ -28,12 +31,12 @@ class SystemOverview extends StatsOverviewWidget
     protected function getStats(): array
     {
         return [
-            $this->accountsStat('Organizers', UserRole::Teacher, Heroicon::OutlinedUserGroup),
-            $this->accountsStat('Students', UserRole::Student, Heroicon::OutlinedAcademicCap),
+            $this->accountsStat(__('admin.overview.organizers'), UserRole::Teacher, Heroicon::OutlinedUserGroup),
+            $this->accountsStat(__('admin.overview.students'), UserRole::Student, Heroicon::OutlinedAcademicCap),
             $this->semesterStat(),
             // No events table yet: shown so the layout matches UC-3.0.
-            Stat::make('Active events', '–')
-                ->description('Available once events are added')
+            Stat::make(__('admin.overview.active_events'), '–')
+                ->description(__('admin.overview.available_once_events_are_added'))
                 ->icon(Heroicon::OutlinedCalendar),
         ];
     }
@@ -50,7 +53,7 @@ class SystemOverview extends StatsOverviewWidget
             ->pluck('total', 'status');
 
         return Stat::make($label, (string) $counts->sum())
-            ->description(sprintf('%d active · %d invited', $counts['active'] ?? 0, $counts['invited'] ?? 0))
+            ->description(__('admin.overview.active_and_invited', ['active' => $counts['active'] ?? 0, 'invited' => $counts['invited'] ?? 0]))
             ->icon($icon);
     }
 
@@ -62,16 +65,16 @@ class SystemOverview extends StatsOverviewWidget
         $semester = Semester::query()->where('status', 'active')->latest('starts_at')->first();
 
         if (! $semester) {
-            return Stat::make('Current semester', 'None')
-                ->description('No active semester')
+            return Stat::make(__('admin.overview.current_semester'), __('admin.overview.none'))
+                ->description(__('admin.overview.no_active_semester'))
                 ->color('warning')
                 ->icon(Heroicon::OutlinedCalendarDays);
         }
 
         $daysLeft = max(0, (int) today()->diffInDays($semester->ends_at, false));
 
-        return Stat::make($semester->name, $daysLeft.' '.str('day')->plural($daysLeft).' left')
-            ->description('Ends '.$semester->ends_at->format('Y. m. d.'))
+        return Stat::make($semester->name, trans_choice('admin.overview.days_left', $daysLeft))
+            ->description(__('admin.overview.ends_on', ['date' => $semester->ends_at->format('Y. m. d.')]))
             ->icon(Heroicon::OutlinedCalendarDays);
     }
 }

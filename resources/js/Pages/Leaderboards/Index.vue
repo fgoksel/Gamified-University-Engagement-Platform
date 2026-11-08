@@ -1,10 +1,11 @@
 <script setup>
 import OwnLeaderboards from "../../Components/Leaderboards/OwnLeaderboards.vue";
+import { t } from "../../i18n.js";
 import WhereAmI from "../../Components/Leaderboards/WhereAmI.vue";
 
 // My leaderboard (Task #54): the person's own points and rank, and the leaderboards open to
 // them: the ones of the areas they can open (D4, 7 November). The highlighted ones come first (D6).
-defineOptions({ layout: { title: "Leaderboards" } });
+defineOptions({ layout: { title: t("leaderboards.index.title") } });
 
 defineProps({
     isStudent: { type: Boolean, default: false },

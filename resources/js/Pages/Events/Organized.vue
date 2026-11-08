@@ -7,9 +7,10 @@ import TopicTagRequestModal from "../../Components/TopicTagRequestModal.vue";
 import OrganizedEventCard from "../../Components/Events/OrganizedEventCard.vue";
 import Modal from "../../Components/Topics/Modal.vue";
 import Btn from "../../Components/Topics/Btn.vue";
+import { t } from "../../i18n.js";
 
 // Teacher: events I organize (Task #37, UC-1.3)
-defineOptions({ layout: { title: "Organized by me" } });
+defineOptions({ layout: { title: t("events.organized.organized_by_me") } });
 
 const props = defineProps({
     filter: { type: String, default: "upcoming" },
@@ -18,19 +19,19 @@ const props = defineProps({
 });
 
 const tabs = [
-    { key: "upcoming", label: "Upcoming" },
-    { key: "drafts", label: "Drafts" },
-    { key: "past", label: "Past" },
-    { key: "on_hold", label: "On hold" },
-    { key: "cancelled", label: "Cancelled" },
+    { key: "upcoming", label: t("events.organized.upcoming") },
+    { key: "drafts", label: t("events.organized.drafts") },
+    { key: "past", label: t("events.organized.past") },
+    { key: "on_hold", label: t("events.organized.on_hold") },
+    { key: "cancelled", label: t("events.organized.cancelled") },
 ];
 
 const emptyText = {
-    upcoming: "Published events that have not ended yet appear here.",
-    drafts: "Events you saved as a draft appear here until you publish them.",
-    past: "Events that have ended appear here.",
-    on_hold: "Events you put on hold appear here. You can restore them.",
-    cancelled: "Cancelled events appear here with their reason.",
+    upcoming: t("events.organized.published_events_that_have"),
+    drafts: t("events.organized.events_you_saved"),
+    past: t("events.organized.events_that_have_ended_appear"),
+    on_hold: t("events.organized.events_you_put_on_hold"),
+    cancelled: t("events.organized.cancelled_events_appear_here"),
 };
 
 const hasAnyEvent = computed(() =>
@@ -81,31 +82,30 @@ function confirmDelete() {
                 @click="showTagModal = true"
             >
                 <Tag class="size-4" />
-                Request Topic Tag
+                {{ $t("events.organized.request_topic_tag") }}
             </button>
             <Link
                 href="/events/create"
                 class="inline-flex items-center gap-2 rounded-control bg-primary px-3 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
             >
                 <Plus class="size-4" :stroke-width="2" />
-                New event
+                {{ $t("events.organized.new_event") }}
             </Link>
         </div>
 
         <EmptyState
             v-if="!hasAnyEvent"
             :icon="CalendarCog"
-            title="You have no events yet"
+            :title="$t('events.organized.you_have_no_events_yet')"
         >
-            Events you create and organize will be listed here, with their
-            applications and attendance.
+            {{ $t("events.organized.events_you_create_and_organize") }}
         </EmptyState>
 
         <template v-else>
             <!-- Tabs -->
             <nav
                 class="flex gap-1 overflow-x-auto border-b border-line"
-                aria-label="Filter events"
+                :aria-label="$t('events.organized.filter_events')"
             >
                 <Link
                     v-for="tab in tabs"
@@ -154,7 +154,9 @@ function confirmDelete() {
         <!-- Cancel dialog -->
         <Modal
             v-if="cancelling"
-            :title="`Cancel “${cancelling.title}”?`"
+            :title="
+                $t('events.organized.cancel_title', { title: cancelling.title })
+            "
             :busy="cancelForm.processing"
             @close="cancelling = null"
         >
@@ -164,14 +166,13 @@ function confirmDelete() {
                 @submit.prevent="confirmCancel"
             >
                 <p class="text-sm text-fg-muted">
-                    Students will no longer be able to apply, and they will see
-                    this reason. A cancelled event cannot be published again.
+                    {{ $t("events.organized.students_will_no_longer") }}
                 </p>
                 <label
                     for="cancel-reason"
                     class="block text-sm font-medium text-fg"
                 >
-                    Reason
+                    {{ $t("events.organized.reason") }}
                 </label>
                 <textarea
                     id="cancel-reason"
@@ -197,7 +198,7 @@ function confirmDelete() {
                     :disabled="cancelForm.processing"
                     @click="cancelling = null"
                 >
-                    Keep event
+                    {{ $t("events.organized.keep_event") }}
                 </Btn>
                 <Btn
                     type="submit"
@@ -205,7 +206,7 @@ function confirmDelete() {
                     variant="danger"
                     :loading="cancelForm.processing"
                 >
-                    Cancel event
+                    {{ $t("events.organized.cancel_event") }}
                 </Btn>
             </template>
         </Modal>
@@ -213,25 +214,26 @@ function confirmDelete() {
         <!-- Delete dialog -->
         <Modal
             v-if="deleting"
-            :title="`Delete “${deleting.title}”?`"
+            :title="
+                $t('events.organized.delete_title', { title: deleting.title })
+            "
             :busy="deleteBusy"
             danger
             @close="deleting = null"
         >
             <p class="text-sm text-fg-muted">
-                Nobody has applied yet, so the event is removed for good. This
-                cannot be undone.
+                {{ $t("events.organized.nobody_has_applied_yet_so") }}
             </p>
             <template #footer>
                 <Btn :disabled="deleteBusy" @click="deleting = null">
-                    Keep event
+                    {{ $t("events.organized.keep_event") }}
                 </Btn>
                 <Btn
                     variant="destructive"
                     :loading="deleteBusy"
                     @click="confirmDelete"
                 >
-                    Delete event
+                    {{ $t("events.organized.delete_event") }}
                 </Btn>
             </template>
         </Modal>

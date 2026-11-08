@@ -68,13 +68,12 @@ class TopicEventRules
         }
 
         $examples = $stranded->take(3)
-            ->map(fn (Event $event) => "\"{$event->title}\" (open to {$event->audienceTopic?->title})")
+            ->map(fn (Event $event) => __('areas.event_rules.example', ['title' => $event->title, 'area' => $event->audienceTopic?->title]))
             ->implode(', ');
-        $more = $stranded->count() > 3 ? ' and '.($stranded->count() - 3).' more' : '';
+        $more = $stranded->count() > 3 ? ' '.__('areas.event_rules.and_more', ['count' => $stranded->count() - 3]) : '';
 
         return [
-            "{$stranded->count()} event(s) in this branch are announced to an area that would no longer be above them: {$examples}{$more}. "
-            .'Change their audience, or cancel them, before moving.',
+            __('areas.event_rules.stranded', ['count' => $stranded->count(), 'examples' => $examples.$more]),
         ];
     }
 
@@ -91,7 +90,7 @@ class TopicEventRules
             ->count();
 
         return $count > 0
-            ? ["{$count} event(s) are run from or announced to it (cancelled and past ones count too)."]
+            ? [__('areas.event_rules.delete_blocker', ['count' => $count])]
             : [];
     }
 

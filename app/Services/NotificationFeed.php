@@ -41,81 +41,84 @@ class NotificationFeed
         $data = $notification->data;
 
         if ($notification->type === EventApplicationDecisionNotification::class) {
-            $event = $data['event_title'] ?? 'an event';
+            $event = $data['event_title'] ?? __('notifications.feed.an_event');
 
             return match ($data['decision'] ?? null) {
                 EventApplicationDecisionNotification::ACCEPTED => [
-                    "You were selected for {$event}",
-                    'The organizer accepted your application. You can follow it under My events.',
+                    __('notifications.feed.decision.accepted.title', ['event' => $event]),
+                    __('notifications.feed.decision.accepted.body'),
                     '/my-events',
                 ],
                 EventApplicationDecisionNotification::REJECTED => [
-                    'Your application was not accepted',
-                    "The organizer did not accept your application for {$event}.",
+                    __('notifications.feed.decision.rejected.title'),
+                    __('notifications.feed.decision.rejected.body', ['event' => $event]),
                     '/my-events',
                 ],
                 EventApplicationDecisionNotification::REMOVED => [
-                    "You were removed from the selection for {$event}",
-                    'Your application is still open, so the organiser may still choose you later.',
+                    __('notifications.feed.decision.removed.title', ['event' => $event]),
+                    __('notifications.feed.decision.removed.body'),
                     '/my-events',
                 ],
                 EventApplicationDecisionNotification::CONFIRMED => [
-                    "Your place at {$event} is confirmed",
-                    'Your application was accepted. You can follow it under My events.',
+                    __('notifications.feed.decision.confirmed.title', ['event' => $event]),
+                    __('notifications.feed.decision.confirmed.body'),
                     '/my-events',
                 ],
                 EventApplicationDecisionNotification::WAITLISTED => [
-                    "You are on the waitlist for {$event}",
-                    'The event is full. If a place becomes free you move up automatically.',
+                    __('notifications.feed.decision.waitlisted.title', ['event' => $event]),
+                    __('notifications.feed.decision.waitlisted.body'),
                     '/my-events',
                 ],
                 EventApplicationDecisionNotification::PROMOTED => [
-                    "A place opened up: you are in for {$event}",
-                    'You moved up from the waitlist and your application is now accepted.',
+                    __('notifications.feed.decision.promoted.title', ['event' => $event]),
+                    __('notifications.feed.decision.promoted.body'),
                     '/my-events',
                 ],
-                default => ['Update on your application', $event, '/my-events'],
+                default => [__('notifications.feed.decision.default'), $event, '/my-events'],
             };
         }
 
         if ($notification->type === EventStatusChangedNotification::class) {
-            $event = $data['event_title'] ?? 'an event';
-            $reason = filled($data['reason'] ?? null) ? " Reason: {$data['reason']}" : '';
+            $event = $data['event_title'] ?? __('notifications.feed.an_event');
             // Task #77: where the event is after the change; null when the location was removed.
-            $where = filled($data['location'] ?? null) ? "It now takes place at {$data['location']}." : 'The location was removed.';
+            $where = filled($data['location'] ?? null)
+                ? __('notifications.feed.location_now', ['location' => $data['location']])
+                : __('notifications.feed.location_removed');
 
             return match ($data['change'] ?? null) {
                 EventStatusChangedNotification::CANCELLED => [
-                    "{$event} is cancelled",
-                    "The organizer cancelled the event. It will not take place.{$reason}",
+                    __('notifications.feed.change.cancelled.title', ['event' => $event]),
+                    filled($data['reason'] ?? null)
+                        ? __('notifications.feed.change.cancelled.body_with_reason', ['reason' => $data['reason']])
+                        : __('notifications.feed.change.cancelled.body'),
                     '/my-events',
                 ],
                 EventStatusChangedNotification::ON_HOLD => [
-                    "{$event} is on hold",
-                    'The event may come back later. Your application is kept.',
+                    __('notifications.feed.change.on_hold.title', ['event' => $event]),
+                    __('notifications.feed.change.on_hold.body'),
                     '/my-events',
                 ],
                 EventStatusChangedNotification::RESTORED => [
-                    "{$event} is back",
-                    'You keep your place. Check the date; if it no longer suits you, you can leave the event.',
+                    __('notifications.feed.change.restored.title', ['event' => $event]),
+                    __('notifications.feed.change.restored.body'),
                     '/my-events',
                 ],
                 EventStatusChangedNotification::RESCHEDULED => [
-                    "The time of {$event} changed",
-                    'You keep your place. Check the new date; if it no longer suits you, you can leave the event.',
+                    __('notifications.feed.change.rescheduled.title', ['event' => $event]),
+                    __('notifications.feed.change.rescheduled.body'),
                     '/my-events',
                 ],
                 EventStatusChangedNotification::RELOCATED => [
-                    "The location of {$event} changed",
-                    "{$where} You keep your place; if it no longer suits you, you can leave the event.",
+                    __('notifications.feed.change.relocated.title', ['event' => $event]),
+                    __('notifications.feed.change.relocated.body', ['where' => $where]),
                     '/my-events',
                 ],
                 EventStatusChangedNotification::RESCHEDULED_AND_RELOCATED => [
-                    "The time and location of {$event} changed",
-                    "{$where} You keep your place. Check the new date; if it no longer suits you, you can leave the event.",
+                    __('notifications.feed.change.rescheduled_and_relocated.title', ['event' => $event]),
+                    __('notifications.feed.change.rescheduled_and_relocated.body', ['where' => $where]),
                     '/my-events',
                 ],
-                default => ['Update on an event you applied to', $event, '/my-events'],
+                default => [__('notifications.feed.change.default'), $event, '/my-events'],
             };
         }
 
@@ -123,16 +126,19 @@ class NotificationFeed
             $points = (int) ($data['points'] ?? 0);
             $category = TaxonomyCategory::tryFrom((string) ($data['category'] ?? ''))?->label();
             $event = Event::find($data['event_id'] ?? null);
+            $eventTitle = $data['event_title'] ?? __('notifications.feed.an_event');
 
             return [
-                $points === 1 ? 'You received 1 point' : "You received {$points} points",
-                'The organizer gave you the points of '.($data['event_title'] ?? 'an event').'.'.($category ? " They count under {$category}." : ''),
+                trans_choice('notifications.feed.points.title', $points),
+                $category
+                    ? __('notifications.feed.points.body_with_category', ['event' => $eventTitle, 'category' => $category])
+                    : __('notifications.feed.points.body', ['event' => $eventTitle]),
                 // Linked only while the student may open the event: a surprise event can stay hidden from them.
                 $event !== null && $notification->notifiable?->can('view', $event) ? "/events/{$event->id}" : null,
             ];
         }
 
         // Import results are Filament notifications, which keep their text in "body" (Task #72).
-        return [$data['title'] ?? 'Notification', $data['message'] ?? $data['body'] ?? '', null];
+        return [$data['title'] ?? __('notifications.feed.default_title'), $data['message'] ?? $data['body'] ?? '', null];
     }
 }

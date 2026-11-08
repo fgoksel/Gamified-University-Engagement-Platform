@@ -41,7 +41,7 @@ class SubjectAreaTree
 
                 return [
                     'id' => $faculty?->id,
-                    'name' => $faculty?->name ?? 'University-wide',
+                    'name' => $faculty?->name ?? __('subject_areas.university_wide'),
                     'code' => $faculty?->code,
                     'areas' => $items->map(fn (SubjectArea $area) => [
                         'id' => $area->id,

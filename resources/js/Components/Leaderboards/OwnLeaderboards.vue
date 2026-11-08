@@ -5,6 +5,7 @@ import AlertMessage from "../AlertMessage.vue";
 import EmptyState from "../EmptyState.vue";
 import BoardRow from "./BoardRow.vue";
 import { categoryLabel } from "../../categoryColors.js";
+import { t, tc } from "../../i18n.js";
 
 // "My leaderboard" (Task #54, UC-1.2 and UC-2.2). A student sees their own points in total and
 // per category, and on each leaderboard they may see their rank and points there. Everyone else
@@ -36,9 +37,7 @@ const tileClass = {
 const highlightError = ref("");
 
 const hint = computed(() =>
-    props.highlightLimit === 1
-        ? "Use the star to highlight one leaderboard. It is listed first."
-        : `Use the star to highlight up to ${props.highlightLimit} leaderboards. They are listed first.`,
+    tc("leaderboards.own.highlight_hint", props.highlightLimit),
 );
 
 // The highlighted leaderboards come first, under their own heading; without any, one plain list
@@ -51,8 +50,16 @@ const groups = computed(() => {
     }
 
     return [
-        { key: "highlighted", title: "Highlighted", boards: starred },
-        { key: "others", title: "Other leaderboards", boards: others },
+        {
+            key: "highlighted",
+            title: t("leaderboards.own.highlighted"),
+            boards: starred,
+        },
+        {
+            key: "others",
+            title: t("leaderboards.own.other_leaderboards"),
+            boards: others,
+        },
     ].filter((group) => group.boards.length);
 });
 </script>
@@ -67,10 +74,10 @@ const groups = computed(() => {
             data-test="own-points"
         >
             <h3 id="own-points" class="text-base font-semibold text-fg">
-                Your points
+                {{ $t("leaderboards.own.your_points") }}
             </h3>
             <p class="mt-1 text-sm text-fg-muted">
-                From every event, added up from the points ledger.
+                {{ $t("leaderboards.own.from_every_event_added_up") }}
             </p>
 
             <p class="mt-3 flex items-baseline gap-2">
@@ -80,22 +87,24 @@ const groups = computed(() => {
                 >
                     {{ points.total }}
                 </span>
-                <span class="text-fg-muted">points in total</span>
+                <span class="text-fg-muted">{{
+                    $t("leaderboards.own.points_in_total")
+                }}</span>
             </p>
 
             <ul class="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
                 <li
-                    v-for="category in categories"
-                    :key="category"
+                    v-for="area in categories"
+                    :key="area"
                     class="rounded-control p-3"
-                    :class="tileClass[category]"
-                    :data-test="`own-${category}`"
+                    :class="tileClass[area]"
+                    :data-test="`own-${area}`"
                 >
                     <span class="block text-sm font-medium">
-                        {{ categoryLabel[category] }}
+                        {{ categoryLabel[area] }}
                     </span>
                     <span class="block text-2xl font-semibold tabular-nums">
-                        {{ points[category] }}
+                        {{ points[area] }}
                     </span>
                 </li>
             </ul>
@@ -103,11 +112,10 @@ const groups = computed(() => {
 
         <section aria-labelledby="own-boards" data-test="own-boards">
             <h3 id="own-boards" class="text-base font-semibold text-fg">
-                Leaderboards
+                {{ $t("leaderboards.own.leaderboards") }}
             </h3>
             <p class="mt-1 text-sm text-fg-muted">
-                The leaderboards of the areas you belong to. Each one counts the
-                points from the events of its area.
+                {{ $t("leaderboards.own.leaderboards_of_your_areas") }}
             </p>
 
             <div v-if="leaderboards.length" class="mt-3 space-y-4">
@@ -149,9 +157,9 @@ const groups = computed(() => {
                 v-else
                 class="mt-3"
                 :icon="Trophy"
-                title="No leaderboards for you yet"
+                :title="$t('leaderboards.own.no_leaderboards_for_you_yet')"
             >
-                When an area you belong to makes a leaderboard, it appears here.
+                {{ $t("leaderboards.own.when_an_area_you_belong") }}
             </EmptyState>
         </section>
     </div>

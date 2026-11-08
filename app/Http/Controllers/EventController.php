@@ -176,7 +176,7 @@ class EventController extends Controller
 
         if ($semester === null) {
             throw ValidationException::withMessages([
-                'title' => 'There is no active semester. Ask an administrator to open one first.',
+                'title' => __('events.flash.there_is_no_active_semester'),
             ]);
         }
 
@@ -213,7 +213,7 @@ class EventController extends Controller
 
         return redirect()->route('events.mine')->with(
             'success',
-            $publish ? 'Your event is published.' : 'Your event is saved as a draft.',
+            $publish ? __('events.flash.your_event_is_published') : __('events.flash.your_event_is_saved'),
         );
     }
 }

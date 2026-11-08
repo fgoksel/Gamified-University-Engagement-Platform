@@ -18,9 +18,15 @@ use Inertia\Response;
  */
 class ForgotPasswordController extends Controller
 {
-    public const SENT_MESSAGE = 'If an account exists for this email address, we have sent a password reset link to it.';
-
     public const LINK_VALID_HOURS = 24;
+
+    /**
+     * The same answer for every address, so nobody can find out which ones have an account.
+     */
+    public static function sentMessage(): string
+    {
+        return __('auth.forgot_password.sent');
+    }
 
     /**
      * Show the "Forgot password" page.
@@ -59,6 +65,6 @@ class ForgotPasswordController extends Controller
             $user->notify(new PasswordResetNotification($token, self::LINK_VALID_HOURS));
         }
 
-        return back()->with('success', self::SENT_MESSAGE);
+        return back()->with('success', self::sentMessage());
     }
 }

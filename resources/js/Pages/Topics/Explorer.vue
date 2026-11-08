@@ -26,7 +26,13 @@ import LeaderboardsPanel from "../../Components/Topics/LeaderboardsPanel.vue";
 import EventsPanel from "../../Components/Topics/EventsPanel.vue";
 import CreateEventLink from "../../Components/Topics/CreateEventLink.vue";
 import { api, debounce } from "../../topicsApi.js";
-import { plural } from "../../topicsLabels.js";
+import Trans from "../../Components/Trans.vue";
+import { t } from "../../i18n.js";
+import {
+    assignmentCount,
+    personCount,
+    topicCount,
+} from "../../topicsLabels.js";
 
 defineOptions({ layout: { wide: true } });
 
@@ -171,7 +177,11 @@ const branchRange = computed(() => {
     const branch = props.selected?.branch;
     if (!branch || branch.total === 0) return "";
     const from = (branch.page - 1) * branch.per_page + 1;
-    return `${from}–${from + branch.items.length - 1} of ${branch.total}`;
+    return t("areas.explorer.branch_range", {
+        from,
+        to: from + branch.items.length - 1,
+        total: branch.total,
+    });
 });
 </script>
 
@@ -179,7 +189,9 @@ const branchRange = computed(() => {
     <div class="space-y-4">
         <!-- Page header -->
         <div class="flex flex-wrap items-center justify-between gap-3">
-            <h1 class="text-2xl font-semibold tracking-tight text-fg">Areas</h1>
+            <h1 class="text-2xl font-semibold tracking-tight text-fg">
+                {{ $t("areas.explorer.areas") }}
+            </h1>
             <div class="flex flex-wrap gap-2">
                 <Link
                     v-if="canSeeRoles"
@@ -191,7 +203,7 @@ const branchRange = computed(() => {
                         :stroke-width="1.75"
                         aria-hidden="true"
                     />
-                    Roles
+                    {{ $t("areas.explorer.roles") }}
                 </Link>
                 <Link
                     v-if="canSeeArchived"
@@ -203,11 +215,11 @@ const branchRange = computed(() => {
                         :stroke-width="1.75"
                         aria-hidden="true"
                     />
-                    Archived areas
+                    {{ $t("areas.explorer.archived_areas") }}
                 </Link>
                 <Btn v-if="isAdmin" variant="primary" @click="dialog = 'root'">
                     <Plus class="size-4" :stroke-width="2" aria-hidden="true" />
-                    New top-level area
+                    {{ $t("areas.explorer.new_top_level_area") }}
                 </Btn>
             </div>
         </div>
@@ -234,7 +246,7 @@ const branchRange = computed(() => {
                 :stroke-width="1.75"
                 aria-hidden="true"
             />
-            Browse areas
+            {{ $t("areas.explorer.browse_areas") }}
         </button>
 
         <div class="flex items-start gap-0 lg:gap-0">
@@ -248,7 +260,7 @@ const branchRange = computed(() => {
             <!-- Left: structure -->
             <aside
                 id="topic-tree-panel"
-                aria-label="Area structure"
+                :aria-label="$t('areas.explorer.area_structure')"
                 class="flex-col rounded-card border border-line bg-surface shadow-card lg:w-(--panel) lg:sticky lg:top-4 lg:flex lg:max-h-[calc(100vh-2rem)] lg:shrink-0"
                 :class="
                     drawerOpen
@@ -259,9 +271,9 @@ const branchRange = computed(() => {
                 :data-width="panelWidth"
             >
                 <div class="space-y-2 border-b border-line p-3" role="search">
-                    <label for="topic-search" class="sr-only"
-                        >Search areas</label
-                    >
+                    <label for="topic-search" class="sr-only">{{
+                        $t("areas.explorer.search_areas")
+                    }}</label>
                     <div class="relative">
                         <Search
                             class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-fg-muted"
@@ -273,7 +285,7 @@ const branchRange = computed(() => {
                             v-model="term"
                             type="search"
                             autocomplete="off"
-                            placeholder="Search areas"
+                            :placeholder="$t('areas.explorer.search_areas')"
                             class="block min-h-11 w-full rounded-control border border-line bg-surface py-2 pr-3 pl-9 text-sm text-fg focus:outline-2 focus:outline-offset-0 focus:outline-ring"
                             @input="onSearchInput"
                         />
@@ -281,7 +293,7 @@ const branchRange = computed(() => {
                     <ul
                         v-if="results.length"
                         class="max-h-64 divide-y divide-line overflow-y-auto rounded-control border border-line"
-                        aria-label="Search results"
+                        :aria-label="$t('areas.explorer.search_results')"
                     >
                         <li v-for="result in results" :key="result.id">
                             <button
@@ -300,7 +312,11 @@ const branchRange = computed(() => {
                                 <span
                                     v-if="result.trail.length"
                                     class="text-xs text-fg-muted"
-                                    >in {{ result.trail.join(" › ") }}</span
+                                    >{{
+                                        $t("areas.explorer.in_trail", {
+                                            trail: result.trail.join(" › "),
+                                        })
+                                    }}</span
                                 >
                             </button>
                         </li>
@@ -309,7 +325,7 @@ const branchRange = computed(() => {
                         v-else-if="term.trim().length >= 2 && !searching"
                         class="px-1 text-xs text-fg-muted"
                     >
-                        No area matches “{{ term }}”.
+                        {{ $t("areas.explorer.no_match", { term }) }}
                     </p>
                 </div>
 
@@ -324,12 +340,14 @@ const branchRange = computed(() => {
                         @select="go"
                     />
                     <p v-else class="px-2 py-4 text-sm text-fg-muted">
-                        No areas to show.
+                        {{ $t("areas.explorer.no_areas_to_show") }}
                     </p>
                 </div>
 
                 <div class="border-t border-line p-2 lg:hidden">
-                    <Btn class="w-full" @click="drawerOpen = false">Close</Btn>
+                    <Btn class="w-full" @click="drawerOpen = false">{{
+                        $t("common.close")
+                    }}</Btn>
                 </div>
             </aside>
 
@@ -338,7 +356,7 @@ const branchRange = computed(() => {
                 class="mx-1 hidden h-24 w-1.5 shrink-0 cursor-col-resize self-center rounded-full bg-line hover:bg-fg-muted focus-visible:outline-2 focus-visible:outline-ring lg:block"
                 role="separator"
                 aria-orientation="vertical"
-                aria-label="Resize the area panel"
+                :aria-label="$t('areas.explorer.resize_the_area_panel')"
                 :aria-valuenow="panelWidth"
                 aria-valuemin="240"
                 aria-valuemax="560"
@@ -354,23 +372,20 @@ const branchRange = computed(() => {
                     <EmptyState
                         v-if="entries.length === 0 && isAdmin"
                         :icon="FolderTree"
-                        title="No areas yet"
+                        :title="$t('areas.explorer.no_areas_yet')"
                     >
-                        Start with a top-level area, such as a country, a
-                        university or a subject. There are no required levels:
-                        you decide the names and the nesting.
+                        {{ $t("areas.explorer.start_with_a_top_level") }}
                     </EmptyState>
                     <EmptyState
                         v-else-if="entries.length === 0"
                         :icon="FolderTree"
-                        title="No areas for you yet"
+                        :title="$t('areas.explorer.no_areas_for_you_yet')"
                     >
-                        You do not have a role in any area. An administrator can
-                        give you one.
+                        {{ $t("areas.explorer.you_do_not_have") }}
                     </EmptyState>
                     <div v-else class="space-y-3">
                         <h2 class="text-base font-semibold text-fg">
-                            Where would you like to start?
+                            {{ $t("areas.explorer.where_would_you_like") }}
                         </h2>
                         <ul class="grid gap-3 sm:grid-cols-2">
                             <li v-for="entry in entries" :key="entry.id">
@@ -386,12 +401,11 @@ const branchRange = computed(() => {
                                         <span
                                             class="block text-sm text-fg-muted"
                                             >{{
-                                                plural(
+                                                $tc(
+                                                    "areas.explorer.directly_inside",
                                                     entry.children_count,
-                                                    "area",
                                                 )
-                                            }}
-                                            directly inside</span
+                                            }}</span
                                         >
                                     </span>
                                     <ChevronRight
@@ -410,7 +424,7 @@ const branchRange = computed(() => {
                     v-else
                     class="space-y-5 rounded-card border border-line bg-surface p-5 shadow-card lg:ml-2"
                 >
-                    <nav aria-label="Breadcrumb">
+                    <nav :aria-label="$t('areas.explorer.breadcrumb')">
                         <ol
                             class="flex flex-wrap items-center gap-1 text-sm text-fg-muted"
                         >
@@ -418,7 +432,7 @@ const branchRange = computed(() => {
                                 <Link
                                     href="/topics?start=1"
                                     class="hover:text-fg hover:underline"
-                                    >Areas</Link
+                                    >{{ $t("areas.explorer.areas") }}</Link
                                 >
                             </li>
                             <li
@@ -463,7 +477,11 @@ const branchRange = computed(() => {
                                 v-if="selected.code"
                                 class="mt-0.5 text-sm text-fg-muted"
                             >
-                                Code {{ selected.code }}
+                                {{
+                                    $t("areas.explorer.code", {
+                                        code: selected.code,
+                                    })
+                                }}
                             </p>
                         </div>
                         <div class="flex flex-wrap gap-2">
@@ -477,7 +495,7 @@ const branchRange = computed(() => {
                                     :stroke-width="2"
                                     aria-hidden="true"
                                 />
-                                New area
+                                {{ $t("areas.explorer.new_area") }}
                             </Btn>
                             <CreateEventLink
                                 v-if="selected.can.create_event"
@@ -492,7 +510,7 @@ const branchRange = computed(() => {
                                     :stroke-width="1.75"
                                     aria-hidden="true"
                                 />
-                                Edit
+                                {{ $t("common.edit") }}
                             </Btn>
                             <Btn
                                 v-if="selected.can.organise"
@@ -503,7 +521,7 @@ const branchRange = computed(() => {
                                     :stroke-width="1.75"
                                     aria-hidden="true"
                                 />
-                                Move
+                                {{ $t("areas.explorer.move") }}
                             </Btn>
                             <Btn
                                 v-if="selected.can.archive"
@@ -514,7 +532,7 @@ const branchRange = computed(() => {
                                     :stroke-width="1.75"
                                     aria-hidden="true"
                                 />
-                                Archive
+                                {{ $t("areas.explorer.archive") }}
                             </Btn>
                             <Btn
                                 v-if="selected.can.delete"
@@ -525,14 +543,14 @@ const branchRange = computed(() => {
                                     :stroke-width="1.75"
                                     aria-hidden="true"
                                 />
-                                Delete…
+                                {{ $t("areas.explorer.delete") }}
                             </Btn>
                         </div>
                     </header>
 
                     <!-- Views -->
                     <nav
-                        aria-label="Area views"
+                        :aria-label="$t('areas.explorer.area_views')"
                         class="flex gap-1 overflow-x-auto border-b border-line"
                     >
                         <Link
@@ -551,7 +569,7 @@ const branchRange = computed(() => {
                                     : undefined
                             "
                         >
-                            Direct contents
+                            {{ $t("areas.explorer.direct_contents") }}
                         </Link>
                         <Link
                             :href="`/topics/${selected.id}?view=branch`"
@@ -569,7 +587,7 @@ const branchRange = computed(() => {
                                     : undefined
                             "
                         >
-                            Whole branch
+                            {{ $t("areas.explorer.whole_branch") }}
                         </Link>
                         <Link
                             v-if="canSeeAccess"
@@ -586,7 +604,7 @@ const branchRange = computed(() => {
                                 tab === 'access' ? 'page' : undefined
                             "
                         >
-                            Access
+                            {{ $t("areas.explorer.access") }}
                         </Link>
                         <Link
                             :href="`/topics/${selected.id}?tab=leaderboards`"
@@ -602,7 +620,7 @@ const branchRange = computed(() => {
                                 tab === 'leaderboards' ? 'page' : undefined
                             "
                         >
-                            Leaderboards
+                            {{ $t("areas.explorer.tab_leaderboards") }}
                         </Link>
                         <Link
                             :href="`/topics/${selected.id}?tab=events`"
@@ -618,7 +636,7 @@ const branchRange = computed(() => {
                                 tab === 'events' ? 'page' : undefined
                             "
                         >
-                            Events
+                            {{ $t("areas.explorer.tab_events") }}
                         </Link>
                     </nav>
 
@@ -656,54 +674,61 @@ const branchRange = computed(() => {
                         class="space-y-4"
                     >
                         <p class="text-sm text-fg-muted">
-                            Every area below
-                            <strong class="text-fg">{{
-                                selected.title
-                            }}</strong>
-                            you can see, at any depth. The stored structure is
-                            not changed.
+                            <Trans k="areas.explorer.branch_help">
+                                <template #title>
+                                    <strong class="text-fg">{{
+                                        selected.title
+                                    }}</strong>
+                                </template>
+                            </Trans>
                         </p>
                         <p
                             v-if="selected.counts.people_branch !== undefined"
                             class="text-sm text-fg"
                             data-testid="branch-counts"
                         >
-                            <strong>{{
-                                plural(selected.counts.topics_below, "area")
-                            }}</strong>
-                            below ·
-                            <strong>{{
-                                plural(
-                                    selected.counts.people_branch,
-                                    "person",
-                                    "people",
-                                )
-                            }}</strong>
-                            ·
-                            <strong>{{
-                                plural(
-                                    selected.counts.assignments_branch,
-                                    "role assignment",
-                                )
-                            }}</strong>
-                            in this branch
+                            <Trans k="areas.explorer.branch_counts">
+                                <template #areas>
+                                    <strong>{{
+                                        topicCount(selected.counts.topics_below)
+                                    }}</strong>
+                                </template>
+                                <template #people>
+                                    <strong>{{
+                                        personCount(
+                                            selected.counts.people_branch,
+                                        )
+                                    }}</strong>
+                                </template>
+                                <template #assignments>
+                                    <strong>{{
+                                        assignmentCount(
+                                            selected.counts.assignments_branch,
+                                        )
+                                    }}</strong>
+                                </template>
+                            </Trans>
                         </p>
                         <form
                             class="flex gap-2"
                             role="search"
                             @submit.prevent="searchBranch"
                         >
-                            <label for="branch-search" class="sr-only"
-                                >Filter this branch</label
-                            >
+                            <label for="branch-search" class="sr-only">{{
+                                $t("areas.explorer.filter_this_branch")
+                            }}</label>
                             <input
                                 id="branch-search"
                                 v-model="branchTerm"
                                 type="search"
-                                placeholder="Filter by name or code"
+                                :placeholder="
+                                    $t('areas.explorer.filter_by_name_or_code')
+                                "
                                 class="min-h-11 w-full rounded-control border border-line bg-surface px-3 py-2 text-sm text-fg focus:outline-2 focus:outline-offset-0 focus:outline-ring"
                             />
-                            <Btn type="submit">Filter</Btn>
+                            <Btn type="submit">{{
+                                $t("areas.explorer.filter")
+                            }}</Btn>
                         </form>
 
                         <ul
@@ -731,7 +756,11 @@ const branchRange = computed(() => {
                                     <span
                                         v-if="item.trail.length"
                                         class="text-xs text-fg-muted"
-                                        >in {{ item.trail.join(" › ") }}</span
+                                        >{{
+                                            $t("areas.explorer.in_trail", {
+                                                trail: item.trail.join(" › "),
+                                            })
+                                        }}</span
                                     >
                                 </Link>
                             </li>
@@ -742,8 +771,12 @@ const branchRange = computed(() => {
                         >
                             {{
                                 search
-                                    ? "No area in this branch matches the filter."
-                                    : "There are no areas below this one."
+                                    ? $t(
+                                          "areas.explorer.no_area_in_this_branch",
+                                      )
+                                    : $t(
+                                          "areas.explorer.there_are_no_areas_below",
+                                      )
                             }}
                         </p>
 
@@ -759,7 +792,7 @@ const branchRange = computed(() => {
                                     @click="
                                         branchPage(selected.branch.page - 1)
                                     "
-                                    >Previous</Btn
+                                    >{{ $t("areas.explorer.previous") }}</Btn
                                 >
                                 <Btn
                                     small
@@ -770,7 +803,7 @@ const branchRange = computed(() => {
                                     @click="
                                         branchPage(selected.branch.page + 1)
                                     "
-                                    >Next</Btn
+                                    >{{ $t("areas.explorer.next") }}</Btn
                                 >
                             </div>
                         </div>
@@ -783,7 +816,7 @@ const branchRange = computed(() => {
                                 id="about-heading"
                                 class="text-sm font-semibold text-fg"
                             >
-                                About this area
+                                {{ $t("areas.explorer.about_this_area") }}
                             </h3>
                             <p
                                 v-if="selected.description"
@@ -792,7 +825,7 @@ const branchRange = computed(() => {
                                 {{ selected.description }}
                             </p>
                             <p v-else class="mt-1 text-sm text-fg-muted">
-                                No description yet.
+                                {{ $t("areas.explorer.no_description_yet") }}
                             </p>
                             <p
                                 v-if="selected.counts.people_here !== undefined"
@@ -800,20 +833,15 @@ const branchRange = computed(() => {
                                 data-testid="here-counts"
                             >
                                 {{
-                                    plural(
-                                        selected.counts.people_here,
-                                        "person",
-                                        "people",
-                                    )
+                                    $t("areas.explorer.here_counts", {
+                                        people: personCount(
+                                            selected.counts.people_here,
+                                        ),
+                                        assignments: assignmentCount(
+                                            selected.counts.assignments_here,
+                                        ),
+                                    })
                                 }}
-                                ·
-                                {{
-                                    plural(
-                                        selected.counts.assignments_here,
-                                        "role assignment",
-                                    )
-                                }}
-                                given directly here
                             </p>
                         </section>
 
@@ -822,9 +850,11 @@ const branchRange = computed(() => {
                                 id="children-heading"
                                 class="text-sm font-semibold text-fg"
                             >
-                                Areas directly inside ({{
-                                    selected.children.length
-                                }})
+                                {{
+                                    $t("areas.explorer.children_heading", {
+                                        count: selected.children.length,
+                                    })
+                                }}
                             </h3>
                             <ul
                                 v-if="selected.children.length"
@@ -852,12 +882,11 @@ const branchRange = computed(() => {
                                                         ? child.code + " · "
                                                         : ""
                                                 }}{{
-                                                    plural(
+                                                    $tc(
+                                                        "areas.explorer.inside",
                                                         child.children_count,
-                                                        "area",
                                                     )
-                                                }}
-                                                inside</span
+                                                }}</span
                                             >
                                         </span>
                                         <ChevronRight
@@ -872,13 +901,17 @@ const branchRange = computed(() => {
                                 v-else
                                 class="mt-2 rounded-card border border-dashed border-line px-4 py-6 text-center text-sm text-fg-muted"
                             >
-                                Nothing inside this area yet.
+                                {{ $t("areas.explorer.nothing_inside") }}
                                 <Btn
                                     v-if="selected.can.create"
                                     class="mt-3"
                                     variant="primary"
                                     @click="dialog = 'create'"
-                                    >Add the first area here</Btn
+                                    >{{
+                                        $t(
+                                            "areas.explorer.add_the_first_area_here",
+                                        )
+                                    }}</Btn
                                 >
                             </div>
                         </section>

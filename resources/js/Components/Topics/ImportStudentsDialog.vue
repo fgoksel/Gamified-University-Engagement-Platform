@@ -3,6 +3,7 @@ import { computed, useId } from "vue";
 import { useForm } from "@inertiajs/vue3";
 import Modal from "./Modal.vue";
 import Btn from "./Btn.vue";
+import Trans from "../Trans.vue";
 import CapabilityList from "./CapabilityList.vue";
 
 // Import students (Task #72): give a role to every student in a file of Neptun
@@ -49,7 +50,7 @@ function submit() {
 
 <template>
     <Modal
-        title="Import students"
+        :title="$t('areas.import_students.import_students')"
         wide
         :busy="form.processing"
         @close="emit('close')"
@@ -59,19 +60,18 @@ function submit() {
             <p
                 class="rounded-control bg-info-soft px-3 py-2 text-sm text-info-fg"
             >
-                Every student in the file gets the chosen role at
-                <strong>{{ topic.title }}</strong
-                >. They see only the events announced to the areas they are
-                added to, not the events of areas above or below. Students who
-                already have the role there are left as they are, so importing
-                the same file again adds nobody twice.
+                <Trans k="areas.import_students.intro">
+                    <template #title>
+                        <strong>{{ topic.title }}</strong>
+                    </template>
+                </Trans>
             </p>
 
             <div>
                 <label
                     :for="`${id}-file`"
                     class="block text-sm font-medium text-fg"
-                    >File</label
+                    >{{ $t("areas.import_students.file") }}</label
                 >
                 <input
                     :id="`${id}-file`"
@@ -84,9 +84,13 @@ function submit() {
                     @input="form.file = $event.target.files[0] ?? null"
                 />
                 <p :id="`${id}-file-hint`" class="mt-1.5 text-sm text-fg-muted">
-                    A CSV file with one column headed
-                    <strong>Neptun Code</strong>, for example from a Neptun or
-                    Moodle export.
+                    <Trans k="areas.import_students.csv_hint">
+                        <template #column>
+                            <strong>{{
+                                $t("areas.import_students.neptun_code")
+                            }}</strong>
+                        </template>
+                    </Trans>
                 </p>
                 <p
                     v-if="form.errors.file"
@@ -97,13 +101,14 @@ function submit() {
             </div>
 
             <fieldset>
-                <legend class="block text-sm font-medium text-fg">Role</legend>
+                <legend class="block text-sm font-medium text-fg">
+                    {{ $t("areas.import_students.role") }}
+                </legend>
                 <p
                     v-if="options.roles.length === 0"
                     class="mt-1.5 text-sm text-fg-muted"
                 >
-                    There is no role you may give by import here. A role can
-                    only contain powers you may pass on in this area.
+                    {{ $t("areas.import_students.there_is_no_role") }}
                 </p>
                 <div v-else class="mt-1.5 space-y-2">
                     <label
@@ -144,12 +149,10 @@ function submit() {
 
             <fieldset v-if="options.parents.length">
                 <legend class="block text-sm font-medium text-fg">
-                    Also add them to
+                    {{ $t("areas.import_students.also_add_them") }}
                 </legend>
                 <p class="mt-1 text-sm text-fg-muted">
-                    Tick an area above if these students should also see the
-                    events announced there. Only the areas above where you may
-                    import are listed.
+                    {{ $t("areas.import_students.tick_an_area_above_if") }}
                 </p>
                 <div class="mt-1.5 space-y-2">
                     <label
@@ -172,20 +175,21 @@ function submit() {
             </fieldset>
 
             <p v-if="role" class="text-sm text-fg-muted" aria-live="polite">
-                The file is processed in the background. The result, with any
-                rows that were skipped, arrives under Notifications.
+                {{ $t("areas.import_students.the_file_is_processed") }}
             </p>
         </form>
 
         <template #footer>
-            <Btn :disabled="form.processing" @click="emit('close')">Cancel</Btn>
+            <Btn :disabled="form.processing" @click="emit('close')">{{
+                $t("common.cancel")
+            }}</Btn>
             <Btn
                 type="submit"
                 form="import-form"
                 variant="primary"
                 :disabled="options.roles.length === 0"
                 :loading="form.processing"
-                >Import</Btn
+                >{{ $t("areas.import_students.import") }}</Btn
             >
         </template>
     </Modal>

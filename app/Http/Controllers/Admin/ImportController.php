@@ -36,12 +36,12 @@ class ImportController extends Controller
         if (! in_array($extension, ['csv', 'txt'])) {
             if ($request->wantsJson()) {
                 return response()->json([
-                    'message' => 'The file must be a CSV file.',
-                    'errors' => ['file' => ['The file must be a CSV file.']],
+                    'message' => __('admin.import.the_file_must'),
+                    'errors' => ['file' => [__('admin.import.the_file_must')]],
                 ], 422);
             }
 
-            return back()->withErrors(['file' => 'The file must be a CSV file.']);
+            return back()->withErrors(['file' => __('admin.import.the_file_must')]);
         }
 
         $path = $file->store('imports', 'local');
@@ -50,12 +50,12 @@ class ImportController extends Controller
 
         if ($request->wantsJson()) {
             return response()->json([
-                'message' => 'Organizer import queued successfully.',
+                'message' => __('admin.import.organizer_import_queued_successfully'),
                 'path' => $path,
             ], 202);
         }
 
-        return back()->with('status', 'Organizer import queued successfully.');
+        return back()->with('status', __('admin.import.organizer_import_queued_successfully'));
     }
 
     /**
@@ -72,12 +72,12 @@ class ImportController extends Controller
         if (! in_array($extension, ['csv', 'txt'])) {
             if ($request->wantsJson()) {
                 return response()->json([
-                    'message' => 'The file must be a CSV file.',
-                    'errors' => ['file' => ['The file must be a CSV file.']],
+                    'message' => __('admin.import.the_file_must'),
+                    'errors' => ['file' => [__('admin.import.the_file_must')]],
                 ], 422);
             }
 
-            return back()->withErrors(['file' => 'The file must be a CSV file.']);
+            return back()->withErrors(['file' => __('admin.import.the_file_must')]);
         }
 
         $path = $file->store('imports', 'local');
@@ -86,12 +86,12 @@ class ImportController extends Controller
 
         if ($request->wantsJson()) {
             return response()->json([
-                'message' => 'Student import queued successfully.',
+                'message' => __('admin.import.student_import_queued_successfully'),
                 'path' => $path,
             ], 202);
         }
 
-        return back()->with('status', 'Student import queued successfully.');
+        return back()->with('status', __('admin.import.student_import_queued_successfully'));
     }
 
     /**
@@ -152,12 +152,12 @@ class ImportController extends Controller
         if (! in_array($extension, ['csv', 'txt'])) {
             if ($request->wantsJson()) {
                 return response()->json([
-                    'message' => 'The file must be a CSV file.',
-                    'errors' => ['file' => ['The file must be a CSV file.']],
+                    'message' => __('admin.import.the_file_must'),
+                    'errors' => ['file' => [__('admin.import.the_file_must')]],
                 ], 422);
             }
 
-            return back()->withErrors(['file' => 'The file must be a CSV file.']);
+            return back()->withErrors(['file' => __('admin.import.the_file_must')]);
         }
 
         $courseId = $request->filled('course_id') ? (int) $request->input('course_id') : null;
@@ -165,7 +165,7 @@ class ImportController extends Controller
             Course::findOrFail($courseId), (int) $request->input('target_topic_id'),
         ) === null) {
             throw ValidationException::withMessages([
-                'target_topic_id' => 'Choose the linked course area or an active descendant as the import destination.',
+                'target_topic_id' => __('admin.import.choose_the_linked_course_area'),
             ]);
         }
 
@@ -185,12 +185,12 @@ class ImportController extends Controller
 
         if ($request->wantsJson()) {
             return response()->json([
-                'message' => 'Course enrolment import queued successfully.',
+                'message' => __('admin.import.course_enrolment_import_queued_successfully'),
                 'path' => $path,
             ], 202);
         }
 
-        return back()->with('status', 'Course enrolment import queued successfully.');
+        return back()->with('status', __('admin.import.course_enrolment_import_queued_successfully'));
     }
 
     /**

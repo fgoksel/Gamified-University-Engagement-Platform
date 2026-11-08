@@ -83,38 +83,38 @@ class EventApplicationDecisionNotification extends Notification implements Shoul
     public function toMail(object $notifiable): MailMessage
     {
         [$subject, $lines] = match ($this->decision) {
-            self::ACCEPTED => ['You were selected for an event', [
-                "You have been selected for \"{$this->eventTitle}\".",
-                'You can follow it under My events.',
+            self::ACCEPTED => [__('mail.event_decision.you_were_selected'), [
+                __('mail.event_decision.selected_for', ['event' => $this->eventTitle]),
+                __('mail.event_decision.you_can_follow_it_under'),
             ]],
-            self::REMOVED => ['You were removed from an event selection', [
-                "The organizer removed you from the selection for \"{$this->eventTitle}\".",
-                'Your application is pending again, so the organizer may select you later.',
+            self::REMOVED => [__('mail.event_decision.you_were_removed'), [
+                __('mail.event_decision.removed_from', ['event' => $this->eventTitle]),
+                __('mail.event_decision.your_application_is_pending_again'),
             ]],
-            self::CONFIRMED => ['Your place at an event is confirmed', [
-                "Your application for \"{$this->eventTitle}\" was accepted: you have a place.",
-                'You can follow it under My events.',
+            self::CONFIRMED => [__('mail.event_decision.your_place_at_an_event'), [
+                __('mail.event_decision.place_confirmed', ['event' => $this->eventTitle]),
+                __('mail.event_decision.you_can_follow_it_under'),
             ]],
-            self::WAITLISTED => ['You are on the waitlist for an event', [
-                "\"{$this->eventTitle}\" is full, so you have been placed on the waitlist.",
-                'If a place becomes free you move up automatically, and we will tell you.',
+            self::WAITLISTED => [__('mail.event_decision.you_are_on_the_waitlist'), [
+                __('mail.event_decision.waitlisted', ['event' => $this->eventTitle]),
+                __('mail.event_decision.if_a_place_becomes_free'),
             ]],
-            self::PROMOTED => ['A place opened up: you are in', [
-                "A place became free at \"{$this->eventTitle}\" and you moved up from the waitlist.",
-                'Your application is now accepted. You can follow it under My events.',
+            self::PROMOTED => [__('mail.event_decision.a_place_opened_up'), [
+                __('mail.event_decision.promoted', ['event' => $this->eventTitle]),
+                __('mail.event_decision.your_application_is_now_accepted'),
             ]],
-            default => ['Your event application was not accepted', [
-                "Your application for \"{$this->eventTitle}\" was not accepted by the organizer.",
+            default => [__('mail.event_decision.your_event_application_was'), [
+                __('mail.event_decision.not_accepted', ['event' => $this->eventTitle]),
             ]],
         };
 
-        $mail = (new MailMessage)->subject($subject)->greeting("Hello {$notifiable->name},");
+        $mail = (new MailMessage)->subject($subject)->greeting(__('mail.greeting_comma', ['name' => $notifiable->name]));
 
         foreach ($lines as $line) {
             $mail->line($line);
         }
 
-        return $mail->salutation('Best regards, University Engagement Team');
+        return $mail->salutation(__('mail.salutation'));
     }
 
     /**

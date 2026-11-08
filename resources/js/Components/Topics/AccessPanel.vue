@@ -7,6 +7,7 @@ import AssignDialog from "./AssignDialog.vue";
 import ChangeRoleDialog from "./ChangeRoleDialog.vue";
 import ImportStudentsDialog from "./ImportStudentsDialog.vue";
 import CapabilityList from "./CapabilityList.vue";
+import Trans from "../Trans.vue";
 import { formatDate } from "../../topicsLabels.js";
 
 // Who can do what at this topic: roles "Assigned here", and roles
@@ -39,30 +40,40 @@ function inheritedGroups() {
     <div class="space-y-6">
         <div class="flex flex-wrap items-start justify-between gap-3">
             <div>
-                <h2 class="text-base font-semibold text-fg">Who has access</h2>
+                <h2 class="text-base font-semibold text-fg">
+                    {{ $t("areas.access.who_has_access") }}
+                </h2>
                 <p class="mt-1 text-sm text-fg-muted">
-                    A role given in an area also applies to every area below it.
-                    Roles from above cannot be taken away here.
+                    {{ $t("areas.access.a_role_given") }}
                 </p>
                 <p
                     v-if="counts.people_effective !== undefined"
                     class="mt-2 text-sm text-fg"
                     data-testid="access-counts"
                 >
-                    <strong>{{ counts.people_effective }}</strong>
-                    {{ counts.people_effective === 1 ? "person" : "people" }}
-                    ·
-                    <strong>{{ counts.assignments_effective }}</strong>
-                    role
-                    {{
-                        counts.assignments_effective === 1
-                            ? "assignment"
-                            : "assignments"
-                    }}
-                    in this area
+                    <Trans k="areas.access.counts">
+                        <template #people>
+                            <strong>{{ counts.people_effective }}</strong>
+                            {{
+                                $tc(
+                                    "areas.access.people_noun",
+                                    counts.people_effective,
+                                )
+                            }}
+                        </template>
+                        <template #assignments>
+                            <strong>{{ counts.assignments_effective }}</strong>
+                            {{
+                                $tc(
+                                    "areas.access.assignments_noun",
+                                    counts.assignments_effective,
+                                )
+                            }}
+                        </template>
+                    </Trans>
+                    {{ " " }}
                     <span class="text-fg-muted">
-                        (one person with two roles counts once as a person,
-                        twice as assignments)
+                        {{ $t("areas.access.one_person_with_two_roles") }}
                     </span>
                 </p>
             </div>
@@ -77,7 +88,7 @@ function inheritedGroups() {
                         :stroke-width="1.75"
                         aria-hidden="true"
                     />
-                    Import students
+                    {{ $t("areas.access.import_students") }}
                 </Btn>
                 <Btn
                     v-if="can.assign"
@@ -89,14 +100,14 @@ function inheritedGroups() {
                         :stroke-width="1.75"
                         aria-hidden="true"
                     />
-                    Give a role
+                    {{ $t("areas.access.give_a_role") }}
                 </Btn>
             </div>
         </div>
 
         <section aria-labelledby="assigned-here">
             <h3 id="assigned-here" class="text-sm font-semibold text-fg">
-                Assigned here
+                {{ $t("areas.access.assigned_here") }}
             </h3>
             <ul
                 v-if="access.here.length"
@@ -113,12 +124,12 @@ function inheritedGroups() {
                             <span
                                 v-if="row.is_you"
                                 class="ml-1 rounded-full bg-info-soft px-2 py-0.5 text-xs text-info-fg"
-                                >you</span
+                                >{{ $t("areas.access.you") }}</span
                             >
                             <span
                                 v-if="!row.user.active"
                                 class="ml-1 rounded-full bg-warning-soft px-2 py-0.5 text-xs text-warning-fg"
-                                >inactive account</span
+                                >{{ $t("areas.access.inactive_account") }}</span
                             >
                         </p>
                         <p class="text-sm text-fg-muted">
@@ -130,10 +141,16 @@ function inheritedGroups() {
                             class="mt-1.5"
                         />
                         <p class="mt-1.5 text-xs text-fg-muted">
-                            Since {{ formatDate(row.started_at)
-                            }}<template v-if="row.granted_by">
-                                · given by {{ row.granted_by }}</template
-                            >
+                            {{
+                                row.granted_by
+                                    ? $t("areas.access.since_given_by", {
+                                          date: formatDate(row.started_at),
+                                          name: row.granted_by,
+                                      })
+                                    : $t("areas.access.since", {
+                                          date: formatDate(row.started_at),
+                                      })
+                            }}
                         </p>
                     </div>
                     <div class="flex gap-2">
@@ -143,13 +160,13 @@ function inheritedGroups() {
                             @click="
                                 changing = { mode: 'replace', assignment: row }
                             "
-                            >Replace holder</Btn
+                            >{{ $t("areas.access.replace_holder") }}</Btn
                         >
                         <Btn
                             v-if="row.can_end"
                             small
                             @click="changing = { mode: 'end', assignment: row }"
-                            >End role</Btn
+                            >{{ $t("areas.access.end_role") }}</Btn
                         >
                     </div>
                 </li>
@@ -158,22 +175,29 @@ function inheritedGroups() {
                 v-else
                 class="mt-2 rounded-card border border-dashed border-line px-4 py-6 text-center text-sm text-fg-muted"
             >
-                Nobody has a role assigned directly here.
+                {{ $t("areas.access.nobody_has_a_role_assigned") }}
             </p>
         </section>
 
         <section
             v-for="group in inheritedGroups()"
             :key="group.topic.id"
-            :aria-label="`Inherited from ${group.topic.title}`"
+            :aria-label="
+                $t('areas.access.inherited_from', {
+                    area: group.topic.title,
+                })
+            "
         >
             <h3 class="text-sm font-semibold text-fg">
-                Inherited from
-                <Link
-                    :href="`/topics/${group.topic.id}?tab=access`"
-                    class="text-link underline"
-                    >{{ group.topic.title }}</Link
-                >
+                <Trans k="areas.access.inherited_from">
+                    <template #area>
+                        <Link
+                            :href="`/topics/${group.topic.id}?tab=access`"
+                            class="text-link underline"
+                            >{{ group.topic.title }}</Link
+                        >
+                    </template>
+                </Trans>
             </h3>
             <ul
                 class="mt-2 divide-y divide-line rounded-card border border-line bg-surface"
@@ -184,12 +208,12 @@ function inheritedGroups() {
                         <span
                             v-if="row.is_you"
                             class="ml-1 rounded-full bg-info-soft px-2 py-0.5 text-xs text-info-fg"
-                            >you</span
+                            >{{ $t("areas.access.you") }}</span
                         >
                         <span
                             v-if="!row.user.active"
                             class="ml-1 rounded-full bg-warning-soft px-2 py-0.5 text-xs text-warning-fg"
-                            >inactive account</span
+                            >{{ $t("areas.access.inactive_account") }}</span
                         >
                     </p>
                     <p class="text-sm text-fg">{{ row.role.name }}</p>
@@ -198,7 +222,11 @@ function inheritedGroups() {
                         class="mt-1.5"
                     />
                     <p class="mt-1.5 text-xs text-fg-muted">
-                        Change it at {{ group.topic.title }}, not here.
+                        {{
+                            $t("areas.access.change_it_at", {
+                                area: group.topic.title,
+                            })
+                        }}
                     </p>
                 </li>
             </ul>
@@ -216,23 +244,42 @@ function inheritedGroups() {
                     :stroke-width="1.75"
                     aria-hidden="true"
                 />
-                Ended roles in this area ({{ access.history.length }})
+                {{
+                    $t("areas.access.ended_roles", {
+                        count: access.history.length,
+                    })
+                }}
             </summary>
             <ul class="mt-3 divide-y divide-line text-sm">
                 <li v-for="row in access.history" :key="row.id" class="py-2">
                     <span class="font-medium text-fg">{{ row.user.name }}</span>
-                    · {{ row.role.name }} · {{ formatDate(row.started_at) }} to
-                    {{ formatDate(row.ended_at) }}
+                    · {{ row.role.name }} ·
+                    {{
+                        $t("areas.access.period", {
+                            from: formatDate(row.started_at),
+                            to: formatDate(row.ended_at),
+                        })
+                    }}
                     <span class="block text-fg-muted">
                         {{ row.ended_reason
                         }}<template v-if="row.ended_by">
-                            · ended by {{ row.ended_by }}</template
+                            ·
+                            {{
+                                $t("areas.access.ended_by", {
+                                    name: row.ended_by,
+                                })
+                            }}</template
                         >
                         <template v-if="row.replaced_by_assignment_id">
-                            · handed over</template
+                            {{ $t("areas.access.handed_over") }}</template
                         >
                         <template v-if="row.granted_by">
-                            · originally given by {{ row.granted_by }}</template
+                            ·
+                            {{
+                                $t("areas.access.originally_given_by", {
+                                    name: row.granted_by,
+                                })
+                            }}</template
                         >
                     </span>
                 </li>

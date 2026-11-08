@@ -46,10 +46,10 @@ class TopicTagRequestController extends Controller
             'category' => ['required', 'string', Rule::in(['academic', 'scientific', 'sports', 'community'])],
             'justification' => ['required', 'string', 'max:2000'],
         ], [
-            'proposed_name.required' => 'Please complete all fields before submitting.',
-            'category.required' => 'Please complete all fields before submitting.',
-            'category.in' => 'Please select a valid category (academic, scientific, sports, or community).',
-            'justification.required' => 'Please complete all fields before submitting.',
+            'proposed_name.required' => __('tag_requests.flash.please_complete_all_fields_before'),
+            'category.required' => __('tag_requests.flash.please_complete_all_fields_before'),
+            'category.in' => __('tag_requests.flash.please_select_a_valid_category'),
+            'justification.required' => __('tag_requests.flash.please_complete_all_fields_before'),
         ]);
 
         $proposedName = trim($validated['proposed_name']);
@@ -57,14 +57,14 @@ class TopicTagRequestController extends Controller
         // UC-1.9 Exception: Duplicate Proposed Name with existing live Topic Tag
         if (TopicTag::where('name', $proposedName)->exists()) {
             throw ValidationException::withMessages([
-                'proposed_name' => 'A topic tag with this name already exists. Please select it from the dropdown instead.',
+                'proposed_name' => __('tag_requests.flash.a_topic_tag'),
             ]);
         }
 
         // Check if there is already a pending request with the same proposed name
         if (TopicTagRequest::where('proposed_name', $proposedName)->where('status', 'pending')->exists()) {
             throw ValidationException::withMessages([
-                'proposed_name' => 'A request for this topic tag is already pending approval.',
+                'proposed_name' => __('tag_requests.flash.a_request_for_this_topic'),
             ]);
         }
 
@@ -78,11 +78,11 @@ class TopicTagRequestController extends Controller
 
         if ($request->wantsJson()) {
             return response()->json([
-                'message' => 'Topic tag request submitted successfully. It will be reviewed by an administrator.',
+                'message' => __('tag_requests.flash.topic_tag_request_submitted_successfully'),
                 'request' => $tagRequest,
             ], 201);
         }
 
-        return redirect()->back()->with('success', 'Topic tag request submitted successfully. It will be reviewed by an administrator.');
+        return redirect()->back()->with('success', __('tag_requests.flash.topic_tag_request_submitted_successfully'));
     }
 }

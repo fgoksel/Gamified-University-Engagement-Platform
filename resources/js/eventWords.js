@@ -1,5 +1,6 @@
-// Plain words for the student screens (Task #94), in one place so the
-// translations of #95 can move all of them into the dictionary in one go.
+import { t, tc } from "./i18n.js";
+
+// Plain words for the student screens (Task #94), in one place, read from the dictionary (Task #95).
 // Students never see status codes such as "waitlisted" or "teacher_select".
 
 // The student's own application, for a StatusChip: { text, tone } or null.
@@ -9,18 +10,18 @@ export function myStatus(item) {
 
     switch (status) {
         case "accepted":
-            return { text: "You're in", tone: "success" };
+            return { text: t("event_words.status.accepted"), tone: "success" };
         case "waitlisted":
-            return { text: "You're on the waitlist", tone: "info" };
+            return { text: t("event_words.status.waitlisted"), tone: "info" };
         case "pending":
             return {
-                text: "Applied · the organiser will choose",
+                text: t("event_words.status.pending"),
                 tone: "warning",
             };
         case "rejected":
-            return { text: "Not selected this time", tone: "neutral" };
+            return { text: t("event_words.status.rejected"), tone: "neutral" };
         case "withdrawn":
-            return { text: "You left this event", tone: "neutral" };
+            return { text: t("event_words.status.withdrawn"), tone: "neutral" };
         default:
             return null;
     }
@@ -29,24 +30,24 @@ export function myStatus(item) {
 // How students get a place
 export function applicationType(event) {
     return event.application_type === "teacher_select"
-        ? "The organiser chooses"
-        : "First come, first served";
+        ? t("event_words.type.teacher_select")
+        : t("event_words.type.fcfs");
 }
 
 export function places(event) {
     if (event.application_type === "teacher_select") {
-        return `${event.capacity} ${event.capacity === 1 ? "place" : "places"} · the organiser chooses`;
+        return tc("event_words.places.organiser_chooses", event.capacity);
     }
     if (event.places_left > 0) {
-        return `${event.places_left} ${event.places_left === 1 ? "place" : "places"} left`;
+        return tc("event_words.places.left", event.places_left);
     }
-    return "Full · you can join the waitlist";
+    return t("event_words.places.full");
 }
 
 export const applyLabels = {
-    apply: "Apply",
-    waitlist: "Join the waitlist",
-    again: "Apply again",
+    apply: t("event_words.apply.apply"),
+    waitlist: t("event_words.apply.waitlist"),
+    again: t("event_words.apply.again"),
 };
 
 // The label of the Apply button for this event
@@ -65,17 +66,17 @@ export function isActiveApplication(event) {
 
 // Everything the action area under an event says (ApplyAction)
 export const actionWords = {
-    undo: "Undo",
-    undone: "Application undone",
-    leave: "Leave event",
-    stay: "Stay",
-    leaveTitle: "Leave this event?",
-    left: "You've left the event.",
-    started: "The event has started, so you can't leave it any more.",
-    closed: "Applications are closed",
-    overlapTitle: "Time conflict",
-    cancel: "Cancel",
-    applyAnyway: "Apply anyway",
+    undo: t("event_words.action.undo"),
+    undone: t("event_words.action.undone"),
+    leave: t("event_words.action.leave"),
+    stay: t("event_words.action.stay"),
+    leaveTitle: t("event_words.action.leave_title"),
+    left: t("event_words.action.left"),
+    started: t("event_words.action.started"),
+    closed: t("event_words.action.closed"),
+    overlapTitle: t("event_words.action.overlap_title"),
+    cancel: t("event_words.action.cancel"),
+    applyAnyway: t("event_words.action.apply_anyway"),
 };
 
 // What happens when the student leaves, by their status and how places are given.
@@ -84,15 +85,15 @@ export function leaveText(event) {
     switch (event.my_status) {
         case "accepted":
             return event.application_type === "fcfs"
-                ? "Your place will go to the next student on the waitlist."
-                : "You will lose your place.";
+                ? t("event_words.leave.accepted_fcfs")
+                : t("event_words.leave.accepted_other");
         case "waitlisted":
-            return "You will lose your place on the waitlist.";
+            return t("event_words.leave.waitlisted");
         default:
-            return "Your application will be withdrawn.";
+            return t("event_words.leave.default");
     }
 }
 
 export function overlapText(title) {
-    return `This event overlaps in time with ${title}. Are you sure you want to apply?`;
+    return t("event_words.overlap", { title });
 }

@@ -27,16 +27,16 @@ class TopicTagRequestRejectedNotification extends Notification implements Should
     public function toMail(object $notifiable): MailMessage
     {
         $mail = (new MailMessage)
-            ->subject('Topic Tag Request Status Update')
-            ->greeting("Hello {$notifiable->name},")
-            ->line("Your topic tag request for \"{$this->proposedName}\" was not approved.");
+            ->subject(__('mail.tag_rejected.topic_tag_request_status_update'))
+            ->greeting(__('mail.greeting_comma', ['name' => $notifiable->name]))
+            ->line(__('mail.tag_rejected.not_approved_text', ['name' => $this->proposedName]));
 
         if ($this->reason) {
-            $mail->line("Reason: {$this->reason}");
+            $mail->line(__('mail.reason', ['reason' => $this->reason]));
         }
 
-        $mail->line('Please choose an existing topic tag from the available taxonomy for your event.')
-            ->salutation('Best regards, University Engagement Team');
+        $mail->line(__('mail.tag_rejected.please_choose_an_existing_topic'))
+            ->salutation(__('mail.salutation'));
 
         return $mail;
     }

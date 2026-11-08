@@ -6,10 +6,11 @@ import EmptyState from "../../Components/EmptyState.vue";
 import ApplyAction from "../../Components/Events/ApplyAction.vue";
 import CatalogEventCard from "../../Components/Events/CatalogEventCard.vue";
 import { categoryDot } from "../../categoryColors.js";
+import { t } from "../../i18n.js";
 
 // All events (Task #40): filtered by topic or branch, category and date,
 // with the Apply button (Task #49). UC-1.5, UC-2.3
-defineOptions({ layout: { title: "All events" } });
+defineOptions({ layout: { title: t("events.index.all_events") } });
 
 const props = defineProps({
     filters: { type: Object, required: true },
@@ -21,17 +22,17 @@ const props = defineProps({
 });
 
 const categories = [
-    { value: null, label: "All" },
-    { value: "academic", label: "Academic" },
-    { value: "scientific", label: "Scientific" },
-    { value: "sports", label: "Sports" },
-    { value: "community", label: "Community" },
+    { value: null, label: t("events.index.all") },
+    { value: "academic", label: t("events.index.academic") },
+    { value: "scientific", label: t("events.index.scientific") },
+    { value: "sports", label: t("events.index.sports") },
+    { value: "community", label: t("events.index.community") },
 ];
 
 const whenOptions = [
-    { value: "upcoming", label: "Upcoming" },
-    { value: "past", label: "Past" },
-    { value: "any", label: "All dates" },
+    { value: "upcoming", label: t("events.index.upcoming") },
+    { value: "past", label: t("events.index.past") },
+    { value: "any", label: t("events.index.all_dates") },
 ];
 
 // Indent child topics so the branch structure stays readable in the list.
@@ -93,21 +94,23 @@ function pageLabel(label) {
         <div class="space-y-4">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
                 <label class="relative block flex-1">
-                    <span class="sr-only">Search events</span>
+                    <span class="sr-only">{{
+                        $t("events.index.search_events")
+                    }}</span>
                     <Search
                         class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-fg-muted"
                     />
                     <input
                         v-model="search"
                         type="search"
-                        placeholder="Search events"
+                        :placeholder="$t('events.index.search_events')"
                         class="block w-full rounded-control border border-line bg-surface py-2 pr-3 pl-9 text-fg placeholder:text-fg-muted focus:outline-2 focus:outline-offset-0 focus:outline-ring"
                     />
                 </label>
                 <div
                     class="inline-flex rounded-control border border-line bg-surface p-1 text-sm"
                     role="group"
-                    aria-label="Upcoming or past"
+                    :aria-label="$t('events.index.upcoming_or_past')"
                 >
                     <button
                         v-for="option in whenOptions"
@@ -129,7 +132,9 @@ function pageLabel(label) {
 
             <div class="grid gap-3 sm:grid-cols-3">
                 <label class="block text-sm">
-                    <span class="font-medium text-fg">Area or branch</span>
+                    <span class="font-medium text-fg">{{
+                        $t("events.index.area_or_branch")
+                    }}</span>
                     <select
                         :value="filters.topic ?? ''"
                         class="mt-1 block min-h-11 w-full rounded-control border border-line bg-surface px-3 py-2 text-fg focus:outline-2 focus:outline-offset-0 focus:outline-ring"
@@ -140,7 +145,9 @@ function pageLabel(label) {
                             })
                         "
                     >
-                        <option value="">All areas</option>
+                        <option value="">
+                            {{ $t("events.index.all_areas") }}
+                        </option>
                         <option
                             v-for="topic in topicOptions"
                             :key="topic.id"
@@ -151,7 +158,9 @@ function pageLabel(label) {
                     </select>
                 </label>
                 <label class="block text-sm">
-                    <span class="font-medium text-fg">From</span>
+                    <span class="font-medium text-fg">{{
+                        $t("events.index.from")
+                    }}</span>
                     <input
                         type="date"
                         :value="filters.from ?? ''"
@@ -161,7 +170,9 @@ function pageLabel(label) {
                     />
                 </label>
                 <label class="block text-sm">
-                    <span class="font-medium text-fg">To</span>
+                    <span class="font-medium text-fg">{{
+                        $t("events.index.to")
+                    }}</span>
                     <input
                         type="date"
                         :value="filters.to ?? ''"
@@ -175,7 +186,7 @@ function pageLabel(label) {
             <div
                 class="flex flex-wrap items-center gap-2"
                 role="group"
-                aria-label="Category"
+                :aria-label="$t('events.index.category')"
             >
                 <button
                     v-for="cat in categories"
@@ -203,7 +214,7 @@ function pageLabel(label) {
                     class="ml-auto text-sm text-link underline-offset-2 hover:underline"
                     @click="clearFilters"
                 >
-                    Clear filters
+                    {{ $t("events.index.clear_filters") }}
                 </button>
             </div>
         </div>
@@ -211,8 +222,7 @@ function pageLabel(label) {
         <!-- Results -->
         <template v-if="events.data.length">
             <p class="text-sm text-fg-muted">
-                {{ events.total }}
-                {{ events.total === 1 ? "event" : "events" }}
+                {{ $tc("events.index.results", events.total) }}
             </p>
             <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 <CatalogEventCard
@@ -230,7 +240,7 @@ function pageLabel(label) {
             <nav
                 v-if="events.last_page > 1"
                 class="flex flex-wrap justify-center gap-1"
-                aria-label="Pages"
+                :aria-label="$t('events.index.pages')"
             >
                 <template v-for="link in events.links" :key="link.label">
                     <Link
@@ -260,16 +270,20 @@ function pageLabel(label) {
         <EmptyState
             v-else
             :icon="CalendarDays"
-            :title="isFiltered() ? 'No matching events' : 'No events yet'"
+            :title="
+                isFiltered()
+                    ? $t('events.index.no_matching_events')
+                    : $t('events.index.no_events_yet')
+            "
         >
             <template v-if="isFiltered()">
-                Try another search, area, category or date.
+                {{ $t("events.index.try_another_search_area_category") }}
             </template>
             <template v-else-if="filters.when === 'past'">
-                Events that have ended will be listed here.
+                {{ $t("events.index.events_that_have_ended_will") }}
             </template>
             <template v-else>
-                Published events open to you will be listed here.
+                {{ $t("events.index.published_events_open") }}
             </template>
         </EmptyState>
     </div>

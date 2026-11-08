@@ -2,10 +2,11 @@
 import { usePage } from "@inertiajs/vue3";
 import AlertMessage from "../../Components/AlertMessage.vue";
 import OwnLeaderboards from "../../Components/Leaderboards/OwnLeaderboards.vue";
+import { t } from "../../i18n.js";
 
 // Start page of everyone who is not a student (UC-1.2): their own leaderboard (Task #54).
 // Students start on their home page and open the same content from "Leaderboards".
-defineOptions({ layout: { title: "Leaderboards" } });
+defineOptions({ layout: { title: t("leaderboard.index_title") } });
 
 defineProps({
     isStudent: { type: Boolean, default: false },
