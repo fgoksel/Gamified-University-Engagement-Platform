@@ -17,8 +17,8 @@ numbers are added where they exist:
   how many students each lists, and open the same list.
 - **Which leaderboards (D4, 7 November):** the ones of the areas the person can open: the areas
   they are assigned to and every area below them (`AreaLeaderboards::openTo()`). A leaderboard of
-  an area above, beside or elsewhere does not show, and its address says "not found". Publishing
-  changes nothing here: a published leaderboard is only also on the hall screen (below). On this
+  an area above, beside or elsewhere does not show, and its address says "not found". Being
+  on the hall screen (below) changes nothing here. On this
   page a student only gets their own row; the other students appear on the full leaderboard, as
   that leaderboard's settings allow (#89).
 - Each board opens the full leaderboard (`/leaderboards/{id}`): the top 10 and the places around
@@ -45,10 +45,11 @@ The data comes from `App\Services\OwnLeaderboards`; the page is `Components/Lead
 
 ## The hall screen (Task #56)
 
-`/hall` shows every published leaderboard on a public display, one at a time, without login. Open
+`/hall` shows the leaderboards the system admin switched on, on a public display, one at a time, without login. Open
 it in the browser on the hall computer and press F11. It reads the feed `/hall/leaderboards`.
-Publishing is the only thing that puts a leaderboard there; it does not open the leaderboard to
-other areas on the signed-in pages (D4).
+Only the system admin puts a leaderboard there, with the *On the hall screen* switch on the admin
+panel's *Hall screen* page (D7, Task #110). Being there does not open the leaderboard to other areas
+on the signed-in pages (D4).
 
 - **What it shows:** the name, the area, the top 10 with the columns the leaderboard allows, how
   many students are listed, and which board this is ("2 of 4"). Students with equal points share a
@@ -62,8 +63,7 @@ other areas on the signed-in pages (D4).
 - **Staying awake:** the page asks the browser to keep the display on (Screen Wake Lock), also
   while paused. Where the browser does not allow it, the display's own settings apply.
 
-Publishing a leaderboard asks first, and says that published leaderboards are shown on the hall
-screen and to anyone without signing in. The words of the hall screen, the time on it and *Where am
+The words of the hall screen, the time on it and *Where am
 I?* are in `resources/js/leaderboardWords.js`, which reads them from the dictionary
 (`docs/translations.md`).
 

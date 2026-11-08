@@ -15,8 +15,8 @@ use Illuminate\Validation\ValidationException;
  *
  * Managing follows the "Manage leaderboards" right at the topic, inherited from the topics
  * above like every other right. Seeing follows the person's own areas (D4, 7 November): a
- * leaderboard is for the people who can open its topic, published or not. Publishing only puts
- * a leaderboard on the hall screen.
+ * leaderboard is for the people who can open its topic, on the hall screen or not. The system
+ * admin chooses the hall screen (D7, Task #110).
  */
 class AreaLeaderboards
 {
@@ -138,7 +138,7 @@ class AreaLeaderboards
     }
 
     /**
-     * A new leaderboard is area-only until someone publishes it on purpose: a Neptun code
+     * A new leaderboard stays off the hall screen until the system admin switches it on: a Neptun code
      * is still a personal identifier.
      *
      * @param  array{name: string, show_neptun_code: bool, show_first_name: bool, show_last_name: bool}  $data

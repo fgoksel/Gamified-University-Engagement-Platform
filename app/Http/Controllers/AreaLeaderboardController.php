@@ -20,9 +20,9 @@ use Inertia\Inertia;
 use Inertia\Response;
 
 /**
- * Area leaderboards (Task #89): topic admins create, edit, publish and delete them on the
+ * Area leaderboards (Task #89): topic admins create, edit and delete them on the
  * topic's Leaderboards tab; people open the ones of the areas they can open and highlight a few
- * of them (D4 and D6, 7 November); the hall screen (#56) reads the published ones without login.
+ * of them (D4 and D6, 7 November); the hall screen (#56) reads the ones the system admin switched on, without login.
  */
 class AreaLeaderboardController extends Controller
 {
@@ -108,7 +108,7 @@ class AreaLeaderboardController extends Controller
     }
 
     /**
-     * The read-only feed of the hall screen, without login: published leaderboards only,
+     * The read-only feed of the hall screen, without login: only the leaderboards the system admin switched on,
      * with the top places and only the columns their creators chose.
      */
     public function hall(): JsonResponse

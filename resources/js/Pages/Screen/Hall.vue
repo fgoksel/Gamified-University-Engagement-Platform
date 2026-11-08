@@ -5,7 +5,7 @@ import Btn from "../../Components/Topics/Btn.vue";
 import { hallWords } from "../../leaderboardWords.js";
 import { leaderboardColumnLabels } from "../../topicsLabels.js";
 
-// The hall screen (Task #56): the published leaderboards one at a time, on a public display and
+// The hall screen (Task #56): the leaderboards the system admin chose, one at a time, on a public display and
 // without login. Each stays for its own seconds; the feed is read again after a full round, at
 // most once a minute. When the server cannot be reached the last data simply stays up and the
 // next round tries again, so nothing alarming ever shows in the hall. The display stays awake
@@ -75,7 +75,7 @@ async function next() {
     schedule();
 }
 
-// Nothing to show yet: leaderboards may be published at any moment.
+// Nothing to show yet: the system admin may switch leaderboards on at any moment.
 async function lookAgain() {
     await load();
     schedule();
