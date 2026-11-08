@@ -4,6 +4,7 @@ namespace Tests\Feature\Sprint3;
 
 use App\Models\Event;
 use App\Models\EventApplication;
+use App\Models\Leaderboard;
 use App\Models\PointTransaction;
 use App\Models\RoleAssignment;
 use App\Models\Topic;
@@ -221,6 +222,22 @@ class Sprint3DemoSeederTest extends TestCase
 
         // The other booth still works.
         $this->actingAs($lili)->postJson('/qr/redeem', ['code' => $code])->assertOk();
+    }
+
+    public function test_the_fair_organiser_can_make_a_leaderboard_for_a_booth(): void
+    {
+        $this->seedDemo();
+        $booth = $this->topic(Sprint3DemoSeeder::ROBOTICS);
+
+        $this->actingAs($this->person('greta'))
+            ->post("/topics/{$booth->id}/leaderboards", ['name' => 'Robotics ranking'])
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
+
+        $board = Leaderboard::where('name', 'Robotics ranking')->firstOrFail();
+
+        $this->actingAs($this->person('hanna'))->get("/leaderboards/{$board->id}")->assertOk();
+        $this->actingAs($this->person('julia'))->get("/leaderboards/{$board->id}")->assertNotFound();
     }
 
     public function test_every_demo_account_can_sign_in_and_open_its_pages(): void
