@@ -61,7 +61,7 @@ function toggle() {
             :stroke-width="1.75"
             aria-hidden="true"
         />
-        Highlight
+        {{ $t("leaderboards.highlight.button") }}
     </button>
     <button
         v-else
@@ -69,8 +69,8 @@ function toggle() {
         class="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-control text-fg-muted hover:bg-surface-muted hover:text-fg focus-visible:outline-2 focus-visible:outline-ring disabled:opacity-60"
         :data-highlight="board.id"
         :aria-pressed="board.highlighted"
-        :aria-label="`Highlight ${board.name}`"
-        :title="`Highlight ${board.name}`"
+        :aria-label="$t('leaderboards.highlight.named', { name: board.name })"
+        :title="$t('leaderboards.highlight.named', { name: board.name })"
         :disabled="busy"
         @click="toggle"
     >

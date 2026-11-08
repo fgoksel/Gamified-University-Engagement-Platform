@@ -4,6 +4,7 @@ import { ChevronRight, Globe } from "@lucide/vue";
 import StatusChip from "../StatusChip.vue";
 import HighlightButton from "./HighlightButton.vue";
 import { categoryLabel } from "../../categoryColors.js";
+import { tc } from "../../i18n.js";
 
 // One leaderboard in the list of "My leaderboard" (Task #54): the star to highlight it (D6), then
 // a link to the full leaderboard with the area, how many students are listed and, for a student,
@@ -18,7 +19,7 @@ defineEmits(["error"]);
 
 const categories = ["academic", "scientific", "sports", "community"];
 
-const students = (n) => (n === 1 ? "1 student listed" : `${n} students listed`);
+const students = (n) => tc("leaderboards.own.students_listed", n);
 </script>
 
 <template>
@@ -44,21 +45,23 @@ const students = (n) => (n === 1 ? "1 student listed" : `${n} students listed`);
                         class="block text-sm text-fg"
                         data-test="you"
                     >
-                        You are number
+                        {{ $t("leaderboards.own.you_are_number") }}
                         <strong>{{ board.you.rank }}</strong>
-                        of <strong>{{ board.students }}</strong
-                        >, with <strong>{{ board.you.points }}</strong>
-                        points here.
+                        {{ $t("leaderboards.own.of") }}
+                        <strong>{{ board.students }}</strong
+                        >{{ $t("leaderboards.own.with") }}
+                        <strong>{{ board.you.points }}</strong>
+                        {{ $t("leaderboards.own.points_here") }}
                     </span>
                     <span
                         v-if="board.you"
                         class="flex flex-wrap gap-x-4 text-sm text-fg-muted"
                         data-test="you-categories"
                     >
-                        <span v-for="category in categories" :key="category">
-                            {{ categoryLabel[category] }}
+                        <span v-for="area in categories" :key="area">
+                            {{ categoryLabel[area] }}
                             <span class="tabular-nums">{{
-                                board.you.categories[category]
+                                board.you.categories[area]
                             }}</span>
                         </span>
                     </span>
@@ -67,15 +70,18 @@ const students = (n) => (n === 1 ? "1 student listed" : `${n} students listed`);
                         class="block text-sm text-fg-muted"
                         data-test="not-listed"
                     >
-                        You are not on this leaderboard yet. It counts the
-                        points from events in {{ board.topic.title }}.
+                        {{
+                            $t("leaderboards.own.you_are_not_on_this", {
+                                title: board.topic.title,
+                            })
+                        }}
                     </span>
                 </template>
             </span>
             <span class="flex shrink-0 items-center gap-2">
-                <StatusChip v-if="board.is_public" tone="info" :icon="Globe"
-                    >On the hall screen</StatusChip
-                >
+                <StatusChip v-if="board.is_public" tone="info" :icon="Globe">{{
+                    $t("leaderboards.own.on_hall_screen")
+                }}</StatusChip>
                 <ChevronRight
                     class="size-5 text-fg-muted"
                     :stroke-width="1.75"

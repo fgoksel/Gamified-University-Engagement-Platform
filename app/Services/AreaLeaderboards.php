@@ -89,7 +89,7 @@ class AreaLeaderboards
 
             if (count($already) >= Leaderboard::HIGHLIGHT_LIMIT) {
                 throw ValidationException::withMessages([
-                    'highlight' => 'You can highlight up to '.Leaderboard::HIGHLIGHT_LIMIT.' leaderboards. Remove a highlight first.',
+                    'highlight' => __('leaderboards.highlight.limit', ['limit' => Leaderboard::HIGHLIGHT_LIMIT]),
                 ]);
             }
 
