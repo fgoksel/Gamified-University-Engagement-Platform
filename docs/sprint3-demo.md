@@ -2,7 +2,7 @@
 
 A click-by-click script for the fair part of the Sprint 3 demo. For a fair, each booth is a sub-area
 with its own students, and points only go to the students assigned to that area (26 October,
-recording 28:25). Every step below is also checked automatically by
+recording 28:25). Steps 1 to 6 are also checked automatically by
 `tests/Feature/Sprint3/Sprint3DemoSeederTest.php`, and each way of giving points is tried in
 `tests/Feature/Events/FairBoothsTest.php`.
 
@@ -17,6 +17,8 @@ docker compose exec app php artisan db:seed --class=Sprint3DemoSeeder
 ```
 
 - Running it again changes nothing. To start over, empty the database as in `docs/sprint2-demo.md`.
+- A database seeded before 8 November keeps the old *Fair organiser* role, without the right to make
+  leaderboards. Empty it and seed again.
 - Scanning with a phone camera needs an https address: see `docs/demo-over-https.md`.
 
 ## 2. The cast
@@ -25,7 +27,7 @@ Every demo account uses the password `password`.
 
 | Account | Name | Is | Where |
 |---|---|---|---|
-| `sprint3.greta@example.test` | Gréta Fehér | organiser | University Fair, and so both booths |
+| `sprint3.greta@example.test` | Gréta Fehér | organiser, makes leaderboards | University Fair, and so both booths |
 | `sprint3.hanna@example.test` | Hanna Lakatos (HANN01) | student | Robotics booth |
 | `sprint3.imre@example.test` | Imre Szabó (IMRE02) | student | Robotics booth |
 | `sprint3.julia@example.test` | Júlia Kocsis (JULI03) | student | Coding booth |
@@ -104,3 +106,24 @@ event." No points are written.
 
 An organiser can announce a booth event to the whole fair instead of the booth. It is then open to the
 students assigned to the fair, and those who applied before the change keep their places.
+
+### Step 7: a leaderboard, from a new board to the hall screen (Tasks #89, #110, #111, #112, #113)
+
+This run uses the Databases area of the Sprint 2 demo data, because four students already have points there.
+Ivan, Anna and Erik are in the cast of `docs/sprint2-demo.md`. It needs the hall-screen switch (#110) and the
+new *Where am I?* (#112). The leaderboards are checked automatically in `tests/Feature/Leaderboards/`.
+
+1. As **Ivan**, open *Areas → Faculty of Informatics → Databases → Leaderboards → New leaderboard*. Name it
+   "Databases ranking" and keep the defaults: the Neptun code shows and names stay hidden. There is no Publish button.
+2. As the **System Admin**, open *Admin panel → Hall screen* and switch "Databases ranking" on.
+3. Open `/hall` in a private window, signed out. The board appears within 90 seconds, with no login and no events.
+4. As **Anna**, open *Leaderboards*: Anna is number 2 of 4 with 10 points. Star the board: it moves to *Highlighted*.
+5. Open the board as Anna and as Ivan: the same list, with Bence on 30, then Anna, Csilla and Eszter on 10.
+6. As **Erik**, open *Leaderboards*: the board is not listed, and its address says "not found".
+7. As **Ivan**, open *Indexing Lab → Scan attendance* and scan Anna's QR passport: 20 points. Reload the board as Anna:
+   Anna and Bence share first place with 30.
+8. On *Leaderboards*, under *Where am I?*, Anna sees only Anna's own place. Ivan's page has no such section.
+9. As the **System Admin**, switch the board off. It leaves `/hall` after the next round.
+
+The same works on a booth. As **Gréta**, make a leaderboard on *University Fair → Robotics booth*: Hanna, Imre and Lili
+see it, and Júlia does not. Imre is first with 15 points, level with Hanna once Hanna has checked in (step 3).
