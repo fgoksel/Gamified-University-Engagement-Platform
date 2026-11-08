@@ -97,8 +97,8 @@ class Sprint3DemoSeeder extends Seeder
         $student = RoleDefinition::where('name', 'Event student')->whereNull('topic_id')->firstOrFail();
         $organiser = app(RoleService::class)->create($admin, $fair, [
             'name' => 'Fair organiser',
-            'description' => 'Runs a fair: adds a sub-area per booth, imports its students and runs the booth events.',
-            'capabilities' => ['topic.view', 'topic.create', 'access.view', 'access.assign', 'access.end', 'access.import', 'events.view', 'events.apply', 'events.create', 'events.manage', 'applications.manage', 'points.credit', 'qr_codes.manage'],
+            'description' => 'Runs a fair: adds a sub-area per booth, imports its students, runs the booth events and makes the leaderboards of the fair.',
+            'capabilities' => ['topic.view', 'topic.create', 'access.view', 'access.assign', 'access.end', 'access.import', 'events.view', 'events.apply', 'events.create', 'events.manage', 'applications.manage', 'points.credit', 'qr_codes.manage', 'leaderboards.manage'],
             // Enough to give "Event student" to the students of a booth, by hand or by import.
             'delegable' => ['topic.view', 'events.view', 'events.apply'],
         ]);
