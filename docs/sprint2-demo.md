@@ -151,6 +151,11 @@ running the seeder again; nothing else changes. A second run adds nothing.
 | A refused area | `/leaderboards?area=` with the id of Faculty of Sport | Ivan ("not found") |
 | Publishing a leaderboard, with its warning | Topics → Faculty of Informatics → Leaderboards | Ivan |
 | The default time on the hall screen | Admin panel → Hall screen | System Admin |
+| Highlighting a leaderboard (the star, up to five) | `/leaderboards`, click the star of a board | Ivan, once Faculty of Informatics has two or more boards |
+
+A person sees the leaderboards of the areas they can open (D4): Anna, assigned to Databases, sees a
+leaderboard only once one exists on Databases, and nobody sees the leaderboard of an area above or
+beside theirs. Publishing only puts a leaderboard on the hall screen.
 
 ## 4. Regression of Sprint 1
 

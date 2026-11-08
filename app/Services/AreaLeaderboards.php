@@ -8,13 +8,15 @@ use App\Models\Topic;
 use App\Models\User;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Who may see and manage area leaderboards, and every change to them (Task #89).
  *
  * Managing follows the "Manage leaderboards" right at the topic, inherited from the topics
- * above like every other right. Seeing follows the leaderboard's setting (L4, 27 October):
- * a published one is open to everybody, an area-only one to people who can open its topic.
+ * above like every other right. Seeing follows the person's own areas (D4, 7 November): a
+ * leaderboard is for the people who can open its topic, published or not. Publishing only puts
+ * a leaderboard on the hall screen.
  */
 class AreaLeaderboards
 {
@@ -27,18 +29,12 @@ class AreaLeaderboards
 
     public function canSee(User $user, Leaderboard $board): bool
     {
-        $topic = $board->topic;
-
-        if ($this->access->isHidden($topic)) {
-            return false;
-        }
-
-        return $board->isPublic() || $this->access->canView($user, $topic);
+        return $this->access->canView($user, $board->topic);
     }
 
     /**
-     * The leaderboards a person can open: every published one, and the area-only ones of
-     * the topics they can open.
+     * The leaderboards a person can open: the ones of the topics they can open, which are the
+     * topics they are assigned to and everything below them.
      *
      * @return Collection<int, Leaderboard>
      */
@@ -46,13 +42,64 @@ class AreaLeaderboards
     {
         return Leaderboard::query()
             ->inNormalBrowsing()
-            ->where(fn ($query) => $query
-                ->where('visibility', Leaderboard::PUBLIC)
-                ->orWhereIn('topic_id', $this->access->visibleTopics($user)->select('topics.id')))
+            ->whereIn('topic_id', $this->access->visibleTopics($user)->select('topics.id'))
             ->with('topic:id,title')
             ->orderBy('name')
             ->orderBy('id')
             ->get();
+    }
+
+    /**
+     * Which of the leaderboards open to a person they highlighted (D6, 7 November). A highlight
+     * of a leaderboard that has left their view, because their area changed or was archived,
+     * stays in the table but does not show and does not count.
+     *
+     * @param  Collection<int, Leaderboard>  $open  what openTo() gave for this person
+     * @return list<int>
+     */
+    public function highlightedIn(User $user, Collection $open): array
+    {
+        return $open->pluck('id')
+            ->intersect($user->highlightedLeaderboards()->pluck('leaderboards.id'))
+            ->map(fn ($id) => (int) $id)
+            ->values()
+            ->all();
+    }
+
+    public function isHighlightedBy(User $user, Leaderboard $board): bool
+    {
+        return $user->highlightedLeaderboards()->whereKey($board->id)->exists();
+    }
+
+    /**
+     * Highlight a leaderboard for a person: it is listed first. Doing it twice changes nothing.
+     * A person highlights up to Leaderboard::HIGHLIGHT_LIMIT of the leaderboards they can open.
+     */
+    public function highlight(User $user, Leaderboard $board): void
+    {
+        DB::transaction(function () use ($user, $board) {
+            // Two taps at once cannot get past the limit.
+            DB::table('users')->where('id', $user->id)->lockForUpdate()->first();
+
+            $already = $this->highlightedIn($user, $this->openTo($user));
+
+            if (in_array($board->id, $already, true)) {
+                return;
+            }
+
+            if (count($already) >= Leaderboard::HIGHLIGHT_LIMIT) {
+                throw ValidationException::withMessages([
+                    'highlight' => __('leaderboards.highlight.limit', ['limit' => Leaderboard::HIGHLIGHT_LIMIT]),
+                ]);
+            }
+
+            $user->highlightedLeaderboards()->syncWithoutDetaching([$board->id]);
+        });
+    }
+
+    public function removeHighlight(User $user, Leaderboard $board): void
+    {
+        $user->highlightedLeaderboards()->detach($board->id);
     }
 
     /**

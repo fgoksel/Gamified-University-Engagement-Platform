@@ -267,13 +267,17 @@ Route::middleware('auth')->group(function () {
         });
 
         // Area leaderboards (Task #89). Open to every signed-in account: AreaLeaderboards decides
-        // per leaderboard and per topic, like the Topics routes above.
+        // per leaderboard and per topic, like the Topics routes above. A leaderboard is for the
+        // people who can open its topic (D4, 7 November).
         Route::prefix('leaderboards')->name('leaderboards.')->group(function () {
             Route::get('/', [AreaLeaderboardController::class, 'index'])->name('index');
             Route::get('/{leaderboard}', [AreaLeaderboardController::class, 'show'])->whereNumber('leaderboard')->name('show');
             Route::put('/{leaderboard}', [AreaLeaderboardController::class, 'update'])->whereNumber('leaderboard')->name('update');
             Route::post('/{leaderboard}/publish', [AreaLeaderboardController::class, 'publish'])->whereNumber('leaderboard')->name('publish');
             Route::post('/{leaderboard}/unpublish', [AreaLeaderboardController::class, 'unpublish'])->whereNumber('leaderboard')->name('unpublish');
+            // D6: a person's own star on a leaderboard they can see.
+            Route::post('/{leaderboard}/highlight', [AreaLeaderboardController::class, 'highlight'])->whereNumber('leaderboard')->name('highlight');
+            Route::delete('/{leaderboard}/highlight', [AreaLeaderboardController::class, 'removeHighlight'])->whereNumber('leaderboard')->name('unhighlight');
             Route::delete('/{leaderboard}', [AreaLeaderboardController::class, 'destroy'])->whereNumber('leaderboard')->name('destroy');
         });
 

@@ -4,13 +4,14 @@ import { t } from "../../i18n.js";
 import WhereAmI from "../../Components/Leaderboards/WhereAmI.vue";
 
 // My leaderboard (Task #54): the person's own points and rank, and the leaderboards open to
-// them: every published one, and the area-only ones of the areas they can open (L4, 27 October).
+// them: the ones of the areas they can open (D4, 7 November). The highlighted ones come first (D6).
 defineOptions({ layout: { title: t("leaderboards.index.title") } });
 
 defineProps({
     isStudent: { type: Boolean, default: false },
     points: { type: Object, default: null },
     leaderboards: { type: Array, required: true },
+    highlightLimit: { type: Number, default: 5 },
     rankings: { type: Object, required: true },
 });
 </script>
@@ -21,6 +22,7 @@ defineProps({
             :is-student="isStudent"
             :points="points"
             :leaderboards="leaderboards"
+            :highlight-limit="highlightLimit"
         />
         <WhereAmI :is-student="isStudent" :rankings="rankings" />
     </div>

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 /**
  * A leaderboard of an area (Task #89). It covers the events owned in its topic and every
@@ -13,10 +14,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class Leaderboard extends Model
 {
-    /** Only people who can open the topic see it. */
+    /** Not on the hall screen. Like every leaderboard, only people who can open the topic see it (D4). */
     public const AREA = 'area';
 
-    /** Published: seen without login and on the hall screen. */
+    /** Published: also on the hall screen, which needs no login. */
     public const PUBLIC = 'public';
 
     /** How long a leaderboard stays on the hall screen, in seconds, until a super admin chooses (Task #56). */
@@ -25,6 +26,9 @@ class Leaderboard extends Model
     public const HALL_SECONDS_MIN = 5;
 
     public const HALL_SECONDS_MAX = 120;
+
+    /** How many leaderboards one person can highlight, so that they are shown first (D6, 7 November). */
+    public const HIGHLIGHT_LIMIT = 5;
 
     protected $fillable = [
         'topic_id',
@@ -64,6 +68,14 @@ class Leaderboard extends Model
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by_id');
+    }
+
+    /**
+     * The people who highlighted this leaderboard.
+     */
+    public function highlightedBy(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'leaderboard_user')->withTimestamps();
     }
 
     public function isPublic(): bool

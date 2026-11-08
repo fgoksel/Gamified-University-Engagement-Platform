@@ -318,7 +318,7 @@ class AreaLeaderboardTest extends EventTestCase
             ->assertInertia(fn (Assert $page) => $page->where('leaderboards', []));
     }
 
-    public function test_an_area_only_leaderboard_is_for_people_who_can_open_its_topic(): void
+    public function test_a_leaderboard_is_for_people_who_can_open_its_topic(): void
     {
         $board = $this->board($this->faculty, ['name' => 'Faculty total']);
 
@@ -335,8 +335,7 @@ class AreaLeaderboardTest extends EventTestCase
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('Leaderboards/Show')
-                ->where('leaderboard.name', 'Faculty total')
-                ->where('leaderboard.can_open_topic', true));
+                ->where('leaderboard.name', 'Faculty total'));
 
         // Not allowed looks exactly like not existing.
         $this->actingAs($belowArea)->get("/leaderboards/{$board->id}")->assertNotFound();
@@ -350,25 +349,44 @@ class AreaLeaderboardTest extends EventTestCase
             ->assertInertia(fn (Assert $page) => $page->where('leaderboards', []));
     }
 
-    public function test_a_published_leaderboard_can_be_seen_outside_its_area(): void
+    public function test_a_published_leaderboard_stays_closed_to_other_areas(): void
     {
+        // D4, 7 November: people see the leaderboards of the areas they are assigned to. Publishing
+        // only puts a leaderboard on the hall screen; it opens nothing for anyone else.
         $board = $this->board($this->faculty, ['name' => 'Faculty total', 'visibility' => Leaderboard::PUBLIC]);
+
+        $member = $this->student('Faculty Member', 'MEMB01');
+        $this->assign($member, $this->studentRole(), $this->faculty);
 
         $outsider = $this->student('Sport Student', 'SPOR03');
         $this->assign($outsider, $this->studentRole(), $this->sport);
 
-        $this->actingAs($outsider)->get("/leaderboards/{$board->id}")
-            ->assertOk()
-            ->assertInertia(fn (Assert $page) => $page
-                ->where('leaderboard.name', 'Faculty total')
-                ->where('leaderboard.can_open_topic', false));
-
+        $this->actingAs($outsider)->get("/leaderboards/{$board->id}")->assertNotFound();
         $this->actingAs($outsider)->get('/leaderboards')
-            ->assertInertia(fn (Assert $page) => $page->where('leaderboards.0.name', 'Faculty total'));
+            ->assertInertia(fn (Assert $page) => $page->where('leaderboards', []));
 
-        // A login is still needed for this page; the hall feed is the part without one.
+        // The people of the area still see it, published or not.
+        $this->actingAs($member)->get("/leaderboards/{$board->id}")
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->where('leaderboard.is_public', true));
+
+        // The hall feed is the part without a login, and it still carries the published board.
         auth()->logout();
         $this->get("/leaderboards/{$board->id}")->assertRedirect('/login');
+        $this->getJson('/hall/leaderboards')->assertOk()->assertJsonPath('leaderboards.0.name', 'Faculty total');
+    }
+
+    public function test_the_system_admin_opens_every_leaderboard(): void
+    {
+        $faculty = $this->board($this->faculty, ['name' => 'Faculty total']);
+        $sport = $this->board($this->sport, ['name' => 'Sport total']);
+
+        $this->actingAs($this->admin)->get("/leaderboards/{$sport->id}")->assertOk();
+        $this->actingAs($this->admin)->get('/leaderboards')
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('leaderboards', 2)
+                ->where('leaderboards.0.name', $faculty->name)
+                ->where('leaderboards.1.name', $sport->name));
     }
 
     public function test_a_student_sees_the_top_ten_about_ten_places_around_them_and_the_total(): void
