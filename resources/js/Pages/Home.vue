@@ -11,22 +11,24 @@ import {
     Users,
 } from "@lucide/vue";
 import AlertMessage from "../Components/AlertMessage.vue";
+import BoardBoxes from "../Components/Leaderboards/BoardBoxes.vue";
 import EmptyState from "../Components/EmptyState.vue";
 import StatusChip from "../Components/StatusChip.vue";
 import { categoryDot, categoryLabel } from "../categoryColors.js";
 import { places } from "../eventWords.js";
 import { t, tc } from "../i18n.js";
 
-// The student's home page (Task #92, 26 Oct, section 4): points this semester in the
-// four categories, the next event with a countdown, events open for applications and
-// recent points. Each part links to the page that has all of it.
+// The student's home page (Task #92, 26 Oct, section 4): their leaderboards as boxes, starred
+// first (leaderboards redesign, 9 November), the next event with a countdown, events open for
+// applications and recent points. Each part links to the page that has all of it.
 defineOptions({ layout: { title: t("home.title") } });
 
 const props = defineProps({
     name: { type: String, default: "" },
-    semester: { type: String, default: null },
-    // { total, academic, scientific, sports, community }
-    points: { type: Object, required: true },
+    isStudent: { type: Boolean, default: true },
+    // The boxes of the student's leaderboards, the highlighted ones first
+    leaderboards: { type: Array, default: () => [] },
+    highlightLimit: { type: Number, default: 5 },
     // The soonest event with a place: { id, title, starts, running, starts_in, ends_in, ... }
     next: { type: Object, default: null },
     open: { type: Array, default: () => [] },
@@ -34,16 +36,6 @@ const props = defineProps({
 });
 
 const page = usePage();
-
-const categories = ["academic", "scientific", "sports", "community"];
-
-// Category tiles: the soft tone behind, the strong tone for the number (AA in both themes)
-const tileClass = {
-    academic: "bg-cat-academic-soft text-cat-academic-fg",
-    scientific: "bg-cat-scientific-soft text-cat-scientific-fg",
-    sports: "bg-cat-sports-soft text-cat-sports-fg",
-    community: "bg-cat-community-soft text-cat-community-fg",
-};
 
 const firstName = computed(() => props.name.split(" ")[0] ?? "");
 
@@ -143,55 +135,22 @@ const linkClass =
             </h2>
         </header>
 
-        <!-- Points this semester -->
+        <!-- The student's leaderboards, starred first (leaderboards redesign, 9 November) -->
         <section
-            aria-labelledby="home-points"
-            class="rounded-card border border-line bg-surface p-5 shadow-card sm:p-6"
-            data-test="points"
+            aria-labelledby="home-rankings"
+            class="space-y-3"
+            data-test="rankings"
         >
-            <div class="flex flex-wrap items-baseline justify-between gap-2">
-                <h3 id="home-points" class="text-base font-semibold text-fg">
-                    {{ $t("home.points_this_semester") }}
-                </h3>
-                <span v-if="semester" class="text-sm text-fg-muted">
-                    {{ semester }}
-                </span>
-            </div>
-
-            <p class="mt-3 flex items-baseline gap-2">
-                <span
-                    class="text-4xl font-semibold text-fg tabular-nums"
-                    data-test="total"
-                >
-                    {{ points.total }}
-                </span>
-                <span class="text-fg-muted">{{
-                    $t("home.points_in_total")
-                }}</span>
-            </p>
-
-            <ul class="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
-                <li
-                    v-for="area in categories"
-                    :key="area"
-                    class="rounded-control p-3"
-                    :class="tileClass[area]"
-                    :data-test="`points-${area}`"
-                >
-                    <span class="block text-sm font-medium">
-                        {{ categoryLabel[area] }}
-                    </span>
-                    <span class="block text-2xl font-semibold tabular-nums">
-                        {{ points[area] }}
-                    </span>
-                </li>
-            </ul>
-
-            <p v-if="!semester" class="mt-3 text-sm text-fg-muted">
-                {{ $t("home.no_semester_is_running_right") }}
-            </p>
-
-            <Link href="/leaderboards" :class="[linkClass, 'mt-2']">
+            <h3 id="home-rankings" class="text-base font-semibold text-fg">
+                {{ $t("leaderboards.page.your_rankings") }}
+            </h3>
+            <BoardBoxes
+                :leaderboards="leaderboards"
+                :is-student="isStudent"
+                mode="link"
+                :hint="tc('leaderboards.own.highlight_hint', highlightLimit)"
+            />
+            <Link href="/leaderboards" :class="linkClass">
                 {{ $t("home.see_the_leaderboards") }}
                 <ArrowRight class="size-4" aria-hidden="true" />
             </Link>

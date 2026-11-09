@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref, watch } from "vue";
 import { router } from "@inertiajs/vue3";
+import { leaderboardQuery } from "../../leaderboardQuery.js";
 import { categoryLabel } from "../../categoryColors.js";
 import { whereAmIWords as words } from "../../leaderboardWords.js";
 
@@ -38,13 +39,14 @@ const result = computed(() => props.rankings.result);
 const you = computed(() => result.value?.you ?? null);
 
 function go() {
+    // The rest of the address stays, so the selected board does not change.
     router.get(
         "/leaderboards",
-        {
-            area: area.value || undefined,
-            category: category.value || undefined,
-            tag: tag.value || undefined,
-        },
+        leaderboardQuery({
+            area: area.value,
+            category: category.value,
+            tag: tag.value,
+        }),
         { preserveState: true, preserveScroll: true, only: ["rankings"] },
     );
 }

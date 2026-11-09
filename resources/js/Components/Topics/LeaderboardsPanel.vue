@@ -82,7 +82,7 @@ function destroy() {
                 <div class="min-w-0 space-y-1">
                     <div class="flex flex-wrap items-center gap-2">
                         <Link
-                            :href="`/leaderboards/${board.id}`"
+                            :href="`/leaderboards?board=${board.id}`"
                             class="inline-flex min-h-11 items-center text-sm font-medium text-link hover:underline focus-visible:outline-2 focus-visible:outline-ring"
                             >{{ board.name }}</Link
                         >

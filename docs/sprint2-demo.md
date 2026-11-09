@@ -151,11 +151,12 @@ running the seeder again; nothing else changes. A second run adds nothing.
 | Making a leaderboard | Topics → Faculty of Informatics → Leaderboards | Ivan |
 | Choosing the leaderboards on the hall screen | Admin panel → Hall screen, *On the hall screen* | System Admin |
 | The default time on the hall screen | Admin panel → Hall screen | System Admin |
-| Highlighting a leaderboard (the star, up to five) | `/leaderboards`, click the star of a board | Ivan, once Faculty of Informatics has two or more boards |
+| Highlighting a leaderboard (the star, up to five) | *Leaderboards → All leaderboards*, click the star of a box | Ivan, once Faculty of Informatics has two or more boards |
 
-A person sees the leaderboards of the areas they can open (D4): Anna, assigned to Databases, sees a
-leaderboard only once one exists on Databases, and nobody sees the leaderboard of an area above or
-beside theirs. Being on the hall screen does not change that.
+Staff see the leaderboards of the areas they can open (D4). A student also sees the boards of the
+areas above their own (redesign, 9 November): Anna, assigned to Databases, sees the boards of
+Databases, Faculty of Informatics and *University total*, and never one of Sport. Being on the hall
+screen does not change that.
 
 ## 4. Regression of Sprint 1
 

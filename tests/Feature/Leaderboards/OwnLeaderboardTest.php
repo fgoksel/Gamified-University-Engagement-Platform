@@ -18,9 +18,10 @@ use Inertia\Testing\AssertableInertia as Assert;
 use Tests\Feature\Events\EventTestCase;
 
 /**
- * Task #54: signed-in people see their own leaderboard. A student sees their points in total and
- * per category, and their rank on each leaderboard they may see; a teacher sees the leaderboards
- * they may see. Totals come from the ledger, and nobody sees a leaderboard they may not see.
+ * Task #54 and the leaderboards redesign (9 November): a box per leaderboard a person may see. A
+ * student's box holds their place, the number listed, their points and the points to the next
+ * place; a teacher's box says who leads. The selected board's ranking is on the same page, and
+ * nobody sees a leaderboard they may not see.
  */
 class OwnLeaderboardTest extends EventTestCase
 {
@@ -71,24 +72,19 @@ class OwnLeaderboardTest extends EventTestCase
         return $student;
     }
 
-    public function test_a_student_sees_their_points_in_total_and_per_category_as_the_ledger_adds_them_up(): void
+    public function test_the_your_points_box_is_gone_so_the_rankings_lead(): void
     {
         $anna = $this->student('Anna Nagy', 'ANNA01');
         $this->credit($anna, $this->course, 10, 'academic');
-        $this->credit($anna, $this->course, 4, 'academic');
-        $this->credit($anna, $this->sport, 7, 'sports');
-        $this->credit($anna, $this->faculty, 3, 'community');
 
         $this->actingAs($anna)->get('/leaderboards')
             ->assertInertia(fn (Assert $page) => $page
                 ->component('Leaderboards/Index')
                 ->where('isStudent', true)
-                ->where('points', ['total' => 24, 'academic' => 14, 'scientific' => 0, 'sports' => 7, 'community' => 3]));
-
-        $this->assertSame(24, (int) DB::table('point_transactions')->where('student_id', $anna->id)->sum('points'));
+                ->missing('points'));
     }
 
-    public function test_a_student_sees_their_rank_and_their_points_per_category_on_each_leaderboard(): void
+    public function test_a_student_sees_their_place_their_points_and_the_gap_to_the_next_place_on_each_leaderboard(): void
     {
         $anna = $this->member($this->student('Anna Nagy', 'ANNA01'), $this->faculty);
         $bence = $this->student('Bence Toth', 'BENC02');
@@ -107,14 +103,15 @@ class OwnLeaderboardTest extends EventTestCase
                 ->has('leaderboards', 2)
                 ->where('leaderboards.0.name', 'Databases total')
                 ->where('leaderboards.0.students', 2)
-                ->where('leaderboards.0.you', ['rank' => 2, 'points' => 10, 'categories' => ['academic' => 10, 'scientific' => 0, 'sports' => 0, 'community' => 0]])
+                ->where('leaderboards.0.you', ['rank' => 2, 'points' => 10, 'to_next' => 30, 'next_rank' => 1])
+                ->where('leaderboards.0.leader', null)
                 ->where('leaderboards.1.name', 'Faculty total')
                 ->where('leaderboards.1.students', 2)
-                ->where('leaderboards.1.you', ['rank' => 2, 'points' => 15, 'categories' => ['academic' => 10, 'scientific' => 0, 'sports' => 5, 'community' => 0]]));
+                ->where('leaderboards.1.you', ['rank' => 2, 'points' => 15, 'to_next' => 25, 'next_rank' => 1]));
 
         // The numbers are the ones the leaderboard itself ranks by.
-        $this->assertSame(2, $this->actingAs($anna)->get("/leaderboards/{$faculty->id}")->viewData('page')['props']['standings']['you']['rank']);
-        $this->assertSame(2, $this->actingAs($anna)->get("/leaderboards/{$course->id}")->viewData('page')['props']['standings']['you']['rank']);
+        $this->assertSame(2, $this->actingAs($anna)->get("/leaderboards?board={$faculty->id}")->viewData('page')['props']['selected']['standings']['you']['rank']);
+        $this->assertSame(2, $this->actingAs($anna)->get("/leaderboards?board={$course->id}")->viewData('page')['props']['selected']['standings']['you']['rank']);
     }
 
     public function test_equal_points_share_a_rank(): void
@@ -149,24 +146,55 @@ class OwnLeaderboardTest extends EventTestCase
         $this->actingAs($anna)->get('/leaderboards')
             ->assertInertia(fn (Assert $page) => $page
                 ->where('leaderboards.0.students', 1)
-                ->where('leaderboards.0.you', null)
-                ->where('points.total', 8));
+                ->where('leaderboards.0.you', null));
     }
 
-    public function test_a_student_sees_only_the_leaderboards_they_may_see(): void
+    public function test_a_student_sees_the_leaderboards_of_their_areas_and_of_every_area_above_them(): void
     {
         $anna = $this->member($this->student(), $this->course);
         $this->credit($anna, $this->course, 10);
 
         $this->board($this->course, 'Course board');                                              // their own topic
-        $this->board($this->faculty, 'Faculty board');                                            // above them: not theirs
-        $this->board($this->sport, 'Sport board');                                                // another branch
-        $this->board($this->sport, 'Sport published', ['visibility' => Leaderboard::PUBLIC]);     // published, but still another branch (D4)
+        $this->board($this->faculty, 'Faculty board');                                            // above them (redesign, 9 November)
+        $this->board($this->university, 'University total');                                      // the top of the tree
+        $sport = $this->board($this->sport, 'Sport board');                                       // a sibling branch: hidden
+        $this->board($this->sport, 'Sport published', ['visibility' => Leaderboard::PUBLIC]);     // published, but still a sibling branch (D4)
 
-        $this->actingAs($anna)->get('/leaderboards')
+        $this->actingAs($anna)->get('/leaderboards?show=all')
             ->assertInertia(fn (Assert $page) => $page
-                ->has('leaderboards', 1)
-                ->where('leaderboards.0.name', 'Course board'));
+                ->where('show', 'all')
+                ->has('leaderboards', 3)
+                ->where('leaderboards.0.name', 'Course board')
+                ->where('leaderboards.1.name', 'Faculty board')
+                ->where('leaderboards.2.name', 'University total'));
+
+        // A board of a sibling area looks exactly like one that does not exist.
+        $this->actingAs($anna)->get("/leaderboards?board={$sport->id}")->assertNotFound();
+        $this->actingAs($anna)->get("/leaderboards/{$sport->id}")->assertNotFound();
+    }
+
+    public function test_staff_keep_the_areas_they_can_open_and_everything_below(): void
+    {
+        $teacher = $this->makeUser(UserRole::Teacher);
+        $this->assign($teacher, $this->viewer(), $this->course);
+
+        $this->board($this->course, 'Course board');
+        $faculty = $this->board($this->faculty, 'Faculty board');
+
+        $this->actingAs($teacher)->get('/leaderboards?show=all')
+            ->assertInertia(fn (Assert $page) => $page->has('leaderboards', 1)->where('leaderboards.0.name', 'Course board'));
+        $this->actingAs($teacher)->get("/leaderboards?board={$faculty->id}")->assertNotFound();
+    }
+
+    public function test_a_board_above_an_archived_area_of_the_student_is_not_shown(): void
+    {
+        $anna = $this->member($this->student(), $this->course);
+        $this->board($this->university, 'University total');
+        app(TopicService::class)->archive($this->admin, $this->faculty->fresh());
+
+        // Archiving the faculty hides Anna's course too, so nothing above it is hers any more.
+        $this->actingAs($anna)->get('/leaderboards?show=all')
+            ->assertInertia(fn (Assert $page) => $page->has('leaderboards', 0)->where('selected', null));
     }
 
     public function test_a_leaderboard_of_an_archived_topic_is_not_shown(): void
@@ -177,7 +205,7 @@ class OwnLeaderboardTest extends EventTestCase
         app(TopicService::class)->archive($this->admin, $this->sport->fresh());
 
         $this->actingAs($anna)->get('/leaderboards')
-            ->assertInertia(fn (Assert $page) => $page->has('leaderboards', 0)->where('points.total', 10));
+            ->assertInertia(fn (Assert $page) => $page->has('leaderboards', 0));
     }
 
     public function test_a_reversal_lowers_the_totals_and_the_rank(): void
@@ -189,26 +217,35 @@ class OwnLeaderboardTest extends EventTestCase
         $this->board($this->faculty, 'Faculty total');
 
         $this->actingAs($anna)->get('/leaderboards')
-            ->assertInertia(fn (Assert $page) => $page->where('leaderboards.0.you.rank', 1)->where('points.total', 50));
+            ->assertInertia(fn (Assert $page) => $page->where('leaderboards.0.you.rank', 1));
 
         app(PointLedger::class)->reverse($first, $this->admin, 'Wrong event');
 
         $this->actingAs($anna)->get('/leaderboards')
-            ->assertInertia(fn (Assert $page) => $page->where('leaderboards.0.you', null)->where('points.total', 0));
+            ->assertInertia(fn (Assert $page) => $page->where('leaderboards.0.you', null));
     }
 
-    public function test_a_page_does_not_show_other_students_to_a_student(): void
+    public function test_a_student_sees_other_students_only_in_the_columns_of_the_board(): void
     {
         $anna = $this->member($this->student('Anna Nagy', 'ANNA01'), $this->faculty);
         $bence = $this->student('Bence Toth', 'BENC02');
         $this->credit($anna, $this->course, 10);
         $this->credit($bence, $this->course, 20);
-        $this->board($this->faculty, 'Faculty total');
+        $this->board($this->faculty, 'Faculty total');   // Neptun codes only (L6)
 
-        $page = json_encode($this->actingAs($anna)->get('/leaderboards')->viewData('page')['props']);
+        $props = $this->actingAs($anna)->get('/leaderboards')->viewData('page')['props'];
 
-        $this->assertStringNotContainsString('BENC02', $page);
-        $this->assertStringNotContainsString('Bence', $page);
+        // The boxes hold only Anna's own numbers; nobody else's.
+        $boxes = json_encode($props['leaderboards']);
+        $this->assertStringNotContainsString('BENC02', $boxes);
+        $this->assertStringNotContainsString((string) $bence->id, json_encode(array_column($props['leaderboards'], 'leader')));
+
+        // The ranking below shows Bence's Neptun code, the one column of the board, and nothing more.
+        $ranking = json_encode($props['selected']);
+        $this->assertStringContainsString('BENC02', $ranking);
+        $this->assertStringNotContainsString('Bence', $ranking);
+        $this->assertStringNotContainsString('Toth', $ranking);
+        $this->assertStringNotContainsString('student_id', $ranking);
     }
 
     public function test_a_teacher_sees_the_leaderboards_they_may_see_and_no_points(): void
@@ -224,14 +261,15 @@ class OwnLeaderboardTest extends EventTestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->component('Leaderboard/Index')
                 ->where('isStudent', false)
-                ->where('points', null)
+                ->missing('points')
                 ->has('leaderboards', 1)
                 ->where('leaderboards.0.name', 'Faculty total')
                 ->where('leaderboards.0.students', 1)
-                ->where('leaderboards.0.you', null));
+                ->where('leaderboards.0.you', null)
+                ->where('leaderboards.0.leader', ['position' => 1, 'rank' => 1, 'points' => 10, 'neptun_code' => $anna->neptun_code]));
 
         $this->actingAs($teacher)->get('/leaderboards')
-            ->assertInertia(fn (Assert $page) => $page->component('Leaderboards/Index')->where('points', null)->has('leaderboards', 1));
+            ->assertInertia(fn (Assert $page) => $page->component('Leaderboards/Index')->missing('points')->has('leaderboards', 1));
     }
 
     public function test_a_teacher_without_any_leaderboard_gets_an_empty_list(): void
@@ -257,7 +295,7 @@ class OwnLeaderboardTest extends EventTestCase
         $this->board($this->course, 'A board');
 
         $listFor = fn (User $user) => $this->actingAs($user)->get('/leaderboards')->viewData('page')['props']['leaderboards'];
-        $withoutRank = fn (array $rows) => array_map(fn (array $row) => Arr::except($row, ['you']), $rows);
+        $withoutRank = fn (array $rows) => array_map(fn (array $row) => Arr::except($row, ['you', 'leader']), $rows);
 
         $studentsList = $listFor($anna);
         $teachersList = $listFor($teacher);
@@ -265,11 +303,13 @@ class OwnLeaderboardTest extends EventTestCase
         $this->assertSame(['A board', 'B board'], array_column($teachersList, 'name'));
         $this->assertSame($withoutRank($studentsList), $withoutRank($teachersList));
         $this->assertNull($teachersList[0]['you']);
+        $this->assertNull($studentsList[0]['leader']);
+        $this->assertSame(30, $teachersList[0]['leader']['points']);
         $this->assertSame(2, $studentsList[0]['you']['rank']);
 
         // The leaderboard itself: the same top places and the same total. Only the row of the person
         // looking is marked as theirs.
-        $viewFor = fn (User $user) => $this->actingAs($user)->get("/leaderboards/{$second->id}")->viewData('page')['props']['standings'];
+        $viewFor = fn (User $user) => $this->actingAs($user)->get("/leaderboards?board={$second->id}")->viewData('page')['props']['selected']['standings'];
         $placesFor = fn (User $user) => array_map(fn (array $row) => Arr::except($row, ['is_you']), $viewFor($user)['top']);
 
         $this->assertSame($placesFor($anna), $placesFor($teacher));
@@ -283,12 +323,12 @@ class OwnLeaderboardTest extends EventTestCase
     {
         // A page only gets the props it declares, under the very same names, and no other test would
         // notice a mismatch: with "is_student" sent and "isStudent" declared, a student was shown the
-        // teachers' page. The pages and the shared component all take the same four props.
+        // teachers' page. The three pages that show the boxes all take the same three props.
         $sent = array_keys(app(OwnLeaderboards::class)->for($this->student()));
 
-        $this->assertSame(['isStudent', 'points', 'leaderboards', 'highlightLimit'], $sent);
+        $this->assertSame(['isStudent', 'leaderboards', 'highlightLimit'], $sent);
 
-        foreach (['Pages/Leaderboards/Index', 'Pages/Leaderboard/Index', 'Components/Leaderboards/OwnLeaderboards'] as $file) {
+        foreach (['Pages/Leaderboards/Index', 'Pages/Leaderboard/Index', 'Pages/Home'] as $file) {
             $source = file_get_contents(resource_path("js/{$file}.vue"));
 
             foreach ($sent as $prop) {
@@ -315,7 +355,7 @@ class OwnLeaderboardTest extends EventTestCase
         $this->board($this->faculty, 'Faculty total');
 
         $this->actingAs($anna)->get('/leaderboards')
-            ->assertInertia(fn (Assert $page) => $page->where('leaderboards.0.you.rank', 2)->where('points.total', 10));
+            ->assertInertia(fn (Assert $page) => $page->where('leaderboards.0.you.rank', 2)->where('leaderboards.0.you.points', 10));
 
         // Same numbers from the cache while nothing is credited ...
         DB::table('point_transactions')->insert([
@@ -323,11 +363,11 @@ class OwnLeaderboardTest extends EventTestCase
             'points' => 100, 'type' => PointTransaction::CREDIT, 'source' => 'import', 'category' => 'academic', 'created_at' => now(),
         ]);
         $this->actingAs($anna)->get('/leaderboards')
-            ->assertInertia(fn (Assert $page) => $page->where('leaderboards.0.you.rank', 2)->where('points.total', 10));
+            ->assertInertia(fn (Assert $page) => $page->where('leaderboards.0.you.rank', 2)->where('leaderboards.0.you.points', 10));
 
         // ... and a credit through the ledger shows on the next visit, with the quiet row as well.
         $this->credit($anna, $this->course, 5);
         $this->actingAs($anna)->get('/leaderboards')
-            ->assertInertia(fn (Assert $page) => $page->where('leaderboards.0.you.rank', 1)->where('points.total', 115));
+            ->assertInertia(fn (Assert $page) => $page->where('leaderboards.0.you.rank', 1)->where('leaderboards.0.you.points', 115));
     }
 }

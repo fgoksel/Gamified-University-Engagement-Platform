@@ -53,7 +53,7 @@ class HallScreen extends Page implements HasTable
                 TextColumn::make('name')
                     ->label(__('admin.hall_screen.leaderboard'))
                     // The name opens the leaderboard itself, and the admin panel stays open.
-                    ->url(fn (Leaderboard $record): string => route('leaderboards.show', $record, false), shouldOpenInNewTab: true)
+                    ->url(fn (Leaderboard $record): string => route('leaderboards.index', ['board' => $record->id], false), shouldOpenInNewTab: true)
                     ->searchable(),
 
                 TextColumn::make('topic.title')

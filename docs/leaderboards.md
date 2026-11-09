@@ -1,35 +1,40 @@
-# Leaderboards: my leaderboard, the hall screen and the point calculation (Tasks #54, #55 and #56)
+# Leaderboards: the Leaderboards page, the hall screen and the point calculation (Tasks #54, #55 and #56)
 
-## My leaderboard (Task #54)
+## The Leaderboards page (Task #54, redesigned on 9 November)
 
-Everyone who is signed in sees their own leaderboard, in the menu under **Leaderboards**
-(`/leaderboards`). Teachers also start there (`/`); students start on their home page.
+Everyone who is signed in finds **Leaderboards** in the menu, as a group with two links:
+**Highlighted** (`/leaderboards`) and **All leaderboards** (`/leaderboards?show=all`). It is one
+place to see rankings: a box per leaderboard at the top, and the selected board's ranking right
+below, for students and staff alike. The separate board page is gone; old links such as
+`/leaderboards/4` open `/leaderboards?board=4`, so nothing breaks.
 
-The page is the same for everyone (D3, 7 November): the same leaderboards, and on each one the same
-list. There is no lighter version for students and no separate one for teachers. A person's own
-numbers are added where they exist:
-
-- **A student** also sees *Your points*: the total and the four categories, added up from the whole
-  ledger with no period (L3). On every leaderboard open to them they see their rank ("You are
-  number 2 of 4") and their points there per category, next to how many students are listed. A
-  student with no points in the area of a board is told they are not on it yet.
-- **A teacher** earns no points, so there is no rank to show. They see the same leaderboards and
-  how many students each lists, and open the same list.
-- **Which leaderboards (D4, 7 November):** the ones of the areas the person can open: the areas
-  they are assigned to and every area below them (`AreaLeaderboards::openTo()`). A leaderboard of
-  an area above, beside or elsewhere does not show, and its address says "not found". Being
-  on the hall screen (below) changes nothing here. On this
-  page a student only gets their own row; the other students appear on the full leaderboard, as
-  that leaderboard's settings allow (#89).
-- Each board opens the full leaderboard (`/leaderboards/{id}`): the top 10 and the places around
-  the student (L5).
+- **A student's box** holds their own place in large type ("#2"), "of 4 · 10 pts" and the points
+  to the next place ("20 pts to #1"), or "You are first". Without points in that area it says "You
+  are not on it yet". The *Your points* box with the four categories is gone, here and on Home.
+- **A staff box** describes the board, because staff are not on it: who leads ("1st: BENC07,
+  30 pts", with only the board's columns), how many students are listed, and *On the hall screen*.
+- **The ranking below** has a podium for the top 3 (second, first, third from left to right), then
+  the list: the top 10 and the places around the student (L5), with "Show all" for every place
+  (`?places=all`). Equal points share a place (1, 2, 2, 4). Only the board's columns are shown
+  (L6), and the student's own row says "you".
+- **Switching:** clicking another box reloads only the ranking (an Inertia partial reload of
+  `selected`), keeps the choice in the address (`?board=`) and moves the focus to the ranking's
+  heading. The first box is selected on opening, which is the first highlighted one.
+- **Which leaderboards:** staff see the ones of the areas they can open, which are the areas they
+  are assigned to and every area below them (D4). A student also sees the boards of every area
+  above their own, such as their faculty and *University total* (`AreaLeaderboards::openTo()` and
+  `canSee()`); boards of sibling areas stay hidden and their address says "not found". An
+  archived area opens nothing above it. Being on the hall screen changes nothing here.
+- **Home:** a student's Home shows the same boxes, starred first, then the rest; a teacher starts
+  on the same boxes (`/`). A box there opens the Leaderboards page with that board selected.
+- *Where am I?* stays below the ranking, for students only.
 
 ### Highlighted leaderboards (D6, 7 November)
 
-A star in front of each leaderboard, and a *Highlight* button on its page, highlights it for the
-person who clicks. The highlighted ones are listed first, under *Highlighted*; the rest follow under
-*Other leaderboards*. Each group stays in name order, and without a highlight there is one plain
-list.
+A star on each box, and a *Highlight* button on the ranking, highlights a leaderboard for the
+person who clicks. *Highlighted* lists the starred boards; while none is starred it lists every
+board with the hint "Star up to 5 leaderboards to keep them here.", never an empty page. *All
+leaderboards* lists every board, the starred ones first, each group in name order.
 
 - **Limit:** five leaderboards for each person (`Leaderboard::HIGHLIGHT_LIMIT`). At the limit the
   server says "You can highlight up to 5 leaderboards. Remove a highlight first." and changes
@@ -41,7 +46,9 @@ list.
   `/leaderboards/{id}/highlight` add and remove the star; a leaderboard the person cannot open is
   "not found". Highlighting twice, or removing a star that is not there, changes nothing.
 
-The data comes from `App\Services\OwnLeaderboards`; the page is `Components/Leaderboards/OwnLeaderboards.vue`.
+The boxes come from `App\Services\OwnLeaderboards`, the ranking from `LeaderboardStandings::view()`.
+The page is `Pages/Leaderboards/Index.vue`, with `Components/Leaderboards/BoardBoxes.vue`,
+`BoardCard.vue` and `BoardRanking.vue`.
 
 ## The hall screen (Task #56)
 

@@ -11,9 +11,10 @@ use Inertia\Response;
 use Symfony\Component\HttpFoundation\Response as HttpResponse;
 
 /**
- * The start page "/". Students get their home page (Task #92): points this semester, the next
- * event, events open for applications and recent points. Everyone else gets their own
- * leaderboard (Task #54, UC-1.2): the leaderboards they may see.
+ * The start page "/". Students get their home page (Task #92): their leaderboards, highlighted
+ * first (leaderboards redesign, 9 November), the next event, events open for applications and
+ * recent points. Everyone else gets their own leaderboard (Task #54, UC-1.2): the leaderboards
+ * they may see. A box opens the Leaderboards page with that leaderboard selected.
  */
 class LeaderboardController extends Controller
 {
@@ -30,6 +31,7 @@ class LeaderboardController extends Controller
             return Inertia::render('Home', [
                 'name' => $user->name,
                 ...$home->for($user),
+                ...$own->for($user),
             ]);
         }
 
