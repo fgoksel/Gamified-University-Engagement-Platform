@@ -1,11 +1,11 @@
 <script setup>
-import { ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import { Link, router } from "@inertiajs/vue3";
 import { CalendarDays, Search } from "@lucide/vue";
 import EmptyState from "../../Components/EmptyState.vue";
 import ApplyAction from "../../Components/Events/ApplyAction.vue";
 import CatalogEventCard from "../../Components/Events/CatalogEventCard.vue";
-import { categoryDot } from "../../categoryColors.js";
+import { categoryDot, categoryOptions } from "../../categoryColors.js";
 import { t } from "../../i18n.js";
 
 // All events (Task #40): filtered by topic or branch, category and date,
@@ -21,13 +21,12 @@ const props = defineProps({
     events: { type: Object, required: true },
 });
 
-const categories = [
+// "All", then the categories in use from the category list (Task #116), and the one in the
+// address even if it was retired since, so the filter that is on can always be seen.
+const categories = computed(() => [
     { value: null, label: t("events.index.all") },
-    { value: "academic", label: t("events.index.academic") },
-    { value: "scientific", label: t("events.index.scientific") },
-    { value: "sports", label: t("events.index.sports") },
-    { value: "community", label: t("events.index.community") },
-];
+    ...categoryOptions(props.filters.category ?? null),
+]);
 
 const whenOptions = [
     { value: "upcoming", label: t("events.index.upcoming") },

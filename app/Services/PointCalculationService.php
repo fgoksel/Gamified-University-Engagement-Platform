@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Enums\TaxonomyCategory;
 use App\Enums\UserRole;
 use App\Models\PointTransaction;
 use App\Models\User;
@@ -24,6 +23,10 @@ use Throwable;
  *
  * The cache never decides anything. Without a store that supports tags, with the time to live
  * at 0, or when the store cannot be reached, the totals are worked out again on each request.
+ *
+ * The points per category follow the category list (Task #116): one total for each category in
+ * it, retired ones too, so the totals still add up to the points of the student. Points of an
+ * event with no category count in "points" and "total" only.
  */
 class PointCalculationService
 {
@@ -35,12 +38,16 @@ class PointCalculationService
 
     private ?int $unavailableUntil = null;
 
+    public function __construct(private CategoryList $categories) {}
+
     /**
      * Every student with points in the area (the topic and everything below it), best first.
      * Only student accounts appear and deactivated ones stay out; reversed points drop out, and a
      * student left with nothing is not listed. Equal points share a rank (1, 2, 2, 4).
      *
-     * @return list<array{student_id: int, name: string, neptun_code: ?string, points: int, academic: int, scientific: int, sports: int, community: int, position: int, rank: int}>
+     * Each row also has the points per category, under the category's slug.
+     *
+     * @return list<array<string, int|string|null>>
      */
     public function areaStandings(int $topicId): array
     {
@@ -51,7 +58,7 @@ class PointCalculationService
      * The same standings, narrowed to the points of one category and to the events of one tag
      * ("Where am I?", Task #56). Kept under the area's tags, so a credit clears them all alike.
      *
-     * @return list<array{student_id: int, name: string, neptun_code: ?string, points: int, academic: int, scientific: int, sports: int, community: int, position: int, rank: int}>
+     * @return list<array<string, int|string|null>>
      */
     public function standings(int $topicId, ?string $category = null, ?int $tagId = null): array
     {
@@ -69,9 +76,10 @@ class PointCalculationService
     }
 
     /**
-     * A student's points in total and per category, over everything or for one semester.
+     * A student's points in total and per category, over everything or for one semester:
+     * "total" and one entry per category slug.
      *
-     * @return array{total: int, academic: int, scientific: int, sports: int, community: int}
+     * @return array<string, int>
      */
     public function studentTotals(int $studentId, ?int $semesterId = null): array
     {
@@ -116,9 +124,12 @@ class PointCalculationService
      */
     private function calculateArea(int $topicId, ?string $category = null, ?int $tagId = null): array
     {
-        $categories = collect(TaxonomyCategory::cases())
-            ->map(fn (TaxonomyCategory $category) => "sum(case when ledger.category = '{$category->value}' then ledger.points else 0 end) as {$category->value}")
-            ->implode(', ');
+        // One sum per category of the list. The slugs are bound, and the columns get plain names
+        // (c0, c1, ...), so nothing an admin types ever becomes part of the query.
+        $slugs = array_keys($this->categories->zeroes());
+        $sums = collect($slugs)
+            ->map(fn (string $slug, int $index) => ", sum(case when ledger.category = ? then ledger.points else 0 end) as c{$index}")
+            ->implode('');
 
         $rows = DB::table('point_transactions as ledger')
             ->join('events', 'events.id', '=', 'ledger.event_id')
@@ -132,7 +143,7 @@ class PointCalculationService
             ->when($tagId, fn ($query) => $query->where('events.topic_tag_id', $tagId))
             ->groupBy('ledger.student_id', 'users.name', 'users.neptun_code')
             ->havingRaw('sum(ledger.points) > 0')
-            ->selectRaw("ledger.student_id, users.name, users.neptun_code, sum(ledger.points) as points, {$categories}")
+            ->selectRaw("ledger.student_id, users.name, users.neptun_code, sum(ledger.points) as points{$sums}", $slugs)
             ->orderByDesc('points')
             ->orderBy('ledger.student_id')
             ->get();
@@ -140,7 +151,7 @@ class PointCalculationService
         $rank = 0;
         $previous = null;
 
-        return $rows->values()->map(function (object $row, int $index) use (&$rank, &$previous) {
+        return $rows->values()->map(function (object $row, int $index) use (&$rank, &$previous, $slugs) {
             $points = (int) $row->points;
 
             if ($points !== $previous) {
@@ -153,7 +164,7 @@ class PointCalculationService
                 'name' => (string) $row->name,
                 'neptun_code' => $row->neptun_code,
                 'points' => $points,
-                ...collect(TaxonomyCategory::cases())->mapWithKeys(fn (TaxonomyCategory $category) => [$category->value => (int) $row->{$category->value}])->all(),
+                ...collect($slugs)->mapWithKeys(fn (string $slug, int $index) => [$slug => (int) $row->{"c{$index}"}])->all(),
                 'position' => $index + 1,
                 'rank' => $rank,
             ];
@@ -161,7 +172,7 @@ class PointCalculationService
     }
 
     /**
-     * @return array{total: int, academic: int, scientific: int, sports: int, community: int}
+     * @return array<string, int>
      */
     private function calculateStudent(int $studentId, ?int $semesterId): array
     {
@@ -170,13 +181,17 @@ class PointCalculationService
             ->when($semesterId, fn ($query) => $query->where('semester_id', $semesterId))
             ->selectRaw('category, sum(points) as points')
             ->groupBy('category')
-            ->pluck('points', 'category');
+            ->get();
 
-        $totals = ['total' => 0, 'academic' => 0, 'scientific' => 0, 'sports' => 0, 'community' => 0];
+        $totals = ['total' => 0, ...$this->categories->zeroes()];
 
-        foreach ($rows as $category => $points) {
-            $totals[$category] = (int) $points;
-            $totals['total'] += (int) $points;
+        foreach ($rows as $row) {
+            // Points with no category count in the total only.
+            if ($row->category !== null) {
+                $totals[$row->category] = (int) $row->points;
+            }
+
+            $totals['total'] += (int) $row->points;
         }
 
         return $totals;

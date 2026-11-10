@@ -79,9 +79,11 @@ const showActions = computed(
         >
             <div class="flex flex-wrap items-center gap-2 text-xs font-medium">
                 <span
+                    v-if="event.tag || event.category"
                     class="inline-flex items-center gap-1.5 rounded-full bg-surface-muted px-2.5 py-0.5 text-fg-muted"
                 >
                     <span
+                        v-if="event.category"
                         class="size-2 rounded-full"
                         :class="categoryDot[event.category]"
                     />

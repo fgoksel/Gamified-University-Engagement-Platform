@@ -285,7 +285,7 @@ class PointLedger
     /**
      * A student's points, in total and per category, optionally for one semester.
      *
-     * @return array{total: int, academic: int, scientific: int, sports: int, community: int}
+     * @return array<string, int>
      */
     public function totals(User $student, ?int $semesterId = null): array
     {

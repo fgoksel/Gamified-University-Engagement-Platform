@@ -41,7 +41,9 @@ class UpdateEventRequest extends FormRequest
             'title' => ['required', 'string', 'max:255'],
             'description' => ['required', 'string', 'max:5000'],
             'location' => ['nullable', 'string', 'max:255'],
-            'topic_tag_id' => ['required', 'integer', 'exists:topic_tags,id'],
+            // Both optional (D10, Task #116). Whether a retired one may stay is EventEditor's call.
+            'topic_tag_id' => ['nullable', 'integer', 'exists:topic_tags,id'],
+            'category' => ['nullable', 'string', 'exists:categories,slug'],
             'owning_topic_id' => ['required', 'integer', 'exists:topics,id'],
             'audience_topic_id' => ['nullable', 'integer', 'exists:topics,id'],
             'capacity' => ['required', 'integer', 'min:1', 'max:10000'],
@@ -63,7 +65,6 @@ class UpdateEventRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'topic_tag_id.required' => __('events.validation.choose_a_topic_tag'),
             'owning_topic_id.required' => __('events.validation.choose_where_the_event'),
         ];
     }

@@ -233,7 +233,7 @@ class LiveAttendanceQr
     /**
      * Check in a student with a scanned code.
      *
-     * @return array{outcome: string, message: string, event: string, points: int, category: string, step: ?int, total_steps: ?int}
+     * @return array{outcome: string, message: string, event: string, points: int, category: ?string, step: ?int, total_steps: ?int}
      *
      * @throws EventActionRefused
      */

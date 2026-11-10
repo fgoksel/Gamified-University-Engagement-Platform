@@ -20,7 +20,8 @@ class PointsCreditedNotification extends Notification implements ShouldQueue
         public readonly int $eventId,
         public readonly string $eventTitle,
         public readonly int $points,
-        public readonly string $category,
+        // Null for an event without a category (Task #116).
+        public readonly ?string $category,
     ) {}
 
     /**

@@ -2,8 +2,8 @@
 
 namespace App\Filament\Pages;
 
-use App\Enums\TaxonomyCategory;
 use App\Models\TopicTagRequest;
+use App\Services\CategoryList;
 use App\Services\TopicTagRequestService;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -71,14 +71,9 @@ class TopicTagRequests extends Page implements HasTable
                 TextColumn::make('category')
                     ->label(__('admin.tag_requests.category'))
                     ->badge()
-                    ->formatStateUsing(fn (string $state): string => TaxonomyCategory::tryFrom($state)?->label() ?? $state)
-                    ->color(fn (string $state): string => match ($state) {
-                        'academic' => 'info',
-                        'scientific' => 'primary',
-                        'sports' => 'warning',
-                        'community' => 'success',
-                        default => 'gray',
-                    })
+                    // The name and colour the category has now (Task #116).
+                    ->formatStateUsing(fn (string $state): string => app(CategoryList::class)->name($state) ?? $state)
+                    ->color(fn (string $state): string => app(CategoryList::class)->find($state)?->color->badge() ?? 'gray')
                     ->sortable(),
 
                 TextColumn::make('justification')
@@ -140,7 +135,7 @@ class TopicTagRequests extends Page implements HasTable
 
                 SelectFilter::make('category')
                     ->label(__('admin.tag_requests.category'))
-                    ->options(TaxonomyCategory::options()),
+                    ->options(fn (): array => app(CategoryList::class)->allOptions()),
             ])
             ->actions([
                 // UC-3.4: Approve action
@@ -164,6 +159,7 @@ class TopicTagRequests extends Page implements HasTable
                                 ->send();
                         } catch (ValidationException $e) {
                             $message = $e->validator->errors()->first('proposed_name')
+                                ?: $e->validator->errors()->first('category')
                                 ?: $e->validator->errors()->first('status')
                                 ?: __('admin.tag_requests.could_not_approve_request');
 

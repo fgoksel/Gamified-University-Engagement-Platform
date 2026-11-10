@@ -329,7 +329,8 @@ class EventEditGapsTest extends EventTestCase
                     'application_type' => ['First come, first served', 'The organiser chooses'],
                     'qr_enabled' => ['No', 'Yes'],
                 ])
-                ->where('history.0.changes', fn ($changes) => collect($changes)->doesntContain('field', 'category')));
+                // The category came with the new tag, and it is named, not given as a slug (Task #116).
+                ->where('history.0.changes', fn ($changes) => collect($changes)->firstWhere('field', 'category') === ['field' => 'category', 'old' => 'Academic', 'new' => 'Sports']));
     }
 
     public function test_the_page_says_when_only_the_last_20_edits_are_shown(): void

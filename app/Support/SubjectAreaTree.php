@@ -2,9 +2,9 @@
 
 namespace App\Support;
 
-use App\Enums\TaxonomyCategory;
 use App\Models\SubjectArea;
 use App\Models\User;
+use App\Services\CategoryList;
 
 /**
  * Data for the Subject Area panel in the teacher's sidebar (UC-1.2):
@@ -34,9 +34,11 @@ class SubjectAreaTree
             ->orderBy('title')
             ->get(['id', 'title', 'code', 'category', 'faculty_id']);
 
+        $categories = app(CategoryList::class);
+
         $groups = $areas
             ->groupBy(fn (SubjectArea $area) => $area->faculty_id ?? 0)
-            ->map(function ($items) {
+            ->map(function ($items) use ($categories) {
                 $faculty = $items->first()->faculty;
 
                 return [
@@ -48,7 +50,7 @@ class SubjectAreaTree
                         'title' => $area->title,
                         'code' => $area->code,
                         'category' => $area->category,
-                        'categoryLabel' => TaxonomyCategory::from($area->category)->label(),
+                        'categoryLabel' => $categories->name($area->category) ?? $area->category,
                     ])->values()->all(),
                 ];
             })

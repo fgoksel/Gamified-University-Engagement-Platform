@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Models\Event;
 use App\Models\Topic;
+use App\Services\CategoryList;
 use App\Services\EventPlacement;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Gate;
@@ -33,7 +34,11 @@ class StoreEventRequest extends FormRequest
             'description' => ['required', 'string', 'max:5000'],
             // Task #77: free text, may stay empty.
             'location' => ['nullable', 'string', 'max:255'],
-            'topic_tag_id' => ['required', 'integer', Rule::exists('topic_tags', 'id')->where('is_active', true)],
+            // Both optional (D10, Task #116): the topic tree organises events. A tag brings its
+            // category along; without one the organiser may still pick a category.
+            'topic_tag_id' => ['nullable', 'integer', Rule::exists('topic_tags', 'id')->where('is_active', true)
+                ->whereIn('category', array_keys(app(CategoryList::class)->options()))],
+            'category' => ['nullable', 'string', app(CategoryList::class)->inUseRule()],
             'owning_topic_id' => ['required', 'integer', 'exists:topics,id'],
             'audience_topic_id' => ['nullable', 'integer', 'exists:topics,id'],
             'capacity' => ['required', 'integer', 'min:1', 'max:10000'],
@@ -90,8 +95,8 @@ class StoreEventRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'topic_tag_id.required' => __('events.validation.choose_a_topic_tag'),
             'topic_tag_id.exists' => __('events.validation.this_topic_tag'),
+            'category.exists' => __('events.validation.this_category_is_no_longer'),
             'owning_topic_id.required' => __('events.validation.choose_where_the_event'),
             'event_starts_at.after' => __('events.validation.the_event_must_start'),
             'event_ends_at.after' => __('events.validation.the_event_must_end_after'),

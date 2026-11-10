@@ -9,6 +9,7 @@ use App\Http\Controllers\Auth\ChangePasswordController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\SetPasswordController;
+use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\EventApplicationController;
 use App\Http\Controllers\EventCheckinController;
 use App\Http\Controllers\EventController;
@@ -264,6 +265,16 @@ Route::middleware('auth')->group(function () {
             Route::post('/{topic}/imports', [TopicImportController::class, 'store'])->whereNumber('topic')->name('imports.store');
             // Task #89: a new leaderboard for this topic.
             Route::post('/{topic}/leaderboards', [AreaLeaderboardController::class, 'store'])->whereNumber('topic')->name('leaderboards.store');
+        });
+
+        // The category list (Task #116). Open to every signed-in account: CategoryPolicy lets in the
+        // system admin and the area admin of the University root, like the Topics routes above.
+        Route::prefix('categories')->name('categories.')->group(function () {
+            Route::get('/', [CategoryController::class, 'index'])->name('index');
+            Route::post('/', [CategoryController::class, 'store'])->name('store');
+            Route::put('/{category}', [CategoryController::class, 'update'])->whereNumber('category')->name('update');
+            Route::post('/{category}/retire', [CategoryController::class, 'retire'])->whereNumber('category')->name('retire');
+            Route::post('/{category}/restore', [CategoryController::class, 'restore'])->whereNumber('category')->name('restore');
         });
 
         // Area leaderboards (Task #89). Open to every signed-in account: AreaLeaderboards decides

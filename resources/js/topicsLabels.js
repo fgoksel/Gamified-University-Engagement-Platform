@@ -20,6 +20,7 @@ export const capabilityLabels = {
     "points.credit": t("capabilities.credit_points"),
     "qr_codes.manage": t("capabilities.manage_event_qr_codes"),
     "leaderboards.manage": t("capabilities.manage_leaderboards"),
+    "categories.manage": t("capabilities.manage_categories"),
 };
 
 // What a leaderboard can show to tell students apart (Task #89).

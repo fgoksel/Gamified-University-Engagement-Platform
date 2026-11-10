@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Enums\Capability;
-use App\Enums\TaxonomyCategory;
 use App\Models\Event;
 use App\Models\EventApplication;
 use App\Models\Topic;
@@ -173,7 +172,8 @@ class EventCatalog
 
         return [
             'q' => trim((string) ($input['q'] ?? '')),
-            'category' => in_array($input['category'] ?? null, array_column(TaxonomyCategory::cases(), 'value'), true)
+            // Any category of the list (Task #116), a retired one too: old events still have it.
+            'category' => is_string($input['category'] ?? null) && app(CategoryList::class)->find($input['category']) !== null
                 ? $input['category']
                 : null,
             // A chosen date range replaces the upcoming/past default.

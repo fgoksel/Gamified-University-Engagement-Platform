@@ -2,16 +2,19 @@
 
 namespace App\Providers;
 
+use App\Models\Category;
 use App\Models\Event;
 use App\Models\RoleAssignment;
 use App\Models\RoleDefinition;
 use App\Models\Topic;
 use App\Models\User;
 use App\Policies\AdminPolicy;
+use App\Policies\CategoryPolicy;
 use App\Policies\EventPolicy;
 use App\Policies\RoleAssignmentPolicy;
 use App\Policies\RoleDefinitionPolicy;
 use App\Policies\TopicPolicy;
+use App\Services\CategoryList;
 use App\Services\PointCalculationService;
 use App\Services\TopicAccess;
 use App\Support\PseudoLoader;
@@ -36,6 +39,10 @@ class AppServiceProvider extends ServiceProvider
 
         // One per request too: it remembers for a moment that the leaderboard cache could not be reached.
         $this->app->scoped(PointCalculationService::class);
+
+        // The category list (Task #116), read once per request and again after a change.
+        $this->app->scoped(CategoryList::class);
+
         // The made-up test language (APP_LOCALE=qps) is built from the English texts of Laravel's
         // translator, so every text on a screen changes, not only the ones of this project (Task #95).
         $this->app->extend('translation.loader', fn (Loader $loader) => new PseudoLoader($loader));
@@ -60,6 +67,9 @@ class AppServiceProvider extends ServiceProvider
 
         // Events: who sees, applies to and runs them follows topic capabilities.
         Gate::policy(Event::class, EventPolicy::class);
+
+        // The category list: the system admin and the area admin of the University root (Task #116).
+        Gate::policy(Category::class, CategoryPolicy::class);
 
         $this->configureRateLimiting();
     }
