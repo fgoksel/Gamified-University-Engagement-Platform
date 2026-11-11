@@ -5,16 +5,17 @@ namespace App\Services;
 use App\Models\Event;
 use App\Models\EventApplication;
 use App\Models\PointTransaction;
-use App\Models\Semester;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 
 /**
- * The student's home page (Task #92, 26 Oct, section 4): points this semester in the four
- * categories, the next event they have a place at, events open for applications and their
- * recent points. Each part is one query (open events add eligibility checks, stopping once
- * OPEN_LIMIT pass), and every rule comes from where it already lives: the ledger for points,
- * the catalog for what the student may see, the application service for who may apply.
+ * The student's home page (Task #92, 26 Oct, section 4): the next event they have a place at,
+ * events open for applications and their recent points. The leaderboard boxes come from
+ * OwnLeaderboards; they replaced the points per category in the leaderboards redesign
+ * (9 November), so the rankings lead. Each part is one query (open events add eligibility
+ * checks, stopping once OPEN_LIMIT pass), and every rule comes from where it already lives:
+ * the ledger for points, the catalog for what the student may see, the application service
+ * for who may apply.
  */
 class StudentHome
 {
@@ -24,7 +25,6 @@ class StudentHome
     public const RECENT_LIMIT = 5;
 
     public function __construct(
-        private PointLedger $ledger,
         private EventCatalog $catalog,
         private EventApplicationService $applications,
     ) {}
@@ -34,24 +34,11 @@ class StudentHome
      */
     public function for(User $student): array
     {
-        $semester = $this->semester();
-
         return [
-            'semester' => $semester?->name,
-            // Without an active semester nothing is "this semester": the tiles show zero.
-            'points' => $semester
-                ? $this->ledger->totals($student, $semester->id)
-                : ['total' => 0, 'academic' => 0, 'scientific' => 0, 'sports' => 0, 'community' => 0],
             'next' => $this->next($student),
             'open' => $this->open($student),
             'recent' => $this->recent($student),
         ];
-    }
-
-    /** The semester that is running now, as the admin overview finds it. */
-    private function semester(): ?Semester
-    {
-        return Semester::query()->where('status', 'active')->latest('starts_at')->first();
     }
 
     /**

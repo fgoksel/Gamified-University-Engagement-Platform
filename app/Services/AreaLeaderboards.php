@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\Capability;
+use App\Enums\UserRole;
 use App\Models\Leaderboard;
 use App\Models\Topic;
 use App\Models\User;
@@ -15,11 +16,16 @@ use Illuminate\Validation\ValidationException;
  *
  * Managing follows the "Manage leaderboards" right at the topic, inherited from the topics
  * above like every other right. Seeing follows the person's own areas (D4, 7 November): a
- * leaderboard is for the people who can open its topic, on the hall screen or not. The system
- * admin chooses the hall screen (D7, Task #110).
+ * leaderboard is for the people who can open its topic, on the hall screen or not. A student also
+ * sees the leaderboards of every area above their own, such as their faculty and the school
+ * (leaderboards redesign, 9 November); boards of sibling areas stay hidden. The system admin
+ * chooses the hall screen (D7, Task #110).
  */
 class AreaLeaderboards
 {
+    /** @var array<int, list<int>> per person, for one request */
+    private array $above = [];
+
     public function __construct(private TopicAccess $access) {}
 
     public function canManage(User $user, Topic $topic): bool
@@ -29,24 +35,62 @@ class AreaLeaderboards
 
     public function canSee(User $user, Leaderboard $board): bool
     {
-        return $this->access->canView($user, $board->topic);
+        if ($this->access->canView($user, $board->topic)) {
+            return true;
+        }
+
+        return in_array($board->topic_id, $this->aboveOwnAreas($user), true)
+            && ! $this->access->isHidden($board->topic);
     }
 
     /**
      * The leaderboards a person can open: the ones of the topics they can open, which are the
-     * topics they are assigned to and everything below them.
+     * topics they are assigned to and everything below them. A student also gets the ones of
+     * the areas above their own.
      *
      * @return Collection<int, Leaderboard>
      */
     public function openTo(User $user): Collection
     {
+        $above = $this->aboveOwnAreas($user);
+
         return Leaderboard::query()
             ->inNormalBrowsing()
-            ->whereIn('topic_id', $this->access->visibleTopics($user)->select('topics.id'))
+            ->where(fn ($query) => $query
+                ->whereIn('topic_id', $this->access->visibleTopics($user)->select('topics.id'))
+                ->when($above !== [], fn ($query) => $query->orWhereIn('topic_id', $above)))
             ->with('topic:id,title')
             ->orderBy('name')
             ->orderBy('id')
             ->get();
+    }
+
+    /**
+     * For a student, the areas above the ones they are assigned to (and those areas themselves),
+     * whose leaderboards they also see. Nobody else gets any: staff keep the areas they can open
+     * and everything below. An assigned area that is archived, or below an archived one, no
+     * longer counts, so it opens nothing above it either.
+     *
+     * @return list<int>
+     */
+    private function aboveOwnAreas(User $user): array
+    {
+        if (! $user->hasRole(UserRole::Student)) {
+            return [];
+        }
+
+        $granted = $this->access->grantedTopicIds($user);
+
+        if ($granted === []) {
+            return [];
+        }
+
+        return $this->above[$user->id] ??= DB::table('topic_closure')
+            ->whereIn('descendant_id', Topic::query()->notArchived()->whereIn('topics.id', $granted)->select('topics.id'))
+            ->distinct()
+            ->pluck('ancestor_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
     }
 
     /**

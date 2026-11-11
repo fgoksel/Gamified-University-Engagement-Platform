@@ -2,30 +2,28 @@
 
 namespace App\Services;
 
-use App\Enums\TaxonomyCategory;
 use App\Enums\UserRole;
 use App\Models\Leaderboard;
 use App\Models\User;
 
 /**
- * "My leaderboard" (Task #54, UC-1.2 and UC-2.2): what a signed-in person sees of the leaderboards.
+ * The boxes of the Leaderboards page and of the start pages (Task #54, leaderboards redesign of
+ * 9 November): one box per leaderboard a person may see, the highlighted ones first.
  *
- * A student sees their own points in total and per category, and on every leaderboard they may
- * see, their rank, how many students are listed and their points there, per category. Everyone
- * else (a teacher earns no points) sees the leaderboards they may see and how many students each
- * lists. Which leaderboards those are is decided by AreaLeaderboards (the ones of the topics the
- * person can open); the numbers come from PointCalculationService.
+ * A student's box holds their own place, the number of students listed, their points and the
+ * points to the next place. Staff are not on the leaderboards, so their box describes the board:
+ * who leads it and how many students it lists. Which leaderboards those are is decided by
+ * AreaLeaderboards; the numbers come from LeaderboardStandings.
  */
 class OwnLeaderboards
 {
     public function __construct(
         private AreaLeaderboards $boards,
         private LeaderboardStandings $standings,
-        private PointCalculationService $points,
     ) {}
 
     /**
-     * @return array{isStudent: bool, points: array{total: int, academic: int, scientific: int, sports: int, community: int}|null, leaderboards: list<array<string, mixed>>, highlightLimit: int}
+     * @return array{isStudent: bool, leaderboards: list<array<string, mixed>>, highlightLimit: int}
      */
     public function for(User $user): array
     {
@@ -35,13 +33,11 @@ class OwnLeaderboards
 
         // The highlighted ones come first (D6, 7 November); each group stays in name order.
         [$starred, $others] = $open
-            ->map(fn (Leaderboard $board) => $this->describe($board, $student ? $user : null, in_array($board->id, $highlighted, true)))
-            ->partition(fn (array $row) => $row['highlighted']);
+            ->map(fn (Leaderboard $board) => $this->box($board, $user, $student, in_array($board->id, $highlighted, true)))
+            ->partition(fn (array $box) => $box['highlighted']);
 
         return [
             'isStudent' => $student,
-            // Everything the ledger holds for the student, with no period (L3, 27 October).
-            'points' => $student ? $this->points->studentTotals($user->id) : null,
             'leaderboards' => $starred->concat($others)->values()->all(),
             'highlightLimit' => Leaderboard::HIGHLIGHT_LIMIT,
         ];
@@ -50,23 +46,18 @@ class OwnLeaderboards
     /**
      * @return array<string, mixed>
      */
-    private function describe(Leaderboard $board, ?User $student, bool $highlighted): array
+    private function box(Leaderboard $board, User $user, bool $student, bool $highlighted): array
     {
-        $listed = $this->standings->ranked($board);
-        $mine = $student === null ? null : $listed->firstWhere('student_id', $student->id);
+        $ranked = $this->standings->ranked($board)->values();
 
         return [
             ...$this->boards->summary($board),
             'highlighted' => $highlighted,
-            'students' => $listed->count(),
-            // Null when the student has no points in this area yet, so they are not listed.
-            'you' => $mine === null ? null : [
-                'rank' => $mine->rank,
-                'points' => $mine->points,
-                'categories' => collect(TaxonomyCategory::cases())
-                    ->mapWithKeys(fn (TaxonomyCategory $category) => [$category->value => $mine->{$category->value}])
-                    ->all(),
-            ],
+            'students' => $ranked->count(),
+            // A student's own place; null when they have no points in this area yet.
+            'you' => $student ? $this->standings->place($ranked, $user) : null,
+            // Staff see who leads instead, with only the columns the creator chose (L6).
+            'leader' => $student ? null : $this->standings->leader($board, $ranked),
         ];
     }
 }

@@ -53,11 +53,12 @@ class LeaderboardStandings
 
     /**
      * What a signed-in person sees (L5): the top 10, about 10 places around their own
-     * position when they are further down, and how many students are listed.
+     * position when they are further down, and how many students are listed. With $everyone,
+     * the whole list instead ("Show all" on the Leaderboards page).
      *
-     * @return array{total: int, top: list<array<string, mixed>>, around: list<array<string, mixed>>, places_skipped: bool, you: array{rank: int, points: int}|null}
+     * @return array{total: int, top: list<array<string, mixed>>, around: list<array<string, mixed>>, places_skipped: bool, everyone: bool, you: array{rank: int, points: int, to_next: ?int, next_rank: ?int}|null}
      */
-    public function view(Leaderboard $board, User $viewer): array
+    public function view(Leaderboard $board, User $viewer, bool $everyone = false): array
     {
         $ranked = $this->ranked($board)->values();
         $position = $ranked->search(fn (object $row) => $row->student_id === $viewer->id);
@@ -65,7 +66,7 @@ class LeaderboardStandings
         $from = self::TOP;
         $around = collect();
 
-        if ($position !== false) {
+        if (! $everyone && $position !== false) {
             $from = max(self::TOP, $position - self::AROUND);
             $around = $ranked->slice($from, max(0, $position + self::AROUND + 1 - $from));
         }
@@ -74,11 +75,53 @@ class LeaderboardStandings
 
         return [
             'total' => $ranked->count(),
-            'top' => $present($ranked->take(self::TOP)),
+            'top' => $present($everyone ? $ranked : $ranked->take(self::TOP)),
             'around' => $present($around),
             'places_skipped' => $around->isNotEmpty() && $from > self::TOP,
-            'you' => $position === false ? null : ['rank' => $ranked[$position]->rank, 'points' => $ranked[$position]->points],
+            'everyone' => $everyone || $ranked->count() <= self::TOP,
+            'you' => $this->place($ranked, $viewer),
         ];
+    }
+
+    /**
+     * A student's own place on a leaderboard, and how many points draw level with the next
+     * place up. "to_next" and "next_rank" are null in first place, which equal points share.
+     * Null when the student is not listed.
+     *
+     * @param  Collection<int, object>  $ranked  what ranked() gave
+     * @return array{rank: int, points: int, to_next: ?int, next_rank: ?int}|null
+     */
+    public function place(Collection $ranked, User $student): ?array
+    {
+        $mine = $ranked->firstWhere('student_id', $student->id);
+
+        if ($mine === null) {
+            return null;
+        }
+
+        // The list is best first, so the last one above is the next place up.
+        $next = $ranked->where('points', '>', $mine->points)->last();
+
+        return [
+            'rank' => $mine->rank,
+            'points' => $mine->points,
+            'to_next' => $next === null ? null : $next->points - $mine->points,
+            'next_rank' => $next?->rank,
+        ];
+    }
+
+    /**
+     * Who leads a leaderboard, with only the columns its creator chose, or null when nobody
+     * has points there yet. Staff see it on the boxes of the Leaderboards page.
+     *
+     * @param  Collection<int, object>  $ranked  what ranked() gave
+     * @return array<string, mixed>|null
+     */
+    public function leader(Leaderboard $board, Collection $ranked): ?array
+    {
+        $first = $ranked->first();
+
+        return $first === null ? null : $this->row($board, $first);
     }
 
     /**
