@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Admin;
 
-use App\Enums\TaxonomyCategory;
 use App\Enums\UserRole;
 use App\Filament\Pages\TopicTags;
 use App\Models\TopicTag;
@@ -56,7 +55,7 @@ class TopicTagsTest extends TestCase
             ->test(TopicTags::class)
             ->callAction('create', [
                 'name' => 'Campus Hackathon',
-                'category' => TaxonomyCategory::Academic->value,
+                'category' => 'academic',
                 'description' => '24-hour programming challenge.',
             ])
             ->assertHasNoActionErrors();
@@ -92,7 +91,7 @@ class TopicTagsTest extends TestCase
             ->test(TopicTags::class)
             ->callAction('create', [
                 'name' => 'Freshman Ball',
-                'category' => TaxonomyCategory::Community->value,
+                'category' => 'community',
             ])
             ->assertHasActionErrors(['name' => 'A topic tag with this name already exists.']);
     }
@@ -110,7 +109,7 @@ class TopicTagsTest extends TestCase
             ->test(TopicTags::class)
             ->callTableAction('edit', $tag, [
                 'name' => 'Updated Tag Name',
-                'category' => TaxonomyCategory::Sports->value,
+                'category' => 'sports',
                 'description' => 'Updated description text.',
             ])
             ->assertHasNoTableActionErrors();
@@ -141,7 +140,7 @@ class TopicTagsTest extends TestCase
             ->test(TopicTags::class)
             ->callTableAction('edit', $secondTag, [
                 'name' => 'Existing Tag One',
-                'category' => TaxonomyCategory::Scientific->value,
+                'category' => 'scientific',
             ])
             ->assertHasTableActionErrors(['name' => 'A topic tag with this name already exists.']);
     }

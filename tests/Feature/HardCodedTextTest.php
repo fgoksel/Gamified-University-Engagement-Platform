@@ -81,7 +81,6 @@ class HardCodedTextTest extends TestCase
         'app/Providers/Filament/AdminPanelProvider.php' => ['Instrument Sans'],
         // SQL, and a line for the log: they are for developers.
         'app/Services/PointCalculationService.php' => [
-            "' then ledger.points else 0 end) as ",
             'The leaderboard cache is not available, so the totals are worked out on each request.',
         ],
         // The name of a page component, not a text.

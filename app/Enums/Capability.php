@@ -50,6 +50,10 @@ enum Capability: string
     // Task #89: make the area leaderboards of this topic and the topics below it.
     case LeaderboardsManage = 'leaderboards.manage';
 
+    // Task #116: add, rename, recolour and retire the categories of the whole tree. Shared by every
+    // branch, so it only counts on an assignment on a top area (CategoryList::canManage()).
+    case CategoriesManage = 'categories.manage';
+
     public function label(): string
     {
         return match ($this) {
@@ -71,6 +75,7 @@ enum Capability: string
             self::PointsCredit => __('capabilities.credit_points'),
             self::QrCodesManage => __('capabilities.manage_event_qr_codes'),
             self::LeaderboardsManage => __('capabilities.manage_leaderboards'),
+            self::CategoriesManage => __('capabilities.manage_categories'),
         };
     }
 
@@ -95,6 +100,7 @@ enum Capability: string
             self::PointsCredit => __('capabilities.confirm_attendance_and_credit'),
             self::QrCodesManage => __('capabilities.create_configure_and_print'),
             self::LeaderboardsManage => __('capabilities.create_edit_and_delete_leaderboards'),
+            self::CategoriesManage => __('capabilities.add_rename_and_retire_the_categories'),
         };
     }
 

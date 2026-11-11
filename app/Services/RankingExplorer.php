@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Enums\TaxonomyCategory;
 use App\Models\Topic;
 use App\Models\TopicTag;
 use App\Models\User;
@@ -26,6 +25,7 @@ class RankingExplorer
     public function __construct(
         private TopicAccess $access,
         private PointCalculationService $points,
+        private CategoryList $categories,
     ) {}
 
     /**
@@ -38,7 +38,8 @@ class RankingExplorer
     {
         $tags = TopicTag::query()->where('is_active', true)->orderBy('name')->get(['id', 'name', 'category']);
 
-        $category = in_array($category, array_column(TaxonomyCategory::cases(), 'value'), true) ? $category : null;
+        // Any category of the list, a retired one too: its points still count (Task #116).
+        $category = $this->categories->find($category) !== null ? $category : null;
         $tag = $tags->first(fn (TopicTag $tag) => $tag->id === $tagId && ($category === null || $tag->category === $category));
 
         $filters = ['area' => $area?->id, 'category' => $category, 'tag' => $tag?->id];

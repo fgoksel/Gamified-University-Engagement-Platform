@@ -63,19 +63,32 @@
     --danger-soft: #e3e8f5;
     --info-fg: #1864c2; /* brand-700 */
     --info-soft: #e0efff; /* brand-100 */
-    /* Categories: light (calm) */
-    --cat-academic: #8573b8;
-    --cat-academic-fg: #5f4f96;
-    --cat-academic-soft: #f1eff8;
-    --cat-scientific: #5f9278;
-    --cat-scientific-fg: #3f6b55;
-    --cat-scientific-soft: #ebf3ee;
-    --cat-sports: #c07a4f;
-    --cat-sports-fg: #8d5230;
-    --cat-sports-soft: #f8efe8;
-    --cat-community: #b86b8a;
-    --cat-community-fg: #8e4764;
-    --cat-community-soft: #f7ecf1;
+    /* Category colours: light (calm). A category picks one (Task #116, App\Enums\CategoryColor).
+       The dot has at least 3:1 on the page; -fg text at least 4.5:1 on -soft and on the page. */
+    --cat-violet: #8573b8;
+    --cat-violet-fg: #5f4f96;
+    --cat-violet-soft: #f1eff8;
+    --cat-green: #5f9278;
+    --cat-green-fg: #3f6b55;
+    --cat-green-soft: #ebf3ee;
+    --cat-orange: #c07a4f;
+    --cat-orange-fg: #8d5230;
+    --cat-orange-soft: #f8efe8;
+    --cat-pink: #b86b8a;
+    --cat-pink-fg: #8e4764;
+    --cat-pink-soft: #f7ecf1;
+    --cat-blue: #5b82bf;
+    --cat-blue-fg: #3b5f99;
+    --cat-blue-soft: #ecf1f9;
+    --cat-teal: #4f9196;
+    --cat-teal-fg: #2f6a6f;
+    --cat-teal-soft: #e8f3f4;
+    --cat-amber: #a17d32;
+    --cat-amber-fg: #7a5c1c;
+    --cat-amber-soft: #f7f1e3;
+    --cat-slate: #7a8496;
+    --cat-slate-fg: #4f596b;
+    --cat-slate-soft: #eef0f4;
 }
 
 /* ── Page colours: dark theme ──────────────────────── */
@@ -105,19 +118,31 @@
     --danger-soft: #172445;
     --info-fg: #6fb2fb; /* brand-400 */
     --info-soft: #12284a;
-    /* Categories: dark (calm) */
-    --cat-academic: #9d8fd0;
-    --cat-academic-fg: #c9c0e8;
-    --cat-academic-soft: #25213a;
-    --cat-scientific: #7fb096;
-    --cat-scientific-fg: #b3d6c3;
-    --cat-scientific-soft: #1a2b23;
-    --cat-sports: #d49a74;
-    --cat-sports-fg: #e8c3a8;
-    --cat-sports-soft: #33251c;
-    --cat-community: #cc8aa5;
-    --cat-community-fg: #e6bccd;
-    --cat-community-soft: #33202a;
+    /* Category colours: dark (calm) */
+    --cat-violet: #9d8fd0;
+    --cat-violet-fg: #c9c0e8;
+    --cat-violet-soft: #25213a;
+    --cat-green: #7fb096;
+    --cat-green-fg: #b3d6c3;
+    --cat-green-soft: #1a2b23;
+    --cat-orange: #d49a74;
+    --cat-orange-fg: #e8c3a8;
+    --cat-orange-soft: #33251c;
+    --cat-pink: #cc8aa5;
+    --cat-pink-fg: #e6bccd;
+    --cat-pink-soft: #33202a;
+    --cat-blue: #86a6d8;
+    --cat-blue-fg: #bccfee;
+    --cat-blue-soft: #1b2537;
+    --cat-teal: #77b2b6;
+    --cat-teal-fg: #acd5d8;
+    --cat-teal-soft: #172b2d;
+    --cat-amber: #cfae6a;
+    --cat-amber-fg: #e5d2a6;
+    --cat-amber-soft: #2e2715;
+    --cat-slate: #9aa3b3;
+    --cat-slate-fg: #c9cfd9;
+    --cat-slate-soft: #222833;
 }
 
 /* ── Turn them into Tailwind classes ───────────────── */
@@ -144,18 +169,45 @@
     --color-info-fg: var(--info-fg);
     --color-info-soft: var(--info-soft);
 
-    --color-cat-academic: var(--cat-academic);
-    --color-cat-academic-fg: var(--cat-academic-fg);
-    --color-cat-academic-soft: var(--cat-academic-soft);
-    --color-cat-scientific: var(--cat-scientific);
-    --color-cat-scientific-fg: var(--cat-scientific-fg);
-    --color-cat-scientific-soft: var(--cat-scientific-soft);
-    --color-cat-sports: var(--cat-sports);
-    --color-cat-sports-fg: var(--cat-sports-fg);
-    --color-cat-sports-soft: var(--cat-sports-soft);
-    --color-cat-community: var(--cat-community);
-    --color-cat-community-fg: var(--cat-community-fg);
-    --color-cat-community-soft: var(--cat-community-soft);
+    --color-cat-violet: var(--cat-violet);
+    --color-cat-violet-fg: var(--cat-violet-fg);
+    --color-cat-violet-soft: var(--cat-violet-soft);
+    --color-cat-green: var(--cat-green);
+    --color-cat-green-fg: var(--cat-green-fg);
+    --color-cat-green-soft: var(--cat-green-soft);
+    --color-cat-orange: var(--cat-orange);
+    --color-cat-orange-fg: var(--cat-orange-fg);
+    --color-cat-orange-soft: var(--cat-orange-soft);
+    --color-cat-pink: var(--cat-pink);
+    --color-cat-pink-fg: var(--cat-pink-fg);
+    --color-cat-pink-soft: var(--cat-pink-soft);
+    --color-cat-blue: var(--cat-blue);
+    --color-cat-blue-fg: var(--cat-blue-fg);
+    --color-cat-blue-soft: var(--cat-blue-soft);
+    --color-cat-teal: var(--cat-teal);
+    --color-cat-teal-fg: var(--cat-teal-fg);
+    --color-cat-teal-soft: var(--cat-teal-soft);
+    --color-cat-amber: var(--cat-amber);
+    --color-cat-amber-fg: var(--cat-amber-fg);
+    --color-cat-amber-soft: var(--cat-amber-soft);
+    --color-cat-slate: var(--cat-slate);
+    --color-cat-slate-fg: var(--cat-slate-fg);
+    --color-cat-slate-soft: var(--cat-slate-soft);
+
+    /* The four original categories by name, for the screens that still list them (Home and the
+       leaderboards, until #117 makes them read the list). Same colours as before. */
+    --color-cat-academic: var(--cat-violet);
+    --color-cat-academic-fg: var(--cat-violet-fg);
+    --color-cat-academic-soft: var(--cat-violet-soft);
+    --color-cat-scientific: var(--cat-green);
+    --color-cat-scientific-fg: var(--cat-green-fg);
+    --color-cat-scientific-soft: var(--cat-green-soft);
+    --color-cat-sports: var(--cat-orange);
+    --color-cat-sports-fg: var(--cat-orange-fg);
+    --color-cat-sports-soft: var(--cat-orange-soft);
+    --color-cat-community: var(--cat-pink);
+    --color-cat-community-fg: var(--cat-pink-fg);
+    --color-cat-community-soft: var(--cat-pink-soft);
 }
 
 /* ── Default page colours ──────────────────────────── */

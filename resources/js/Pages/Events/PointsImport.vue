@@ -148,6 +148,7 @@ function startOver() {
                 class="mt-1 flex flex-wrap items-center gap-x-2 text-sm text-fg-muted"
             >
                 <span
+                    v-if="event.category"
                     class="size-2.5 shrink-0 rounded-full"
                     :class="categoryDot[event.category]"
                     aria-hidden="true"

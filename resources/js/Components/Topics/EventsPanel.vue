@@ -102,11 +102,12 @@ function goTo(page) {
                 <div class="min-w-0">
                     <div class="flex min-h-11 items-center gap-2">
                         <span
+                            v-if="event.category"
                             class="size-2.5 shrink-0 rounded-full"
                             :class="categoryDot[event.category]"
                             aria-hidden="true"
                         />
-                        <span class="sr-only"
+                        <span v-if="event.category" class="sr-only"
                             >{{ categoryLabel[event.category] }}:</span
                         >
                         <Link

@@ -41,8 +41,26 @@ Measured contrast (WCAG 2.2 AA needs 4.5:1 for normal text). All pairs pass in b
 | `info-fg` on `info-soft` | 4.93 | 6.61 |
 
 The status colours are deliberately calm: "danger" is a deep navy, not red. Category colours
-(`cat-academic`, `cat-scientific`, `cat-sports`, `cat-community`) are only for
-category dots and chips (`resources/js/categoryColors.js`), never for status.
+are only for category dots and chips, never for status. Categories are a list the admin edits
+(Task #116, [categories.md](categories.md)), and each one picks one of eight colours: `cat-violet`,
+`cat-green`, `cat-orange`, `cat-pink`, `cat-blue`, `cat-teal`, `cat-amber` and `cat-slate`, each
+with `-fg` and `-soft`. Screens get the classes for a category from `resources/js/categoryColors.js`
+(`categoryDot`, `categorySoft`), never by naming a category. The old names (`cat-academic` and the
+other three) still point at the first four colours for the screens that name the four, until #117.
+
+| Category colour | `-fg` on `-soft`, light | dark | Dot on the page, light | dark |
+|---|---|---|---|---|
+| `violet` | 6.06 | 8.98 | 3.66 | 5.43 |
+| `green` | 5.39 | 9.42 | 3.21 | 6.38 |
+| `orange` | 5.47 | 9.00 | 3.07 | 6.47 |
+| `pink` | 5.63 | 9.01 | 3.42 | 5.78 |
+| `blue` | 5.64 | 9.73 | 3.49 | 6.31 |
+| `teal` | 5.44 | 9.34 | 3.23 | 6.59 |
+| `amber` | 5.52 | 9.95 | 3.43 | 7.40 |
+| `slate` | 6.19 | 9.45 | 3.38 | 6.17 |
+
+"Dot on the page" is the lowest of `surface`, `canvas` and `surface-muted`; `-fg` also keeps at least
+5.4:1 on each of them in the light theme and 8.9:1 in the dark one.
 
 ## Components
 

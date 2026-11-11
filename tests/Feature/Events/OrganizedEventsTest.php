@@ -179,12 +179,13 @@ class OrganizedEventsTest extends TopicTestCase
         $this->assertNotNull($event->fresh()->published_at);
     }
 
-    public function test_a_draft_without_a_tag_is_not_published(): void
+    public function test_a_draft_without_a_tag_can_be_published(): void
     {
-        $event = $this->event(['status' => 'draft', 'published_at' => null, 'topic_tag_id' => null]);
+        // The tag and the category are optional (D10, Task #116).
+        $event = $this->event(['status' => 'draft', 'published_at' => null, 'topic_tag_id' => null, 'category' => null]);
 
-        $this->actingAs($this->teacher)->post("/events/{$event->id}/publish")->assertSessionHas('error');
-        $this->assertSame('draft', $event->fresh()->status);
+        $this->actingAs($this->teacher)->post("/events/{$event->id}/publish")->assertSessionHas('success');
+        $this->assertSame('published', $event->fresh()->status);
     }
 
     public function test_a_draft_with_past_dates_is_not_published(): void

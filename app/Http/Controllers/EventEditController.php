@@ -8,6 +8,7 @@ use App\Models\EventApplication;
 use App\Models\EventEdit;
 use App\Models\Topic;
 use App\Models\TopicTag;
+use App\Services\CategoryList;
 use App\Services\EventEditor;
 use App\Services\EventPlacement;
 use Illuminate\Http\RedirectResponse;
@@ -47,6 +48,7 @@ class EventEditController extends Controller
                 'description' => $event->description,
                 'location' => $event->location,
                 'topic_tag_id' => $event->topic_tag_id,
+                'category' => $event->category,
                 'owning_topic_id' => $event->owning_topic_id,
                 'audience_topic_id' => $event->audience_topic_id,
                 'capacity' => $event->capacity,
@@ -65,10 +67,9 @@ class EventEditController extends Controller
             'locks' => (object) ($editable ? $locks : []),
             'minimumCapacity' => $editable ? $editor->minimumCapacity($event) : 1,
             'topics' => $this->topicOptions($request, $event, $placement),
+            // The tags offered for events, and the event's own tag even if it is no longer offered.
             'tags' => TopicTag::query()
-                ->where('is_active', true)
-                ->orWhere('id', $event->topic_tag_id)
-                ->orderBy('category')
+                ->where(fn ($query) => $query->pickable()->orWhere('id', $event->topic_tag_id))
                 ->orderBy('name')
                 ->get(['id', 'name', 'category']),
             // The other two tabs, shown only to people who may use them.
@@ -117,7 +118,9 @@ class EventEditController extends Controller
         $topics = Topic::query()->whereIn('id', $ids('owning_topic_id', 'audience_topic_id'))->pluck('title', 'id');
         $tags = TopicTag::query()->whereIn('id', $ids('topic_tag_id'))->pluck('name', 'id');
 
-        $words = function (string $field, mixed $value) use ($topics, $tags): string {
+        $categories = app(CategoryList::class);
+
+        $words = function (string $field, mixed $value) use ($topics, $tags, $categories): string {
             if ($value === null || $value === '') {
                 return __('events.edit_log.none');
             }
@@ -125,6 +128,8 @@ class EventEditController extends Controller
             return match ($field) {
                 'owning_topic_id', 'audience_topic_id' => $topics[$value] ?? __('events.edit_log.removed'),
                 'topic_tag_id' => $tags[$value] ?? __('events.edit_log.removed'),
+                // The name the category has now (Task #116).
+                'category' => $categories->name((string) $value) ?? (string) $value,
                 'application_type' => $value === 'teacher_select' ? __('events.edit_log.organiser_chooses') : __('events.edit_log.first_come_first_served'),
                 'is_hidden', 'qr_enabled' => $value ? __('events.edit_log.yes') : __('events.edit_log.no'),
                 'event_starts_at', 'event_ends_at', 'applications_open_at', 'application_deadline', 'completion_deadline' => Carbon::parse($value)->translatedFormat('D j M Y, H:i'),
@@ -139,8 +144,6 @@ class EventEditController extends Controller
             'at' => $edit->created_at->translatedFormat('D j M Y, H:i'),
             'by' => $edit->actor?->name,
             'changes' => collect($edit->changes)
-                // The category follows the tag, so the tag line says it all.
-                ->except('category')
                 ->map(fn (array $change, string $field) => [
                     'field' => $field,
                     'old' => $words($field, $change['old'] ?? null),

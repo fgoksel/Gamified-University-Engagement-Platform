@@ -126,7 +126,7 @@ class QrTokenService
      * A refused slip stays unused: nothing is written until the points are, in one
      * transaction. So a student who cannot use it can still hand it on.
      *
-     * @return array{outcome: string, message: string, event: string, points: int, category: string, step: ?int, total_steps: ?int}
+     * @return array{outcome: string, message: string, event: string, points: int, category: ?string, step: ?int, total_steps: ?int}
      *
      * @throws EventActionRefused
      */
@@ -186,7 +186,7 @@ class QrTokenService
     }
 
     /**
-     * @return array{outcome: string, message: string, event: string, points: int, category: string, step: ?int, total_steps: ?int}
+     * @return array{outcome: string, message: string, event: string, points: int, category: ?string, step: ?int, total_steps: ?int}
      */
     private function claim(QrToken $token, Event $event, User $student): array
     {

@@ -291,6 +291,7 @@ const linkClass =
                         <span class="min-w-0">
                             <span class="flex items-center gap-2 text-fg">
                                 <span
+                                    v-if="row.category"
                                     class="size-2 shrink-0 rounded-full"
                                     :class="categoryDot[row.category]"
                                     aria-hidden="true"
@@ -298,7 +299,9 @@ const linkClass =
                                 <span class="truncate">{{ row.event }}</span>
                             </span>
                             <span class="block text-fg-muted">
-                                {{ categoryLabel[row.category] }} ·
+                                <template v-if="row.category">
+                                    {{ categoryLabel[row.category] }} ·
+                                </template>
                                 {{ row.at }}
                                 <template v-if="row.correction">
                                     {{ $t("home.correction") }}</template
@@ -349,9 +352,11 @@ const linkClass =
                     class="relative flex flex-col rounded-card border border-line bg-surface p-5 shadow-card focus-within:outline-2 focus-within:outline-ring"
                 >
                     <span
+                        v-if="event.tag || event.category"
                         class="inline-flex items-center gap-1.5 self-start rounded-full bg-surface-muted px-2.5 py-0.5 text-xs font-medium text-fg-muted"
                     >
                         <span
+                            v-if="event.category"
                             class="size-2 rounded-full"
                             :class="categoryDot[event.category]"
                             aria-hidden="true"
