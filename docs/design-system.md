@@ -45,8 +45,7 @@ are only for category dots and chips, never for status. Categories are a list th
 (Task #116, [categories.md](categories.md)), and each one picks one of eight colours: `cat-violet`,
 `cat-green`, `cat-orange`, `cat-pink`, `cat-blue`, `cat-teal`, `cat-amber` and `cat-slate`, each
 with `-fg` and `-soft`. Screens get the classes for a category from `resources/js/categoryColors.js`
-(`categoryDot`, `categorySoft`), never by naming a category. The old names (`cat-academic` and the
-other three) still point at the first four colours for the screens that name the four, until #117.
+(`categoryDot`, `categorySoft`), never by naming a category.
 
 | Category colour | `-fg` on `-soft`, light | dark | Dot on the page, light | dark |
 |---|---|---|---|---|

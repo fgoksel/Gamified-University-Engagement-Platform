@@ -2,6 +2,8 @@
 
 Written 9 November 2026 by Vivian, for the next sprint. Nothing here is in the 9 November demo build.
 
+> **Changed after this plan was written.** The professor meeting of the same afternoon kept the *Your points* box on Home (N7): Home shows it above the boxes, with a tile per category of the list. The boards of the areas above a student's own stay for now (A1, 10 November). The categories became an editable list in Task #116 (PR #108), on a *Categories* page in the main app rather than in the admin panel. Where this plan says otherwise, `docs/leaderboards.md` and `docs/categories.md` describe what was built.
+
 The Leaderboards page becomes one place to see rankings: boxes at the top, and the selected board's ranking right below, for students and staff alike. This replaces the list of rows, the separate board page and the "Your points" box. The four fixed categories become a list the system admin edits.
 
 ## What changes

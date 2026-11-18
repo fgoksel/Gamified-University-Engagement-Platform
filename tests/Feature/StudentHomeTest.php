@@ -3,7 +3,9 @@
 namespace Tests\Feature;
 
 use App\Enums\Capability;
+use App\Enums\CategoryColor;
 use App\Enums\UserRole;
+use App\Models\Category;
 use App\Models\Event;
 use App\Models\EventApplication;
 use App\Models\Leaderboard;
@@ -19,9 +21,9 @@ use Tests\Feature\Topics\TopicTestCase;
 
 /**
  * Task #92 (26 Oct, section 4): the student's home page replaces the empty leaderboard. Their
- * leaderboards as boxes, starred first (leaderboards redesign, 9 November, which removed the
- * points per category), the next event with a countdown, events open for applications and
- * recent points. Teachers keep the Leaderboard page for now.
+ * points in total and per category (N7, 9 November), their leaderboards as boxes, starred first
+ * (leaderboards redesign, 9 November), the next event with a countdown, events open for
+ * applications and recent points. Teachers keep the Leaderboard page for now.
  */
 class StudentHomeTest extends TopicTestCase
 {
@@ -122,13 +124,75 @@ class StudentHomeTest extends TopicTestCase
             ->where('name', 'Anna Nagy')
             ->where('isStudent', true)
             ->has('leaderboards')
-            ->missing('points')
+            ->has('points')
             ->missing('semester')
             ->has('open')
             ->has('recent'));
 
         $this->actingAs($this->organiser)->get('/')
             ->assertInertia(fn (Assert $page) => $page->component('Leaderboard/Index'));
+    }
+
+    public function test_your_points_are_added_up_per_category(): void
+    {
+        $this->points(10, 'academic');
+        $this->points(15, 'academic');
+        $this->points(20, 'sports');
+        $this->points(5, 'community');
+
+        // Every category of the list, in list order, even with no points yet (N7).
+        $this->home()->assertInertia(fn (Assert $page) => $page
+            ->where('points.total', 50)
+            ->where('points.categories', [
+                ['slug' => 'academic', 'points' => 25],
+                ['slug' => 'scientific', 'points' => 0],
+                ['slug' => 'sports', 'points' => 20],
+                ['slug' => 'community', 'points' => 5],
+            ])
+            ->where('points.uncategorised', 0));
+    }
+
+    public function test_your_points_have_no_period_and_a_correction_is_taken_off(): void
+    {
+        $credit = $this->points(20, 'sports');
+        $this->points(-20, 'sports', event: $credit->event);
+        $this->points(10, 'academic');
+
+        // There are no semester periods (L3, 27 October): an old semester's points still count,
+        // also when no semester is running.
+        $old = Semester::create(['name' => 'Last spring', 'starts_at' => now()->subYear()->toDateString(), 'ends_at' => now()->subMonths(6)->toDateString(), 'status' => 'archived']);
+        $this->points(99, 'academic', $old->id);
+        $this->semester->update(['status' => 'archived']);
+
+        $this->home()->assertInertia(fn (Assert $page) => $page
+            ->where('points.total', 109)
+            ->where('points.categories.0', ['slug' => 'academic', 'points' => 109])
+            ->where('points.categories.2', ['slug' => 'sports', 'points' => 0]));
+    }
+
+    public function test_your_points_follow_the_category_list(): void
+    {
+        $this->points(7, 'sports');
+
+        // Task #116: a new category gets a tile at once; a retired one keeps its tile only while
+        // it holds points.
+        Category::create(['slug' => 'robotics', 'name' => 'Robotics', 'color' => CategoryColor::Teal]);
+        Category::query()->where('slug', 'sports')->first()->update(['retired_at' => now()]);
+        Category::query()->where('slug', 'community')->first()->update(['retired_at' => now()]);
+
+        // An event may have no category (D10): its points count in the total, on a tile of their own.
+        $plain = $this->event(['category' => null, 'topic_tag_id' => null, 'event_starts_at' => now()->subDays(2), 'event_ends_at' => now()->subDays(2)->addHour(), 'application_deadline' => now()->subDays(3)]);
+        PointTransaction::create(['student_id' => $this->student->id, 'event_id' => $plain->id, 'semester_id' => $this->semester->id, 'credited_by_id' => $this->organiser->id, 'points' => 4, 'type' => PointTransaction::CREDIT, 'source' => PointLedger::PASSPORT, 'category' => null]);
+
+        $this->home()->assertInertia(fn (Assert $page) => $page
+            ->where('points.total', 11)
+            ->where('points.categories', [
+                ['slug' => 'academic', 'points' => 0],
+                ['slug' => 'scientific', 'points' => 0],
+                ['slug' => 'sports', 'points' => 7],
+                ['slug' => 'robotics', 'points' => 0],
+            ])
+            ->where('points.uncategorised', 4));
     }
 
     public function test_the_boxes_show_the_starred_boards_first_then_the_rest(): void
@@ -268,6 +332,7 @@ class StudentHomeTest extends TopicTestCase
     public function test_a_new_student_sees_empty_parts(): void
     {
         $this->home()->assertInertia(fn (Assert $page) => $page
+            ->where('points.total', 0)
             ->has('leaderboards', 0)
             ->where('next', null)
             ->has('open', 0)
@@ -288,6 +353,7 @@ class StudentHomeTest extends TopicTestCase
             ->where('leaderboards.0.students', 1)
             ->where('leaderboards.0.you', null)
             ->where('leaderboards.0.leader', null)
+            ->where('points.total', 0)
             ->where('next', null)
             ->has('recent', 0));
 

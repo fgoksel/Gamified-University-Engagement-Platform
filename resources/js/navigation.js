@@ -128,7 +128,7 @@ export const navigation = {
         topics,
         topicRoles,
     ],
-    // System Admins work in the admin panel; Leaderboards, Topics and Roles open here.
+    // System Admins work in the admin panel; Leaderboards, Areas, Roles and Categories open here.
     admin: [
         leaderboards,
         topics,

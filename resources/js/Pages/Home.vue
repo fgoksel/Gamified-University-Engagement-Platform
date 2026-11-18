@@ -12,19 +12,23 @@ import {
 } from "@lucide/vue";
 import AlertMessage from "../Components/AlertMessage.vue";
 import BoardBoxes from "../Components/Leaderboards/BoardBoxes.vue";
+import YourPoints from "../Components/Leaderboards/YourPoints.vue";
 import EmptyState from "../Components/EmptyState.vue";
 import StatusChip from "../Components/StatusChip.vue";
 import { categoryDot, categoryLabel } from "../categoryColors.js";
 import { places } from "../eventWords.js";
 import { t, tc } from "../i18n.js";
 
-// The student's home page (Task #92, 26 Oct, section 4): their leaderboards as boxes, starred
-// first (leaderboards redesign, 9 November), the next event with a countdown, events open for
-// applications and recent points. Each part links to the page that has all of it.
+// The student's home page (Task #92, 26 Oct, section 4): their points in total and per category
+// (N7, 9 November), their leaderboards as boxes, starred first (leaderboards redesign,
+// 9 November), the next event with a countdown, events open for applications and recent points.
+// Each part links to the page that has all of it.
 defineOptions({ layout: { title: t("home.title") } });
 
 const props = defineProps({
     name: { type: String, default: "" },
+    // { total, categories: [{ slug, points }], uncategorised }: "Your points" (N7)
+    points: { type: Object, required: true },
     isStudent: { type: Boolean, default: true },
     // The boxes of the student's leaderboards, the highlighted ones first
     leaderboards: { type: Array, default: () => [] },
@@ -134,6 +138,9 @@ const linkClass =
                 }}
             </h2>
         </header>
+
+        <!-- Points in total and per category, so a student sees where they are lacking (N7) -->
+        <YourPoints :points="points" />
 
         <!-- The student's leaderboards, starred first (leaderboards redesign, 9 November) -->
         <section

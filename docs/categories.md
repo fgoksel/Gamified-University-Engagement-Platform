@@ -61,8 +61,8 @@ its ledger rows always agree.
 - Pages get the list with every response as the shared `categories` prop. In the browser,
   `resources/js/categoryColors.js` gives `categoryLabel[slug]`, `categoryDot[slug]`,
   `categorySoft[slug]` and `categoryOptions()`. Nothing else names a category.
-- Still naming the four: the Home page and the leaderboard components, which PR #107 rewrites.
-  Making them read the list is #117. They keep working meanwhile, with the old names and colours.
+- Home's *Your points* has a tile per category of the list (PR #107), and the leaderboard boxes
+  and rankings show no categories, so no screen names the four any more.
 
 ## Going back
 

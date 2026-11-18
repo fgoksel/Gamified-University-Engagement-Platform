@@ -26,10 +26,11 @@ class LeaderboardStandings
     public function __construct(private PointCalculationService $points) {}
 
     /**
-     * Every student on the leaderboard, best first, each with the points per category.
-     * Worked out, and kept for a moment, by PointCalculationService (Task #55).
+     * Every student on the leaderboard, best first, each with the points per category (one
+     * property per category of the list, by slug, Task #116). Worked out, and kept for a moment,
+     * by PointCalculationService (Task #55).
      *
-     * @return Collection<int, object{student_id: int, name: string, neptun_code: ?string, points: int, academic: int, scientific: int, sports: int, community: int, position: int, rank: int}>
+     * @return Collection<int, object{student_id: int, name: string, neptun_code: ?string, points: int, position: int, rank: int}>
      */
     public function ranked(Leaderboard $board): Collection
     {

@@ -10,7 +10,7 @@ below, for students and staff alike. The separate board page is gone; old links 
 
 - **A student's box** holds their own place in large type ("#2"), "of 4 · 10 pts" and the points
   to the next place ("20 pts to #1"), or "You are first". Without points in that area it says "You
-  are not on it yet". The *Your points* box with the four categories is gone, here and on Home.
+  are not on it yet". The *Your points* box is no longer on this page; it stays on Home (N7).
 - **A staff box** describes the board, because staff are not on it: who leads ("1st: BENC07,
   30 pts", with only the board's columns), how many students are listed, and *On the hall screen*.
 - **The ranking below** has a podium for the top 3 (second, first, third from left to right), then
@@ -25,8 +25,12 @@ below, for students and staff alike. The separate board page is gone; old links 
   above their own, such as their faculty and *University total* (`AreaLeaderboards::openTo()` and
   `canSee()`); boards of sibling areas stay hidden and their address says "not found". An
   archived area opens nothing above it. Being on the hall screen changes nothing here.
-- **Home:** a student's Home shows the same boxes, starred first, then the rest; a teacher starts
-  on the same boxes (`/`). A box there opens the Leaderboards page with that board selected.
+- **Home:** a student's Home starts with *Your points* (N7, 9 November): their points in total
+  and a tile per category of the list (Task #116), with no period (L3), so they see where they are
+  lacking. A retired category keeps its tile while it holds points, and points of events without a
+  category have a tile of their own, so the tiles add up to the total. Below it come the same boxes,
+  starred first, then the rest. A teacher starts on the same boxes (`/`). A box opens the
+  Leaderboards page with that board selected.
 - *Where am I?* stays below the ranking, for students only.
 
 ### Highlighted leaderboards (D6, 7 November)
