@@ -4,6 +4,7 @@ use App\Mail\TestMail;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Schedule;
 use Illuminate\Support\Facades\Validator;
 
 Artisan::command('inspire', function () {
@@ -33,3 +34,7 @@ Artisan::command('mail:test {email}', function (string $email) {
 
     return 0;
 })->purpose('Send a test email to check the mail settings');
+
+// Task #101: an event becomes Completed when it ends. Run by the scheduler container
+// (docker-compose.yml) or, on a server, by cron calling `php artisan schedule:run` every minute.
+Schedule::command('events:complete')->everyMinute()->withoutOverlapping();

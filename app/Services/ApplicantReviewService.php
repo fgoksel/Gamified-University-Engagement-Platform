@@ -247,7 +247,9 @@ class ApplicantReviewService
         /** @var Event $locked */
         $locked = Event::query()->whereKey($event->id)->lockForUpdate()->firstOrFail();
 
-        if ($locked->status !== Event::STATUS_PUBLISHED) {
+        // A completed event is one that ended (Task #101); its applicants stay open to review,
+        // as they were before anything set that status.
+        if (! in_array($locked->status, [Event::STATUS_PUBLISHED, Event::STATUS_COMPLETED], true)) {
             throw ValidationException::withMessages([
                 'event' => __('events.review.applicants_can_only_be_reviewed'),
             ]);

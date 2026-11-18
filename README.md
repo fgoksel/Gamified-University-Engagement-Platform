@@ -47,6 +47,7 @@ On Windows PowerShell, use `copy .env.example .env` for step 1.
 | Follow Vite logs | `docker compose logs -f vite` |
 | Send a test email | `docker compose exec app php artisan mail:test you@example.com` |
 | Follow queue worker logs | `docker compose logs -f queue` |
+| See the scheduled commands | `docker compose exec app php artisan schedule:list` |
 
 ## Services
 
@@ -56,6 +57,7 @@ On Windows PowerShell, use `copy .env.example .env` for step 1.
 | Vite dev server | http://localhost:5173 | Hot reload for Vue / CSS |
 | Mailpit | http://localhost:8025 | Catches all outgoing email |
 | Queue worker | internal only | Sends queued jobs such as invitation emails |
+| Scheduler | internal only | Runs scheduled commands every minute, such as marking ended events Completed. On a server without Docker, have cron run `php artisan schedule:run` every minute |
 | MySQL | `localhost:3307` | Database `gup`, user `gup_user`, password `secret` |
 | Redis | internal only | Host `redis` inside the Docker network |
 

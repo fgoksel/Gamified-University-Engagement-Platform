@@ -83,8 +83,12 @@ function post(action) {
 
             <!-- Actions allowed in this status and by the person's capabilities -->
             <div class="flex flex-wrap gap-2">
+                <!-- Task #101: a completed event is an ended one, so these stay as they were. -->
                 <Link
-                    v-if="event.can_review && event.status === 'published'"
+                    v-if="
+                        event.can_review &&
+                        ['published', 'completed'].includes(event.status)
+                    "
                     :href="`/events/${event.id}/applicants`"
                     class="inline-flex min-h-9 items-center justify-center rounded-control border border-line bg-surface px-3 text-sm font-medium text-fg hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                 >
@@ -94,7 +98,7 @@ function post(action) {
                     v-if="
                         event.can_credit &&
                         !event.is_hidden &&
-                        event.status === 'published'
+                        ['published', 'completed'].includes(event.status)
                     "
                     :href="`/events/${event.id}/scan`"
                     class="inline-flex min-h-9 items-center justify-center rounded-control border border-line bg-surface px-3 text-sm font-medium text-fg hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
