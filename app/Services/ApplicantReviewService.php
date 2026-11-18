@@ -80,10 +80,18 @@ class ApplicantReviewService
             ->get()
             ->groupBy('student_id');
 
-        return $applications->map(function (EventApplication $application) use ($points) {
-            $byCategory = ['academic' => 0, 'scientific' => 0, 'sports' => 0, 'community' => 0];
+        $zeroes = app(CategoryList::class)->zeroes();
+
+        return $applications->map(function (EventApplication $application) use ($points, $zeroes) {
+            // One entry per category of the list (Task #116). Points of an event without a
+            // category count in the total only.
+            $byCategory = $zeroes;
+            $total = 0;
             foreach ($points->get($application->student_id, []) as $row) {
-                $byCategory[$row->category] = (int) $row->total;
+                if ($row->category !== null) {
+                    $byCategory[$row->category] = (int) $row->total;
+                }
+                $total += (int) $row->total;
             }
 
             return [
@@ -96,7 +104,7 @@ class ApplicantReviewService
                     'name' => $application->student?->name,
                     'neptun_code' => $application->student?->neptun_code,
                 ],
-                'points' => [...$byCategory, 'total' => array_sum($byCategory)],
+                'points' => [...$byCategory, 'total' => $total],
             ];
         })->values();
     }

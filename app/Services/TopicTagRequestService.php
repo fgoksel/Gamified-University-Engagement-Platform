@@ -39,6 +39,15 @@ class TopicTagRequestService
             ]);
         }
 
+        // The category may have been retired since the request was sent (Task #116).
+        if (! app(CategoryList::class)->isInUse($request->category)) {
+            throw ValidationException::withMessages([
+                'category' => __('tag_requests.service.the_category_is_retired', [
+                    'category' => app(CategoryList::class)->name($request->category) ?? $request->category,
+                ]),
+            ]);
+        }
+
         return DB::transaction(function () use ($request, $admin) {
             $topicTag = TopicTag::create([
                 'name' => $request->proposed_name,

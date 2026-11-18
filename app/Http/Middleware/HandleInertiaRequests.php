@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Enums\Capability;
 use App\Enums\UserRole;
+use App\Services\CategoryList;
 use App\Services\TopicAccess;
 use App\Support\SubjectAreaTree;
 use Illuminate\Http\Request;
@@ -60,6 +61,10 @@ class HandleInertiaRequests extends Middleware
             // Menu flags for Topics: shown only to people who can open a topic, and
             // "Roles" only to those who may define or give roles somewhere.
             'topics' => fn () => $request->user() ? $this->topicMenu($request) : null,
+            // The category list (Task #116): every screen shows a stored category with its name and
+            // colour from here, so none of them keeps a list of its own. Pages without a login
+            // (the login page, the hall screen) show no categories.
+            'categories' => fn () => $request->user() ? app(CategoryList::class)->shared() : [],
             // Unread in-app notifications, shown as a badge in the menu (Task #53)
             'notifications' => fn () => $request->user()
                 ? ['unread' => $request->user()->unreadNotifications()->count()]
@@ -79,7 +84,7 @@ class HandleInertiaRequests extends Middleware
     }
 
     /**
-     * @return array{available: bool, roles: bool}
+     * @return array{available: bool, roles: bool, categories: bool}
      */
     private function topicMenu(Request $request): array
     {
@@ -91,6 +96,8 @@ class HandleInertiaRequests extends Middleware
             'roles' => $access->isSystemAdmin($user)
                 || $access->canAnywhere($user, Capability::DefineRoles)
                 || $access->canAnywhere($user, Capability::AccessAssign),
+            // "Categories" for the people who may change the list (Task #116).
+            'categories' => app(CategoryList::class)->canManage($user),
         ];
     }
 }

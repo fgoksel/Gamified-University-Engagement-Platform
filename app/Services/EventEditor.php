@@ -37,7 +37,8 @@ use Illuminate\Validation\ValidationException;
  *   managed-from topic           always (authority would move under the people running it)
  *   who may see and apply, and
  *   how students get a place     once anybody has applied
- *   points and the tag           once anybody was credited (everyone gets the same points)
+ *   points, tag and category     once anybody was credited (everyone gets the same points,
+ *                                and the ledger already copied the category)
  *   start                        once the event has started
  *   surprise setting             always (it stays hidden, and its points are given by import)
  * Places can never drop below the students already accepted.
@@ -55,12 +56,15 @@ class EventEditor
 
     /** The fields of the form. A completed event keeps all of them but the points end date. */
     public const FIELDS = [
-        'title', 'description', 'location', 'topic_tag_id', 'owning_topic_id', 'audience_topic_id',
+        'title', 'description', 'location', 'topic_tag_id', 'category', 'owning_topic_id', 'audience_topic_id',
         'capacity', 'application_type', 'points_value', 'event_starts_at', 'event_ends_at',
         'applications_open_at', 'application_deadline', 'completion_deadline', 'is_hidden', 'qr_enabled',
     ];
 
-    public function __construct(private EventPlacement $placement) {}
+    public function __construct(
+        private EventPlacement $placement,
+        private CategoryList $categories,
+    ) {}
 
     /**
      * The event is over (Task #76): marked completed, or published and already ended. The same
@@ -120,6 +124,7 @@ class EventEditor
         if ($event->pointTransactions()->where('type', PointTransaction::CREDIT)->exists()) {
             $locks['points_value'] = __('events.editor.points_were_already_credited_so');
             $locks['topic_tag_id'] = __('events.editor.points_were_already_credited_so_2');
+            $locks['category'] = __('events.editor.points_were_already_credited_so_2');
         }
 
         if ($event->event_starts_at->isPast()) {
@@ -352,10 +357,25 @@ class EventEditor
         $type = $keeps('application_type', $data['application_type']) ? $event->application_type : $data['application_type'];
         $points = $keeps('points_value', (int) $data['points_value']) ? $event->points_value : (int) $data['points_value'];
 
-        $tagId = $keeps('topic_tag_id', (int) $data['topic_tag_id']) ? $event->topic_tag_id : (int) $data['topic_tag_id'];
-        $tag = TopicTag::query()->whereKey($tagId)->first();
-        if ($tag === null || (! $tag->is_active && $tagId !== $event->topic_tag_id)) {
+        // Tag and category are both optional (D10, Task #116). A tag brings its category; without
+        // one the organiser may pick a category or none. A tag or category that is no longer
+        // offered may stay on the event that has it, but cannot be newly chosen.
+        $submittedTag = filled($data['topic_tag_id'] ?? null) ? (int) $data['topic_tag_id'] : null;
+        $tagId = $keeps('topic_tag_id', $submittedTag) ? $event->topic_tag_id : $submittedTag;
+        $tag = $tagId === null ? null : TopicTag::query()->whereKey($tagId)->first();
+        if ($tagId !== null && ($tag === null || ($tagId !== $event->topic_tag_id && ! $tag->isPickable()))) {
             $errors['topic_tag_id'] = __('events.editor.this_topic_tag');
+        }
+
+        // A page opened before the category field existed leaves it out: the stored one stays.
+        $submittedCategory = array_key_exists('category', $data) ? (filled($data['category']) ? (string) $data['category'] : null) : $event->category;
+        if ($keeps('category', $submittedCategory)) {
+            $category = $event->category;
+        } else {
+            $category = $tag !== null ? $tag->category : $submittedCategory;
+            if ($category !== null && $category !== $event->category && ! $this->categories->isInUse($category)) {
+                $errors['category'] = __('events.editor.this_category_is_no_longer');
+            }
         }
 
         $capacity = (int) $data['capacity'];
@@ -414,7 +434,7 @@ class EventEditor
             'description' => trim($data['description']),
             'location' => $location,
             'topic_tag_id' => $tagId,
-            'category' => $tag->category,
+            'category' => $category,
             'owning_topic_id' => $owningId,
             'audience_topic_id' => $audienceId === null ? null : (int) $audienceId,
             'capacity' => $capacity,

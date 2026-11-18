@@ -1,0 +1,535 @@
+{
+  "meta": {
+    "label": "dev 29e08e3, after",
+    "date": "2026-11-08T21:29:11.069Z",
+    "baseUrl": "http://127.0.0.1:8099",
+    "tools": {
+      "lighthouse": "13.6.0",
+      "axe-core": "4.14.0",
+      "playwright-core": "1.64.1",
+      "chrome": "Chrome/156.0.0.0"
+    },
+    "axeTags": [
+      "wcag2a",
+      "wcag2aa",
+      "wcag21a",
+      "wcag21aa",
+      "wcag22aa",
+      "best-practice"
+    ],
+    "viewports": {
+      "desktop": {
+        "width": 1280,
+        "height": 800
+      },
+      "phone": {
+        "width": 390,
+        "height": 844
+      }
+    },
+    "lighthouse": "accessibility category only, default phone emulation"
+  },
+  "results": [
+    {
+      "who": "Guest",
+      "name": "Log in",
+      "route": "/login",
+      "axe": {
+        "desktop": [],
+        "phone": []
+      },
+      "status": 200,
+      "finalUrl": "/login",
+      "smallTargets": {
+        "count": 2,
+        "controls": [
+          "button \"Show password\" 40x44",
+          "a \"Forgot password?\" 117x18"
+        ]
+      },
+      "lighthouse": {
+        "score": 100,
+        "finalUrl": "/login",
+        "failing": [],
+        "warnings": []
+      }
+    },
+    {
+      "who": "Guest",
+      "name": "Forgot password",
+      "route": "/forgot-password",
+      "axe": {
+        "desktop": [],
+        "phone": []
+      },
+      "status": 200,
+      "finalUrl": "/forgot-password",
+      "smallTargets": {
+        "count": 1,
+        "controls": [
+          "a \"Back to log in\" 108x20"
+        ]
+      },
+      "lighthouse": {
+        "score": 100,
+        "finalUrl": "/forgot-password",
+        "failing": [],
+        "warnings": []
+      }
+    },
+    {
+      "who": "Student (Anna)",
+      "name": "Home",
+      "route": "/",
+      "axe": {
+        "desktop": [],
+        "phone": []
+      },
+      "status": 200,
+      "finalUrl": "/",
+      "smallTargets": {
+        "count": 1,
+        "controls": [
+          "a \"Campus Engage, home\" 177x36"
+        ]
+      },
+      "lighthouse": {
+        "score": 100,
+        "finalUrl": "/",
+        "failing": [],
+        "warnings": []
+      }
+    },
+    {
+      "who": "Student (Anna)",
+      "name": "All events",
+      "route": "/events",
+      "axe": {
+        "desktop": [],
+        "phone": []
+      },
+      "status": 200,
+      "finalUrl": "/events",
+      "smallTargets": {
+        "count": 11,
+        "controls": [
+          "a \"Campus Engage, home\" 177x36",
+          "input[search] \"\" 358x42",
+          "button \"Upcoming\" 92x32",
+          "button \"Past\" 53x32",
+          "button \"All dates\" 80x32",
+          "input[date] \"\" 358x38 (x2)",
+          "button \"All\" 43x44",
+          "a \"Indexing Lab\" 96x20",
+          "a \"SQL Joins Workshop\" 155x20",
+          "a \"Database Design Hackathon\" 213x20"
+        ]
+      },
+      "lighthouse": {
+        "score": 100,
+        "finalUrl": "/events",
+        "failing": [],
+        "warnings": []
+      }
+    },
+    {
+      "who": "Student (Anna)",
+      "name": "Event page, open for applications",
+      "route": "/events/1",
+      "axe": {
+        "desktop": [],
+        "phone": []
+      },
+      "status": 200,
+      "finalUrl": "/events/1",
+      "smallTargets": {
+        "count": 2,
+        "controls": [
+          "a \"Campus Engage, home\" 177x36",
+          "a \"All events\" 83x20"
+        ]
+      },
+      "lighthouse": {
+        "score": 100,
+        "finalUrl": "/events/1",
+        "failing": [],
+        "warnings": []
+      }
+    },
+    {
+      "who": "Student (Anna)",
+      "name": "Event page, accepted and running",
+      "route": "/events/3",
+      "axe": {
+        "desktop": [],
+        "phone": []
+      },
+      "status": 200,
+      "finalUrl": "/events/3",
+      "smallTargets": {
+        "count": 2,
+        "controls": [
+          "a \"Campus Engage, home\" 177x36",
+          "a \"All events\" 83x20"
+        ]
+      },
+      "lighthouse": {
+        "score": 100,
+        "finalUrl": "/events/3",
+        "failing": [],
+        "warnings": []
+      }
+    },
+    {
+      "who": "Student (Anna)",
+      "name": "My events",
+      "route": "/my-events",
+      "axe": {
+        "desktop": [],
+        "phone": []
+      },
+      "status": 200,
+      "finalUrl": "/my-events",
+      "smallTargets": {
+        "count": 2,
+        "controls": [
+          "a \"Campus Engage, home\" 177x36",
+          "button \"All (5)\" 39x44"
+        ]
+      },
+      "lighthouse": {
+        "score": 100,
+        "finalUrl": "/my-events",
+        "failing": [],
+        "warnings": []
+      }
+    },
+    {
+      "who": "Student (Anna)",
+      "name": "QR passport",
+      "route": "/passport",
+      "axe": {
+        "desktop": [],
+        "phone": []
+      },
+      "status": 200,
+      "finalUrl": "/passport",
+      "smallTargets": {
+        "count": 1,
+        "controls": [
+          "a \"Campus Engage, home\" 177x36"
+        ]
+      },
+      "lighthouse": {
+        "score": 100,
+        "finalUrl": "/passport",
+        "failing": [],
+        "warnings": []
+      }
+    },
+    {
+      "who": "Student (Anna)",
+      "name": "Scan",
+      "route": "/scan",
+      "axe": {
+        "desktop": [],
+        "phone": []
+      },
+      "status": 200,
+      "finalUrl": "/scan",
+      "smallTargets": {
+        "count": 1,
+        "controls": [
+          "a \"Campus Engage, home\" 177x36"
+        ]
+      },
+      "lighthouse": {
+        "score": 100,
+        "finalUrl": "/scan",
+        "failing": [],
+        "warnings": []
+      }
+    },
+    {
+      "who": "Student (Anna)",
+      "name": "Notifications",
+      "route": "/notifications",
+      "axe": {
+        "desktop": [],
+        "phone": []
+      },
+      "status": 200,
+      "finalUrl": "/notifications",
+      "smallTargets": {
+        "count": 1,
+        "controls": [
+          "a \"Campus Engage, home\" 177x36"
+        ]
+      },
+      "lighthouse": {
+        "score": 100,
+        "finalUrl": "/notifications",
+        "failing": [],
+        "warnings": []
+      }
+    },
+    {
+      "who": "Student (Anna)",
+      "name": "Profile",
+      "route": "/profile",
+      "axe": {
+        "desktop": [],
+        "phone": []
+      },
+      "status": 200,
+      "finalUrl": "/profile",
+      "smallTargets": {
+        "count": 5,
+        "controls": [
+          "a \"Campus Engage, home\" 177x36",
+          "button \"Upload photo\" 138x38",
+          "button \"Show password\" 40x44 (x3)"
+        ]
+      },
+      "lighthouse": {
+        "score": 100,
+        "finalUrl": "/profile",
+        "failing": [],
+        "warnings": []
+      }
+    },
+    {
+      "who": "Student (Anna)",
+      "name": "Change password",
+      "route": "/password/change",
+      "axe": {
+        "desktop": [],
+        "phone": []
+      },
+      "status": 200,
+      "finalUrl": "/password/change",
+      "smallTargets": {
+        "count": 4,
+        "controls": [
+          "button \"Show password\" 40x44 (x3)",
+          "button \"Log out\" 49x20"
+        ]
+      },
+      "lighthouse": {
+        "score": 100,
+        "finalUrl": "/password/change",
+        "failing": [],
+        "warnings": []
+      }
+    },
+    {
+      "who": "Organiser (Ivan)",
+      "name": "Organized by me",
+      "route": "/my-events",
+      "axe": {
+        "desktop": [],
+        "phone": []
+      },
+      "status": 200,
+      "finalUrl": "/my-events",
+      "smallTargets": {
+        "count": 22,
+        "controls": [
+          "a \"Campus Engage, home\" 177x36",
+          "button \"Request Topic Tag\" 169x38",
+          "a \"New event\" 117x38",
+          "a \"Upcoming 4\" 123x38",
+          "a \"Drafts 1\" 93x38",
+          "a \"Past 1\" 81x38",
+          "a \"On hold 1\" 104x38",
+          "a \"Cancelled 1\" 118x38",
+          "a \"Applicants\" 96x36 (x4)",
+          "a \"Scan attendance\" 136x36 (x3)",
+          "a \"Give points by import\" 165x36 (x4)",
+          "a \"Edit\" 52x36 (x3)"
+        ]
+      },
+      "lighthouse": {
+        "score": 100,
+        "finalUrl": "/my-events",
+        "failing": [],
+        "warnings": []
+      }
+    },
+    {
+      "who": "Organiser (Ivan)",
+      "name": "Create event",
+      "route": "/events/create",
+      "axe": {
+        "desktop": [],
+        "phone": []
+      },
+      "status": 200,
+      "finalUrl": "/events/create",
+      "smallTargets": {
+        "count": 4,
+        "controls": [
+          "a \"Campus Engage, home\" 177x36",
+          "input[radio] \"fcfs\" 316x40",
+          "button \"Save as draft\" 358x42",
+          "button \"Publish event\" 358x40"
+        ]
+      },
+      "lighthouse": {
+        "score": 100,
+        "finalUrl": "/events/create",
+        "failing": [],
+        "warnings": []
+      }
+    },
+    {
+      "who": "Organiser (Ivan)",
+      "name": "Edit event",
+      "route": "/events/1/edit",
+      "axe": {
+        "desktop": [],
+        "phone": []
+      },
+      "status": 200,
+      "finalUrl": "/events/1/edit",
+      "smallTargets": {
+        "count": 7,
+        "controls": [
+          "a \"Campus Engage, home\" 177x36",
+          "a \"Organized by me\" 129x20",
+          "a \"Applied Students\" 137x38",
+          "a \"Point Crediting\" 123x38",
+          "a \"QR slips\" 76x38",
+          "input[radio] \"fcfs\" 316x40",
+          "button \"Save changes\" 358x40"
+        ]
+      },
+      "lighthouse": {
+        "score": 100,
+        "finalUrl": "/events/1/edit",
+        "failing": [],
+        "warnings": []
+      }
+    },
+    {
+      "who": "Organiser (Ivan)",
+      "name": "Applicants",
+      "route": "/events/1/applicants",
+      "axe": {
+        "desktop": [],
+        "phone": []
+      },
+      "status": 200,
+      "finalUrl": "/events/1/applicants",
+      "smallTargets": {
+        "count": 4,
+        "controls": [
+          "a \"Campus Engage, home\" 177x36",
+          "button \"10 pts\" 53x36 (x2)",
+          "button \"30 pts\" 53x36"
+        ]
+      },
+      "lighthouse": {
+        "score": 100,
+        "finalUrl": "/events/1/applicants",
+        "failing": [],
+        "warnings": []
+      }
+    },
+    {
+      "who": "Organiser (Ivan)",
+      "name": "Scan attendance (passport)",
+      "route": "/events/3/scan",
+      "axe": {
+        "desktop": [],
+        "phone": []
+      },
+      "status": 200,
+      "finalUrl": "/events/3/scan",
+      "smallTargets": {
+        "count": 1,
+        "controls": [
+          "a \"Campus Engage, home\" 177x36"
+        ]
+      },
+      "lighthouse": {
+        "score": 100,
+        "finalUrl": "/events/3/scan",
+        "failing": [],
+        "warnings": []
+      }
+    },
+    {
+      "who": "Organiser (Ivan)",
+      "name": "QR codes",
+      "route": "/events/3/qr-codes",
+      "axe": {
+        "desktop": [],
+        "phone": []
+      },
+      "status": 200,
+      "finalUrl": "/events/3/qr-codes",
+      "smallTargets": {
+        "count": 1,
+        "controls": [
+          "a \"Campus Engage, home\" 177x36"
+        ]
+      },
+      "lighthouse": {
+        "score": 100,
+        "finalUrl": "/events/3/qr-codes",
+        "failing": [],
+        "warnings": []
+      }
+    },
+    {
+      "who": "Organiser (Ivan)",
+      "name": "Points import",
+      "route": "/events/3/points-import",
+      "axe": {
+        "desktop": [],
+        "phone": []
+      },
+      "status": 200,
+      "finalUrl": "/events/3/points-import",
+      "smallTargets": {
+        "count": 2,
+        "controls": [
+          "a \"Campus Engage, home\" 177x36",
+          "a \"Organized by me\" 129x20"
+        ]
+      },
+      "lighthouse": {
+        "score": 100,
+        "finalUrl": "/events/3/points-import",
+        "failing": [],
+        "warnings": []
+      }
+    },
+    {
+      "who": "Organiser (Ivan)",
+      "name": "Topics",
+      "route": "/topics",
+      "axe": {
+        "desktop": [],
+        "phone": []
+      },
+      "status": 200,
+      "finalUrl": "/topics/2",
+      "smallTargets": {
+        "count": 1,
+        "controls": [
+          "a \"Campus Engage, home\" 177x36"
+        ]
+      },
+      "lighthouse": {
+        "score": 100,
+        "finalUrl": "/topics/2",
+        "failing": [],
+        "warnings": [
+          "The page may not be loading as expected because your test URL (http://127.0.0.1:8099/topics) was redirected to http://127.0.0.1:8099/topics/2. Try testing the second URL directly."
+        ]
+      }
+    }
+  ]
+}

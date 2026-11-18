@@ -2,9 +2,9 @@
 
 namespace App\Filament\Pages;
 
-use App\Enums\TaxonomyCategory;
 use App\Models\Faculty;
 use App\Models\SubjectArea;
+use App\Services\CategoryList;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
@@ -64,14 +64,9 @@ class SubjectAreas extends Page implements HasTable
                 TextColumn::make('category')
                     ->label(__('admin.subject_areas.category'))
                     ->badge()
-                    ->formatStateUsing(fn (string $state): string => TaxonomyCategory::tryFrom($state)?->label() ?? $state)
-                    ->color(fn (string $state): string => match ($state) {
-                        'academic' => 'info',
-                        'scientific' => 'primary',
-                        'sports' => 'warning',
-                        'community' => 'success',
-                        default => 'gray',
-                    })
+                    // The name and colour the category has now (Task #116).
+                    ->formatStateUsing(fn (string $state): string => app(CategoryList::class)->name($state) ?? $state)
+                    ->color(fn (string $state): string => app(CategoryList::class)->find($state)?->color->badge() ?? 'gray')
                     ->sortable(),
 
                 TextColumn::make('faculty.name')
@@ -95,7 +90,7 @@ class SubjectAreas extends Page implements HasTable
             ->filters([
                 SelectFilter::make('category')
                     ->label(__('admin.subject_areas.category'))
-                    ->options(TaxonomyCategory::options()),
+                    ->options(fn (): array => app(CategoryList::class)->allOptions()),
 
                 SelectFilter::make('faculty_id')
                     ->label(__('admin.subject_areas.faculty'))
@@ -143,7 +138,9 @@ class SubjectAreas extends Page implements HasTable
 
                         Select::make('category')
                             ->label(__('admin.subject_areas.category'))
-                            ->options(TaxonomyCategory::options())
+                            // The categories in use, and the one it has even if retired since (Task #116).
+                            ->options(fn (?SubjectArea $record): array => app(CategoryList::class)->options($record?->category))
+                            ->in(fn (?SubjectArea $record): array => array_keys(app(CategoryList::class)->options($record?->category)))
                             ->required(),
 
                         Select::make('faculty_id')
@@ -246,7 +243,9 @@ class SubjectAreas extends Page implements HasTable
 
                     Select::make('category')
                         ->label(__('admin.subject_areas.category'))
-                        ->options(TaxonomyCategory::options())
+                        // The categories in use (Task #116).
+                        ->options(fn (): array => app(CategoryList::class)->options())
+                        ->in(fn (): array => array_keys(app(CategoryList::class)->options()))
                         ->required(),
 
                     Select::make('faculty_id')

@@ -112,7 +112,10 @@ const statusLabel = {
     withdrawn: t("events.applicants.withdrawn"),
 };
 
-const categories = ["academic", "scientific", "sports", "community"];
+// The categories an applicant's points are split into: every category of the list, in its order,
+// as the server sends them next to "total" (Task #116).
+const categoriesOf = (applicant) =>
+    Object.keys(applicant.points ?? {}).filter((key) => key !== "total");
 
 function formatDateTime(iso) {
     if (!iso) return "";
@@ -300,7 +303,7 @@ function formatDateTime(iso) {
                                 class="absolute z-20 mt-1 w-44 space-y-1 rounded-card border border-line bg-surface p-3 text-xs shadow-popover"
                             >
                                 <div
-                                    v-for="c in categories"
+                                    v-for="c in categoriesOf(a)"
                                     :key="c"
                                     class="flex items-center justify-between gap-2"
                                 >

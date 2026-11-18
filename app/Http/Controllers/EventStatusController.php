@@ -37,10 +37,6 @@ class EventStatusController extends Controller
             return back()->with('error', __('events.status.this_draft_has_dates'));
         }
 
-        if ($event->topic_tag_id === null) {
-            return back()->with('error', __('events.status.choose_a_topic_tag_before'));
-        }
-
         $event->update(['status' => Event::STATUS_PUBLISHED, 'published_at' => now()]);
 
         return back()->with('success', __('events.status.title_published', ['title' => $event->title]));

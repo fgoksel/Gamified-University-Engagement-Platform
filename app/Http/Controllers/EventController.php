@@ -159,8 +159,7 @@ class EventController extends Controller
             'owningTopics' => $owningTopics,
             'initialTopic' => in_array($area, array_column($owningTopics, 'id'), true) ? $area : null,
             'tags' => TopicTag::query()
-                ->where('is_active', true)
-                ->orderBy('category')
+                ->pickable()
                 ->orderBy('name')
                 ->get(['id', 'name', 'category']),
             'hasActiveSemester' => Semester::where('status', 'active')->exists(),
@@ -182,6 +181,7 @@ class EventController extends Controller
 
         $data = $request->validated();
         $publish = $data['action'] === 'publish';
+        $tag = filled($data['topic_tag_id'] ?? null) ? TopicTag::findOrFail($data['topic_tag_id']) : null;
         $hidden = (bool) ($data['is_hidden'] ?? false);
 
         Event::create([
@@ -189,9 +189,10 @@ class EventController extends Controller
             'description' => trim($data['description']),
             // Optional free text (Task #77): empty means no location yet.
             'location' => filled($data['location'] ?? null) ? trim($data['location']) : null,
-            'topic_tag_id' => $data['topic_tag_id'],
-            // Copied from the tag; the ledger snapshots it again when crediting.
-            'category' => TopicTag::findOrFail($data['topic_tag_id'])->category,
+            'topic_tag_id' => $tag?->id,
+            // The tag's category, or the one picked without a tag, or none (D10, Task #116).
+            // The ledger copies it again when crediting.
+            'category' => $tag?->category ?? ($data['category'] ?? null),
             'created_by_id' => $request->user()->id,
             'owning_topic_id' => $data['owning_topic_id'],
             'audience_topic_id' => $data['audience_topic_id'] ?? null,

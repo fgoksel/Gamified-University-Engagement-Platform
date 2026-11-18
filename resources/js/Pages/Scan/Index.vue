@@ -223,7 +223,7 @@ onUnmounted(stopCamera);
                         +{{ result.points }}
                     </dd>
                 </div>
-                <div>
+                <div v-if="result.category">
                     <dt class="text-fg-muted">{{ $t("scan.category") }}</dt>
                     <dd
                         class="flex items-center justify-center gap-1.5 text-lg font-semibold text-fg"
