@@ -4,10 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\TopicTag;
 use App\Models\TopicTagRequest;
+use App\Services\CategoryList;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -43,12 +43,13 @@ class TopicTagRequestController extends Controller
     {
         $validated = $request->validate([
             'proposed_name' => ['required', 'string', 'max:255'],
-            'category' => ['required', 'string', Rule::in(['academic', 'scientific', 'sports', 'community'])],
+            // A category of the list that is in use (Task #116).
+            'category' => ['required', 'string', app(CategoryList::class)->inUseRule()],
             'justification' => ['required', 'string', 'max:2000'],
         ], [
             'proposed_name.required' => __('tag_requests.flash.please_complete_all_fields_before'),
             'category.required' => __('tag_requests.flash.please_complete_all_fields_before'),
-            'category.in' => __('tag_requests.flash.please_select_a_valid_category'),
+            'category.exists' => __('tag_requests.flash.please_select_a_valid_category'),
             'justification.required' => __('tag_requests.flash.please_complete_all_fields_before'),
         ]);
 

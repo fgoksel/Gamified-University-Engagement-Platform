@@ -18,7 +18,11 @@ import EmptyState from "../../Components/EmptyState.vue";
 import StatusChip from "../../Components/StatusChip.vue";
 import Modal from "../../Components/Topics/Modal.vue";
 import Btn from "../../Components/Topics/Btn.vue";
-import { categoryDot, categoryLabel } from "../../categoryColors.js";
+import {
+    categoryDot,
+    categoryLabel,
+    categorySoft,
+} from "../../categoryColors.js";
 import {
     actionWords,
     applyLabels,
@@ -274,16 +278,7 @@ function reapply(app) {
                             <span
                                 v-if="app.event.category"
                                 class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 font-medium"
-                                :class="[
-                                    app.event.category === 'academic' &&
-                                        'bg-cat-academic-soft text-cat-academic-fg',
-                                    app.event.category === 'scientific' &&
-                                        'bg-cat-scientific-soft text-cat-scientific-fg',
-                                    app.event.category === 'sports' &&
-                                        'bg-cat-sports-soft text-cat-sports-fg',
-                                    app.event.category === 'community' &&
-                                        'bg-cat-community-soft text-cat-community-fg',
-                                ]"
+                                :class="categorySoft[app.event.category]"
                             >
                                 <span
                                     class="size-1.5 rounded-full"

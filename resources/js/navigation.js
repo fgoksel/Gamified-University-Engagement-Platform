@@ -6,6 +6,7 @@ import {
     IdCard,
     QrCode,
     ShieldCheck,
+    Tags,
     Trophy,
     UserRound,
 } from "@lucide/vue";
@@ -63,6 +64,13 @@ const topicRoles = {
     icon: ShieldCheck,
     needs: "roles",
 };
+// Task #116: the category list, for the system admin and the University root's area admin.
+const categories = {
+    label: t("navigation.categories"),
+    href: "/categories",
+    icon: Tags,
+    needs: "categories",
+};
 
 export const navigation = {
     teacher: [
@@ -82,6 +90,7 @@ export const navigation = {
         leaderboards,
         topics,
         topicRoles,
+        categories,
         notifications,
         profile,
     ],
@@ -107,6 +116,7 @@ export const navigation = {
     admin: [
         topics,
         topicRoles,
+        categories,
         {
             label: t("navigation.admin_panel"),
             href: "/admin",

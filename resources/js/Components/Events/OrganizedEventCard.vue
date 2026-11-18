@@ -66,10 +66,13 @@ function post(action) {
                 </h2>
                 <p class="mt-1 flex items-center gap-2 text-sm text-fg-muted">
                     <span
+                        v-if="event.category"
                         class="size-2.5 shrink-0 rounded-full"
                         :class="categoryDot[event.category]"
                     />
-                    {{ event.tag ?? categoryLabel[event.category] }} ·
+                    <template v-if="event.tag || event.category">
+                        {{ event.tag ?? categoryLabel[event.category] }} ·
+                    </template>
                     {{
                         $t("events.organized_card.points_text", {
                             points: event.points,

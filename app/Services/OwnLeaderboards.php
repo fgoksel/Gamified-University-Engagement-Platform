@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Enums\TaxonomyCategory;
 use App\Enums\UserRole;
 use App\Models\Leaderboard;
 use App\Models\User;
@@ -25,7 +24,7 @@ class OwnLeaderboards
     ) {}
 
     /**
-     * @return array{isStudent: bool, points: array{total: int, academic: int, scientific: int, sports: int, community: int}|null, leaderboards: list<array<string, mixed>>, highlightLimit: int}
+     * @return array{isStudent: bool, points: array<string, int>|null, leaderboards: list<array<string, mixed>>, highlightLimit: int}
      */
     public function for(User $user): array
     {
@@ -63,8 +62,9 @@ class OwnLeaderboards
             'you' => $mine === null ? null : [
                 'rank' => $mine->rank,
                 'points' => $mine->points,
-                'categories' => collect(TaxonomyCategory::cases())
-                    ->mapWithKeys(fn (TaxonomyCategory $category) => [$category->value => $mine->{$category->value}])
+                // One entry per category of the list (Task #116).
+                'categories' => collect(app(CategoryList::class)->zeroes())
+                    ->map(fn (int $none, string $slug) => (int) ($mine->{$slug} ?? 0))
                     ->all(),
             ],
         ];

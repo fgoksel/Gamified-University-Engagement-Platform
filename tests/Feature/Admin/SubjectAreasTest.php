@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Admin;
 
-use App\Enums\TaxonomyCategory;
 use App\Enums\UserRole;
 use App\Filament\Pages\SubjectAreas;
 use App\Models\Faculty;
@@ -64,7 +63,7 @@ class SubjectAreasTest extends TestCase
             ->callAction('create', [
                 'title' => 'Quantum Mechanics',
                 'code' => 'TTK-QM',
-                'category' => TaxonomyCategory::Scientific->value,
+                'category' => 'scientific',
                 'faculty_id' => $faculty->id,
                 'description' => 'Advanced physics research and theory.',
             ])
@@ -87,7 +86,7 @@ class SubjectAreasTest extends TestCase
             ->callAction('create', [
                 'title' => 'University Football',
                 'code' => 'pte-foot',
-                'category' => TaxonomyCategory::Sports->value,
+                'category' => 'sports',
                 'faculty_id' => null,
             ])
             ->assertHasNoActionErrors();
@@ -149,7 +148,7 @@ class SubjectAreasTest extends TestCase
             ->callTableAction('edit', $subjectArea, [
                 'title' => 'Updated Title',
                 'code' => 'UPD-01',
-                'category' => TaxonomyCategory::Community->value,
+                'category' => 'community',
                 'faculty_id' => $faculty2->id,
                 'description' => 'Updated description text.',
             ])

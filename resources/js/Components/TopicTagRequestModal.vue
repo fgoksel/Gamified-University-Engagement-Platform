@@ -3,8 +3,12 @@ import { useForm } from "@inertiajs/vue3";
 import Modal from "./Topics/Modal.vue";
 import Btn from "./Topics/Btn.vue";
 import TextField from "./TextField.vue";
-import { categoryDot } from "../categoryColors.js";
-import { t } from "../i18n.js";
+import { computed } from "vue";
+import {
+    categoryDot,
+    categoryLabel,
+    categoryOptions,
+} from "../categoryColors.js";
 
 const emit = defineEmits(["close", "submitted"]);
 
@@ -14,12 +18,8 @@ const form = useForm({
     justification: "",
 });
 
-const categories = [
-    { value: "academic", label: t("tag_requests.modal.academic") },
-    { value: "scientific", label: t("tag_requests.modal.scientific") },
-    { value: "sports", label: t("tag_requests.modal.sports") },
-    { value: "community", label: t("tag_requests.modal.community") },
-];
+// The categories in use, from the category list (Task #116)
+const categories = computed(() => categoryOptions());
 
 function submit() {
     form.post("/topic-tag-requests", {
@@ -101,7 +101,7 @@ function submit() {
                     />
                     <span>{{
                         $t("tag_requests.modal.category_color", {
-                            category: form.category,
+                            category: categoryLabel[form.category],
                         })
                     }}</span>
                 </div>

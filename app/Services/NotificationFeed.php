@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Enums\TaxonomyCategory;
 use App\Models\Event;
 use App\Notifications\EventApplicationDecisionNotification;
 use App\Notifications\EventStatusChangedNotification;
@@ -124,7 +123,8 @@ class NotificationFeed
 
         if ($notification->type === PointsCreditedNotification::class) {
             $points = (int) ($data['points'] ?? 0);
-            $category = TaxonomyCategory::tryFrom((string) ($data['category'] ?? ''))?->label();
+            // The name the category has now (Task #116); none for an event without a category.
+            $category = app(CategoryList::class)->name(is_string($data['category'] ?? null) ? $data['category'] : null);
             $event = Event::find($data['event_id'] ?? null);
             $eventTitle = $data['event_title'] ?? __('notifications.feed.an_event');
 
