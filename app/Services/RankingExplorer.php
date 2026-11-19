@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Leaderboard;
 use App\Models\Topic;
 use App\Models\TopicTag;
 use App\Models\User;
@@ -15,7 +16,8 @@ use Illuminate\Support\Facades\DB;
  *
  * Only students use it, and they only ever get their own numbers: no other student's name,
  * Neptun code or row leaves the server. A ranked list exists only on a leaderboard that an admin
- * created (D1 and D3, 7 November), so nobody gets one here (Task #112).
+ * created (D1 and D3, 7 November), so nobody gets one here (Task #112). In an area with no
+ * leaderboard, the organiser of the area may turn own places off (Task #132).
  */
 class RankingExplorer
 {
@@ -53,13 +55,31 @@ class RankingExplorer
     }
 
     /**
-     * @return array{total: int, you: array{rank: int, points: int, to_next: ?int, next_rank: ?int}|null}
+     * With own places turned off for the area (Task #132), nothing about its ranking leaves the
+     * server, not even how many students are listed.
+     *
+     * @return array{hidden: bool, total: ?int, you: array{rank: int, points: int, to_next: ?int, next_rank: ?int}|null}
      */
     private function result(User $user, Topic $area, ?string $category, ?int $tagId): array
     {
+        if (! $this->showsOwnPlace($area)) {
+            return ['hidden' => true, 'total' => null, 'you' => null];
+        }
+
         $listed = collect($this->points->standings($area->id, $category, $tagId));
 
-        return ['total' => $listed->count(), 'you' => $this->you($user, $listed)];
+        return ['hidden' => false, 'total' => $listed->count(), 'you' => $this->you($user, $listed)];
+    }
+
+    /**
+     * Whether students see their own place in an area (Task #132). "These are different types of
+     * motivation and that should be decided by the organizer of the area" (7 November, D1, 18:39),
+     * so whoever manages its leaderboards can turn it off, for that area only. An area with a
+     * leaderboard always shows it, because the leaderboard lists the places anyway.
+     */
+    private function showsOwnPlace(Topic $area): bool
+    {
+        return $area->show_own_place || Leaderboard::query()->where('topic_id', $area->id)->exists();
     }
 
     /**

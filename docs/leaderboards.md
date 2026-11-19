@@ -107,6 +107,16 @@ found", and a category or tag that does not fit is dropped. Tags are narrowed to
 - **Only students** get this section (Task #112). A ranked list exists only on a leaderboard that an
   admin created (D1 and D3, 7 November), so teachers and staff see no *Where am I?* and their
   `rankings` prop is `null`; an `?area=` in their address is ignored.
+- **The area can turn own places off (Task #132).** "These are different types of motivation and
+  that should be decided by the organizer of the area" (7 November, D1, 18:39). On an area's
+  *Leaderboards* tab, whoever manages its leaderboards (there or above) turns *own places* off or on
+  again. It is on by default and applies to that area only: each area below keeps its own setting.
+  When it is off, a student who picks the area reads "Places are not shown for this area: its
+  organisers turned them off.", and nothing about the area's ranking is sent, not even how many
+  students are listed (`result.hidden`). An area with a leaderboard always shows own places, because
+  the leaderboard lists them anyway. The column is `topics.show_own_place`; a change is written by
+  `TopicService::setOwnPlaceShown()` and recorded in the audit trail (`topic.own_place_hidden`,
+  `topic.own_place_shown`).
 
 The data comes from `App\Services\RankingExplorer`; the section is `Components/Leaderboards/WhereAmI.vue`.
 

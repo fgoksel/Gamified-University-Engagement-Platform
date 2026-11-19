@@ -43,4 +43,5 @@ export const whereAmIWords = {
             rank,
         }),
     noPoints: t("leaderboards.where_am_i.no_points"),
+    hidden: t("leaderboards.where_am_i.hidden"),
 };

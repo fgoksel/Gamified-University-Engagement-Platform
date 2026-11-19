@@ -154,6 +154,24 @@ class TopicController extends Controller
     }
 
     /**
+     * Turn the students' own place in "Where am I?" on or off for this area (Task #132), from the
+     * Leaderboards tab. An area the person cannot open looks like a missing one.
+     */
+    public function ownPlace(Request $request, Topic $topic): RedirectResponse
+    {
+        abort_unless($this->access->canView($request->user(), $topic), 404);
+
+        $shown = (bool) $request->validate(['shown' => ['required', 'boolean']])['shown'];
+        $this->topics->setOwnPlaceShown($request->user(), $topic, $shown);
+
+        $message = $shown
+            ? __('areas.flash.own_place_shown', ['title' => $topic->title])
+            : __('areas.flash.own_place_hidden', ['title' => $topic->title]);
+
+        return redirect()->route('topics.show', ['topic' => $topic->id, 'tab' => 'leaderboards'])->with('success', $message);
+    }
+
+    /**
      * Step 1 of a permanent deletion: checks and returns the confirmation data and token.
      */
     public function deletePrepare(Request $request, Topic $topic): JsonResponse
@@ -289,6 +307,8 @@ class TopicController extends Controller
                     : null,
                 // The default time on the hall screen, shown in the leaderboard dialog (Task #56)
                 'hall_default' => $tab === 'leaderboards' ? Setting::hallSeconds() : null,
+                // Whether students see their own place here in "Where am I?" (Task #132)
+                'show_own_place' => $tab === 'leaderboards' ? $topic->show_own_place : null,
                 // Events of this area and below (Task #73)
                 'events' => $tab === 'events'
                     ? $this->browser->events($user, $topic, $request->query('when') === 'past' ? 'past' : 'upcoming', max(1, (int) $request->query('page', 1)))

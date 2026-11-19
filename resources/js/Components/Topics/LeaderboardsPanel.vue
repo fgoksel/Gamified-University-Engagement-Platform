@@ -46,6 +46,22 @@ function destroy() {
         options(() => (deleting.value = null)),
     );
 }
+
+// Own place in "Where am I?" (Task #132): while the area has no leaderboard, its students
+// see their own place there unless the organiser turns it off. This area only.
+const ownPlaceBusy = ref(false);
+
+function toggleOwnPlace() {
+    ownPlaceBusy.value = true;
+    router.put(
+        `/topics/${props.topic.id}/own-place`,
+        { shown: !props.topic.show_own_place },
+        {
+            preserveScroll: true,
+            onFinish: () => (ownPlaceBusy.value = false),
+        },
+    );
+}
 </script>
 
 <template>
@@ -121,6 +137,57 @@ function destroy() {
         >
             {{ $t("areas.leaderboards_panel.no_leaderboards_here_yet") }}
         </p>
+
+        <section
+            v-if="manage && typeof topic.show_own_place === 'boolean'"
+            aria-labelledby="own-place-heading"
+            class="flex flex-wrap items-start justify-between gap-3 rounded-card border border-line p-4"
+            data-test="own-place"
+        >
+            <div class="min-w-0 space-y-1">
+                <h4
+                    id="own-place-heading"
+                    class="text-sm font-semibold text-fg"
+                >
+                    {{ $t("areas.leaderboards_panel.own_place") }}
+                </h4>
+                <p class="text-sm text-fg">
+                    {{
+                        topic.show_own_place
+                            ? $t("areas.leaderboards_panel.own_place_on", {
+                                  title: topic.title,
+                              })
+                            : $t("areas.leaderboards_panel.own_place_off", {
+                                  title: topic.title,
+                              })
+                    }}
+                </p>
+                <p v-if="leaderboards.length" class="text-sm text-fg-muted">
+                    {{
+                        $t(
+                            "areas.leaderboards_panel.own_place_with_leaderboard",
+                        )
+                    }}
+                </p>
+                <p class="text-sm text-fg-muted">
+                    {{
+                        $t(
+                            "areas.leaderboards_panel.own_place_this_area_only",
+                            {
+                                title: topic.title,
+                            },
+                        )
+                    }}
+                </p>
+            </div>
+            <Btn small :loading="ownPlaceBusy" @click="toggleOwnPlace">
+                {{
+                    topic.show_own_place
+                        ? $t("areas.leaderboards_panel.turn_own_place_off")
+                        : $t("areas.leaderboards_panel.turn_own_place_on")
+                }}
+            </Btn>
+        </section>
 
         <LeaderboardFormDialog
             v-if="creating"

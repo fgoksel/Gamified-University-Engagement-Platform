@@ -98,6 +98,32 @@ class TopicService
     }
 
     /**
+     * Whether the students of this topic see their own place in "Where am I?" while it has no
+     * leaderboard (Task #132). The organiser of the area decides (7 November, D1); for this topic
+     * only, so the topics below keep their own setting. Setting it to what it is changes nothing.
+     *
+     * @throws AuthorizationException
+     */
+    public function setOwnPlaceShown(User $actor, Topic $topic, bool $shown): Topic
+    {
+        Gate::forUser($actor)->authorize('setOwnPlace', $topic);
+
+        return DB::transaction(function () use ($actor, $topic, $shown) {
+            $topic = Topic::query()->whereKey($topic->id)->lockForUpdate()->firstOrFail();
+
+            if ($topic->show_own_place === $shown) {
+                return $topic;
+            }
+
+            $topic->forceFill(['show_own_place' => $shown])->save();
+
+            TopicAudit::record($actor, $shown ? 'topic.own_place_shown' : 'topic.own_place_hidden', $topic->id, 'topic', $topic->id, ['show_own_place' => ! $shown], ['show_own_place' => $shown]);
+
+            return $topic;
+        });
+    }
+
+    /**
      * What a move would change, for the confirmation step. Counts only: no
      * names of people outside the mover's own reach are revealed.
      *

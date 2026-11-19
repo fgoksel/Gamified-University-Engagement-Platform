@@ -108,6 +108,18 @@ class TopicPolicy
     }
 
     /**
+     * Whether the students of a topic see their own place in "Where am I?" (Task #132) is up to
+     * the organiser of the area (7 November, D1): whoever manages its leaderboards, here or above,
+     * the same rule as for creating them (AreaLeaderboards::canManage). Not in an archived area.
+     */
+    public function setOwnPlace(User $user, Topic $topic): Response
+    {
+        return $this->access->can($user, Capability::LeaderboardsManage, $topic) && ! $this->access->isHidden($topic)
+            ? Response::allow()
+            : Response::deny(__('policies.area.you_cannot_change_own_place'));
+    }
+
+    /**
      * Permanent deletion is for System Admins only, and the service further
      * refuses anything that has ever been used.
      */

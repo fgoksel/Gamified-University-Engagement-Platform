@@ -265,6 +265,8 @@ Route::middleware('auth')->group(function () {
             Route::post('/{topic}/imports', [TopicImportController::class, 'store'])->whereNumber('topic')->name('imports.store');
             // Task #89: a new leaderboard for this topic.
             Route::post('/{topic}/leaderboards', [AreaLeaderboardController::class, 'store'])->whereNumber('topic')->name('leaderboards.store');
+            // Task #132: whether its students see their own place in "Where am I?".
+            Route::put('/{topic}/own-place', [TopicController::class, 'ownPlace'])->whereNumber('topic')->name('own-place.update');
         });
 
         // The category list (Task #116). Open to every signed-in account: CategoryPolicy lets in the
