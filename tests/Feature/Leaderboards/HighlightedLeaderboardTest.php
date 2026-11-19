@@ -53,9 +53,10 @@ class HighlightedLeaderboardTest extends EventTestCase
     /**
      * @return list<string>
      */
+    /** The boxes of "All leaderboards", in their order. */
     private function listed(User $user): array
     {
-        return array_column($this->actingAs($user)->get('/leaderboards')->viewData('page')['props']['leaderboards'], 'name');
+        return array_column($this->actingAs($user)->get('/leaderboards?show=all')->viewData('page')['props']['leaderboards'], 'name');
     }
 
     private function highlightCount(User $user): int
@@ -73,11 +74,29 @@ class HighlightedLeaderboardTest extends EventTestCase
         // Nothing highlighted: by name
         $this->assertSame(['A board', 'B board', 'C board'], $this->listed($anna));
 
-        $this->actingAs($anna)->post("/leaderboards/{$c->id}/highlight")->assertRedirect();
-
+        // Nothing highlighted: "Highlighted" shows every board and a hint, never an empty page.
         $this->actingAs($anna)->get('/leaderboards')
             ->assertInertia(fn (Assert $page) => $page
+                ->where('show', 'highlighted')
+                ->where('hasHighlights', false)
+                ->has('leaderboards', 3)
+                ->where('selected.name', 'A board'));
+
+        $this->actingAs($anna)->post("/leaderboards/{$c->id}/highlight")->assertRedirect();
+
+        // "Highlighted" now holds the starred board alone, and selects it on opening.
+        $this->actingAs($anna)->get('/leaderboards')
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('hasHighlights', true)
+                ->has('leaderboards', 1)
+                ->where('leaderboards.0.name', 'C board')
+                ->where('selected.name', 'C board'));
+
+        $this->actingAs($anna)->get('/leaderboards?show=all')
+            ->assertInertia(fn (Assert $page) => $page
                 ->component('Leaderboards/Index')
+                ->where('show', 'all')
+                ->where('selected.name', 'C board')
                 ->where('highlightLimit', 5)
                 ->where('leaderboards.0.name', 'C board')
                 ->where('leaderboards.0.highlighted', true)
@@ -214,18 +233,18 @@ class HighlightedLeaderboardTest extends EventTestCase
         $this->assertNotContains($gone->id, $boards->highlightedIn($anna, $boards->openTo($anna)));
     }
 
-    public function test_the_board_page_says_whether_it_is_highlighted(): void
+    public function test_the_ranking_says_whether_its_board_is_highlighted(): void
     {
         $anna = $this->member($this->faculty);
         $board = $this->board($this->faculty, 'Faculty total');
 
-        $this->actingAs($anna)->get("/leaderboards/{$board->id}")
-            ->assertInertia(fn (Assert $page) => $page->component('Leaderboards/Show')->where('leaderboard.highlighted', false));
+        $this->actingAs($anna)->get("/leaderboards?board={$board->id}")
+            ->assertInertia(fn (Assert $page) => $page->component('Leaderboards/Index')->where('selected.highlighted', false));
 
         $this->actingAs($anna)->post("/leaderboards/{$board->id}/highlight");
 
-        $this->actingAs($anna)->get("/leaderboards/{$board->id}")
-            ->assertInertia(fn (Assert $page) => $page->where('leaderboard.highlighted', true));
+        $this->actingAs($anna)->get("/leaderboards?board={$board->id}")
+            ->assertInertia(fn (Assert $page) => $page->where('selected.highlighted', true));
     }
 
     public function test_deleting_a_leaderboard_takes_its_highlights_with_it(): void

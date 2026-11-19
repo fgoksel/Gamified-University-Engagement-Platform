@@ -182,9 +182,12 @@ class HallScreenTest extends EventTestCase
 
         $html = Livewire::actingAs($this->admin)->test(HallScreen::class)->html();
 
-        $this->assertMatchesRegularExpression('#<a[^>]*href="/leaderboards/'.$board->id.'"[^>]*target="_blank"|<a[^>]*target="_blank"[^>]*href="/leaderboards/'.$board->id.'"#', $html);
+        $href = preg_quote('/leaderboards?board='.$board->id, '#');
+        $this->assertMatchesRegularExpression('#<a[^>]*href="'.$href.'"[^>]*target="_blank"|<a[^>]*target="_blank"[^>]*href="'.$href.'"#', $html);
 
-        $this->actingAs($this->admin)->get("/leaderboards/{$board->id}")->assertOk();
+        $this->actingAs($this->admin)->get("/leaderboards?board={$board->id}")
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->where('selected.name', 'Open me'));
     }
 
     public function test_the_system_admin_switches_a_board_on_and_off(): void

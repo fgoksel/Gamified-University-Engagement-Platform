@@ -17,10 +17,15 @@ const items = computed(() =>
 
 // Current path without the query string, e.g. "/events?page=2" -> "/events"
 const currentPath = computed(() => page.url.split("?")[0]);
+const currentQuery = computed(
+    () => new URLSearchParams(page.url.split("?")[1] ?? ""),
+);
 
 // "/events" is also active on its sub-pages, e.g. "/events/12".
 // "/" (Leaderboard) is only active on itself.
-function isActive(href) {
+// An item with "match" decides itself, e.g. the two Leaderboards links.
+function isActive(href, match) {
+    if (match) return match(currentPath.value, currentQuery.value);
     if (href === "/") return currentPath.value === "/";
     return (
         currentPath.value === href || currentPath.value.startsWith(`${href}/`)
@@ -47,7 +52,7 @@ function isActive(href) {
                     :key="child.href"
                     :href="child.href"
                     indent
-                    :active="isActive(child.href)"
+                    :active="isActive(child.href, child.match)"
                 >
                     {{ child.label }}
                 </NavLink>

@@ -193,21 +193,6 @@
     --color-cat-slate: var(--cat-slate);
     --color-cat-slate-fg: var(--cat-slate-fg);
     --color-cat-slate-soft: var(--cat-slate-soft);
-
-    /* The four original categories by name, for the screens that still list them (Home and the
-       leaderboards, until #117 makes them read the list). Same colours as before. */
-    --color-cat-academic: var(--cat-violet);
-    --color-cat-academic-fg: var(--cat-violet-fg);
-    --color-cat-academic-soft: var(--cat-violet-soft);
-    --color-cat-scientific: var(--cat-green);
-    --color-cat-scientific-fg: var(--cat-green-fg);
-    --color-cat-scientific-soft: var(--cat-green-soft);
-    --color-cat-sports: var(--cat-orange);
-    --color-cat-sports-fg: var(--cat-orange-fg);
-    --color-cat-sports-soft: var(--cat-orange-soft);
-    --color-cat-community: var(--cat-pink);
-    --color-cat-community-fg: var(--cat-pink-fg);
-    --color-cat-community-soft: var(--cat-pink-soft);
 }
 
 /* ── Default page colours ──────────────────────────── */

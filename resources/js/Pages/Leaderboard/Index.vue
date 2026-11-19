@@ -1,16 +1,16 @@
 <script setup>
 import { usePage } from "@inertiajs/vue3";
 import AlertMessage from "../../Components/AlertMessage.vue";
-import OwnLeaderboards from "../../Components/Leaderboards/OwnLeaderboards.vue";
-import { t } from "../../i18n.js";
+import BoardBoxes from "../../Components/Leaderboards/BoardBoxes.vue";
+import { t, tc } from "../../i18n.js";
 
-// Start page of everyone who is not a student (UC-1.2): their own leaderboard (Task #54).
-// Students start on their home page and open the same content from "Leaderboards".
+// Start page of everyone who is not a student (UC-1.2): the leaderboards they may see, as boxes,
+// the highlighted ones first (leaderboards redesign, 9 November). A box opens the Leaderboards
+// page with that board selected. Students start on their home page, which shows the same boxes.
 defineOptions({ layout: { title: t("leaderboard.index_title") } });
 
 defineProps({
     isStudent: { type: Boolean, default: false },
-    points: { type: Object, default: null },
     leaderboards: { type: Array, default: () => [] },
     highlightLimit: { type: Number, default: 5 },
 });
@@ -25,11 +25,16 @@ const page = usePage();
             {{ page.props.flash.error }}
         </AlertMessage>
 
-        <OwnLeaderboards
-            :is-student="isStudent"
-            :points="points"
-            :leaderboards="leaderboards"
-            :highlight-limit="highlightLimit"
-        />
+        <section aria-labelledby="own-boards" class="space-y-3">
+            <h2 id="own-boards" class="text-base font-semibold text-fg">
+                {{ $t("leaderboards.own.leaderboards") }}
+            </h2>
+            <BoardBoxes
+                :leaderboards="leaderboards"
+                :is-student="isStudent"
+                mode="link"
+                :hint="tc('leaderboards.own.highlight_hint', highlightLimit)"
+            />
+        </section>
     </div>
 </template>

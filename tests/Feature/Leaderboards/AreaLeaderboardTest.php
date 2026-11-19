@@ -324,22 +324,30 @@ class AreaLeaderboardTest extends EventTestCase
         $outsider = $this->student('Sport Student', 'SPOR03');
         $this->assign($outsider, $this->studentRole(), $this->sport);
 
+        // The board page of before the redesign opens the Leaderboards page with the board selected.
         $this->actingAs($member)->get("/leaderboards/{$board->id}")
+            ->assertRedirect("/leaderboards?board={$board->id}");
+        $this->actingAs($member)->get("/leaderboards?board={$board->id}")
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
-                ->component('Leaderboards/Show')
-                ->where('leaderboard.name', 'Faculty total'));
+                ->component('Leaderboards/Index')
+                ->where('selected.name', 'Faculty total'));
+
+        // A student below the area sees the boards above their own (redesign, 9 November).
+        $this->actingAs($belowArea)->get("/leaderboards?board={$board->id}")
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->where('selected.name', 'Faculty total'));
 
         // Not allowed looks exactly like not existing.
-        $this->actingAs($belowArea)->get("/leaderboards/{$board->id}")->assertNotFound();
         $this->actingAs($outsider)->get("/leaderboards/{$board->id}")->assertNotFound();
+        $this->actingAs($outsider)->get("/leaderboards?board={$board->id}")->assertNotFound();
 
         $this->actingAs($member)->get('/leaderboards')
             ->assertInertia(fn (Assert $page) => $page
                 ->component('Leaderboards/Index')
                 ->where('leaderboards.0.name', 'Faculty total'));
         $this->actingAs($outsider)->get('/leaderboards')
-            ->assertInertia(fn (Assert $page) => $page->where('leaderboards', []));
+            ->assertInertia(fn (Assert $page) => $page->where('leaderboards', [])->where('selected', null));
     }
 
     public function test_a_published_leaderboard_stays_closed_to_other_areas(): void
@@ -355,13 +363,14 @@ class AreaLeaderboardTest extends EventTestCase
         $this->assign($outsider, $this->studentRole(), $this->sport);
 
         $this->actingAs($outsider)->get("/leaderboards/{$board->id}")->assertNotFound();
+        $this->actingAs($outsider)->get("/leaderboards?board={$board->id}")->assertNotFound();
         $this->actingAs($outsider)->get('/leaderboards')
             ->assertInertia(fn (Assert $page) => $page->where('leaderboards', []));
 
         // The people of the area still see it, published or not.
-        $this->actingAs($member)->get("/leaderboards/{$board->id}")
+        $this->actingAs($member)->get("/leaderboards?board={$board->id}")
             ->assertOk()
-            ->assertInertia(fn (Assert $page) => $page->where('leaderboard.is_public', true));
+            ->assertInertia(fn (Assert $page) => $page->where('selected.is_public', true));
 
         // The hall feed is the part without a login, and it still carries the published board.
         auth()->logout();
@@ -374,7 +383,8 @@ class AreaLeaderboardTest extends EventTestCase
         $faculty = $this->board($this->faculty, ['name' => 'Faculty total']);
         $sport = $this->board($this->sport, ['name' => 'Sport total']);
 
-        $this->actingAs($this->admin)->get("/leaderboards/{$sport->id}")->assertOk();
+        $this->actingAs($this->admin)->get("/leaderboards/{$sport->id}")->assertRedirect("/leaderboards?board={$sport->id}");
+        $this->actingAs($this->admin)->get("/leaderboards?board={$sport->id}")->assertOk();
         $this->actingAs($this->admin)->get('/leaderboards')
             ->assertInertia(fn (Assert $page) => $page
                 ->has('leaderboards', 2)
@@ -399,7 +409,8 @@ class AreaLeaderboardTest extends EventTestCase
         $this->assertSame(range(1, 10), array_column($view['top'], 'position'));
         $this->assertSame(range(15, 25), array_column($view['around'], 'position'));
         $this->assertTrue($view['places_skipped']);
-        $this->assertSame(['rank' => 20, 'points' => 980], $view['you']);
+        $this->assertSame(['rank' => 20, 'points' => 980, 'to_next' => 1, 'next_rank' => 19], $view['you']);
+        $this->assertFalse($view['everyone']);
         $this->assertSame([20], array_column(array_filter($view['around'], fn ($row) => $row['is_you']), 'position'));
 
         // Just under the top: no places are skipped.
@@ -415,13 +426,39 @@ class AreaLeaderboardTest extends EventTestCase
         $view = $standings->view($board, $students[3]);
         $this->assertSame([], $view['around']);
         $this->assertFalse($view['places_skipped']);
-        $this->assertSame(['rank' => 3, 'points' => 997], $view['you']);
+        $this->assertSame(['rank' => 3, 'points' => 997, 'to_next' => 1, 'next_rank' => 2], $view['you']);
 
         // Not on the list: only the top.
         $view = $standings->view($board, $this->areaAdmin);
         $this->assertNull($view['you']);
         $this->assertSame([], $view['around']);
         $this->assertSame(30, $view['total']);
+
+        // "Show all": every place, in order, and nothing around.
+        $view = $standings->view($board, $students[20], everyone: true);
+        $this->assertSame(range(1, 30), array_column($view['top'], 'position'));
+        $this->assertSame([], $view['around']);
+        $this->assertFalse($view['places_skipped']);
+        $this->assertTrue($view['everyone']);
+        $this->assertSame(20, $view['you']['rank']);
+    }
+
+    public function test_show_all_on_the_page_lists_every_place_of_the_selected_board(): void
+    {
+        foreach (range(1, 14) as $place) {
+            $this->credit($this->student("Student {$place}", sprintf('N%05d', $place)), $this->course, 100 - $place);
+        }
+        $board = $this->board();
+
+        $this->actingAs($this->areaAdmin)->get("/leaderboards?board={$board->id}")
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('selected.standings.top', 10)
+                ->where('selected.standings.everyone', false));
+
+        $this->actingAs($this->areaAdmin)->get("/leaderboards?board={$board->id}&places=all")
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('selected.standings.top', 14)
+                ->where('selected.standings.everyone', true));
     }
 
     public function test_the_topics_leaderboards_tab_lists_its_own_and_says_who_may_manage(): void

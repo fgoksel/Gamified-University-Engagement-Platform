@@ -15,6 +15,7 @@ import { t } from "./i18n.js";
 // Main menu of AppLayout, per role. One place to add or rename menu items.
 // An item with "children" is a group heading with links under it.
 // "badge" names a count in the shared "notifications" prop, shown as a pill.
+// "match" (optional) decides when a link is the current page, from the path and the query.
 // "needs" hides an item unless the backend shares that flag in "topics"
 // (Topics is shown only to people who have access to at least one topic).
 
@@ -36,10 +37,25 @@ const organizedByMe = {
     href: "/my-events",
     icon: IdCard,
 };
+// Leaderboards is a group (redesign, 9 November): the highlighted boards, or all of them.
+// "match" decides when a link is the current page, because both open /leaderboards.
+const showsAll = (query) => query.get("show") === "all";
 const leaderboards = {
     label: t("navigation.leaderboards"),
-    href: "/leaderboards",
     icon: Trophy,
+    children: [
+        {
+            label: t("navigation.highlighted"),
+            href: "/leaderboards",
+            match: (path, query) =>
+                path === "/leaderboards" && !showsAll(query),
+        },
+        {
+            label: t("navigation.all_leaderboards"),
+            href: "/leaderboards?show=all",
+            match: (path, query) => path === "/leaderboards" && showsAll(query),
+        },
+    ],
 };
 const notifications = {
     label: t("navigation.notifications"),
@@ -112,8 +128,9 @@ export const navigation = {
         topics,
         topicRoles,
     ],
-    // System Admins work in the admin panel; Topics and Roles open here.
+    // System Admins work in the admin panel; Leaderboards, Areas, Roles and Categories open here.
     admin: [
+        leaderboards,
         topics,
         topicRoles,
         categories,

@@ -236,8 +236,8 @@ class Sprint3DemoSeederTest extends TestCase
 
         $board = Leaderboard::where('name', 'Robotics ranking')->firstOrFail();
 
-        $this->actingAs($this->person('hanna'))->get("/leaderboards/{$board->id}")->assertOk();
-        $this->actingAs($this->person('julia'))->get("/leaderboards/{$board->id}")->assertNotFound();
+        $this->actingAs($this->person('hanna'))->get("/leaderboards?board={$board->id}")->assertOk();
+        $this->actingAs($this->person('julia'))->get("/leaderboards?board={$board->id}")->assertNotFound();
     }
 
     public function test_every_demo_account_can_sign_in_and_open_its_pages(): void

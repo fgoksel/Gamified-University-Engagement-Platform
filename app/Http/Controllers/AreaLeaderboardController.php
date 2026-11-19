@@ -6,6 +6,7 @@ use App\Enums\UserRole;
 use App\Models\Leaderboard;
 use App\Models\Setting;
 use App\Models\Topic;
+use App\Models\User;
 use App\Services\AreaLeaderboards;
 use App\Services\LeaderboardStandings;
 use App\Services\OwnLeaderboards;
@@ -33,9 +34,14 @@ class AreaLeaderboardController extends Controller
     ) {}
 
     /**
-     * "My leaderboard" (Task #54): the person's own points and rank, and the leaderboards they
-     * may see. "Where am I?" (Task #56) reads its choice from the address: an area the person
-     * may not open looks exactly like one that does not exist.
+     * The Leaderboards page (Task #54, redesign of 9 November): a box per leaderboard and, right
+     * below, the ranking of the selected one. "?show=all" lists every leaderboard, otherwise the
+     * highlighted ones (all of them while none is highlighted). "?board=" selects a leaderboard;
+     * without it, the first box is selected, which is the first highlighted one. Switching boxes
+     * reloads only "selected", so the page does not load again.
+     *
+     * "Where am I?" (Task #56) reads its choice from the address too. A leaderboard or an area
+     * the person may not open looks exactly like one that does not exist.
      */
     public function index(Request $request, OwnLeaderboards $own, RankingExplorer $rankings): Response
     {
@@ -49,28 +55,63 @@ class AreaLeaderboardController extends Controller
             abort_unless($area !== null && $this->access->canView($user, $area), 404);
         }
 
+        $chosen = null;
+
+        if ($request->filled('board')) {
+            $chosen = Leaderboard::find($request->integer('board'));
+            abort_unless($chosen !== null && $this->boards->canSee($user, $chosen), 404);
+        }
+
+        $all = $request->query('show') === 'all';
+        $data = $own->for($user);
+        $starred = array_values(array_filter($data['leaderboards'], fn (array $box) => $box['highlighted']));
+        // With nothing highlighted, "Highlighted" shows every leaderboard and a hint, never an empty page.
+        $shown = $all || $starred === [] ? $data['leaderboards'] : $starred;
+
+        $selectedId = $chosen?->id ?? ($shown[0]['id'] ?? null);
+        $everyone = $request->query('places') === 'all';
+
         return Inertia::render('Leaderboards/Index', [
-            ...$own->for($user),
-            'rankings' => $student
+            ...$data,
+            'leaderboards' => $shown,
+            'show' => $all ? 'all' : 'highlighted',
+            'hasHighlights' => $starred !== [],
+            'selected' => fn () => $this->selected($user, $chosen ?? ($selectedId ? Leaderboard::find($selectedId) : null), $everyone),
+            'rankings' => fn () => $student
                 ? $rankings->for($user, $area, $request->string('category')->toString(), $request->integer('tag'))
                 : null,
         ]);
     }
 
-    public function show(Request $request, Leaderboard $leaderboard): Response
+    /**
+     * The board page of before the redesign: its links still work and open the Leaderboards page
+     * with that board selected.
+     */
+    public function show(Request $request, Leaderboard $leaderboard): RedirectResponse
     {
-        $user = $request->user();
-
         // Not allowed looks exactly like not existing.
-        abort_unless($this->boards->canSee($user, $leaderboard), 404);
+        abort_unless($this->boards->canSee($request->user(), $leaderboard), 404);
 
-        return Inertia::render('Leaderboards/Show', [
-            'leaderboard' => [
-                ...$this->boards->summary($leaderboard),
-                'highlighted' => $this->boards->isHighlightedBy($user, $leaderboard),
-            ],
-            'standings' => $this->standings->view($leaderboard, $user),
-        ]);
+        return redirect()->route('leaderboards.index', ['board' => $leaderboard->id]);
+    }
+
+    /**
+     * The ranking shown below the boxes: the top 10 and the places around the person, or the
+     * whole list after "Show all". Only the columns the creator chose leave the server (L6).
+     *
+     * @return array<string, mixed>|null
+     */
+    private function selected(User $user, ?Leaderboard $board, bool $everyone): ?array
+    {
+        if ($board === null) {
+            return null;
+        }
+
+        return [
+            ...$this->boards->summary($board->loadMissing('topic:id,title')),
+            'highlighted' => $this->boards->isHighlightedBy($user, $board),
+            'standings' => $this->standings->view($board, $user, $everyone),
+        ];
     }
 
     /**
