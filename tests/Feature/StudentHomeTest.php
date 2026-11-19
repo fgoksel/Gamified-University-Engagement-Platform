@@ -199,25 +199,24 @@ class StudentHomeTest extends TopicTestCase
     {
         $this->points(10, 'academic');
         $faculty = $this->course->parent;
-        $this->board($this->course, 'Databases total');
-        $this->board($faculty, 'Informatics total');
-        $university = $this->board($faculty->parent, 'University total');
+        $this->board($this->course, 'Databases lab');
+        $total = $this->board($this->course, 'Databases total');
+        $this->board($faculty, 'Informatics total');            // above Anna's course: not hers (N5)
+        $this->board($faculty->parent, 'University total');     // the top of the tree: not hers either
 
-        // In name order while nothing is starred; the areas above Anna's course are hers too.
+        // In name order while nothing is starred; only the boards of Anna's own areas.
         $this->home()->assertInertia(fn (Assert $page) => $page
-            ->has('leaderboards', 3)
-            ->where('leaderboards.0.name', 'Databases total')
+            ->has('leaderboards', 2)
+            ->where('leaderboards.0.name', 'Databases lab')
             ->where('leaderboards.0.you', ['rank' => 1, 'points' => 10, 'to_next' => null, 'next_rank' => null])
-            ->where('leaderboards.1.name', 'Informatics total')
-            ->where('leaderboards.2.name', 'University total'));
+            ->where('leaderboards.1.name', 'Databases total'));
 
-        $this->actingAs($this->student)->post("/leaderboards/{$university->id}/highlight")->assertRedirect();
+        $this->actingAs($this->student)->post("/leaderboards/{$total->id}/highlight")->assertRedirect();
 
         $this->home()->assertInertia(fn (Assert $page) => $page
-            ->where('leaderboards.0.name', 'University total')
+            ->where('leaderboards.0.name', 'Databases total')
             ->where('leaderboards.0.highlighted', true)
-            ->where('leaderboards.1.name', 'Databases total')
-            ->where('leaderboards.2.name', 'Informatics total'));
+            ->where('leaderboards.1.name', 'Databases lab'));
     }
 
     public function test_the_next_event_is_the_soonest_one_with_a_place(): void

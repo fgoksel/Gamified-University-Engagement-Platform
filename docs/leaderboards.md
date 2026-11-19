@@ -21,10 +21,12 @@ below, for students and staff alike. The separate board page is gone; old links 
   `selected`), keeps the choice in the address (`?board=`) and moves the focus to the ranking's
   heading. The first box is selected on opening, which is the first highlighted one.
 - **Which leaderboards:** staff see the ones of the areas they can open, which are the areas they
-  are assigned to and every area below them (D4). A student also sees the boards of every area
-  above their own, such as their faculty and *University total* (`AreaLeaderboards::openTo()` and
-  `canSee()`); boards of sibling areas stay hidden and their address says "not found". An
-  archived area opens nothing above it. Being on the hall screen changes nothing here.
+  are assigned to and every area below them (D4). Students follow the same rule: nobody sees the
+  boards of the areas above their own or beside it (N5, 9 November; #128 question 1, 19 November),
+  so a board on the faculty or on *University total* is only for the people assigned there
+  (`AreaLeaderboards::openTo()` and `canSee()`). The address of a board someone may not open says
+  "not found". An archived area opens nothing. Being on the hall screen changes nothing here: the
+  University total reaches everyone through the hall screen.
 - **Home:** a student's Home starts with *Your points* (N7, 9 November): their points in total
   and a tile per category of the list (Task #116), with no period (L3), so they see where they are
   lacking. A retired category keeps its tile while it holds points, and points of events without a

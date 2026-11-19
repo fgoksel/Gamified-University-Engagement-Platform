@@ -2,7 +2,7 @@
 
 Written 9 November 2026 by Vivian, for the next sprint. Nothing here is in the 9 November demo build.
 
-> **Changed after this plan was written.** The professor meeting of the same afternoon kept the *Your points* box on Home (N7): Home shows it above the boxes, with a tile per category of the list. The boards of the areas above a student's own stay for now (A1, 10 November). The categories became an editable list in Task #116 (PR #108), on a *Categories* page in the main app rather than in the admin panel. Where this plan says otherwise, `docs/leaderboards.md` and `docs/categories.md` describe what was built.
+> **Changed after this plan was written.** The professor meeting of the same afternoon kept the *Your points* box on Home (N7): Home shows it above the boxes, with a tile per category of the list. The boards of the areas above a student's own are not shown: students see only the boards of the areas they are assigned to and below (N5, 9 November; #128 question 1, answered 19 November). The section "Which boards a student sees" and task 1 below were not built. The categories became an editable list in Task #116 (PR #108), on a *Categories* page in the main app rather than in the admin panel. Where this plan says otherwise, `docs/leaderboards.md` and `docs/categories.md` describe what was built.
 
 The Leaderboards page becomes one place to see rankings: boxes at the top, and the selected board's ranking right below, for students and staff alike. This replaces the list of rows, the separate board page and the "Your points" box. The four fixed categories become a list the system admin edits.
 
@@ -58,7 +58,7 @@ A student should see the boards of their own areas and of every area above them.
 
 Still hidden: boards on sibling areas, such as Web Development for Anna or anything in Sport for her. Staff keep today's rule: the areas they can open and everything below.
 
-This reverses part of D4 as recorded on 7 November, so it goes to the professor first (question 1 below).
+This reverses part of D4 as recorded on 7 November, so it went to the professor first (question 1 below). **Not built:** the answer was no (N5, 9 November; #128 question 1, 19 November), so D4 stands for students too.
 
 ## UI recommendations
 
@@ -140,7 +140,7 @@ After tasks 4 and 6, rerun the accessibility check (#61) and a short usability r
 
 | # | Question | Team proposal |
 | --- | --- | --- |
-| 1 | May a student see the boards of the areas above them (faculty, school), not only their own and below? | Yes. Siblings stay hidden. |
+| 1 | May a student see the boards of the areas above them (faculty, school), not only their own and below? | Yes. Siblings stay hidden. **Answer: no** (N5, 9 November; #128, 19 November). |
 | 2 | Is one page with boxes and the ranking below the right shape, instead of a separate page per board? | Yes, as in this plan. |
 | 3 | Five highlighted boards, changeable at any time: still right? | Yes. |
 | 4 | What replaces the four fixed categories? | A list the system admin edits, starting with the same four; category and tag optional on events. |

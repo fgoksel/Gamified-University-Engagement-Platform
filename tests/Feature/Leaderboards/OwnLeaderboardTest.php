@@ -149,28 +149,29 @@ class OwnLeaderboardTest extends EventTestCase
                 ->where('leaderboards.0.you', null));
     }
 
-    public function test_a_student_sees_the_leaderboards_of_their_areas_and_of_every_area_above_them(): void
+    public function test_a_student_sees_only_the_leaderboards_of_their_own_areas_and_below(): void
     {
+        // N5, 9 November; #128 Q1, 19 November: "you can see the leaderboards you are assigned to".
         $anna = $this->member($this->student(), $this->course);
         $this->credit($anna, $this->course, 10);
 
         $this->board($this->course, 'Course board');                                              // their own topic
-        $this->board($this->faculty, 'Faculty board');                                            // above them (redesign, 9 November)
-        $this->board($this->university, 'University total');                                      // the top of the tree
+        $faculty = $this->board($this->faculty, 'Faculty board');                                 // above them: hidden
+        $university = $this->board($this->university, 'University total');                        // the top of the tree: hidden
         $sport = $this->board($this->sport, 'Sport board');                                       // a sibling branch: hidden
         $this->board($this->sport, 'Sport published', ['visibility' => Leaderboard::PUBLIC]);     // published, but still a sibling branch (D4)
 
         $this->actingAs($anna)->get('/leaderboards?show=all')
             ->assertInertia(fn (Assert $page) => $page
                 ->where('show', 'all')
-                ->has('leaderboards', 3)
-                ->where('leaderboards.0.name', 'Course board')
-                ->where('leaderboards.1.name', 'Faculty board')
-                ->where('leaderboards.2.name', 'University total'));
+                ->has('leaderboards', 1)
+                ->where('leaderboards.0.name', 'Course board'));
 
-        // A board of a sibling area looks exactly like one that does not exist.
-        $this->actingAs($anna)->get("/leaderboards?board={$sport->id}")->assertNotFound();
-        $this->actingAs($anna)->get("/leaderboards/{$sport->id}")->assertNotFound();
+        // A board above or beside their areas looks exactly like one that does not exist.
+        foreach ([$faculty, $university, $sport] as $hidden) {
+            $this->actingAs($anna)->get("/leaderboards?board={$hidden->id}")->assertNotFound();
+            $this->actingAs($anna)->get("/leaderboards/{$hidden->id}")->assertNotFound();
+        }
     }
 
     public function test_staff_keep_the_areas_they_can_open_and_everything_below(): void
@@ -186,13 +187,13 @@ class OwnLeaderboardTest extends EventTestCase
         $this->actingAs($teacher)->get("/leaderboards?board={$faculty->id}")->assertNotFound();
     }
 
-    public function test_a_board_above_an_archived_area_of_the_student_is_not_shown(): void
+    public function test_a_board_of_an_area_below_an_archived_one_is_not_shown(): void
     {
         $anna = $this->member($this->student(), $this->course);
-        $this->board($this->university, 'University total');
+        $this->board($this->course, 'Course board');
         app(TopicService::class)->archive($this->admin, $this->faculty->fresh());
 
-        // Archiving the faculty hides Anna's course too, so nothing above it is hers any more.
+        // Archiving the faculty hides Anna's course too, so its board is not hers any more.
         $this->actingAs($anna)->get('/leaderboards?show=all')
             ->assertInertia(fn (Assert $page) => $page->has('leaderboards', 0)->where('selected', null));
     }

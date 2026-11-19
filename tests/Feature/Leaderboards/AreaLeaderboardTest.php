@@ -333,10 +333,9 @@ class AreaLeaderboardTest extends EventTestCase
                 ->component('Leaderboards/Index')
                 ->where('selected.name', 'Faculty total'));
 
-        // A student below the area sees the boards above their own (redesign, 9 November).
-        $this->actingAs($belowArea)->get("/leaderboards?board={$board->id}")
-            ->assertOk()
-            ->assertInertia(fn (Assert $page) => $page->where('selected.name', 'Faculty total'));
+        // A student below the area does not see the boards above their own (N5, 9 November; #128 Q1).
+        $this->actingAs($belowArea)->get("/leaderboards/{$board->id}")->assertNotFound();
+        $this->actingAs($belowArea)->get("/leaderboards?board={$board->id}")->assertNotFound();
 
         // Not allowed looks exactly like not existing.
         $this->actingAs($outsider)->get("/leaderboards/{$board->id}")->assertNotFound();
