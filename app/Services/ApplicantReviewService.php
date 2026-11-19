@@ -58,7 +58,8 @@ class ApplicantReviewService
     }
 
     /**
-     * Applicants in arrival order, with each student's points per category.
+     * Applicants in arrival order, with each student's points per category: the points that
+     * count, so none from before the last points reset (Task #102).
      *
      * @return Collection<int, array<string, mixed>>
      */
@@ -74,6 +75,7 @@ class ApplicantReviewService
             ->get();
 
         $points = PointTransaction::query()
+            ->counting()
             ->whereIn('student_id', $applications->pluck('student_id'))
             ->selectRaw('student_id, category, SUM(points) as total')
             ->groupBy('student_id', 'category')

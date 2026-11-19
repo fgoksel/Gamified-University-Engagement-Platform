@@ -7,6 +7,7 @@ use App\Enums\UserRole;
 use App\Exceptions\EventActionRefused;
 use App\Models\Event;
 use App\Models\EventApplication;
+use App\Models\PointReset;
 use App\Models\PointTransaction;
 use App\Models\RoleAssignment;
 use App\Models\Topic;
@@ -239,6 +240,8 @@ class PointLedger
     /**
      * Take a credit back with a new negative row. System Admins only, and never
      * for a semester that has been closed. The original row is kept as it was.
+     * A credit from before the last points reset no longer counts, and neither
+     * does its reversal (Task #102).
      *
      * @throws EventActionRefused
      */
@@ -280,6 +283,46 @@ class PointLedger
         } catch (UniqueConstraintViolationException) {
             throw new EventActionRefused('already_reversed', __('ledger.this_credit_has_already_been'), 409);
         }
+    }
+
+    /**
+     * "Reset all points" (Task #102, UC-6.4): every total and every leaderboard starts from zero.
+     * Only a system admin does it, by hand; nothing runs it on its own (27 October, L3 and S4).
+     *
+     * No ledger row is changed. The reset records the last row that no longer counts, who reset
+     * and when; earlier credits stay in each event's history, and a student still cannot be
+     * credited twice for the same event. A reset with nothing written since the last one is
+     * refused, so a second click adds no second reset.
+     *
+     * @throws EventActionRefused
+     */
+    public function resetAll(User $admin): PointReset
+    {
+        if (! $this->access->isSystemAdmin($admin)) {
+            throw new EventActionRefused('forbidden', __('ledger.only_a_system_admin_can_reset'), 403);
+        }
+
+        return DB::transaction(function () use ($admin) {
+            // A locking read of every row waits for a credit that is still being written, and
+            // holds new credits back until the reset is saved (MySQL; SQLite has one writer at a
+            // time anyway). Reading only the highest id would not wait: a credit written at the
+            // same moment could then get a lower id than the one read, and be lost by the reset.
+            DB::table('point_transactions')->lockForUpdate()->count();
+            $last = (int) DB::table('point_transactions')->lockForUpdate()->max('id');
+            $before = PointReset::lastUncountedId();
+
+            if ($last === $before) {
+                throw new EventActionRefused('nothing_to_reset', __('ledger.nothing_to_reset'), 409);
+            }
+
+            $reset = PointReset::create(['reset_by_id' => $admin->id, 'last_transaction_id' => $last]);
+
+            TopicAudit::record($admin, 'points.reset', null, 'point_reset', $reset->id, ['last_uncounted_id' => $before], ['last_uncounted_id' => $last]);
+
+            app(PointCalculationService::class)->forgetEverything();
+
+            return $reset;
+        });
     }
 
     /**

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\UserRole;
+use App\Models\PointReset;
 use App\Models\PointTransaction;
 use App\Models\User;
 use Closure;
@@ -27,11 +28,17 @@ use Throwable;
  * The points per category follow the category list (Task #116): one total for each category in
  * it, retired ones too, so the totals still add up to the points of the student. Points of an
  * event with no category count in "points" and "total" only.
+ *
+ * Only the ledger rows written since the last "Reset all points" count (Task #102), so after a
+ * reset every total and every standing starts from zero.
  */
 class PointCalculationService
 {
     /** Every cached standing of an area carries this tag, so all of them can be cleared at once. */
     private const ALL_AREAS = 'leaderboards';
+
+    /** Every cached total of a student carries this tag, so a points reset clears all of them at once. */
+    private const ALL_STUDENTS = 'student-points';
 
     /** After a failure the cache is left alone for this many seconds. */
     private const RETRY_AFTER = 30;
@@ -85,7 +92,7 @@ class PointCalculationService
     {
         return $this->remember(
             'points:student:'.$studentId.':'.($semesterId ?? 'all'),
-            [$this->studentTag($studentId)],
+            [self::ALL_STUDENTS, $this->studentTag($studentId)],
             fn () => $this->calculateStudent($studentId, $semesterId),
         );
     }
@@ -120,6 +127,14 @@ class PointCalculationService
     }
 
     /**
+     * The points were reset (Task #102): every total of every student and every standing changed.
+     */
+    public function forgetEverything(): void
+    {
+        DB::afterCommit(fn () => $this->flush([self::ALL_AREAS, self::ALL_STUDENTS]));
+    }
+
+    /**
      * @return list<array<string, int|string|null>>
      */
     private function calculateArea(int $topicId, ?string $category = null, ?int $tagId = null): array
@@ -141,6 +156,7 @@ class PointCalculationService
             ->where('users.status', '!=', 'inactive')
             ->when($category, fn ($query) => $query->where('ledger.category', $category))
             ->when($tagId, fn ($query) => $query->where('events.topic_tag_id', $tagId))
+            ->tap(fn ($query) => PointReset::onlyCounting($query, 'ledger'))
             ->groupBy('ledger.student_id', 'users.name', 'users.neptun_code')
             ->havingRaw('sum(ledger.points) > 0')
             ->selectRaw("ledger.student_id, users.name, users.neptun_code, sum(ledger.points) as points{$sums}", $slugs)
@@ -179,6 +195,7 @@ class PointCalculationService
         $rows = DB::table('point_transactions')
             ->where('student_id', $studentId)
             ->when($semesterId, fn ($query) => $query->where('semester_id', $semesterId))
+            ->tap(fn ($query) => PointReset::onlyCounting($query, 'point_transactions'))
             ->selectRaw('category, sum(points) as points')
             ->groupBy('category')
             ->get();
