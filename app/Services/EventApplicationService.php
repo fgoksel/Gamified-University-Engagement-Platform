@@ -412,7 +412,7 @@ class EventApplicationService
     {
         return Event::query()
             ->where('id', '!=', $event->id)
-            ->where('status', Event::STATUS_PUBLISHED)
+            ->whereIn('status', [Event::STATUS_PUBLISHED, Event::STATUS_COMPLETED])
             ->where('event_starts_at', '<', $event->event_ends_at)
             ->where('event_ends_at', '>', $event->event_starts_at)
             ->whereHas('applications', fn ($query) => $query

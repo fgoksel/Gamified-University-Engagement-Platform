@@ -144,8 +144,9 @@ class Sprint2DemoSeederTest extends TestCase
         );
         $catalog = app(EventCatalog::class);
         $this->assertNotContains('Campus 5K Run', $catalog->query($ivan)->pluck('title'));
+        // A completed event is an ended one (Task #101), so it is listed too, under Past.
         $this->assertEqualsCanonicalizing(
-            ['SQL Joins Workshop', 'Database Design Hackathon', 'Indexing Lab'],
+            ['SQL Joins Workshop', 'Database Design Hackathon', 'Indexing Lab', 'Intro to SQL Lecture'],
             $catalog->query($anna)->pluck('title')->all()
         );
         $this->assertEqualsCanonicalizing(['Campus 5K Run', 'Athletics Championship'], $catalog->query($this->person('erik'))->pluck('title')->all());

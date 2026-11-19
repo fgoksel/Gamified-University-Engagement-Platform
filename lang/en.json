@@ -1368,7 +1368,7 @@
     "events.qr_slips_print.points_once": ":points points · works once",
     "events.qr_slips_print.print": "Print or save as PDF",
     "events.qr_slips_print.scan_by": "Scan in Campus Engage by :expires · No. :number",
-    "events.review.applicants_can_only_be_reviewed": "Applicants can only be reviewed while the event is published.",
+    "events.review.applicants_can_only_be_reviewed": "Applicants cannot be reviewed while the event is a draft, on hold or cancelled.",
     "events.review.organizers_cannot_approve_their_own": "Organizers cannot approve their own applications; another manager must decide.",
     "events.review.points_were_already_credited": "Points were already credited for this student; the application cannot be rejected.",
     "events.review.rejected_by_organizer": "Rejected by organizer",

@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Notification;
  *   draft      -> published   (publish)
  *   published  -> on_hold     (hold: kept and restorable, frozen meanwhile)
  *   on_hold    -> published   (restore)
+ *   published  -> completed   (when it ends: the events:complete command, Task #101)
  *   any open   -> cancelled   (cancel, with a reason)
  *   no applicants -> deleted  (delete; otherwise cancel instead)
  *

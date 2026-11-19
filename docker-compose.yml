@@ -37,6 +37,25 @@ services:
       - REDIS_HOST=redis
       - MAIL_HOST=mailpit
 
+  # Runs scheduled commands every minute, e.g. events become Completed when they end (Task #101).
+  scheduler:
+    build:
+      context: ./docker/php
+    container_name: gup-scheduler
+    command: php artisan schedule:work
+    restart: unless-stopped
+    volumes:
+      - ./:/var/www/html
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    environment:
+      - DB_HOST=db
+      - REDIS_HOST=redis
+      - MAIL_HOST=mailpit
+
   webserver:
     image: nginx:alpine
     container_name: gup-nginx

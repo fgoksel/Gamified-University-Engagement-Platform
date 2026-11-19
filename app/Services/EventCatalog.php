@@ -68,8 +68,9 @@ class EventCatalog
         $audience = $this->audienceTopicIds($user);
         $staff = $this->organized->staffTopicIds($user);
 
+        // Completed events are the ended ones (Task #101), so the Past tab still lists them.
         return Event::query()
-            ->where('status', Event::STATUS_PUBLISHED)
+            ->whereIn('status', [Event::STATUS_PUBLISHED, Event::STATUS_COMPLETED])
             ->where(fn (Builder $q) => $q
                 ->where(fn (Builder $q) => $q
                     ->whereIn('audience_topic_id', $audience)
