@@ -305,4 +305,28 @@ class TopicAccess
     {
         return $this->breadcrumbs($user, $topic)->first();
     }
+
+    /**
+     * The path from the root down to the topic, so a person can see where an area sits (N5,
+     * 9 November; Task #120). Every name on it is shown, whatever the person's access: a name is
+     * not access. An area is given an id, and so can be opened, only from the person's entry point
+     * down (as in breadcrumbs()); above that the name stands alone. Nothing else of those areas
+     * leaves with it: not their contents, siblings, people or ids.
+     *
+     * breadcrumbs() and entryOf() stay as they are, because they also decide which assignments
+     * a person may see.
+     *
+     * @return list<array{id: int|null, title: string}>
+     */
+    public function pathFromRoot(User $user, Topic $topic): array
+    {
+        $lineage = $this->lineage($topic);
+        $titles = Topic::query()->whereIn('id', $lineage)->pluck('title', 'id');
+        $open = $this->breadcrumbs($user, $topic)->pluck('id')->map(fn ($id) => (int) $id)->all();
+
+        return array_map(
+            fn (int $id) => ['id' => in_array($id, $open, true) ? $id : null, 'title' => (string) $titles[$id]],
+            array_reverse($lineage),
+        );
+    }
 }

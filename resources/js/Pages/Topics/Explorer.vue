@@ -436,8 +436,8 @@ const branchRange = computed(() => {
                                 >
                             </li>
                             <li
-                                v-for="(crumb, index) in selected.breadcrumbs"
-                                :key="crumb.id"
+                                v-for="(crumb, index) in selected.path"
+                                :key="index"
                                 class="flex items-center gap-1"
                             >
                                 <ChevronRight
@@ -445,15 +445,16 @@ const branchRange = computed(() => {
                                     :stroke-width="1.75"
                                     aria-hidden="true"
                                 />
+                                <!-- The path runs from the root. Above the person's own access an area has no id: its name only (N5) -->
                                 <span
-                                    v-if="
-                                        index ===
-                                        selected.breadcrumbs.length - 1
-                                    "
+                                    v-if="index === selected.path.length - 1"
                                     class="text-fg"
                                     aria-current="page"
                                     >{{ crumb.title }}</span
                                 >
+                                <span v-else-if="crumb.id === null">{{
+                                    crumb.title
+                                }}</span>
                                 <Link
                                     v-else
                                     :href="`/topics/${crumb.id}`"

@@ -33,7 +33,7 @@ Structure
 - [ ] Expanding a chevron does not change the selection; clicking or Enter selects. The URL changes on select; reload, back, forward and a copied link land on the same topic with the tree open.
 
 Visibility
-- [ ] A user with access only to a nested topic enters there; the breadcrumb starts there; search, "Whole branch", counts and the Access tab never mention parents or siblings.
+- [ ] A user with access only to a nested topic enters there. The path above the area names every parent from the root as plain text, without a link (N5); the tree, search, "Whole branch", counts and the Access tab never mention parents or siblings.
 - [ ] Typing a hidden topic's address shows "not found", the same as a topic that does not exist.
 
 Roles and authority
