@@ -117,13 +117,18 @@ new *Where am I?* (#112). The leaderboards are checked automatically in `tests/F
    "Databases ranking" and keep the defaults: the Neptun code shows and names stay hidden. There is no Publish button.
 2. As the **System Admin**, open *Admin panel → Hall screen* and switch "Databases ranking" on.
 3. Open `/hall` in a private window, signed out. The board appears within 90 seconds, with no login and no events.
-4. As **Anna**, open *Leaderboards*: Anna is number 2 of 4 with 10 points. Star the board: it moves to *Highlighted*.
-5. Open the board as Anna and as Ivan: the same list, with Bence on 30, then Anna, Csilla and Eszter on 10.
-6. As **Erik**, open *Leaderboards*: the board is not listed, and its address says "not found".
-7. As **Ivan**, open *Indexing Lab → Scan attendance* and scan Anna's QR passport: 20 points. Reload the board as Anna:
+4. As **Ivan**, edit the board and tick *First name* and *Last name*. Signed in, the list now shows names. Reload `/hall`:
+   it still shows Neptun codes only, because names are off for guests until the System Admin switches them on (N13).
+5. As the **System Admin**, open *Admin panel → Hall screen*. Under the board's name it says *Board names: First and last
+   name*. Switch *Names for guests* on for "Databases ranking". At the next round `/hall` shows the names too.
+   Switch it off again: the names leave `/hall`, and the list that people sign in to is unchanged.
+6. As **Anna**, open *Leaderboards*: Anna is number 2 of 4 with 10 points. Star the board: it moves to *Highlighted*.
+7. Open the board as Anna and as Ivan: the same list, with Bence on 30, then Anna, Csilla and Eszter on 10.
+8. As **Erik**, open *Leaderboards*: the board is not listed, and its address says "not found".
+9. As **Ivan**, open *Indexing Lab → Scan attendance* and scan Anna's QR passport: 20 points. Reload the board as Anna:
    Anna and Bence share first place with 30.
-8. On *Leaderboards*, under *Where am I?*, Anna sees only Anna's own place. Ivan's page has no such section.
-9. As the **System Admin**, switch the board off. It leaves `/hall` after the next round.
+10. On *Leaderboards*, under *Where am I?*, Anna sees only Anna's own place. Ivan's page has no such section.
+11. As the **System Admin**, switch the board off. It leaves `/hall` after the next round.
 
 The same works on a booth. As **Gréta**, make a leaderboard on *University Fair → Robotics booth*: Hanna, Imre and Lili
 see it, and Júlia does not. Imre is first with 15 points, level with Hanna once Hanna has checked in (step 3).

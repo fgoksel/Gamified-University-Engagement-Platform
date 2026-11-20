@@ -6,6 +6,8 @@ use App\Enums\Capability;
 use App\Models\Leaderboard;
 use App\Models\Topic;
 use App\Models\User;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -18,7 +20,7 @@ use Illuminate\Validation\ValidationException;
  * leaderboard is for the people who can open its topic, on the hall screen or not. Nobody sees
  * the leaderboards of the areas above their own or beside it: "you can see the leaderboards you
  * are assigned to" (N5, 9 November; #128 Q1, 19 November). The system admin chooses the hall
- * screen (D7, Task #110).
+ * screen (D7, Task #110), and whether the names of a board go to it too (N13, Task #118).
  */
 class AreaLeaderboards
 {
@@ -166,6 +168,9 @@ class AreaLeaderboards
      */
     public function update(User $actor, Leaderboard $board, array $data): Leaderboard
     {
+        // The hall names switch belongs to the system admin alone: setHallNames() is its only way in.
+        $data = Arr::except($data, 'hall_show_names');
+
         return DB::transaction(function () use ($actor, $board, $data) {
             $before = $this->snapshot($board);
             $board->fill($data);
@@ -197,6 +202,33 @@ class AreaLeaderboards
     /**
      * Deleting a leaderboard changes no points: they stay in the ledger.
      */
+    /**
+     * Whether the names a leaderboard has are also sent to the hall screen, which needs no login
+     * (N13, Task #118). Off until the system admin turns it on, and theirs alone to change: an area
+     * admin decides which columns the board has, never what guests get. It changes only the hall
+     * screen; the board keeps showing the columns its creator chose to the people who sign in.
+     *
+     * @throws AuthorizationException
+     */
+    public function setHallNames(User $actor, Leaderboard $board, bool $show): Leaderboard
+    {
+        if (! $this->access->isSystemAdmin($actor)) {
+            throw new AuthorizationException(__('leaderboards.hall_names.only_the_system_admin'));
+        }
+
+        return DB::transaction(function () use ($actor, $board, $show) {
+            $before = $this->snapshot($board);
+            $board->hall_show_names = $show;
+
+            if ($board->isDirty()) {
+                $board->save();
+                TopicAudit::record($actor, $show ? 'leaderboard.hall_names_shown' : 'leaderboard.hall_names_hidden', $board->topic_id, 'leaderboard', $board->id, $before, $this->snapshot($board));
+            }
+
+            return $board;
+        });
+    }
+
     public function delete(User $actor, Leaderboard $board): void
     {
         DB::transaction(function () use ($actor, $board) {
@@ -210,6 +242,6 @@ class AreaLeaderboards
      */
     private function snapshot(Leaderboard $board): array
     {
-        return $board->only(['name', 'visibility', 'show_neptun_code', 'show_first_name', 'show_last_name', 'hall_seconds']);
+        return $board->only(['name', 'visibility', 'show_neptun_code', 'show_first_name', 'show_last_name', 'hall_seconds', 'hall_show_names']);
     }
 }
