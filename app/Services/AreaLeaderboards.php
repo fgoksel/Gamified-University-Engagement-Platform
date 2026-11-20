@@ -200,9 +200,6 @@ class AreaLeaderboards
     }
 
     /**
-     * Deleting a leaderboard changes no points: they stay in the ledger.
-     */
-    /**
      * Whether the names a leaderboard has are also sent to the hall screen, which needs no login
      * (N13, Task #118). Off until the system admin turns it on, and theirs alone to change: an area
      * admin decides which columns the board has, never what guests get. It changes only the hall
@@ -229,6 +226,9 @@ class AreaLeaderboards
         });
     }
 
+    /**
+     * Deleting a leaderboard changes no points: they stay in the ledger.
+     */
     public function delete(User $actor, Leaderboard $board): void
     {
         DB::transaction(function () use ($actor, $board) {
