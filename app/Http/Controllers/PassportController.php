@@ -10,7 +10,8 @@ use Inertia\Response;
 
 /**
  * "My QR passport" (Task #52): the code a student shows so an organiser can
- * confirm their attendance with "Scan attendance" (Task #43).
+ * confirm their attendance with "Scan attendance" (Task #43). It changes every 7 seconds
+ * (Task #100); the page asks for the next one when the current one runs out.
  */
 class PassportController extends Controller
 {
@@ -25,8 +26,9 @@ class PassportController extends Controller
                 'image' => 'data:image/svg+xml;base64,'.base64_encode($images->svg($code, 512)),
                 'name' => $student->name,
                 'neptun_code' => $student->neptun_code,
-                'valid_for' => QrPassport::LIFETIME,
+                // Task #100: the code changes every 7 seconds, in step with the server's clock.
                 'refresh_every' => QrPassport::REFRESH,
+                'next_in' => $passport->secondsToNext(),
             ],
         ]);
     }

@@ -147,6 +147,32 @@ async function switchCamera(deviceId) {
     await startScanning();
 }
 
+// Task #100: where the scanned student stands for this event, in plain words.
+function standing(student) {
+    if (student.accepted) return t("events.scan.accepted_for_this_event");
+    switch (student.application) {
+        case "pending":
+            return t("events.scan.not_accepted_pending");
+        case "waitlisted":
+            return t("events.scan.not_accepted_waitlisted");
+        case "rejected":
+            return t("events.scan.not_accepted_rejected");
+        case "withdrawn":
+            return t("events.scan.not_accepted_withdrawn");
+        default:
+            return t("events.scan.not_accepted_never_applied");
+    }
+}
+
+function initials(name) {
+    return (name || "")
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((part) => part[0].toUpperCase())
+        .join("");
+}
+
 function onScanResult(rawText) {
     if (!rawText) return;
 
@@ -356,6 +382,53 @@ onUnmounted(() => {
                     <p class="text-xs sm:text-sm mt-0.5 opacity-90">
                         {{ feedback.message }}
                     </p>
+
+                    <!-- Task #100: who the passport belongs to, so the organiser can check
+                         the person in front of them. -->
+                    <div
+                        v-if="feedback.student && feedback.student.id"
+                        class="mt-3 flex items-center gap-3 rounded-control bg-surface p-2 text-fg"
+                        data-test="scanned-student"
+                    >
+                        <img
+                            v-if="feedback.student.photo"
+                            :src="feedback.student.photo"
+                            :alt="
+                                $t('events.scan.profile_photo_of', {
+                                    name: feedback.student.name,
+                                })
+                            "
+                            class="size-14 shrink-0 rounded-full object-cover"
+                        />
+                        <span
+                            v-else
+                            class="flex size-14 shrink-0 items-center justify-center rounded-full bg-surface-muted text-lg font-semibold text-fg-muted"
+                            aria-hidden="true"
+                        >
+                            {{ initials(feedback.student.name) }}
+                        </span>
+                        <div class="min-w-0">
+                            <p class="truncate font-semibold">
+                                {{ feedback.student.name }}
+                            </p>
+                            <p
+                                v-if="feedback.student.neptun_code"
+                                class="font-mono text-sm tracking-widest text-fg-muted"
+                            >
+                                {{ feedback.student.neptun_code }}
+                            </p>
+                            <p
+                                class="mt-0.5 text-sm font-medium"
+                                :class="
+                                    feedback.student.accepted
+                                        ? 'text-success-fg'
+                                        : 'text-danger-fg'
+                                "
+                            >
+                                {{ standing(feedback.student) }}
+                            </p>
+                        </div>
+                    </div>
                 </div>
 
                 <button

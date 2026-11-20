@@ -108,8 +108,9 @@ Both roles are ordinary area roles (Areas → Roles); a title gives no power, th
 All at the running **Indexing Lab** (20 points):
 
 1. **Teacher scans the student (QR passport):** Anna opens *My QR passport* (it changes every
-   minute, so a screenshot stops working). Ivan opens *Indexing Lab → Scan attendance* and points the
-   scanner camera at it. *Points credited to Anna Nagy (+20 pts).* Bence already shows as credited.
+   7 seconds, so a screenshot stops working; Task #100). Ivan opens *Indexing Lab → Scan attendance*
+   and points the scanner camera at it. *Points credited to Anna Nagy (+20 pts).* The scanner shows
+   her name, Neptun code, photo and "Accepted for this event". Bence already shows as credited.
 2. **Student scans a printed slip (Task #84):** Ivan opens *Indexing Lab → QR slips* and prints batch 1.
    **Dániel** opens *Scan QR code* and points his camera at one slip: *20 points credited.* The slip log
    on *QR slips* now shows Dániel, his Neptun code and the slip's number.

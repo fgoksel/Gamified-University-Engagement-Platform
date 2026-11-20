@@ -5,39 +5,42 @@ import { RefreshCw, ShieldCheck, Sun } from "@lucide/vue";
 import { t } from "../../i18n.js";
 
 // My QR passport (Task #52): the student shows it, an organiser scans it with
-// "Scan attendance". The code is signed and short-lived, so the page draws a
-// new one every minute; an old screenshot stops working.
+// "Scan attendance". The code is signed and changes every 7 seconds (Task #100), in step
+// with the server's clock, so a screenshot sent to someone else stops working at once.
 defineOptions({ layout: { title: t("passport.my_qr_passport") } });
 
 const props = defineProps({
     passport: { type: Object, required: true },
 });
 
-const secondsLeft = ref(props.passport.refresh_every);
+const secondsLeft = ref(props.passport.next_in);
 let timer;
+let loading = false;
 
 function refresh() {
+    if (loading) return;
+    loading = true;
     router.reload({
         only: ["passport"],
-        onSuccess: () => (secondsLeft.value = props.passport.refresh_every),
+        onSuccess: () => (secondsLeft.value = props.passport.next_in),
+        // Offline for a moment: try again on the next tick.
+        onError: () => (secondsLeft.value = 1),
+        onFinish: () => (loading = false),
     });
 }
 
 onMounted(() => {
     timer = setInterval(() => {
-        secondsLeft.value -= 1;
-        if (secondsLeft.value <= 0) {
-            secondsLeft.value = props.passport.refresh_every;
-            refresh();
-        }
+        if (secondsLeft.value > 0) secondsLeft.value -= 1;
+        if (secondsLeft.value <= 0) refresh();
     }, 1000);
 });
 
 onBeforeUnmount(() => clearInterval(timer));
 
-// The ring around the code empties as the next refresh approaches.
-const progress = computed(
-    () => secondsLeft.value / props.passport.refresh_every,
+// The ring around the code empties as the next code approaches.
+const progress = computed(() =>
+    Math.min(1, secondsLeft.value / props.passport.refresh_every),
 );
 </script>
 
@@ -63,10 +66,10 @@ const progress = computed(
                 />
             </div>
 
+            <!-- Not a live region: a countdown read out every second would drown the screen
+                 reader (Task #100). The tip below says the code changes every 7 seconds. -->
             <div
                 class="mt-4 flex items-center justify-center gap-2 text-sm text-fg-muted"
-                role="status"
-                aria-live="polite"
             >
                 <svg
                     class="size-4 -rotate-90"
@@ -93,7 +96,11 @@ const progress = computed(
                         :stroke-dashoffset="50.27 * (1 - progress)"
                     />
                 </svg>
-                {{ $t("passport.new_code_in", { time: `${secondsLeft}s` }) }}
+                {{
+                    $t("passport.new_code_in", {
+                        time: `${Math.max(secondsLeft, 0)}s`,
+                    })
+                }}
                 <button
                     type="button"
                     class="ml-1 inline-flex min-h-11 items-center gap-1 rounded-control px-2 py-1 text-fg hover:bg-surface-muted"
