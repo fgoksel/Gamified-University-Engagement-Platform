@@ -268,6 +268,17 @@ class OrganizedEventsTest extends TopicTestCase
         $this->assertSame($this->teacher->id, $edit->actor_id);
         $this->assertSame(['old' => 'on_hold', 'new' => 'published'], $edit->changes['status']);
         $this->assertSame($starts->format('Y-m-d H:i'), $edit->changes['event_starts_at']['new']);
+
+        // The Edit page shows it in words, like every other row (review of #122).
+        $this->actingAs($this->teacher)->get("/events/{$event->id}/edit")
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('history.0.changes.0', ['field' => 'status', 'old' => 'On hold', 'new' => 'Published'])
+                ->where('history.0.changes.1', [
+                    'field' => 'event_starts_at',
+                    'old' => now()->addDays(5)->translatedFormat('D j M Y, H:i'),
+                    'new' => $starts->translatedFormat('D j M Y, H:i'),
+                ]));
     }
 
     public function test_restoring_an_event_whose_dates_passed_keeps_applications_open_and_points_after_the_end(): void

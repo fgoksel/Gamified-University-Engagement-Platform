@@ -1070,6 +1070,7 @@
     "events.edit.field_owning_topic_id": "Managed from",
     "events.edit.field_points_value": "Points",
     "events.edit.field_qr_enabled": "QR attendance",
+    "events.edit.field_status": "Status",
     "events.edit.field_title": "Title",
     "events.edit.field_topic_tag_id": "Topic tag",
     "events.edit.no_changes_since_the_event": "No changes since the event was created.",
