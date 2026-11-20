@@ -140,7 +140,8 @@ capabilities; use the System Admin or a role with `topic.archive` to show this.)
 ## Leaderboards and the hall screen (Task #56)
 
 The seeder puts three leaderboards on the hall screen, with the points of the demo events: **University total**,
-**Informatics total** (with names) and **Sport total**. A database seeded earlier gets them by
+**Informatics total** (its board has names) and **Sport total**. Guests see Neptun codes only: the names of a board
+reach `/hall` after the System Admin switches *Names for guests* on for it (N13). A database seeded earlier gets them by
 running the seeder again; nothing else changes. A second run adds nothing.
 
 | To see | Open | As |
@@ -151,6 +152,7 @@ running the seeder again; nothing else changes. A second run adds nothing.
 | Making a leaderboard | Topics → Faculty of Informatics → Leaderboards | Ivan |
 | Choosing the leaderboards on the hall screen | Admin panel → Hall screen, *On the hall screen* | System Admin |
 | The default time on the hall screen | Admin panel → Hall screen | System Admin |
+| Names for guests on the hall screen | Admin panel → Hall screen, *Names for guests* | System Admin |
 | Highlighting a leaderboard (the star, up to five) | *Leaderboards → All leaderboards*, click the star of a box | Ivan, once Faculty of Informatics has two or more boards |
 
 Staff see the leaderboards of the areas they can open (D4). A student also sees the boards of the

@@ -6,16 +6,21 @@ use App\Enums\Capability;
 use App\Enums\UserRole;
 use App\Filament\Pages\HallScreen;
 use App\Models\Leaderboard;
+use App\Models\PointTransaction;
 use App\Models\Setting;
 use App\Models\Topic;
+use App\Models\TopicAuditEvent;
 use App\Models\User;
+use App\Services\AreaLeaderboards;
 use App\Services\TopicService;
+use Illuminate\Auth\Access\AuthorizationException;
 use Inertia\Testing\AssertableInertia as Assert;
 use Livewire\Livewire;
 use Tests\Feature\Events\EventTestCase;
 
 /**
  * Task #56: the hall screen rotates the published leaderboards on a public display, without login.
+ * Task #118 (N13): guests always see Neptun codes, and names only where the system admin switched them on.
  */
 class HallScreenTest extends EventTestCase
 {
@@ -211,6 +216,156 @@ class HallScreenTest extends EventTestCase
         $this->actingAs($this->areaAdmin())->post("/leaderboards/{$board->id}/publish")->assertNotFound();
 
         $this->assertFalse($board->fresh()->isPublic());
+    }
+
+    public function test_the_hall_screen_sends_no_name_until_the_system_admin_switches_names_on(): void
+    {
+        $this->credit($this->student('Anna Maria Nagy', 'ANNA01'), 20);
+        $board = $this->board($this->faculty, 'Names', ['show_first_name' => true, 'show_last_name' => true]);
+
+        // A board that has names still sends none: the switch is off by default (agreed on 10 November).
+        $this->assertFalse($board->hall_show_names);
+
+        $response = $this->getJson('/hall/leaderboards')->assertOk()
+            ->assertJsonPath('leaderboards.0.columns', ['neptun_code'])
+            ->assertJsonPath('leaderboards.0.rows.0', ['position' => 1, 'rank' => 1, 'points' => 20, 'neptun_code' => 'ANNA01']);
+
+        $this->assertStringNotContainsString('Anna', $response->getContent());
+        $this->assertStringNotContainsString('Nagy', $response->getContent());
+    }
+
+    public function test_the_system_admin_switches_the_names_of_one_board_on_and_off(): void
+    {
+        $this->credit($this->student('Anna Maria Nagy', 'ANNA01'), 20);
+        $board = $this->board($this->faculty, 'Names', ['show_first_name' => true, 'show_last_name' => true]);
+        $other = $this->board($this->faculty, 'Other names', ['show_first_name' => true]);
+
+        Livewire::actingAs($this->admin)->test(HallScreen::class)
+            ->call('updateTableColumnState', 'hall_show_names', (string) $board->id, true);
+
+        $feed = collect($this->getJson('/hall/leaderboards')->json('leaderboards'))->keyBy('name');
+        $this->assertSame(['neptun_code', 'first_name', 'last_name'], $feed['Names']['columns']);
+        $this->assertSame('Anna Maria', $feed['Names']['rows'][0]['first_name']);
+        $this->assertSame('Nagy', $feed['Names']['rows'][0]['last_name']);
+        // The switch belongs to one board: the other one still sends no name.
+        $this->assertSame(['neptun_code'], $feed['Other names']['columns']);
+        $this->assertArrayNotHasKey('first_name', $feed['Other names']['rows'][0]);
+
+        Livewire::actingAs($this->admin)->test(HallScreen::class)
+            ->call('updateTableColumnState', 'hall_show_names', (string) $board->id, false);
+
+        $this->getJson('/hall/leaderboards')->assertOk()
+            ->assertJsonPath('leaderboards.0.columns', ['neptun_code'])
+            ->assertJsonMissingPath('leaderboards.0.rows.0.first_name');
+    }
+
+    public function test_the_switch_never_adds_a_name_the_board_does_not_have(): void
+    {
+        $this->credit($this->student('Anna Maria Nagy', 'ANNA01'), 20);
+        $firstOnly = $this->board($this->faculty, 'First only', ['show_first_name' => true, 'hall_show_names' => true]);
+        $none = $this->board($this->faculty, 'No names', ['hall_show_names' => true]);
+
+        $feed = collect($this->getJson('/hall/leaderboards')->json('leaderboards'))->keyBy('name');
+
+        $this->assertSame(['neptun_code', 'first_name'], $feed['First only']['columns']);
+        $this->assertArrayNotHasKey('last_name', $feed['First only']['rows'][0]);
+        $this->assertSame(['neptun_code'], $feed['No names']['columns']);
+        $this->assertSame($firstOnly->id, $feed['First only']['id']);
+        $this->assertSame($none->id, $feed['No names']['id']);
+    }
+
+    public function test_a_neptun_code_always_shows_on_the_hall_screen(): void
+    {
+        $this->credit($this->student('Anna Maria Nagy', 'ANNA01'), 20);
+        // The creator ticked no Neptun code, and the switch is off: guests still see who is on the board.
+        $this->board($this->faculty, 'No code ticked', ['show_neptun_code' => false]);
+
+        $this->getJson('/hall/leaderboards')->assertOk()
+            ->assertJsonPath('leaderboards.0.columns', ['neptun_code'])
+            ->assertJsonPath('leaderboards.0.rows.0.neptun_code', 'ANNA01');
+    }
+
+    public function test_the_switch_changes_only_the_hall_screen_not_the_leaderboard_for_people_who_sign_in(): void
+    {
+        $this->credit($this->student('Anna Maria Nagy', 'ANNA01'), 20);
+        $board = $this->board($this->faculty, 'Names', ['show_first_name' => true, 'show_last_name' => true]);
+
+        foreach ([false, true] as $hallNames) {
+            $board->update(['hall_show_names' => $hallNames]);
+
+            $ranking = json_encode($this->actingAs($this->areaAdmin())->get("/leaderboards?board={$board->id}")->viewData('page')['props']['selected']);
+
+            // The names its area admin chose stay, whatever the hall screen gets.
+            $this->assertStringContainsString('ANNA01', $ranking);
+            $this->assertStringContainsString('Anna Maria', $ranking);
+            $this->assertStringContainsString('Nagy', $ranking);
+        }
+    }
+
+    public function test_only_the_system_admin_can_change_the_switch(): void
+    {
+        $board = $this->board($this->faculty, 'Names', ['show_first_name' => true]);
+
+        try {
+            app(AreaLeaderboards::class)->setHallNames($this->areaAdmin(), $board, true);
+            $this->fail('An area admin changed what guests see.');
+        } catch (AuthorizationException $e) {
+            $this->assertSame(__('leaderboards.hall_names.only_the_system_admin'), $e->getMessage());
+        }
+
+        // The edit form of an area admin cannot carry it, and the service ignores it too.
+        $this->actingAs($this->areaAdmin())
+            ->put("/leaderboards/{$board->id}", ['name' => 'Names', 'show_first_name' => true, 'hall_show_names' => true])
+            ->assertSessionHasNoErrors();
+        app(AreaLeaderboards::class)->update($this->areaAdmin(), $board->fresh(), ['hall_show_names' => true]);
+
+        $this->assertFalse($board->fresh()->hall_show_names);
+        $this->assertSame(0, TopicAuditEvent::where('action', 'like', 'leaderboard.hall_names%')->count());
+    }
+
+    public function test_changing_the_switch_is_in_the_audit_trail_and_only_real_changes_count(): void
+    {
+        $board = $this->board($this->faculty, 'Names', ['show_first_name' => true]);
+        $service = app(AreaLeaderboards::class);
+
+        $service->setHallNames($this->admin, $board, true);
+        $service->setHallNames($this->admin, $board->fresh(), true);
+        $service->setHallNames($this->admin, $board->fresh(), false);
+
+        $events = TopicAuditEvent::where('action', 'like', 'leaderboard.hall_names%')->orderBy('id')->get();
+
+        $this->assertSame(['leaderboard.hall_names_shown', 'leaderboard.hall_names_hidden'], $events->pluck('action')->all());
+        $this->assertSame($this->admin->id, $events[0]->actor_id);
+        $this->assertFalse($events[0]->before['hall_show_names']);
+        $this->assertTrue($events[0]->after['hall_show_names']);
+    }
+
+    public function test_the_admin_page_says_what_each_board_shows_and_what_guests_get(): void
+    {
+        $this->board($this->faculty, 'Both', ['show_first_name' => true, 'show_last_name' => true]);
+        $this->board($this->faculty, 'Neptun only');
+
+        Livewire::actingAs($this->admin)->test(HallScreen::class)
+            ->assertSee(__('admin.hall_screen.names_for_guests'))
+            ->assertSee(__('admin.hall_screen.board_names', ['names' => __('admin.hall_screen.names_both')]))
+            ->assertSee(__('admin.hall_screen.board_names', ['names' => __('admin.hall_screen.names_none')]))
+            ->assertSee(__('admin.hall_screen.names_help'));
+    }
+
+    private function credit(User $student, int $points): PointTransaction
+    {
+        $event = $this->makeEvent(['points_value' => $points]);
+
+        return PointTransaction::create([
+            'student_id' => $student->id,
+            'event_id' => $event->id,
+            'semester_id' => $event->semester_id,
+            'credited_by_id' => $this->admin->id,
+            'points' => $points,
+            'type' => PointTransaction::CREDIT,
+            'source' => 'import',
+            'category' => 'academic',
+        ]);
     }
 
     private function areaAdmin(): User

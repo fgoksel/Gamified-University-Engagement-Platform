@@ -270,16 +270,24 @@ class AreaLeaderboardTest extends EventTestCase
         $this->get('/hall/leaderboards')->assertOk()->assertExactJson(['leaderboards' => []]);
     }
 
-    public function test_names_show_only_when_their_columns_are_ticked(): void
+    public function test_the_hall_screen_gets_a_neptun_code_and_names_only_where_ticked_and_switched_on(): void
     {
         $this->credit($this->student('Anna Maria Nagy', 'ANNA01'), $this->course, 20);
 
+        // The creator ticked a last name and no Neptun code. Guests still get the Neptun code, and no name:
+        // the system admin has not switched names on for the hall screen (N13, Task #118).
         $board = $this->board($this->faculty, ['visibility' => Leaderboard::PUBLIC, 'show_neptun_code' => false, 'show_last_name' => true]);
         $this->get('/hall/leaderboards')->assertOk()
-            ->assertJsonPath('leaderboards.0.columns', ['last_name'])
-            ->assertJsonPath('leaderboards.0.rows.0', ['position' => 1, 'rank' => 1, 'points' => 20, 'last_name' => 'Nagy']);
+            ->assertJsonPath('leaderboards.0.columns', ['neptun_code'])
+            ->assertJsonPath('leaderboards.0.rows.0', ['position' => 1, 'rank' => 1, 'points' => 20, 'neptun_code' => 'ANNA01']);
 
-        $board->update(['show_neptun_code' => true, 'show_first_name' => true]);
+        // Switched on, the board's own name columns reach the hall screen, and only those.
+        app(AreaLeaderboards::class)->setHallNames($this->admin, $board, true);
+        $this->get('/hall/leaderboards')->assertOk()
+            ->assertJsonPath('leaderboards.0.columns', ['neptun_code', 'last_name'])
+            ->assertJsonPath('leaderboards.0.rows.0', ['position' => 1, 'rank' => 1, 'points' => 20, 'neptun_code' => 'ANNA01', 'last_name' => 'Nagy']);
+
+        $board->update(['show_first_name' => true]);
         $this->get('/hall/leaderboards')->assertOk()
             ->assertJsonPath('leaderboards.0.columns', ['neptun_code', 'first_name', 'last_name'])
             ->assertJsonPath('leaderboards.0.rows.0', ['position' => 1, 'rank' => 1, 'points' => 20, 'neptun_code' => 'ANNA01', 'first_name' => 'Anna Maria', 'last_name' => 'Nagy']);
