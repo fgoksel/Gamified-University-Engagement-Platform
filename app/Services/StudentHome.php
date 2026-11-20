@@ -150,13 +150,15 @@ class StudentHome
     }
 
     /**
-     * The student's latest point rows, credits and corrections alike, newest first.
+     * The student's latest point rows, credits and corrections alike, newest first. Only rows that
+     * count, so after a points reset the list starts again with the total (Task #102).
      *
      * @return list<array<string, mixed>>
      */
     private function recent(User $student): array
     {
         return PointTransaction::query()
+            ->counting()
             ->where('student_id', $student->id)
             ->with('event:id,title')
             ->latest('created_at')

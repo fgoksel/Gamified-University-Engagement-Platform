@@ -121,7 +121,8 @@ The data comes from `App\Services\RankingExplorer`; the section is `Components/L
 | `studentTotals($studentId, $semesterId = null)` | one student's points in total and per category |
 
 `LeaderboardStandings::ranked()` (area leaderboards, the hall screen feed) and `PointLedger::totals()`
-(the home page) both read from it.
+(the home page) both read from it. It counts only the ledger rows written since the last points
+reset (see below).
 
 **The cache** keeps those sums for **30 seconds** (`LEADERBOARD_CACHE_TTL`) in Redis
 (`LEADERBOARD_CACHE_STORE=redis`; Redis is part of the Docker setup). It is tagged:
@@ -129,8 +130,9 @@ The data comes from `App\Services\RankingExplorer`; the section is `Components/L
 | Tag | Holds | Cleared when |
 |---|---|---|
 | `student-points:{id}` | the totals of that student | a ledger row is added for that student |
+| `student-points` | the totals of every student | the points are reset (Task #102) |
 | `leaderboard-area:{topicId}` | the standings of that area | a ledger row is added for an event of that area or of any area below it |
-| `leaderboards` | every standing | a topic is moved (the areas above it change) |
+| `leaderboards` | every standing | a topic is moved (the areas above it change), a category changes, or the points are reset |
 
 A credit, an import and a reversal all add a ledger row, and `PointTransaction` clears the tags
 after the commit, so a new credit shows on the next visit, not after 30 seconds. The 30 seconds are
@@ -148,3 +150,32 @@ The tests switch the cache off (`LEADERBOARD_CACHE_TTL=0` in `phpunit.xml`); the
 switch it on.
 
 To see what is cached in the Docker setup: `docker compose exec redis redis-cli -n 1 --scan` (database 1 is the cache database).
+
+## Resetting points (Task #102)
+
+There are no semester periods: a leaderboard sums all points, and nothing is ever reset on its own.
+The system admin resets by hand (27 October, L3 and S4). Whether to reset each semester is for the
+professors to decide.
+
+**Where:** admin panel → *Points reset* (`/admin/points-reset`). *Reset all points* asks to type
+`RESET`; the page lists every reset with who did it and when (also in the audit trail as
+`points.reset`). A reset with no points earned since the last one is refused.
+
+**What it does:** every student's total and every leaderboard start again from zero, on the home
+page, the Leaderboards page, *Where am I?*, the hall screen and the applicants list. The ledger is
+never edited (#59). A reset adds a row to `point_resets` with the id of the last ledger row that no
+longer counts, and `PointCalculationService` counts only the rows after it
+(`PointReset::onlyCounting()`, `PointTransaction::counting()`).
+
+- A correction counts when the credit it corrects counts: taking back a credit from before the
+  reset changes no total.
+- Earlier credits stay in each event's history (credited students, imports, check-ins), and a
+  student credited for an event before the reset cannot be credited for it again. The home page's
+  *Recent points* list only rows that count, so it starts again with the total.
+- A credit written at the moment of the reset is never lost: the reset reads every ledger row with
+  a lock, so it waits for a credit still being written and holds new ones back until it is saved
+  (MySQL; tested on MySQL 8).
+- The reset clears the tags `student-points` and `leaderboards`, so the totals start from zero at
+  once, not after 30 seconds.
+
+*Remove all badges*, the second button of #102, comes with badges (#103).

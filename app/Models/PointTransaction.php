@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Services\PointCalculationService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use LogicException;
@@ -10,6 +11,9 @@ use LogicException;
 /**
  * One row of the points ledger. Rows are only ever added: a correction is a
  * new row with negative points that points back at the row it reverses.
+ *
+ * After a "Reset all points" (Task #102) the earlier rows stay, but only the rows
+ * written since count (counting()).
  */
 class PointTransaction extends Model
 {
@@ -56,6 +60,16 @@ class PointTransaction extends Model
                 throw new LogicException('A reversal must be a negative number of points.');
             }
         });
+    }
+
+    /**
+     * Only the rows that count: the ones written since the last points reset (Task #102).
+     *
+     * @param  Builder<PointTransaction>  $query
+     */
+    public function scopeCounting(Builder $query): void
+    {
+        PointReset::onlyCounting($query, $this->getTable());
     }
 
     public function event(): BelongsTo
