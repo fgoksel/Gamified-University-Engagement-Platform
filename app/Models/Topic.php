@@ -32,11 +32,19 @@ class Topic extends Model
     ];
 
     /**
+     * A new topic shows its students their own place in "Where am I?" (Task #132), as the
+     * database default does; changed only through TopicService::setOwnPlaceShown().
+     *
+     * @var array<string, mixed>
+     */
+    protected $attributes = ['show_own_place' => true];
+
+    /**
      * @return array<string, string>
      */
     protected function casts(): array
     {
-        return ['archived_at' => 'datetime'];
+        return ['archived_at' => 'datetime', 'show_own_place' => 'boolean'];
     }
 
     protected static function booted(): void

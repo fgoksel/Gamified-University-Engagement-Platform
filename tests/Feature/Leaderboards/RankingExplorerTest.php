@@ -134,7 +134,7 @@ class RankingExplorerTest extends EventTestCase
         $response = $this->visit($this->anna, ['area' => $this->faculty->id]);
 
         $response->assertInertia(fn (Assert $page) => $page
-            ->where('rankings.result', ['total' => 2, 'you' => ['rank' => 2, 'points' => 10, 'to_next' => 20, 'next_rank' => 1]]));
+            ->where('rankings.result', ['hidden' => false, 'total' => 2, 'you' => ['rank' => 2, 'points' => 10, 'to_next' => 20, 'next_rank' => 1]]));
 
         foreach (['Bela Kiss', 'BELA02', '"list"', '"items"'] as $hidden) {
             $this->assertStringNotContainsString($hidden, json_encode($response->inertiaPage()['props']['rankings']));
@@ -192,7 +192,7 @@ class RankingExplorerTest extends EventTestCase
 
         $response = $this->visit($this->anna, ['area' => $this->faculty->id]);
 
-        $response->assertInertia(fn (Assert $page) => $page->where('rankings.result', ['total' => 1, 'you' => null]));
+        $response->assertInertia(fn (Assert $page) => $page->where('rankings.result', ['hidden' => false, 'total' => 1, 'you' => null]));
         $this->assertStringNotContainsString('BELA02', $response->getContent());
     }
 

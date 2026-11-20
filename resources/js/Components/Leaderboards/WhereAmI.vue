@@ -123,7 +123,11 @@ const selectClass =
 
         <div class="mt-4" role="status" data-test="ranking-result">
             <template v-if="result">
-                <template v-if="you">
+                <!-- The area's organiser turned own places off (Task #132). -->
+                <p v-if="result.hidden" class="text-fg-muted">
+                    {{ words.hidden }}
+                </p>
+                <template v-else-if="you">
                     <p class="text-lg font-medium text-fg tabular-nums">
                         {{ words.you(you.rank, result.total, you.points) }}
                     </p>
