@@ -99,7 +99,10 @@ class NotificationFeed
                 ],
                 EventStatusChangedNotification::RESTORED => [
                     __('notifications.feed.change.restored.title', ['event' => $event]),
-                    __('notifications.feed.change.restored.body'),
+                    // Task #122: a restored event always has a new date. Older messages carry none.
+                    filled($data['when'] ?? null)
+                        ? __('notifications.feed.change.restored.body_with_date', ['when' => $data['when']])
+                        : __('notifications.feed.change.restored.body'),
                     '/my-events',
                 ],
                 EventStatusChangedNotification::RESCHEDULED => [

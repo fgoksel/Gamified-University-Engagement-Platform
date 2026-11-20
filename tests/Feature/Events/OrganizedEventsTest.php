@@ -208,11 +208,119 @@ class OrganizedEventsTest extends TopicTestCase
         $this->actingAs($this->teacher)->post("/events/{$event->id}/hold");
         $this->assertSame('on_hold', $event->fresh()->status);
 
-        $this->actingAs($this->teacher)->post("/events/{$event->id}/restore");
+        $this->actingAs($this->teacher)->post("/events/{$event->id}/restore", ['event_starts_at' => now()->addWeek()->format('Y-m-d\\TH:i'), 'event_ends_at' => now()->addWeek()->addHours(2)->format('Y-m-d\\TH:i')]);
         $this->assertSame('published', $event->fresh()->status);
 
         // Restoring something that is not on hold changes nothing.
         $this->actingAs($this->teacher)->post("/events/{$event->id}/restore")->assertSessionHas('error');
+    }
+
+    public function test_restoring_needs_a_new_date_in_the_future(): void
+    {
+        // Task #122 (C10, 13 October): an event on hold comes back only with a new date and time.
+        $event = $this->event();
+        $this->actingAs($this->teacher)->post("/events/{$event->id}/hold");
+        $url = "/events/{$event->id}/restore";
+
+        $this->actingAs($this->teacher)->post($url)
+            ->assertSessionHasErrors(['event_starts_at', 'event_ends_at']);
+        $this->actingAs($this->teacher)->post($url, [
+            'event_starts_at' => now()->subHour()->format('Y-m-d\TH:i'),
+            'event_ends_at' => now()->addHour()->format('Y-m-d\TH:i'),
+        ])->assertSessionHasErrors('event_starts_at');
+        $this->actingAs($this->teacher)->post($url, [
+            'event_starts_at' => now()->addDays(3)->format('Y-m-d\TH:i'),
+            'event_ends_at' => now()->addDays(3)->subHour()->format('Y-m-d\TH:i'),
+        ])->assertSessionHasErrors('event_ends_at');
+
+        $this->assertSame('on_hold', $event->fresh()->status);
+    }
+
+    public function test_restoring_moves_the_other_dates_with_the_start_and_keeps_them_in_their_windows(): void
+    {
+        $this->travelTo(now()->startOfMinute());
+        $event = $this->event([
+            'event_starts_at' => now()->addDays(5),
+            'event_ends_at' => now()->addDays(5)->addHours(2),
+            'applications_open_at' => now()->addDays(1),
+            'application_deadline' => now()->addDays(4),
+            'completion_deadline' => now()->addDays(12),
+        ]);
+        $this->actingAs($this->teacher)->post("/events/{$event->id}/hold");
+
+        // Ten days later than planned, and an hour shorter.
+        $starts = now()->addDays(15);
+        $this->actingAs($this->teacher)->post("/events/{$event->id}/restore", [
+            'event_starts_at' => $starts->format('Y-m-d\TH:i'),
+            'event_ends_at' => $starts->copy()->addHour()->format('Y-m-d\TH:i'),
+        ])->assertSessionHas('success');
+
+        $event->refresh();
+        $this->assertSame('published', $event->status);
+        $this->assertTrue($event->event_starts_at->equalTo($starts));
+        $this->assertTrue($event->event_ends_at->equalTo($starts->copy()->addHour()));
+        $this->assertTrue($event->applications_open_at->equalTo(now()->addDays(11)));
+        $this->assertTrue($event->application_deadline->equalTo(now()->addDays(14)));
+        $this->assertTrue($event->completion_deadline->equalTo(now()->addDays(22)));
+
+        // The restore is in the edit history (Task #76), with who did it.
+        $edit = $event->edits()->firstOrFail();
+        $this->assertSame($this->teacher->id, $edit->actor_id);
+        $this->assertSame(['old' => 'on_hold', 'new' => 'published'], $edit->changes['status']);
+        $this->assertSame($starts->format('Y-m-d H:i'), $edit->changes['event_starts_at']['new']);
+
+        // The Edit page shows it in words, like every other row (review of #122).
+        $this->actingAs($this->teacher)->get("/events/{$event->id}/edit")
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('history.0.changes.0', ['field' => 'status', 'old' => 'On hold', 'new' => 'Published'])
+                ->where('history.0.changes.1', [
+                    'field' => 'event_starts_at',
+                    'old' => now()->addDays(5)->translatedFormat('D j M Y, H:i'),
+                    'new' => $starts->translatedFormat('D j M Y, H:i'),
+                ]));
+    }
+
+    public function test_restoring_an_event_whose_dates_passed_keeps_applications_open_and_points_after_the_end(): void
+    {
+        $this->travelTo(now()->startOfMinute());
+        // Put on hold long ago: every date has passed.
+        $event = $this->event([
+            'event_starts_at' => now()->subDays(10),
+            'event_ends_at' => now()->subDays(10)->addHours(2),
+            'applications_open_at' => now()->subDays(20),
+            'application_deadline' => now()->subDays(11),
+            'completion_deadline' => now()->subDays(10)->addHours(2),
+            'status' => Event::STATUS_ON_HOLD,
+        ]);
+
+        // Moved forward so little that the moved deadline would still be in the past.
+        $starts = now()->addHour();
+        $this->actingAs($this->teacher)->post("/events/{$event->id}/restore", [
+            'event_starts_at' => $starts->format('Y-m-d\TH:i'),
+            'event_ends_at' => $starts->copy()->addDays(2)->format('Y-m-d\TH:i'),
+        ])->assertSessionHas('success');
+
+        $event->refresh();
+        // Applications close when the event starts, never in the past.
+        $this->assertTrue($event->application_deadline->equalTo($starts));
+        // Points are possible until the end at least.
+        $this->assertTrue($event->completion_deadline->equalTo($starts->copy()->addDays(2)));
+        $this->assertTrue($event->applications_open_at->lt($event->application_deadline));
+    }
+
+    public function test_deleting_needs_the_exact_title(): void
+    {
+        // Task #122 (C11, 13 October): delete works only with the event's exact title.
+        $event = $this->event(['title' => 'SQL night']);
+
+        $this->actingAs($this->teacher)->delete("/events/{$event->id}")->assertSessionHasErrors('title');
+        $this->actingAs($this->teacher)->delete("/events/{$event->id}", ['title' => 'sql night'])->assertSessionHasErrors('title');
+        $this->actingAs($this->teacher)->delete("/events/{$event->id}", ['title' => 'SQL'])->assertSessionHasErrors('title');
+        $this->assertNotNull(Event::find($event->id));
+
+        $this->actingAs($this->teacher)->delete("/events/{$event->id}", ['title' => 'SQL night'])->assertSessionHas('success');
+        $this->assertNull(Event::find($event->id));
     }
 
     public function test_cancelling_needs_a_reason_and_is_final(): void
@@ -237,7 +345,7 @@ class OrganizedEventsTest extends TopicTestCase
     {
         $event = $this->event();
 
-        $this->actingAs($this->teacher)->delete("/events/{$event->id}")->assertSessionHas('success');
+        $this->actingAs($this->teacher)->delete("/events/{$event->id}", ['title' => $event->title])->assertSessionHas('success');
 
         $this->assertNull(Event::find($event->id));
     }
@@ -247,7 +355,7 @@ class OrganizedEventsTest extends TopicTestCase
         $event = $this->event();
         $this->apply($event, EventApplication::WITHDRAWN);
 
-        $this->actingAs($this->teacher)->delete("/events/{$event->id}")->assertSessionHas('error');
+        $this->actingAs($this->teacher)->delete("/events/{$event->id}", ['title' => $event->title])->assertSessionHas('error');
 
         $this->assertNotNull(Event::find($event->id));
     }

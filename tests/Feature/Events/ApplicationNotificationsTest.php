@@ -185,10 +185,11 @@ class ApplicationNotificationsTest extends TopicTestCase
         Notification::assertCount(3);
 
         Notification::fake();
-        $this->actingAs($this->teacher)->post("/events/{$event->id}/restore")->assertSessionHas('success');
+        $this->actingAs($this->teacher)->post("/events/{$event->id}/restore", ['event_starts_at' => now()->addWeek()->format('Y-m-d\\TH:i'), 'event_ends_at' => now()->addWeek()->addHours(2)->format('Y-m-d\\TH:i')])->assertSessionHas('success');
 
+        // Task #122: the message carries the new date.
         Notification::assertSentTo($accepted, EventStatusChangedNotification::class,
-            fn ($n) => $n->change === EventStatusChangedNotification::RESTORED);
+            fn ($n) => $n->change === EventStatusChangedNotification::RESTORED && $n->when !== null);
         Notification::assertCount(3);
     }
 
@@ -231,7 +232,7 @@ class ApplicationNotificationsTest extends TopicTestCase
         $this->travel(1)->minutes();
         $this->actingAs($this->teacher)->post("/events/{$event->id}/hold");
         $this->travel(1)->minutes();
-        $this->actingAs($this->teacher)->post("/events/{$event->id}/restore");
+        $this->actingAs($this->teacher)->post("/events/{$event->id}/restore", ['event_starts_at' => now()->addWeek()->format('Y-m-d\\TH:i'), 'event_ends_at' => now()->addWeek()->addHours(2)->format('Y-m-d\\TH:i')]);
         $this->travel(1)->minutes();
         $this->actingAs($this->teacher)->post("/events/{$event->id}/cancel", ['reason' => 'Room flooded']);
 
