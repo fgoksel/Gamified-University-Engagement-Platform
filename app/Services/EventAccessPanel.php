@@ -23,19 +23,15 @@ class EventAccessPanel
     public function __construct(private TopicAccess $access) {}
 
     /**
-     * Where the event sits in the tree, from the top down to its owning node.
+     * Where the event sits in the tree, from the root down to its owning node (N5, Task #120).
+     * Whoever can open the event sees every name on the way; a node has an id only where the
+     * viewer may open it.
      *
-     * @return list<array{id: int, title: string}>
+     * @return list<array{id: int|null, title: string}>
      */
-    public function path(Event $event): array
+    public function path(User $viewer, Event $event): array
     {
-        $lineage = $this->access->lineage($event->owningTopic);
-        $titles = Topic::query()->whereIn('id', $lineage)->pluck('title', 'id');
-
-        return array_map(
-            fn (int $id) => ['id' => $id, 'title' => (string) $titles[$id]],
-            array_reverse($lineage),
-        );
+        return $this->access->pathFromRoot($viewer, $event->owningTopic);
     }
 
     /**

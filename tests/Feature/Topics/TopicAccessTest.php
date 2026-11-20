@@ -137,6 +137,61 @@ class TopicAccessTest extends TopicTestCase
         );
     }
 
+    public function test_the_path_names_every_parent_from_the_root_and_opens_only_from_the_entry_point(): void
+    {
+        $user = $this->makeUser();
+        $this->assign($user, $this->viewer(), $this->database);
+
+        // Every parent has its name on the way (N5, Task #120), but only the areas the person may
+        // open have an id: above their own access a name stands alone.
+        $this->assertSame(
+            [
+                ['id' => null, 'title' => 'Hungary'],
+                ['id' => null, 'title' => 'Pécs'],
+                ['id' => $this->database->id, 'title' => 'Database'],
+                ['id' => $this->sql->id, 'title' => 'SQL'],
+            ],
+            $this->access()->pathFromRoot($user, $this->sql),
+        );
+    }
+
+    public function test_the_path_has_no_sibling_and_breadcrumbs_and_entry_stay_as_they_were(): void
+    {
+        $user = $this->makeUser();
+        $this->assign($user, $this->viewer(), $this->database);
+
+        // Budapest sits beside Pécs: it is not on the way to SQL.
+        $this->assertNotContains('Budapest', array_column($this->access()->pathFromRoot($user, $this->sql), 'title'));
+
+        // What decides which assignments a person may see does not change.
+        $this->assertSame(['Database', 'SQL'], $this->access()->breadcrumbs($user, $this->sql)->pluck('title')->all());
+        $this->assertSame($this->database->id, $this->access()->entryOf($user, $this->sql)?->id);
+    }
+
+    public function test_the_system_admin_can_open_every_name_on_the_path(): void
+    {
+        $path = $this->access()->pathFromRoot($this->admin, $this->sql);
+
+        $this->assertSame(['Hungary', 'Pécs', 'Database', 'SQL'], array_column($path, 'title'));
+        $this->assertSame(
+            [$this->hungary->id, $this->pecs->id, $this->database->id, $this->sql->id],
+            array_column($path, 'id'),
+        );
+    }
+
+    public function test_someone_with_no_view_right_on_the_way_gets_the_names_and_no_id(): void
+    {
+        // The event page shows the path to whoever can open the event, also to a person who holds
+        // no view right on any of its areas.
+        $user = $this->makeUser();
+        $this->assign($user, $this->role('Applicant', [Capability::EventsView]), $this->database);
+
+        $path = $this->access()->pathFromRoot($user, $this->sql);
+
+        $this->assertSame(['Hungary', 'Pécs', 'Database', 'SQL'], array_column($path, 'title'));
+        $this->assertSame([null, null, null, null], array_column($path, 'id'));
+    }
+
     public function test_a_descendant_covered_by_an_accessible_ancestor_is_not_a_second_entry(): void
     {
         $user = $this->makeUser();

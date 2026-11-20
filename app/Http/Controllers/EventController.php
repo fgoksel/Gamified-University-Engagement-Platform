@@ -52,7 +52,7 @@ class EventController extends Controller
             'event' => $catalog->detail($request->user(), $event),
             // Task #75: where the event sits in the tree, and who can manage it (null for a viewer
             // who runs no part of it and may not see who has access there).
-            'path' => $access->path($event),
+            'path' => $access->path($request->user(), $event),
             'managers' => $access->managers($request->user(), $event),
         ]);
     }

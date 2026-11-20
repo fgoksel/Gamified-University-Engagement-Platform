@@ -297,6 +297,8 @@ class TopicController extends Controller
                 'depth' => $topic->depth,
                 'created_by' => $topic->createdBy?->name,
                 'breadcrumbs' => $this->access->breadcrumbs($user, $topic)->map(fn (Topic $crumb) => ['id' => $crumb->id, 'title' => $crumb->title])->values()->all(),
+                // The path from the root, names only above the person's own access (N5, Task #120)
+                'path' => $this->access->pathFromRoot($user, $topic),
                 'can' => $abilities,
                 'children' => $this->browser->children($topic),
                 'counts' => $this->browser->counts($user, $topic),

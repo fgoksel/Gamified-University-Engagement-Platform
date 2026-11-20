@@ -70,17 +70,26 @@ class EventAccessPanelTest extends EventTestCase
 
     public function test_the_event_page_shows_its_path_from_the_top_of_the_tree_down(): void
     {
-        $path = [
+        $student = $this->student();
+        $this->assign($student, $this->studentRole(), $this->course);
+
+        // Everyone who can open the event sees every name on the way, a student too (N5, Task #120).
+        // A node has an id only where the viewer may open it.
+        $overseer = [
             ['id' => $this->university->id, 'title' => 'University'],
             ['id' => $this->faculty->id, 'title' => 'Faculty'],
             ['id' => $this->course->id, 'title' => 'Databases'],
         ];
-        $student = $this->student();
-        $this->assign($student, $this->studentRole(), $this->course);
+        $fromTheCourse = [
+            ['id' => null, 'title' => 'University'],
+            ['id' => null, 'title' => 'Faculty'],
+            ['id' => $this->course->id, 'title' => 'Databases'],
+        ];
 
-        // Everyone who can open the event sees where it sits, a student too.
-        foreach ([$this->overseer(), $this->person('Ivan Kovacs', $this->organiser, $this->course), $student] as $viewer) {
-            $this->page($viewer)->assertInertia(fn (Assert $page) => $page->component('Events/Show')->where('path', $path));
+        $this->page($this->overseer())->assertInertia(fn (Assert $page) => $page->component('Events/Show')->where('path', $overseer));
+
+        foreach ([$this->person('Ivan Kovacs', $this->organiser, $this->course), $student] as $viewer) {
+            $this->page($viewer)->assertInertia(fn (Assert $page) => $page->component('Events/Show')->where('path', $fromTheCourse));
         }
     }
 
