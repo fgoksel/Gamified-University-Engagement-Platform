@@ -2,12 +2,9 @@
 
 namespace App\Jobs;
 
-use App\Enums\UserRole;
 use App\Models\Faculty;
 use App\Models\User;
-use App\Notifications\OrganizerInvitationNotification;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
+use App\Services\OrganizerAccounts;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
@@ -85,26 +82,7 @@ class ImportOrganizersJob extends ImportCsvJob
             }
         }
 
-        $token = Str::random(64);
-
-        $user = DB::transaction(function () use ($name, $email, $facultyId, $token) {
-            $user = User::create([
-                'name' => $name,
-                'email' => $email,
-                'password' => Hash::make(Str::random(32)),
-                'faculty_id' => $facultyId,
-                'status' => 'invited',
-                'must_change_password' => true,
-                'activation_token' => $token,
-                'activation_token_expires_at' => now()->addHours(24),
-            ]);
-
-            $user->assignRole(UserRole::Teacher);
-
-            return $user;
-        });
-
-        $user->notify(new OrganizerInvitationNotification($token, 24));
+        app(OrganizerAccounts::class)->invite($name, $email, $facultyId);
 
         $this->imported++;
     }

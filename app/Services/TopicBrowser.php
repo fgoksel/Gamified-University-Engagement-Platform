@@ -31,6 +31,7 @@ class TopicBrowser
         private RoleAssignmentPolicy $assignments,
         private EventCatalog $catalog,
         private EventPlacement $placement,
+        private AreaInvitations $invitations,
     ) {}
 
     /**
@@ -117,6 +118,8 @@ class TopicBrowser
             'assign' => $has(Capability::AccessAssign),
             'end' => $has(Capability::AccessEnd),
             'import' => $has(Capability::AccessImport),
+            // "Invite a person" offers organisers too (Task #104).
+            'invite_organisers' => $this->invitations->mayInviteOrganisers($user, $topic),
             'define_roles' => $has(Capability::DefineRoles),
             'manage_leaderboards' => $has(Capability::LeaderboardsManage),
             'create_event' => $this->opensEventPages($user) && $this->placement->mayOwn($user, $topic),
@@ -347,7 +350,11 @@ class TopicBrowser
             ])->values()->all();
 
         return [
-            'here' => $rows->where('topic_id', $topic->id)->map($format)->values()->all(),
+            'here' => $rows->where('topic_id', $topic->id)->map(fn (RoleAssignment $a) => [
+                ...$format($a),
+                // Not activated yet: a new link can be sent from here (Task #104).
+                'can_resend' => $a->user->status === 'invited' && $this->invitations->mayResendTo($user, $topic, $a->user),
+            ])->values()->all(),
             'inherited' => $rows->where('topic_id', '!=', $topic->id)->map($format)->values()->all(),
             'history' => $history,
             'roles' => $this->access->can($user, Capability::AccessAssign, $topic) ? $this->assignableRoles($user, $topic) : [],
@@ -525,7 +532,8 @@ class TopicBrowser
             return [];
         }
 
-        $query = User::query()->where('status', 'active')->whereKeyNot($actor->id);
+        // Invited accounts too: they may hold a role, which works once they activate (Task #104).
+        $query = User::query()->whereIn('status', ['active', 'invited'])->whereKeyNot($actor->id);
         Like::contains($query, ['name', 'email'], $term);
 
         return $query
@@ -571,6 +579,8 @@ class TopicBrowser
                 'name' => $assignment->user->name,
                 'email' => $assignment->user->email,
                 'active' => $assignment->user->status === 'active',
+                // Not signed in yet: the role works once they activate the account (Task #104).
+                'invited' => $assignment->user->status === 'invited',
             ],
             'role' => ['id' => $assignment->role->id, 'name' => $assignment->role->name, 'capabilities' => $assignment->role->capabilityList()],
             'granted_by' => $assignment->grantedBy?->name,

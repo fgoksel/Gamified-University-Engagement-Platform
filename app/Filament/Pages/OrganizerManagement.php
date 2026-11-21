@@ -7,6 +7,7 @@ use App\Jobs\ImportOrganizersJob;
 use App\Models\Faculty;
 use App\Models\User;
 use App\Notifications\OrganizerInvitationNotification;
+use App\Services\OrganizerAccounts;
 use App\Services\SystemAdminService;
 use App\Support\AdminUpload;
 use BackedEnum;
@@ -22,8 +23,6 @@ use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 /**
@@ -166,14 +165,7 @@ class OrganizerManagement extends Page implements HasTable
                     ->modalSubmitActionLabel(__('admin.organizers.yes_resend'))
                     ->visible(fn (User $record): bool => $record->status === 'invited')
                     ->action(function (User $record): void {
-                        $token = Str::random(64);
-
-                        $record->update([
-                            'activation_token' => $token,
-                            'activation_token_expires_at' => now()->addHours(24),
-                        ]);
-
-                        $record->notify(new OrganizerInvitationNotification($token, 24));
+                        app(OrganizerAccounts::class)->resend($record);
 
                         Notification::make()
                             ->title(__('admin.organizers.invitation_resent'))
@@ -315,30 +307,17 @@ class OrganizerManagement extends Page implements HasTable
                         ->exists(table: Faculty::class, column: 'id'),
                 ])
                 ->action(function (array $data): void {
-                    DB::transaction(function () use ($data) {
-                        $token = Str::random(64);
+                    $user = app(OrganizerAccounts::class)->invite(
+                        $data['name'],
+                        $data['email'],
+                        isset($data['faculty_id']) ? (int) $data['faculty_id'] : null,
+                    );
 
-                        $user = User::create([
-                            'name' => $data['name'],
-                            'email' => $data['email'],
-                            'password' => Hash::make(Str::random(32)),
-                            'faculty_id' => $data['faculty_id'] ?? null,
-                            'status' => 'invited',
-                            'must_change_password' => true,
-                            'activation_token' => $token,
-                            'activation_token_expires_at' => now()->addHours(24),
-                        ]);
-
-                        $user->assignRole(UserRole::Teacher);
-
-                        $user->notify(new OrganizerInvitationNotification($token, 24));
-
-                        Notification::make()
-                            ->title(__('admin.organizers.invitation_sent'))
-                            ->success()
-                            ->body(__('admin.organizers.the_invitation_was_successfully_sent', ['email' => $user->email]))
-                            ->send();
-                    });
+                    Notification::make()
+                        ->title(__('admin.organizers.invitation_sent'))
+                        ->success()
+                        ->body(__('admin.organizers.the_invitation_was_successfully_sent', ['email' => $user->email]))
+                        ->send();
                 }),
 
             // UC-3.1.1: Bulk CSV import for organizers (Task #24)
