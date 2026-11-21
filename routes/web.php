@@ -266,6 +266,7 @@ Route::middleware('auth')->group(function () {
             Route::post('/{topic}/imports', [TopicImportController::class, 'store'])->whereNumber('topic')->name('imports.store');
             // Task #104: invite one student or organiser without an account, with a role here.
             Route::post('/{topic}/invitations', [TopicInvitationController::class, 'store'])->whereNumber('topic')->name('invitations.store');
+            Route::post('/{topic}/invitations/{person}/resend', [TopicInvitationController::class, 'resend'])->whereNumber(['topic', 'person'])->name('invitations.resend');
             // Task #89: a new leaderboard for this topic.
             Route::post('/{topic}/leaderboards', [AreaLeaderboardController::class, 'store'])->whereNumber('topic')->name('leaderboards.store');
             // Task #132: whether its students see their own place in "Where am I?".

@@ -207,14 +207,7 @@ class StudentManagement extends Page implements HasTable
                     ->modalSubmitActionLabel(__('admin.students.yes_resend'))
                     ->visible(fn (User $record): bool => $record->status === 'invited')
                     ->action(function (User $record): void {
-                        $token = Str::random(64);
-
-                        $record->update([
-                            'activation_token' => $token,
-                            'activation_token_expires_at' => now()->addHours(24),
-                        ]);
-
-                        $record->notify(new StudentInvitationNotification($token, 24));
+                        app(StudentAccounts::class)->resend($record);
 
                         Notification::make()
                             ->title(__('admin.students.invitation_resent'))

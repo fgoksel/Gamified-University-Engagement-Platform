@@ -86,14 +86,42 @@ events, and the people. To add people they use the area's Access tab:
 - **Import students**: a CSV file with a Neptun Code column. With the columns Full Name and Email
   too, a code that has no account gets a new, invited student account first (`ImportTopicStudentsJob`).
 - **Invite a person**: one student or organiser (`POST /topics/{topic}/invitations`,
-  `TopicInvitationController`). Someone who already has an account with that email or Neptun code
-  gets the role instead of a second account; a deactivated account is refused.
+  `TopicInvitationController`). Someone who already has an account with that email gets the role
+  instead of a second account, when the Neptun code is empty or theirs. A Neptun code that belongs
+  to another account is refused and names that account, so a typo never gives a role to the wrong
+  person. A deactivated account is refused.
+- **Resend invitation**: a new 24-hour activation link for someone who holds a role on the area or
+  below and has not activated yet (`POST /topics/{topic}/invitations/{user}/resend`).
 
-Both need *Import students* (`access.import`) on the area and pass the same `importRole` check.
+All of them need *Import students* (`access.import`) on the area and pass the same `importRole`
+check. Inviting an organiser, or resending an organiser's invitation, also needs *Give a role*
+(`access.assign`), because organisers create and run events (`App\Services\AreaInvitations`).
+Rights come from the role on the area, not from the account type: a student account can hold a
+helper role, such as student tutor.
 New accounts are made in one place for the whole app: `App\Services\StudentAccounts` and
 `App\Services\OrganizerAccounts`, also used by the admin panel's invite actions and CSV imports.
 An invited account may hold a role; it takes effect when the person activates the account, because
 `TopicAccess` counts active accounts only. A deactivated account cannot be given a role.
+
+#### Admin panel screens
+
+Moved to the main app (the area's Access tab):
+
+- Creating student and organiser accounts, by invite or import.
+- Resending an invitation.
+
+Staying in the admin panel, for the system admin:
+
+| Screen | Why it stays |
+| --- | --- |
+| Deactivating and activating accounts | An account is used everywhere, not in one area (N1). An area admin ends the person's role in their area instead. |
+| Topic tag requests | The tag list is global. It stays until the accounts and roles refactor. |
+| Faculties | University-wide records, not one area's. |
+| Semesters | One calendar for the whole university. |
+| Hall screen | One public screen for the whole university, including whether names show (N13). |
+| Points reset | Starts every total and every leaderboard from zero, for the whole university (Task #102). |
+| Event moderation | Oversight of every event, above any single area. The page is still a placeholder. |
+| System admins | Who maintains the system. Area roles never grant it. |
 
 ### Ending and replacing (two confirmations, enforced)
 

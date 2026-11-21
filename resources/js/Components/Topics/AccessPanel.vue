@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from "vue";
-import { Link } from "@inertiajs/vue3";
+import { Link, router } from "@inertiajs/vue3";
 import { FileUp, History, Mail, UserPlus } from "@lucide/vue";
 import Btn from "./Btn.vue";
 import AssignDialog from "./AssignDialog.vue";
@@ -24,6 +24,21 @@ const props = defineProps({
 const assigning = ref(false);
 const importing = ref(false);
 const inviting = ref(false);
+// The person whose new invitation is being sent
+const resending = ref(null);
+
+// Task #104: a new activation link for someone who has not activated yet.
+function resend(row) {
+    router.post(
+        `/topics/${props.topic.id}/invitations/${row.user.id}/resend`,
+        {},
+        {
+            preserveScroll: true,
+            onStart: () => (resending.value = row.user.id),
+            onFinish: () => (resending.value = null),
+        },
+    );
+}
 const changing = ref(null); // { mode, assignment }
 
 // Inherited roles grouped by the ancestor they come from
@@ -173,7 +188,15 @@ function inheritedGroups() {
                             }}
                         </p>
                     </div>
-                    <div class="flex gap-2">
+                    <div class="flex flex-wrap gap-2">
+                        <Btn
+                            v-if="row.can_resend"
+                            small
+                            :loading="resending === row.user.id"
+                            :disabled="resending !== null"
+                            @click="resend(row)"
+                            >{{ $t("areas.access.resend_invitation") }}</Btn
+                        >
                         <Btn
                             v-if="row.can_replace"
                             small
@@ -328,6 +351,7 @@ function inheritedGroups() {
             v-if="inviting"
             :topic="topic"
             :options="access.import"
+            :can-invite-organisers="can.invite_organisers"
             @close="inviting = false"
         />
         <ChangeRoleDialog

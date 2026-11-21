@@ -103,6 +103,20 @@ class AreaAdminPeopleTest extends TopicTestCase
         ]);
     }
 
+    /**
+     * An area admin of the faculty who may also give roles (Give a role), so organisers too.
+     */
+    private function leadWhoMayGiveRoles(): User
+    {
+        $lead = $this->makeUser(UserRole::Teacher, 'Faculty Lead');
+        $this->assign($lead, $this->role('Faculty lead', [
+            Capability::View, Capability::AccessView, Capability::AccessAssign, Capability::AccessImport,
+            Capability::EventsView, Capability::EventsApply, Capability::EventsCreate,
+        ]), $this->faculty);
+
+        return $lead;
+    }
+
     private function account(string $neptun, string $email, string $status = 'active', UserRole $role = UserRole::Student): User
     {
         $user = $this->makeUser($role, "Person {$neptun}", $status);
@@ -216,15 +230,29 @@ class AreaAdminPeopleTest extends TopicTestCase
                 )));
     }
 
-    public function test_an_area_admin_invites_an_organiser(): void
+    public function test_inviting_an_organiser_also_needs_the_right_to_give_roles(): void
     {
-        $this->invite([
+        $otto = [
             'name' => 'Otto Organiser',
             'email' => 'otto@pte.hu',
             'account_type' => 'organiser',
             'neptun_code' => '',
             'role_definition_id' => $this->organiser->id,
-        ])->assertSessionHasNoErrors();
+        ];
+
+        // Import only: students yes (see above), organisers no, and the dialog offers only "Student".
+        $this->actingAs($this->areaAdmin)->get("/topics/{$this->course->id}?tab=access")
+            ->assertInertia(fn (Assert $page) => $page->where('selected.can.invite_organisers', false));
+        $this->invite($otto)
+            ->assertRedirect('/')
+            ->assertSessionHas('error', 'You do not have permission to view this page.');
+        $this->assertNull(User::where('email', 'otto@pte.hu')->first());
+
+        // Import and Give a role: organisers too.
+        $lead = $this->leadWhoMayGiveRoles();
+        $this->actingAs($lead)->get("/topics/{$this->course->id}?tab=access")
+            ->assertInertia(fn (Assert $page) => $page->where('selected.can.invite_organisers', true));
+        $this->invite($otto, $lead)->assertSessionHasNoErrors();
 
         $otto = User::where('email', 'otto@pte.hu')->firstOrFail();
         $this->assertNull($otto->neptun_code);
@@ -243,23 +271,39 @@ class AreaAdminPeopleTest extends TopicTestCase
         $this->assertNull(User::where('email', 'nora.new@student.pte.hu')->first());
     }
 
-    public function test_someone_with_an_account_gets_the_role_instead_of_a_second_account(): void
+    public function test_someone_with_an_account_gets_the_role_when_the_email_is_theirs(): void
     {
         $anna = $this->account('ANNA01', 'anna@student.pte.hu');
 
-        // Found by the Neptun code, though the email was typed differently.
-        $this->invite(['name' => 'Anna', 'email' => 'anna.other@student.pte.hu', 'neptun_code' => 'anna01'])
+        $this->invite(['name' => 'Anna', 'email' => 'Anna@student.pte.hu', 'neptun_code' => 'anna01'])
             ->assertSessionHasNoErrors()
             ->assertSessionHas('success', 'Person ANNA01 already has an account, so no invitation was sent. They now have the role "Student" in Databases.');
 
         $this->assertSame(['Databases'], $this->placesOf($anna));
         $this->assertSame(1, User::where('neptun_code', 'ANNA01')->count());
-        $this->assertNull(User::where('email', 'anna.other@student.pte.hu')->first());
         Notification::assertNothingSentTo($anna);
 
         // Asked again: they have it already.
         $this->invite(['email' => 'anna@student.pte.hu', 'neptun_code' => 'ANNA01'])
             ->assertSessionHasErrors('email');
+    }
+
+    public function test_a_neptun_code_typo_never_gives_the_role_to_someone_else(): void
+    {
+        $anna = $this->account('ANNA01', 'anna@student.pte.hu');
+
+        // A new person's email, but Anna's code: refused, and Anna is named so it can be checked.
+        $this->invite(['email' => 'nora.new@student.pte.hu', 'neptun_code' => 'anna01'])
+            ->assertSessionHasErrors(['neptun_code' => 'This Neptun code belongs to Person ANNA01 (anna@student.pte.hu). Check the code, or type that person\'s email to give them the role.']);
+
+        // Anna's email with a code that is not hers.
+        $this->invite(['email' => 'anna@student.pte.hu', 'neptun_code' => 'ANNA99'])
+            ->assertSessionHasErrors(['neptun_code' => 'This email address belongs to Person ANNA01, whose account has a different Neptun code. Check the code.']);
+
+        $this->assertSame([], $this->placesOf($anna));
+        $this->assertNull(User::where('email', 'nora.new@student.pte.hu')->first());
+        $this->assertNull(User::where('neptun_code', 'ANNA99')->first());
+        Notification::assertNothingSent();
     }
 
     public function test_a_deactivated_account_or_two_different_accounts_are_refused(): void
@@ -309,5 +353,76 @@ class AreaAdminPeopleTest extends TopicTestCase
 
         $this->assertNull(User::where('email', 'nora.new@student.pte.hu')->first());
         Notification::assertNothingSent();
+    }
+
+    // ─── Resend invitation ────────────────────────────────────────────────────
+
+    private function resend(User $person, ?User $as = null, ?Topic $topic = null)
+    {
+        return $this->actingAs($as ?? $this->areaAdmin)
+            ->from('/topics/'.($topic ?? $this->course)->id.'?tab=access')
+            ->post('/topics/'.($topic ?? $this->course)->id."/invitations/{$person->id}/resend");
+    }
+
+    public function test_an_invitation_can_be_sent_again_with_a_new_link(): void
+    {
+        $this->invite([])->assertSessionHasNoErrors();
+        $nora = User::where('email', 'nora.new@student.pte.hu')->firstOrFail();
+        $oldToken = $nora->activation_token;
+
+        // The Access tab offers it on the person's row.
+        $this->actingAs($this->areaAdmin)->get("/topics/{$this->course->id}?tab=access")
+            ->assertInertia(fn (Assert $page) => $page->where('selected.access.here', fn ($rows) => collect($rows)
+                ->firstWhere('user.name', 'Nora New')['can_resend'] === true));
+
+        $this->travel(20)->hours();
+        $this->resend($nora)
+            ->assertRedirect("/topics/{$this->course->id}?tab=access")
+            ->assertSessionHas('success', 'A new invitation was sent to nora.new@student.pte.hu. The link works for 24 hours.');
+
+        $nora->refresh();
+        $this->assertNotSame($oldToken, $nora->activation_token);
+        $this->assertTrue($nora->hasValidActivationToken());
+        $this->assertTrue($nora->activation_token_expires_at->gt(now()->addHours(23)));
+        // The old link no longer finds the account.
+        $this->assertNull(User::where('activation_token', $oldToken)->first());
+        Notification::assertSentToTimes($nora, StudentInvitationNotification::class, 2);
+        Notification::assertSentTo($nora, StudentInvitationNotification::class,
+            fn (StudentInvitationNotification $n) => $n->activationToken === $nora->activation_token && $n->expiresInHours === 24);
+    }
+
+    public function test_a_resend_is_refused_for_an_active_account(): void
+    {
+        $anna = $this->account('ANNA01', 'anna@student.pte.hu');
+        $this->assign($anna, $this->student, $this->course);
+
+        $this->resend($anna)->assertSessionHas('error', 'Person ANNA01 has no open invitation: the account is already activated or it is deactivated.');
+        Notification::assertNothingSent();
+    }
+
+    public function test_a_resend_is_only_for_people_of_the_area_and_those_who_may_invite_them(): void
+    {
+        $this->invite([])->assertSessionHasNoErrors();
+        $nora = User::where('email', 'nora.new@student.pte.hu')->firstOrFail();
+
+        // Someone with a role elsewhere only: not found from this area.
+        $other = $this->topic('Algorithms', $this->faculty);
+        $this->resend($nora, topic: $other)->assertNotFound();
+
+        // Sees the area, may not import: refused.
+        $viewer = $this->makeUser(UserRole::Teacher, 'Viewer');
+        $this->assign($viewer, $this->role('Access viewer', [Capability::View, Capability::AccessView]), $this->faculty);
+        $this->resend($nora, $viewer)->assertRedirect('/')->assertSessionHas('error', 'You do not have permission to view this page.');
+
+        // An organiser's invitation also needs Give a role.
+        $lead = $this->leadWhoMayGiveRoles();
+        $this->invite(['name' => 'Otto', 'email' => 'otto@pte.hu', 'account_type' => 'organiser', 'neptun_code' => '', 'role_definition_id' => $this->organiser->id], $lead)
+            ->assertSessionHasNoErrors();
+        $otto = User::where('email', 'otto@pte.hu')->firstOrFail();
+        $this->resend($otto)->assertRedirect('/');
+        $this->resend($otto, $lead)->assertSessionHas('success');
+        Notification::assertSentToTimes($otto, OrganizerInvitationNotification::class, 2);
+
+        Notification::assertSentToTimes($nora, StudentInvitationNotification::class, 1);
     }
 }

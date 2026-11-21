@@ -31,6 +31,7 @@ class TopicBrowser
         private RoleAssignmentPolicy $assignments,
         private EventCatalog $catalog,
         private EventPlacement $placement,
+        private AreaInvitations $invitations,
     ) {}
 
     /**
@@ -117,6 +118,8 @@ class TopicBrowser
             'assign' => $has(Capability::AccessAssign),
             'end' => $has(Capability::AccessEnd),
             'import' => $has(Capability::AccessImport),
+            // "Invite a person" offers organisers too (Task #104).
+            'invite_organisers' => $this->invitations->mayInviteOrganisers($user, $topic),
             'define_roles' => $has(Capability::DefineRoles),
             'manage_leaderboards' => $has(Capability::LeaderboardsManage),
             'create_event' => $this->opensEventPages($user) && $this->placement->mayOwn($user, $topic),
@@ -347,7 +350,11 @@ class TopicBrowser
             ])->values()->all();
 
         return [
-            'here' => $rows->where('topic_id', $topic->id)->map($format)->values()->all(),
+            'here' => $rows->where('topic_id', $topic->id)->map(fn (RoleAssignment $a) => [
+                ...$format($a),
+                // Not activated yet: a new link can be sent from here (Task #104).
+                'can_resend' => $a->user->status === 'invited' && $this->invitations->mayResendTo($user, $topic, $a->user),
+            ])->values()->all(),
             'inherited' => $rows->where('topic_id', '!=', $topic->id)->map($format)->values()->all(),
             'history' => $history,
             'roles' => $this->access->can($user, Capability::AccessAssign, $topic) ? $this->assignableRoles($user, $topic) : [],

@@ -8,6 +8,7 @@ use App\Models\RoleAssignment;
 use App\Models\Semester;
 use App\Models\Topic;
 use App\Models\User;
+use App\Services\AreaInvitations;
 use App\Services\AssignmentService;
 use App\Services\OrganizerAccounts;
 use App\Services\StudentAccounts;
@@ -27,8 +28,8 @@ use Illuminate\Validation\ValidationException;
  * created the same way as there (StudentAccounts, OrganizerAccounts) and gets the chosen role at
  * the area and the ticked areas above, with the same rights as "Import students".
  *
- * Someone who already has an account (same e-mail or Neptun code) gets no second one: they are
- * given the role instead, unless the account is deactivated.
+ * Someone who already has an account with this e-mail gets no second one: they are given the
+ * role instead, unless the account is deactivated. Inviting an organiser also needs "Give a role".
  */
 class TopicInvitationController extends Controller
 {
@@ -38,6 +39,7 @@ class TopicInvitationController extends Controller
         private TopicAccess $access,
         private TopicBrowser $browser,
         private AssignmentService $assignments,
+        private AreaInvitations $invitations,
     ) {}
 
     public function store(Request $request, Topic $topic): RedirectResponse
@@ -63,6 +65,9 @@ class TopicInvitationController extends Controller
             'neptun_code.regex' => __('areas.invite_flash.the_neptun_code_must'),
             'role_definition_id.required' => __('areas.import_flash.choose_a_role'),
         ]);
+
+        // An organiser creates and runs events: inviting one also needs "Give a role" here.
+        abort_if($data['account_type'] === 'organiser' && ! $this->invitations->mayInviteOrganisers($user, $topic), 403);
 
         [$role, $parents] = $this->importTargets($this->browser, $user, $topic, (int) $data['role_definition_id'], $data['parent_topic_ids'] ?? []);
 
@@ -105,9 +110,32 @@ class TopicInvitationController extends Controller
     }
 
     /**
-     * The account with this e-mail or Neptun code, if there is one.
+     * "Resend invitation" on the Access tab (Task #104): a new activation link, valid for 24
+     * hours, for someone who holds a role on this area or below and has not activated yet.
+     */
+    public function resend(Request $request, Topic $topic, User $person): RedirectResponse
+    {
+        $user = $request->user();
+        abort_unless($this->access->canView($user, $topic), 404);
+        // Only people of this area: anyone else is not found here.
+        abort_unless($this->invitations->holdsRoleWithin($person, $topic), 404);
+        abort_unless($this->invitations->mayResendTo($user, $topic, $person), 403);
+
+        if ($person->status !== 'invited') {
+            return back()->with('error', __('areas.invite_flash.not_invited', ['name' => $person->name]));
+        }
+
+        $this->invitations->resend($person);
+
+        return back()->with('success', __('areas.invite_flash.resent', ['email' => $person->email]));
+    }
+
+    /**
+     * The account to give the role to instead of creating one: only the account with this
+     * e-mail address, and only when the Neptun code is empty or its own. A Neptun code that
+     * belongs to somebody else is refused, so a typo never gives a role to the wrong person.
      *
-     * @throws ValidationException when they belong to two different accounts, or to a deactivated one
+     * @throws ValidationException
      */
     private function existingAccount(string $email, ?string $neptun): ?User
     {
@@ -118,13 +146,20 @@ class TopicInvitationController extends Controller
             throw ValidationException::withMessages(['email' => __('areas.invite_flash.two_accounts')]);
         }
 
-        $existing = $byEmail ?? $byNeptun;
-
-        if ($existing !== null && $existing->status === 'inactive') {
-            throw ValidationException::withMessages([$byEmail !== null ? 'email' : 'neptun_code' => __('areas.invite_flash.deactivated', ['name' => $existing->name])]);
+        if ($byEmail === null && $byNeptun !== null) {
+            throw ValidationException::withMessages(['neptun_code' => __('areas.invite_flash.neptun_belongs_to', ['name' => $byNeptun->name, 'email' => $byNeptun->email])]);
         }
 
-        return $existing;
+        // The e-mail is theirs, but they have another Neptun code (or none).
+        if ($byEmail !== null && $neptun !== null && $byNeptun === null) {
+            throw ValidationException::withMessages(['neptun_code' => __('areas.invite_flash.email_has_other_code', ['name' => $byEmail->name])]);
+        }
+
+        if ($byEmail !== null && $byEmail->status === 'inactive') {
+            throw ValidationException::withMessages(['email' => __('areas.invite_flash.deactivated', ['name' => $byEmail->name])]);
+        }
+
+        return $byEmail;
     }
 
     private function holds(User $person, Topic $topic, int $roleId): bool

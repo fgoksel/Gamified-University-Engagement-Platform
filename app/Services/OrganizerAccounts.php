@@ -48,4 +48,20 @@ class OrganizerAccounts
 
         return $user;
     }
+
+    /**
+     * A new activation link for an account that is still "invited" (Task #104): the old link
+     * stops working, and the same invitation e-mail is sent again.
+     */
+    public function resend(User $user): void
+    {
+        $token = Str::random(64);
+
+        $user->forceFill([
+            'activation_token' => $token,
+            'activation_token_expires_at' => now()->addHours(StudentAccounts::LINK_HOURS),
+        ])->save();
+
+        DB::afterCommit(fn () => $user->notify(new OrganizerInvitationNotification($token, StudentAccounts::LINK_HOURS)));
+    }
 }

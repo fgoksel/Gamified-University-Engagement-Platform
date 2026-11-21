@@ -16,6 +16,8 @@ const props = defineProps({
     topic: { type: Object, required: true },
     // From the Access panel: { roles: [...], parents: [{ id, title }] }
     options: { type: Object, required: true },
+    // Inviting an organiser also needs "Give a role" here; without it only "Student" is offered.
+    canInviteOrganisers: { type: Boolean, default: false },
 });
 
 const emit = defineEmits(["close"]);
@@ -31,7 +33,7 @@ const form = useForm({
     parent_topic_ids: [],
 });
 
-const accountTypes = [
+const allAccountTypes = [
     {
         value: "student",
         label: t("areas.invite.student"),
@@ -43,6 +45,12 @@ const accountTypes = [
         hint: t("areas.invite.organiser_hint"),
     },
 ];
+
+const accountTypes = computed(() =>
+    allAccountTypes.filter(
+        (type) => type.value === "student" || props.canInviteOrganisers,
+    ),
+);
 
 // Students are known by their Neptun code; for an organiser it may stay empty.
 const isStudent = computed(() => form.account_type === "student");
@@ -144,11 +152,14 @@ function submit() {
                 :error="form.errors.neptun_code"
             />
 
-            <fieldset>
+            <fieldset :aria-describedby="`${id}-role-hint`">
                 <legend class="block text-sm font-medium text-fg">
                     {{ $t("areas.invite.role") }}
                     <span class="text-danger-fg" aria-hidden="true">*</span>
                 </legend>
+                <p :id="`${id}-role-hint`" class="mt-1 text-sm text-fg-muted">
+                    {{ $t("areas.invite.role_hint") }}
+                </p>
                 <p
                     v-if="options.roles.length === 0"
                     class="mt-1.5 text-sm text-fg-muted"
