@@ -86,13 +86,15 @@ class EventCatalog
      * announced to them, as in EventPolicy::view, once it really went out: published and
      * completed events, and cancelled ones only if they had been published, so a draft that
      * was dropped never shows. A surprise event is for staff only, so the students it gave
-     * points to open it from their points, not from here.
+     * points to open it from their points, not from here. A removed event (Task #58) is nobody's,
+     * not even its staff's.
      *
      * @return Builder<Event>
      */
     public function inBranch(User $user, Topic $topic): Builder
     {
         return Event::query()
+            ->where('status', '!=', Event::STATUS_REMOVED)
             ->whereIn('owning_topic_id', Topic::query()->notArchived()->withinBranch($topic)->select('topics.id'))
             ->where(fn (Builder $q) => $q
                 ->whereIn('owning_topic_id', $this->organized->staffTopicIds($user))

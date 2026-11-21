@@ -80,6 +80,8 @@ class EventController extends Controller
             ->where('student_id', $request->user()->id)
             // Undone straight after applying (Task #94): not part of the history.
             ->whereNull('undone_at')
+            // An event a system admin removed is gone for the student too (Task #58).
+            ->whereHas('event', fn ($query) => $query->where('status', '!=', Event::STATUS_REMOVED))
             ->with([
                 'event.owningTopic:id,title,code',
                 'event.topicTag:id,name,category',

@@ -195,6 +195,15 @@ class PointLedger
 
         try {
             return DB::transaction(function () use ($event, $student, $creditedBy, $source, $eligible) {
+                // Asked again, now that the event row is locked: a system admin may have held,
+                // cancelled or removed the event since the check above (Task #58). A removal reverses
+                // the credits it finds, so a credit must not be written after it.
+                $current = Event::query()->whereKey($event->id)->lockForUpdate()->first();
+
+                if ($current !== null && $refusal = $this->refusalFor($current)) {
+                    throw $refusal;
+                }
+
                 $application = EventApplication::query()
                     ->where('event_id', $event->id)
                     ->where('student_id', $student->id)

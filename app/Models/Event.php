@@ -25,6 +25,12 @@ class Event extends Model
 
     public const STATUS_CANCELLED = 'cancelled';
 
+    /**
+     * Taken off by a system admin for good reason (Task #58): gone for everybody, its points reversed.
+     * The row, its applications and its ledger rows stay. Nothing leaves this status.
+     */
+    public const STATUS_REMOVED = 'removed';
+
     protected $fillable = [
         'title',
         'description',
@@ -47,6 +53,9 @@ class Event extends Model
         'published_at',
         'cancelled_at',
         'cancellation_reason',
+        'removed_at',
+        'removed_by_id',
+        'removal_reason',
         'is_hidden',
         // No longer used (Task #86): a surprise event is never revealed to students.
         'reveal_at',
@@ -66,6 +75,7 @@ class Event extends Model
             'completion_deadline' => 'datetime',
             'published_at' => 'datetime',
             'cancelled_at' => 'datetime',
+            'removed_at' => 'datetime',
             'reveal_at' => 'datetime',
             'is_hidden' => 'boolean',
             'qr_enabled' => 'boolean',
@@ -102,6 +112,12 @@ class Event extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by_id');
+    }
+
+    /** The system admin who removed the event (Task #58). */
+    public function removedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'removed_by_id');
     }
 
     public function applications(): HasMany
@@ -145,5 +161,13 @@ class Event extends Model
     public function isOnHold(): bool
     {
         return $this->status === self::STATUS_ON_HOLD;
+    }
+
+    /**
+     * Removed by a system admin (Task #58): nobody sees, runs or applies to it any more.
+     */
+    public function isRemoved(): bool
+    {
+        return $this->status === self::STATUS_REMOVED;
     }
 }

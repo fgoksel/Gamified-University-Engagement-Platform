@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Event;
 use App\Notifications\EventApplicationDecisionNotification;
+use App\Notifications\EventModeratedNotification;
 use App\Notifications\EventStatusChangedNotification;
 use App\Notifications\PointsCreditedNotification;
 use Illuminate\Notifications\DatabaseNotification;
@@ -122,6 +123,18 @@ class NotificationFeed
                 ],
                 default => [__('notifications.feed.change.default'), $event, '/my-events'],
             };
+        }
+
+        // Task #58: a system admin held, cancelled or removed the event. One text for mail and page.
+        if ($notification->type === EventModeratedNotification::class) {
+            [$title, $lines] = EventModeratedNotification::words(
+                (string) ($data['change'] ?? ''),
+                $data['event_title'] ?? __('notifications.feed.an_event'),
+                $data['reason'] ?? null,
+                (int) ($data['points'] ?? 0),
+            );
+
+            return [$title, implode(' ', $lines), '/my-events'];
         }
 
         if ($notification->type === PointsCreditedNotification::class) {

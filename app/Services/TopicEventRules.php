@@ -58,7 +58,7 @@ class TopicEventRules
         $stranded = $this->eventsRunIn($topic)
             ->whereNotNull('audience_topic_id')
             ->whereNotIn('audience_topic_id', $stillAbove)
-            ->whereNotIn('status', [Event::STATUS_CANCELLED, Event::STATUS_COMPLETED])
+            ->whereNotIn('status', [Event::STATUS_CANCELLED, Event::STATUS_COMPLETED, Event::STATUS_REMOVED])
             ->with('audienceTopic:id,title')
             ->orderBy('event_starts_at')
             ->get(['id', 'title', 'audience_topic_id']);
