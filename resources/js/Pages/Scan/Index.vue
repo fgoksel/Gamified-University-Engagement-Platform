@@ -187,20 +187,24 @@ onUnmounted(stopCamera);
         <section
             v-else-if="result"
             class="space-y-4 rounded-card border border-line bg-surface p-6 text-center shadow-card"
-            :class="{ 'confirm-in': result.type === 'success' }"
+            :class="{
+                'confirm-in border-t-4 border-t-success-fg':
+                    result.type === 'success',
+            }"
             role="status"
             data-test="result"
         >
+            <!-- A success gets a short pop (N11), none with reduced motion -->
             <span
-                class="mx-auto flex size-12 items-center justify-center rounded-full"
+                class="mx-auto flex items-center justify-center rounded-full"
                 :class="
                     result.type === 'error'
-                        ? 'bg-danger-soft text-danger-fg'
-                        : 'bg-success-soft text-success-fg'
+                        ? 'size-12 bg-danger-soft text-danger-fg'
+                        : 'pop-in size-16 bg-success-soft text-success-fg'
                 "
             >
                 <AlertCircle v-if="result.type === 'error'" class="size-6" />
-                <CheckCircle2 v-else class="size-6" />
+                <CheckCircle2 v-else class="size-9" />
             </span>
             <div>
                 <h2 class="text-base font-semibold text-fg">
@@ -217,7 +221,7 @@ onUnmounted(stopCamera);
                 <div>
                     <dt class="text-fg-muted">{{ $t("scan.points") }}</dt>
                     <dd
-                        class="text-lg font-semibold text-fg"
+                        class="text-2xl font-bold text-success-fg"
                         data-test="points"
                     >
                         +{{ result.points }}

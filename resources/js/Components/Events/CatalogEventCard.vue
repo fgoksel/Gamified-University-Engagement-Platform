@@ -12,8 +12,17 @@ import {
 } from "@lucide/vue";
 import { Link } from "@inertiajs/vue3";
 import StatusChip from "../StatusChip.vue";
-import { categoryDot, categoryLabel } from "../../categoryColors.js";
-import { applicationType, myStatus, places } from "../../eventWords.js";
+import {
+    categoryDot,
+    categoryLabel,
+    categorySoft,
+} from "../../categoryColors.js";
+import {
+    applicationType,
+    fewPlacesLeft,
+    myStatus,
+    places,
+} from "../../eventWords.js";
 
 // One event in "All events" (Task #40). The Apply button (Task #49) goes in
 // the "actions" slot.
@@ -27,12 +36,22 @@ const status = computed(() => myStatus(props.event));
 
 <template>
     <article
-        class="relative flex flex-col rounded-card border border-line bg-surface p-5 shadow-card focus-within:outline-2 focus-within:outline-ring"
+        class="relative flex flex-col rounded-card border border-line bg-surface p-5 pt-6 shadow-card focus-within:outline-2 focus-within:outline-ring"
     >
+        <!-- The category's colour along the top edge, neutral without one (N11) -->
+        <span
+            class="absolute inset-x-0 top-0 h-1 rounded-t-card"
+            :class="categoryDot[event.category] ?? 'bg-line'"
+            aria-hidden="true"
+        />
         <div class="flex flex-wrap items-center gap-2 text-xs font-medium">
             <span
                 v-if="event.tag || event.category"
-                class="inline-flex items-center gap-1.5 rounded-full bg-surface-muted px-2.5 py-0.5 text-fg-muted"
+                class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5"
+                :class="
+                    categorySoft[event.category] ??
+                    'bg-surface-muted text-fg-muted'
+                "
             >
                 <span
                     v-if="event.category"
@@ -110,8 +129,24 @@ const status = computed(() => myStatus(props.event));
             </div>
             <div class="flex items-start gap-2">
                 <dt class="sr-only">{{ $t("events.catalog_card.places") }}</dt>
-                <Users class="mt-0.5 size-4 shrink-0 text-fg-muted" />
-                <dd class="text-fg">{{ places(event) }}</dd>
+                <Users
+                    class="mt-0.5 size-4 shrink-0"
+                    :class="
+                        fewPlacesLeft(event)
+                            ? 'text-warning-fg'
+                            : 'text-fg-muted'
+                    "
+                />
+                <dd
+                    :class="
+                        fewPlacesLeft(event)
+                            ? 'font-semibold text-warning-fg'
+                            : 'text-fg'
+                    "
+                    data-test="places"
+                >
+                    {{ places(event) }}
+                </dd>
             </div>
             <div v-if="!event.is_surprise" class="flex items-start gap-2">
                 <dt class="sr-only">
