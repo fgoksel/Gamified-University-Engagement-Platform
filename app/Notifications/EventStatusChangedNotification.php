@@ -41,6 +41,8 @@ class EventStatusChangedNotification extends Notification implements ShouldQueue
         public readonly ?string $reason = null,
         // The location after the change; null when it was removed.
         public readonly ?string $location = null,
+        // The new date and time of a restored event (Task #122), as students read it.
+        public readonly ?string $when = null,
     ) {}
 
     /**
@@ -78,6 +80,7 @@ class EventStatusChangedNotification extends Notification implements ShouldQueue
             ]],
             default => [__('mail.event_status.an_event_you_applied_3'), [
                 __('mail.event_status.restored_text', ['event' => $this->eventTitle]),
+                ...($this->when !== null ? [__('mail.event_status.new_date', ['when' => $this->when])] : []),
                 __('mail.event_status.check_the_date_under_my'),
             ]],
         };
@@ -107,6 +110,7 @@ class EventStatusChangedNotification extends Notification implements ShouldQueue
             'event_title' => $this->eventTitle,
             'reason' => $this->reason,
             'location' => $this->location,
+            'when' => $this->when,
         ];
     }
 }

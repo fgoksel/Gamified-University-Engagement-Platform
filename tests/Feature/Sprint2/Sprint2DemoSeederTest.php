@@ -173,8 +173,11 @@ class Sprint2DemoSeederTest extends TestCase
         $this->assertThrows(fn () => $qr->redeem($dani, $slip), EventActionRefused::class);
         $this->assertSame(3, $lab->pointTransactions()->count());
 
-        // 6. Restoring the event on hold tells Anna.
-        $this->actingAs($ivan)->post('/events/'.$this->event('Database Careers Evening')->id.'/restore')->assertSessionHas('success');
+        // 6. Restoring the event on hold, with a new date (Task #122), tells Anna.
+        $this->actingAs($ivan)->post('/events/'.$this->event('Database Careers Evening')->id.'/restore', [
+            'event_starts_at' => now()->addWeek()->format('Y-m-d\TH:i'),
+            'event_ends_at' => now()->addWeek()->addHours(2)->format('Y-m-d\TH:i'),
+        ])->assertSessionHas('success');
         Notification::assertSentTo($anna, EventStatusChangedNotification::class);
     }
 
