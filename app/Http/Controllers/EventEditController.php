@@ -130,6 +130,15 @@ class EventEditController extends Controller
                 'topic_tag_id' => $tags[$value] ?? __('events.edit_log.removed'),
                 // The name the category has now (Task #116).
                 'category' => $categories->name((string) $value) ?? (string) $value,
+                // A restore puts the status in the history (Task #122): the same words as on the page.
+                'status' => match ($value) {
+                    'draft' => __('events.edit.draft'),
+                    'published' => __('events.edit.published'),
+                    'on_hold' => __('events.edit.on_hold'),
+                    'completed' => __('events.edit.completed'),
+                    'cancelled' => __('events.edit.cancelled'),
+                    default => (string) $value,
+                },
                 'application_type' => $value === 'teacher_select' ? __('events.edit_log.organiser_chooses') : __('events.edit_log.first_come_first_served'),
                 'is_hidden', 'qr_enabled' => $value ? __('events.edit_log.yes') : __('events.edit_log.no'),
                 'event_starts_at', 'event_ends_at', 'applications_open_at', 'application_deadline', 'completion_deadline' => Carbon::parse($value)->translatedFormat('D j M Y, H:i'),

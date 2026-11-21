@@ -127,7 +127,7 @@ All at the running **Indexing Lab** (20 points):
 
 ### Step 7: lifecycle notifications (Task #53)
 
-1. As Ivan, restore *Database Careers Evening* (on hold): Anna is told it is back and keeps her place.
+1. As Ivan, restore *Database Careers Evening* (on hold): choose a new date and time (Task #122). Anna is told it is back, with the new date, and keeps her place.
 2. Cancel an event with a reason: everyone still applied receives the reason; students who withdrew
    or were rejected are left alone.
 
