@@ -11,27 +11,47 @@ use App\Models\User;
  * What the QR holds is "CEP1.<user id>.<expiry>.<signature>":
  *   - the signature is an HMAC with the application key, so nobody can make a
  *     passport for someone else, or change the id in it;
- *   - it is valid for a short time only, so a screenshot sent to a friend stops
- *     working within minutes. The passport page draws a fresh one every minute.
+ *   - it changes every 7 seconds (Task #100, decisions of 27 October): the clock is cut into
+ *     7-second slots and a code belongs to one slot. It is accepted while it is showing and
+ *     for 2 seconds after the next one appears, which allows for the time a camera needs to
+ *     read it and send it, like the live attendance code (LiveAttendanceQr). A screenshot sent
+ *     to a friend is dead by then.
  */
 class QrPassport
 {
     public const PREFIX = 'CEP1';
 
-    /** How long one passport code stays valid, in seconds. */
-    public const LIFETIME = 120;
+    /** How often the passport changes, in seconds (Task #100). */
+    public const REFRESH = 7;
 
-    /** How often the passport page draws a new code, in seconds. */
-    public const REFRESH = 60;
+    /** Seconds a code still works after the next one appears. */
+    public const MARGIN = 2;
 
     /**
-     * A fresh passport code for this student.
+     * The passport code for this student in the current 7-second slot. Asking again in the
+     * same slot gives the same code.
      */
     public function issue(User $student): string
     {
-        $expires = now()->addSeconds(self::LIFETIME)->getTimestamp();
+        $expires = $this->slotEnd() + self::MARGIN;
 
         return implode('.', [self::PREFIX, $student->id, $expires, $this->signature($student->id, $expires)]);
+    }
+
+    /**
+     * Seconds until the passport changes, so the page fetches the next code right then.
+     */
+    public function secondsToNext(): int
+    {
+        return max(1, $this->slotEnd() - now()->getTimestamp());
+    }
+
+    /**
+     * The moment the current slot ends and the next code appears (a Unix timestamp).
+     */
+    private function slotEnd(): int
+    {
+        return (intdiv(now()->getTimestamp(), self::REFRESH) + 1) * self::REFRESH;
     }
 
     /**

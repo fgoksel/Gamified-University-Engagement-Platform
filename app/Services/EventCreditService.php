@@ -4,9 +4,11 @@ namespace App\Services;
 
 use App\Exceptions\EventActionRefused;
 use App\Models\Event;
+use App\Models\EventApplication;
 use App\Models\PointTransaction;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -32,7 +34,7 @@ class EventCreditService
     /**
      * Credit attendance points to the student whose QR passport was scanned.
      *
-     * @return array{status: string, message: string, points?: int, student: array{id: int, name: string, neptun_code: ?string}, credited_count?: int}
+     * @return array{status: string, message: string, points?: int, student: array<string, mixed>, credited_count?: int}
      *
      * @throws AuthorizationException|ValidationException
      */
@@ -82,11 +84,7 @@ class EventCreditService
                 'status' => 'credited',
                 'message' => __('events.credit_service.credited', ['name' => $student->name, 'points' => $transaction->points]),
                 'points' => $transaction->points,
-                'student' => [
-                    'id' => $student->id,
-                    'name' => $student->name,
-                    'neptun_code' => $student->neptun_code,
-                ],
+                'student' => $this->card($event, $student),
                 'credited_count' => $totalCredited,
             ];
         } catch (EventActionRefused $e) {
@@ -100,26 +98,47 @@ class EventCreditService
             return [
                 'status' => $status,
                 'message' => $e->getMessage(),
-                'student' => [
-                    'id' => $student->id,
-                    'name' => $student->name,
-                    'neptun_code' => $student->neptun_code,
-                ],
+                'student' => $this->card($event, $student),
             ];
         }
     }
 
     /**
+     * What the scanner shows about the student whose passport was read (Task #100): name, Neptun
+     * code, profile photo and where they stand for this event, so the organiser can check the
+     * person in front of them.
+     *
+     * @return array{id: int, name: string, neptun_code: ?string, photo: ?string, application: ?string, accepted: bool}
+     */
+    private function card(Event $event, User $student): array
+    {
+        $application = EventApplication::query()
+            ->where('event_id', $event->id)
+            ->where('student_id', $student->id)
+            ->value('status');
+
+        return [
+            'id' => $student->id,
+            'name' => $student->name,
+            'neptun_code' => $student->neptun_code,
+            'photo' => $student->avatar ? Storage::disk('public')->url($student->avatar) : null,
+            // pending, accepted, waitlisted, rejected or withdrawn; null when they never applied
+            'application' => $application,
+            'accepted' => $application === EventApplication::ACCEPTED,
+        ];
+    }
+
+    /**
      * The answer when the scanned text names no student.
      *
-     * @return array{status: string, message: string, student: array{id: int, name: string, neptun_code: ?string}}
+     * @return array{status: string, message: string, student: array<string, mixed>}
      */
     private function unknownStudent(string $status, string $message): array
     {
         return [
             'status' => $status,
             'message' => $message,
-            'student' => ['id' => 0, 'name' => __('events.credit_service.unknown_student'), 'neptun_code' => null],
+            'student' => ['id' => 0, 'name' => __('events.credit_service.unknown_student'), 'neptun_code' => null, 'photo' => null, 'application' => null, 'accepted' => false],
         ];
     }
 }

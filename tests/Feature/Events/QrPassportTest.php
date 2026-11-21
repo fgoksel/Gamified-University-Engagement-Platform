@@ -3,8 +3,10 @@
 namespace Tests\Feature\Events;
 
 use App\Enums\Capability;
+use App\Models\EventApplication;
 use App\Models\User;
 use App\Services\QrPassport;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
 
 /**
@@ -47,7 +49,8 @@ class QrPassportTest extends EventTestCase
                 ->component('Passport/Show')
                 ->where('passport.name', 'Sam Student')
                 ->where('passport.neptun_code', 'SAM001')
-                ->where('passport.refresh_every', QrPassport::REFRESH)
+                ->where('passport.refresh_every', 7)
+                ->where('passport.next_in', fn ($seconds) => $seconds >= 1 && $seconds <= 7)
                 ->where('passport.image', fn ($image) => str_starts_with($image, 'data:image/svg+xml;base64,')
                     && str_contains(base64_decode(substr($image, 26)), '<svg')));
     }
@@ -72,10 +75,71 @@ class QrPassportTest extends EventTestCase
     public function test_an_expired_passport_is_refused(): void
     {
         $code = app(QrPassport::class)->issue($this->student);
-        $this->travel(QrPassport::LIFETIME + 1)->seconds();
+        $this->travel(QrPassport::REFRESH + QrPassport::MARGIN + 1)->seconds();
 
         $this->scan($code)->assertJson(['status' => 'passport_expired']);
         $this->assertDatabaseCount('point_transactions', 0);
+    }
+
+    public function test_the_passport_changes_every_7_seconds_and_the_old_code_stops_working(): void
+    {
+        // Task #100: at the start of a 7-second slot.
+        $this->travelTo(now()->setTimestamp(intdiv(now()->getTimestamp(), 7) * 7 + 7));
+        $passports = app(QrPassport::class);
+        $first = $passports->issue($this->student);
+
+        // The same code for the whole slot, and the page knows when the next one comes.
+        $this->travel(6)->seconds();
+        $this->assertSame($first, $passports->issue($this->student));
+        $this->assertSame(1, $passports->secondsToNext());
+
+        // A new slot gives a new code.
+        $this->travel(1)->seconds();
+        $second = $passports->issue($this->student);
+        $this->assertNotSame($first, $second);
+        $this->assertSame(7, $passports->secondsToNext());
+
+        // The old code still works for 2 seconds, for the camera to read and send it ...
+        $this->travel(2)->seconds();
+        $this->assertNull(app(QrPassport::class)->resolve($first)['problem']);
+
+        // ... and not after that.
+        $this->travel(1)->seconds();
+        $this->assertSame('expired', app(QrPassport::class)->resolve($first)['problem']);
+        $this->scan($first)->assertJson(['status' => 'passport_expired']);
+        $this->scan($second)->assertJson(['status' => 'credited']);
+    }
+
+    public function test_a_scan_shows_who_the_student_is_and_whether_they_are_accepted(): void
+    {
+        // Task #100: name, Neptun code, profile photo and where they stand for this event.
+        Storage::fake('public');
+        $this->student->forceFill(['avatar' => 'avatars/sam.png'])->save();
+
+        $this->scan(app(QrPassport::class)->issue($this->student))
+            ->assertJson(['status' => 'credited', 'student' => [
+                'name' => 'Sam Student',
+                'neptun_code' => 'SAM001',
+                'photo' => Storage::disk('public')->url('avatars/sam.png'),
+                'application' => 'accepted',
+                'accepted' => true,
+            ]]);
+
+        // Someone on the waitlist is shown as not accepted, and gets nothing.
+        $waiting = $this->student('Wanda Waiting', 'WAI001');
+        EventApplication::create(['event_id' => $this->event->id, 'student_id' => $waiting->id, 'status' => EventApplication::WAITLISTED]);
+        $this->scan(app(QrPassport::class)->issue($waiting))
+            ->assertJson(['status' => 'not_accepted', 'student' => [
+                'name' => 'Wanda Waiting',
+                'photo' => null,
+                'application' => 'waitlisted',
+                'accepted' => false,
+            ]]);
+
+        // Someone who never applied.
+        $stranger = $this->student('Stan Stranger', 'STA001');
+        $this->scan(app(QrPassport::class)->issue($stranger))
+            ->assertJson(['status' => 'not_accepted', 'student' => ['application' => null, 'accepted' => false]]);
     }
 
     public function test_a_changed_or_made_up_passport_is_refused(): void
