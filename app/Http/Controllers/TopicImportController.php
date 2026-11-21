@@ -3,26 +3,26 @@
 namespace App\Http\Controllers;
 
 use App\Enums\Capability;
+use App\Http\Controllers\Concerns\ChecksImportTargets;
 use App\Jobs\ImportTopicStudentsJob;
-use App\Models\RoleAssignment;
-use App\Models\RoleDefinition;
 use App\Models\Topic;
 use App\Services\TopicAccess;
 use App\Services\TopicBrowser;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use RuntimeException;
 
 /**
- * "Import students" on a topic (Task #72): a file with one column of Neptun codes, the
- * role to give and the topics above that should hold the same students. The file is
- * processed by a queued job, which checks every student again; the result arrives as
- * a notification.
+ * "Import students" on a topic (Task #72): a file with a column of Neptun codes (and, to create
+ * missing accounts, Full Name and Email: Task #104), the role to give and the topics above that
+ * should hold the same students. The file is processed by a queued job, which checks every
+ * student again; the result arrives as a notification.
  */
 class TopicImportController extends Controller
 {
+    use ChecksImportTargets;
+
     public function __construct(
         private TopicAccess $access,
         private TopicBrowser $browser,
@@ -51,31 +51,7 @@ class TopicImportController extends Controller
             throw ValidationException::withMessages(['file' => __('areas.import_flash.the_file_must')]);
         }
 
-        $role = RoleDefinition::find($data['role_definition_id']);
-        abort_if($role === null, 404);
-
-        // The dialog only offers allowed roles, so this is about a change in the meantime.
-        $allowed = Gate::forUser($user)->inspect('importRole', [RoleAssignment::class, $topic, $role]);
-
-        if ($allowed->denied()) {
-            throw ValidationException::withMessages(['role_definition_id' => $allowed->message()]);
-        }
-
-        // Only the topics above that this person may import into (S3, 27 October).
-        $offered = array_column($this->browser->importParents($user, $topic), 'id');
-        $parents = array_values(array_unique(array_map('intval', $data['parent_topic_ids'] ?? [])));
-
-        if (array_diff($parents, $offered) !== []) {
-            throw ValidationException::withMessages(['parent_topic_ids' => __('areas.import_flash.you_can_only_add_students')]);
-        }
-
-        foreach (Topic::query()->whereIn('id', $parents)->get() as $parent) {
-            $allowed = Gate::forUser($user)->inspect('importRole', [RoleAssignment::class, $parent, $role]);
-
-            if ($allowed->denied()) {
-                throw ValidationException::withMessages(['parent_topic_ids' => __('areas.import_flash.parent_not_allowed', ['area' => $parent->title, 'reason' => $allowed->message()])]);
-            }
-        }
+        [$role, $parents] = $this->importTargets($this->browser, $user, $topic, (int) $data['role_definition_id'], $data['parent_topic_ids'] ?? []);
 
         $path = $file->store('imports', 'local');
 
@@ -86,7 +62,7 @@ class TopicImportController extends Controller
             throw ValidationException::withMessages(['file' => __('areas.import_flash.the_file_could')]);
         }
 
-        ImportTopicStudentsJob::dispatch($path, $user->id, $topic->id, $role->id, $parents);
+        ImportTopicStudentsJob::dispatch($path, $user->id, $topic->id, $role->id, $parents->pluck('id')->all());
 
         return redirect()
             ->route('topics.show', ['topic' => $topic, 'tab' => 'access'])

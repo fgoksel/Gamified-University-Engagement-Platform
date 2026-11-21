@@ -10,15 +10,19 @@ use App\Models\Semester;
 use App\Models\Topic;
 use App\Models\User;
 use App\Services\AssignmentService;
+use App\Services\StudentAccounts;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
 /**
- * "Import students" on a topic (Task #72): a file with one column of Neptun codes.
+ * "Import students" on a topic (Task #72): a file with a column of Neptun codes. With the
+ * columns Full Name and Email as well, a code without an account gets a new, invited student
+ * account first (Task #104), so an area admin needs no help from the system admin.
  *
  * Each student gets the chosen role at the topic and at the topics above that the
  * importer ticked, so a topic above holds the union of the sets imported into it
@@ -46,6 +50,9 @@ class ImportTopicStudentsJob extends ImportCsvJob
 
     /** Students who got the role at the topic itself. */
     private int $added = 0;
+
+    /** Accounts created for Neptun codes that had none (Task #104). */
+    private int $created = 0;
 
     /** Students who already had it there. */
     private int $already = 0;
@@ -106,7 +113,7 @@ class ImportTopicStudentsJob extends ImportCsvJob
 
     protected function prepare(): void
     {
-        $this->added = $this->already = 0;
+        $this->added = $this->already = $this->created = 0;
         $this->addedAbove = [];
 
         $this->topic = Topic::query()->notArchived()->find($this->topicId);
@@ -143,11 +150,10 @@ class ImportTopicStudentsJob extends ImportCsvJob
             return;
         }
 
-        $student = User::role(UserRole::Student)->where('neptun_code', $neptun)->first();
+        $student = User::role(UserRole::Student)->where('neptun_code', $neptun)->first()
+            ?? $this->createAccount($row, $neptun, $line);
 
         if ($student === null) {
-            $this->skip($line, __('jobs.area_students.no_account', ['code' => $neptun]));
-
             return;
         }
 
@@ -193,6 +199,10 @@ class ImportTopicStudentsJob extends ImportCsvJob
     {
         $text = __('jobs.area_students.added', ['count' => $this->added, 'role' => $this->role->name, 'area' => $this->topic->title]);
 
+        if ($this->created > 0) {
+            $text .= ' '.__('jobs.area_students.accounts_created', ['count' => $this->created]);
+        }
+
         if ($this->already > 0) {
             $text .= ' '.__('jobs.area_students.already', ['count' => $this->already]);
         }
@@ -202,6 +212,53 @@ class ImportTopicStudentsJob extends ImportCsvJob
         }
 
         return $text;
+    }
+
+    /**
+     * A Neptun code without an account (Task #104): with Full Name and Email in the file, the
+     * account is created and invited the way the admin panel does it (StudentAccounts). Without
+     * them, the row is skipped as before, with a hint how to create it. Returns null when skipped.
+     *
+     * @param  array<string, mixed>  $row
+     */
+    private function createAccount(array $row, string $neptun, int $line): ?User
+    {
+        $name = trim((string) ($row['full_name'] ?? ''));
+        $email = trim((string) ($row['email'] ?? ''));
+
+        // Another kind of account has this code: nothing to create, and nothing to add.
+        if (User::where('neptun_code', $neptun)->exists()) {
+            $this->skip($line, __('jobs.area_students.no_account', ['code' => $neptun]));
+
+            return null;
+        }
+
+        if ($name === '' && $email === '') {
+            $this->skip($line, __('jobs.area_students.no_account_add_columns', ['code' => $neptun]));
+
+            return null;
+        }
+
+        $accounts = app(StudentAccounts::class);
+
+        if (($problem = $accounts->problem($name, $email, $neptun)) !== null) {
+            $this->skip($line, __('jobs.area_students.row_problem', ['neptun' => $neptun, 'reason' => $problem]));
+
+            return null;
+        }
+
+        // No account for someone who could not get the role here anyway.
+        $allowed = Gate::forUser($this->importer)->inspect('importRole', [RoleAssignment::class, $this->topic, $this->role]);
+
+        if ($allowed->denied()) {
+            $this->skip($line, __('jobs.area_students.row_problem', ['neptun' => $neptun, 'reason' => $allowed->message()]));
+
+            return null;
+        }
+
+        $this->created++;
+
+        return $accounts->invite($name, $email, $neptun);
     }
 
     private function holds(User $student, Topic $topic): bool

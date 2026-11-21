@@ -151,7 +151,7 @@ class TopicImportTest extends TopicTestCase
         $anna = $this->studentAccount('ANNA01');
 
         $this->import($this->course, $this->csv('ANNA01'), parents: [$this->university])
-            ->assertSessionHasErrors('parent_topic_ids');
+            ->assertSessionHasErrors(['parent_topic_ids' => 'You can only add people to areas above this one in your own branch.']);
 
         $this->assertSame([], $this->placesOf($anna));
     }
@@ -238,18 +238,24 @@ class TopicImportTest extends TopicTestCase
     public function test_the_result_lists_who_was_added_and_why_rows_were_skipped(): void
     {
         $this->studentAccount('ANNA01');
+        // Invited: may hold the role, which works once they activate (Task #104).
         $this->studentAccount('IVY009', 'invited');
+        $this->studentAccount('OFF001', 'inactive');
         $teacher = $this->makeUser(UserRole::Teacher, 'A Teacher');
         $teacher->forceFill(['neptun_code' => 'TEACH1'])->save();
 
-        $this->import($this->course, $this->csv('ANNA01', 'ZZZ999', 'IVY009', 'TEACH1', ''));
+        $this->import($this->course, $this->csv('ANNA01', 'ZZZ999', 'IVY009', 'OFF001', 'TEACH1', ''));
 
         $result = $this->lastResult($this->importer);
         $this->assertSame('Student import finished', $this->importer->notifications()->latest()->first()->data['title']);
-        $this->assertStringContainsString('1 student(s) now have the role "Student" in Databases.', $result);
-        $this->assertStringContainsString('no student account has the Neptun code ZZZ999.', $result);
-        $this->assertStringContainsString('IVY009: Only active accounts can be given a role.', $result);
+        $this->assertStringContainsString('2 student(s) now have the role "Student" in Databases.', $result);
+        // A code-only file cannot create the account, and says how to.
+        $this->assertStringContainsString('no student account has the Neptun code ZZZ999. Add the columns Full Name and Email to create it.', $result);
+        $this->assertStringContainsString('OFF001: A deactivated account cannot be given a role.', $result);
+        // Someone else has this code: no student account to add, and none to create.
         $this->assertStringContainsString('no student account has the Neptun code TEACH1.', $result);
+        $this->assertStringNotContainsString('TEACH1. Add the columns', $result);
+        $this->assertStringNotContainsString('created and invited', $result);
 
         // The importer reads it on the Notifications page.
         $this->actingAs($this->importer)->get('/notifications')
