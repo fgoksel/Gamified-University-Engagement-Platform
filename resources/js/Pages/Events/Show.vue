@@ -185,7 +185,7 @@ const showActions = computed(
                         >
                             <li
                                 v-for="(node, index) in path"
-                                :key="node.id"
+                                :key="index"
                                 class="flex items-center gap-1"
                             >
                                 <ChevronRight

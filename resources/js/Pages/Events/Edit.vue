@@ -49,6 +49,7 @@ const fieldLabel = {
     completion_deadline: t("events.edit.field_completion_deadline"),
     is_hidden: t("events.edit.field_is_hidden"),
     qr_enabled: t("events.edit.field_qr_enabled"),
+    status: t("events.edit.field_status"),
 };
 
 const statusLabel = {

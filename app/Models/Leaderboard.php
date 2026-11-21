@@ -38,6 +38,7 @@ class Leaderboard extends Model
         'show_first_name',
         'show_last_name',
         'hall_seconds',
+        'hall_show_names',
         'created_by_id',
     ];
 
@@ -57,6 +58,7 @@ class Leaderboard extends Model
             'show_first_name' => 'boolean',
             'show_last_name' => 'boolean',
             'hall_seconds' => 'integer',
+            'hall_show_names' => 'boolean',
         ];
     }
 
@@ -94,6 +96,23 @@ class Leaderboard extends Model
             'neptun_code' => $this->show_neptun_code,
             'first_name' => $this->show_first_name,
             'last_name' => $this->show_last_name,
+        ]));
+    }
+
+    /**
+     * The columns the hall screen gets, which anyone can open without logging in (N13, Task #118).
+     * A Neptun code always shows, whatever the creator ticked. A name shows only when the creator
+     * gave the leaderboard that name column and the system admin switched names on for the hall
+     * screen, which is off until they do. The signed-in views keep using columns().
+     *
+     * @return list<string>
+     */
+    public function hallColumns(): array
+    {
+        return array_keys(array_filter([
+            'neptun_code' => true,
+            'first_name' => $this->hall_show_names && $this->show_first_name,
+            'last_name' => $this->hall_show_names && $this->show_last_name,
         ]));
     }
 

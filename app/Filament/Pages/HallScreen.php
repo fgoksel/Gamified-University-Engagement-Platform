@@ -20,8 +20,9 @@ use Filament\Tables\Table;
 use Illuminate\Support\Facades\Auth;
 
 /**
- * Time on the hall screen (Task #56): the default for every leaderboard, and the time of any
- * one leaderboard. Area admins set the time of their own leaderboards in the explorer.
+ * What the hall screen shows, for the system admin: which leaderboards are on it (Task #110), how long
+ * each stays (Task #56) and whether its names reach guests (N13, Task #118). Area admins set the
+ * time of their own leaderboards in the explorer, but never the names that guests see.
  */
 class HallScreen extends Page implements HasTable
 {
@@ -43,6 +44,11 @@ class HallScreen extends Page implements HasTable
         return __('admin.hall_screen.title');
     }
 
+    public function getSubheading(): ?string
+    {
+        return __('admin.hall_screen.names_help');
+    }
+
     public function table(Table $table): Table
     {
         return $table
@@ -54,6 +60,13 @@ class HallScreen extends Page implements HasTable
                     ->label(__('admin.hall_screen.leaderboard'))
                     // The name opens the leaderboard itself, and the admin panel stays open.
                     ->url(fn (Leaderboard $record): string => route('leaderboards.index', ['board' => $record->id], false), shouldOpenInNewTab: true)
+                    // What the board itself shows, so the admin sees what the names switch lets out.
+                    ->description(fn (Leaderboard $record): string => __('admin.hall_screen.board_names', ['names' => match (true) {
+                        $record->show_first_name && $record->show_last_name => __('admin.hall_screen.names_both'),
+                        $record->show_first_name => __('admin.hall_screen.names_first'),
+                        $record->show_last_name => __('admin.hall_screen.names_last'),
+                        default => __('admin.hall_screen.names_none'),
+                    }]))
                     ->searchable(),
 
                 TextColumn::make('topic.title')
@@ -64,6 +77,15 @@ class HallScreen extends Page implements HasTable
                     ->getStateUsing(fn (Leaderboard $record): bool => $record->isPublic())
                     ->updateStateUsing(function (Leaderboard $record, bool $state): bool {
                         app(AreaLeaderboards::class)->setPublished(Auth::user(), $record, $state);
+
+                        return $state;
+                    }),
+
+                // Guests always see Neptun codes. This switch lets the names of the board reach them too.
+                ToggleColumn::make('hall_show_names')
+                    ->label(__('admin.hall_screen.names_for_guests'))
+                    ->updateStateUsing(function (Leaderboard $record, bool $state): bool {
+                        app(AreaLeaderboards::class)->setHallNames(Auth::user(), $record, $state);
 
                         return $state;
                     }),

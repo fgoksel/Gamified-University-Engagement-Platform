@@ -38,17 +38,20 @@ class LeaderboardStandings
     }
 
     /**
-     * What the hall screen shows: the top places and how many students are listed.
+     * What the hall screen shows: the top places and how many students are listed. The hall screen
+     * needs no login, so its rows carry the columns of Leaderboard::hallColumns(): a Neptun code
+     * always, a name only where the system admin switched names on (N13).
      *
      * @return array{total: int, rows: list<array<string, mixed>>}
      */
     public function top(Leaderboard $board): array
     {
         $ranked = $this->ranked($board);
+        $columns = $board->hallColumns();
 
         return [
             'total' => $ranked->count(),
-            'rows' => $ranked->take(self::TOP)->map(fn (object $row) => $this->row($board, $row))->values()->all(),
+            'rows' => $ranked->take(self::TOP)->map(fn (object $row) => $this->row($board, $row, null, $columns))->values()->all(),
         ];
     }
 
@@ -126,24 +129,27 @@ class LeaderboardStandings
     }
 
     /**
-     * One row as people see it. Only the columns the creator chose leave the server (L6);
-     * a student's account id never does.
+     * One row as people see it. Only the columns the creator chose leave the server (L6), or the
+     * given $columns where the caller has narrower rules, as the hall screen has; a student's
+     * account id never leaves.
      *
+     * @param  list<string>|null  $columns  null: the columns the creator chose
      * @return array<string, mixed>
      */
-    private function row(Leaderboard $board, object $row, ?User $viewer = null): array
+    private function row(Leaderboard $board, object $row, ?User $viewer = null, ?array $columns = null): array
     {
+        $columns ??= $board->columns();
         [$first, $last] = $this->nameParts($row->name);
 
         $shown = ['position' => $row->position, 'rank' => $row->rank, 'points' => $row->points];
 
-        if ($board->show_neptun_code) {
+        if (in_array('neptun_code', $columns, true)) {
             $shown['neptun_code'] = $row->neptun_code;
         }
-        if ($board->show_first_name) {
+        if (in_array('first_name', $columns, true)) {
             $shown['first_name'] = $first;
         }
-        if ($board->show_last_name) {
+        if (in_array('last_name', $columns, true)) {
             $shown['last_name'] = $last;
         }
         if ($viewer !== null) {

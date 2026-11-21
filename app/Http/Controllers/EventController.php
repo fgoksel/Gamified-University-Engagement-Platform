@@ -52,7 +52,7 @@ class EventController extends Controller
             'event' => $catalog->detail($request->user(), $event),
             // Task #75: where the event sits in the tree, and who can manage it (null for a viewer
             // who runs no part of it and may not see who has access there).
-            'path' => $access->path($event),
+            'path' => $access->path($request->user(), $event),
             'managers' => $access->managers($request->user(), $event),
         ]);
     }
@@ -80,6 +80,8 @@ class EventController extends Controller
             ->where('student_id', $request->user()->id)
             // Undone straight after applying (Task #94): not part of the history.
             ->whereNull('undone_at')
+            // An event a system admin removed is gone for the student too (Task #58).
+            ->whereHas('event', fn ($query) => $query->where('status', '!=', Event::STATUS_REMOVED))
             ->with([
                 'event.owningTopic:id,title,code',
                 'event.topicTag:id,name,category',

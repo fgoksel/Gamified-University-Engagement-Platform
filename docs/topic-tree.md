@@ -21,8 +21,15 @@ supervisor approval.
 - **Direct contents** shows the immediate children. **Whole branch** lists every area below that the
   person may see, with the path from the selected area, a filter and paging. The stored tree is never
   flattened.
+- **The path** above an area runs from the root down (N5, Task #120). Every parent is named, whoever
+  looks, so a person can see where their area sits. A parent above the person's own access is plain
+  text: it cannot be opened (its address says "not found"), and nothing of it comes with the name: not
+  its contents, its other children, its people or its roles. The explorer and the event page show the
+  path this way. The tree on the left, search, the trails in lists and the Access tab still start at
+  the person's own access.
 - **Access** (only for people who may see who has access) shows *Assigned here* and *Inherited from
-  [ancestor]*. Ancestors above the person's own access are never named. Counts separate **people** from
+  [ancestor]*. An assignment on an ancestor above the person's own access is not listed: the path
+  names that ancestor, but its people and roles stay hidden. Counts separate **people** from
   **role assignments** (one person with two roles is one person and two assignments).
 - **Roles** (menu, for people who define or give roles) is the role builder.
 - System Admins use the same screens (menu entries "Areas" and "Area roles" in the admin panel) plus a

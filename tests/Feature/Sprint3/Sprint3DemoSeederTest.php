@@ -18,6 +18,7 @@ use Database\Seeders\Sprint2DemoSeeder;
 use Database\Seeders\Sprint3DemoSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 /**
@@ -170,6 +171,10 @@ class Sprint3DemoSeederTest extends TestCase
         // Step 1: Gréta can add a booth and import its students.
         $fair = $this->topic(Sprint3DemoSeeder::FAIR);
         $this->actingAs($greta)->get('/topics')->assertRedirect("/topics/{$fair->id}");
+        // The path above the page starts at the root: the university above the fair is a name only (N5, Task #120).
+        $this->actingAs($greta)->get("/topics/{$fair->id}")->assertInertia(fn (Assert $page) => $page
+            ->where('selected.path', [['id' => null, 'title' => Sprint2DemoSeeder::ROOT], ['id' => $fair->id, 'title' => Sprint3DemoSeeder::FAIR]])
+            ->etc());
         $this->actingAs($greta)->post("/topics/{$fair->id}/children", ['title' => 'Chemistry booth'])->assertSessionHas('success');
         $chemistry = $this->topic('Chemistry booth');
         $this->actingAs($greta)->post("/topics/{$chemistry->id}/imports", [

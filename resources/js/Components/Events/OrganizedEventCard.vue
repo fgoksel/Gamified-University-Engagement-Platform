@@ -20,7 +20,7 @@ const props = defineProps({
     event: { type: Object, required: true },
 });
 
-const emit = defineEmits(["cancel", "delete"]);
+const emit = defineEmits(["cancel", "delete", "restore"]);
 
 const statusLabel = {
     draft: t("events.organized_card.draft"),
@@ -171,7 +171,8 @@ function post(action) {
                         v-if="event.status === 'on_hold'"
                         variant="primary"
                         small
-                        @click="post('restore')"
+                        data-test="restore"
+                        @click="emit('restore', event)"
                     >
                         {{ $t("events.organized_card.restore") }}
                     </Btn>

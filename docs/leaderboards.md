@@ -64,7 +64,8 @@ Only the system admin puts a leaderboard there, with the *On the hall screen* sw
 panel's *Hall screen* page (D7, Task #110). Being there does not open the leaderboard to other areas
 on the signed-in pages (D4). On that page, the name of a leaderboard opens it in a new tab.
 
-- **What it shows:** the name, the area, the top 10 with the columns the leaderboard allows, how
+- **What it shows:** the name, the area, the top 10 with a Neptun code and, where the system admin
+  allows it, names (see *Names on the hall screen* below), how
   many students are listed, and which board this is ("2 of 4"). Students with equal points share a
   rank. Pause stops the rotation (WCAG 2.2.2) and Resume starts it again.
 - **Rotation:** each leaderboard stays for its own seconds. The feed is read again after a full
@@ -79,6 +80,30 @@ on the signed-in pages (D4). On that page, the name of a leaderboard opens it in
 The words of the hall screen, the time on it and *Where am
 I?* are in `resources/js/leaderboardWords.js`, which reads them from the dictionary
 (`docs/translations.md`).
+
+### Names on the hall screen (Task #118, N13)
+
+The hall screen needs no login, so what it sends is decided more narrowly than on the signed-in pages.
+
+| Who | Where | What |
+|---|---|---|
+| Area admins (*Manage leaderboards*) | Leaderboard dialog | Which columns the board has: Neptun code, first name, last name. They decide what people who sign in see |
+| The system admin | Admin panel, *Hall screen*, *Names for guests* | Whether the names of that board also go to guests. Off by default (agreed on 10 November) |
+
+- **A Neptun code always shows** on the hall screen, whatever the creator ticked.
+- **A name shows** only when the creator gave the board that name column **and** the system admin
+  switched *Names for guests* on for that board. Each board has its own switch.
+- **The switch changes only the hall screen.** The signed-in leaderboard keeps the columns its area
+  admin chose, with the switch on or off.
+- **Only the system admin can change it.** The edit form of an area admin cannot carry the switch,
+  and `AreaLeaderboards::update()` ignores it; `AreaLeaderboards::setHallNames()` refuses anyone
+  else. Every change is written to the audit trail (`leaderboard.hall_names_shown` and
+  `leaderboard.hall_names_hidden`).
+- **In the code:** the feed sends `Leaderboard::hallColumns()` in `columns` and builds its rows from
+  the same list (`LeaderboardStandings::top()`). The signed-in pages keep using `columns()`. A
+  student's account id never leaves in either.
+- **On the admin page:** under the name of each board, *Board names* says what the board
+  itself has, so the admin sees what the switch lets out.
 
 ### Time on the hall screen
 

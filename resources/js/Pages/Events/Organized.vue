@@ -1,12 +1,13 @@
 <script setup>
 import { computed, ref } from "vue";
-import { Link, router, useForm } from "@inertiajs/vue3";
+import { Link, useForm } from "@inertiajs/vue3";
 import { CalendarCog, Plus, Tag } from "@lucide/vue";
 import EmptyState from "../../Components/EmptyState.vue";
 import TopicTagRequestModal from "../../Components/TopicTagRequestModal.vue";
 import OrganizedEventCard from "../../Components/Events/OrganizedEventCard.vue";
 import Modal from "../../Components/Topics/Modal.vue";
 import Btn from "../../Components/Topics/Btn.vue";
+import TextField from "../../Components/TextField.vue";
 import { t } from "../../i18n.js";
 
 // Teacher: events I organize (Task #37, UC-1.3)
@@ -57,18 +58,41 @@ function confirmCancel() {
     });
 }
 
-// Delete: only offered while nobody has applied.
+// Restore (Task #122, C10): an event on hold comes back only with a new date and time.
+const restoring = ref(null);
+const restoreForm = useForm({ event_starts_at: "", event_ends_at: "" });
+
+function openRestore(event) {
+    restoreForm.reset();
+    restoreForm.clearErrors();
+    restoring.value = event;
+}
+
+function confirmRestore() {
+    restoreForm.post(`/events/${restoring.value.id}/restore`, {
+        preserveScroll: true,
+        onSuccess: () => (restoring.value = null),
+    });
+}
+
+// Delete: only offered while nobody has applied, and only after typing the title (Task #122, C11).
 const deleting = ref(null);
-const deleteBusy = ref(false);
+const deleteForm = useForm({ title: "" });
+const titleMatches = computed(
+    () => deleting.value !== null && deleteForm.title === deleting.value.title,
+);
+
+function openDelete(event) {
+    deleteForm.reset();
+    deleteForm.clearErrors();
+    deleting.value = event;
+}
 
 function confirmDelete() {
-    router.delete(`/events/${deleting.value.id}`, {
+    if (!titleMatches.value) return;
+    deleteForm.delete(`/events/${deleting.value.id}`, {
         preserveScroll: true,
-        onStart: () => (deleteBusy.value = true),
-        onFinish: () => {
-            deleteBusy.value = false;
-            deleting.value = null;
-        },
+        onSuccess: () => (deleting.value = null),
     });
 }
 </script>
@@ -135,7 +159,8 @@ function confirmDelete() {
                     :key="event.id"
                     :event="event"
                     @cancel="openCancel"
-                    @delete="deleting = $event"
+                    @delete="openDelete"
+                    @restore="openRestore"
                 />
             </div>
             <p
@@ -211,27 +236,99 @@ function confirmDelete() {
             </template>
         </Modal>
 
+        <!-- Restore dialog (Task #122) -->
+        <Modal
+            v-if="restoring"
+            :title="
+                $t('events.organized.restore_title', { title: restoring.title })
+            "
+            :busy="restoreForm.processing"
+            @close="restoring = null"
+        >
+            <form
+                id="restore-event-form"
+                class="space-y-3"
+                @submit.prevent="confirmRestore"
+            >
+                <p class="text-sm text-fg-muted">
+                    {{ $t("events.organized.restore_intro") }}
+                </p>
+                <TextField
+                    v-model="restoreForm.event_starts_at"
+                    :label="$t('events.organized.new_start')"
+                    type="datetime-local"
+                    required
+                    data-autofocus
+                    :error="restoreForm.errors.event_starts_at"
+                />
+                <TextField
+                    v-model="restoreForm.event_ends_at"
+                    :label="$t('events.organized.new_end')"
+                    type="datetime-local"
+                    required
+                    :error="restoreForm.errors.event_ends_at"
+                />
+            </form>
+            <template #footer>
+                <Btn
+                    :disabled="restoreForm.processing"
+                    @click="restoring = null"
+                >
+                    {{ $t("events.organized.keep_on_hold") }}
+                </Btn>
+                <Btn
+                    type="submit"
+                    form="restore-event-form"
+                    variant="primary"
+                    :loading="restoreForm.processing"
+                >
+                    {{ $t("events.organized.restore_event") }}
+                </Btn>
+            </template>
+        </Modal>
+
         <!-- Delete dialog -->
         <Modal
             v-if="deleting"
             :title="
                 $t('events.organized.delete_title', { title: deleting.title })
             "
-            :busy="deleteBusy"
+            :busy="deleteForm.processing"
             danger
             @close="deleting = null"
         >
-            <p class="text-sm text-fg-muted">
-                {{ $t("events.organized.nobody_has_applied_yet_so") }}
-            </p>
+            <form
+                id="delete-event-form"
+                class="space-y-3"
+                @submit.prevent="confirmDelete"
+            >
+                <p class="text-sm text-fg-muted">
+                    {{ $t("events.organized.nobody_has_applied_yet_so") }}
+                </p>
+                <TextField
+                    v-model="deleteForm.title"
+                    :label="$t('events.organized.type_title_to_confirm')"
+                    :hint="
+                        $t('events.organized.type_title_hint', {
+                            title: deleting.title,
+                        })
+                    "
+                    required
+                    autocomplete="off"
+                    data-autofocus
+                    :error="deleteForm.errors.title"
+                />
+            </form>
             <template #footer>
-                <Btn :disabled="deleteBusy" @click="deleting = null">
+                <Btn :disabled="deleteForm.processing" @click="deleting = null">
                     {{ $t("events.organized.keep_event") }}
                 </Btn>
                 <Btn
+                    type="submit"
+                    form="delete-event-form"
                     variant="destructive"
-                    :loading="deleteBusy"
-                    @click="confirmDelete"
+                    :disabled="!titleMatches"
+                    :loading="deleteForm.processing"
                 >
                     {{ $t("events.organized.delete_event") }}
                 </Btn>

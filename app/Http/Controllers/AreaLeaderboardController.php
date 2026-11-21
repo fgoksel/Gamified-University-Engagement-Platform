@@ -150,7 +150,8 @@ class AreaLeaderboardController extends Controller
 
     /**
      * The read-only feed of the hall screen, without login: only the leaderboards the system admin switched on,
-     * with the top places and only the columns their creators chose.
+     * with the top places. A Neptun code always shows; a name only where its creator gave the board that
+     * column and the system admin switched names on for the hall screen (N13, Task #118).
      */
     public function hall(): JsonResponse
     {
@@ -167,7 +168,7 @@ class AreaLeaderboardController extends Controller
                     'id' => $board->id,
                     'name' => $board->name,
                     'topic' => $board->topic->title,
-                    'columns' => $board->columns(),
+                    'columns' => $board->hallColumns(),
                     'seconds' => $board->hallSeconds($default),
                     ...$this->standings->top($board),
                 ])
