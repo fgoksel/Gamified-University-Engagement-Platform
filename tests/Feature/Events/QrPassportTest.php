@@ -142,6 +142,21 @@ class QrPassportTest extends EventTestCase
             ->assertJson(['status' => 'not_accepted', 'student' => ['application' => null, 'accepted' => false]]);
     }
 
+    public function test_an_undone_application_is_shown_as_never_applied_and_a_withdrawal_as_withdrawn(): void
+    {
+        // Applied and undid it (Task #94): the scanner says they never applied.
+        $undid = $this->student('Una Undo', 'UNA001');
+        EventApplication::create(['event_id' => $this->event->id, 'student_id' => $undid->id, 'status' => EventApplication::WITHDRAWN, 'undone_at' => now()]);
+        $this->scan(app(QrPassport::class)->issue($undid))
+            ->assertJson(['status' => 'not_accepted', 'student' => ['name' => 'Una Undo', 'application' => null, 'accepted' => false]]);
+
+        // Withdrew in the usual way: they left the event.
+        $left = $this->student('Wim Withdrawn', 'WIM001');
+        EventApplication::create(['event_id' => $this->event->id, 'student_id' => $left->id, 'status' => EventApplication::WITHDRAWN]);
+        $this->scan(app(QrPassport::class)->issue($left))
+            ->assertJson(['status' => 'not_accepted', 'student' => ['name' => 'Wim Withdrawn', 'application' => 'withdrawn', 'accepted' => false]]);
+    }
+
     public function test_a_changed_or_made_up_passport_is_refused(): void
     {
         $other = $this->student('Other', 'OTH001');

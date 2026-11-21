@@ -115,16 +115,20 @@ class EventCreditService
         $application = EventApplication::query()
             ->where('event_id', $event->id)
             ->where('student_id', $student->id)
-            ->value('status');
+            ->first();
+
+        // An application the student undid (Task #94) counts as none: "they never applied",
+        // not "they left the event".
+        $status = $application === null || $application->isUndone() ? null : $application->status;
 
         return [
             'id' => $student->id,
             'name' => $student->name,
             'neptun_code' => $student->neptun_code,
             'photo' => $student->avatar ? Storage::disk('public')->url($student->avatar) : null,
-            // pending, accepted, waitlisted, rejected or withdrawn; null when they never applied
-            'application' => $application,
-            'accepted' => $application === EventApplication::ACCEPTED,
+            // pending, accepted, waitlisted, rejected or withdrawn; null when they never applied or undid it
+            'application' => $status,
+            'accepted' => $status === EventApplication::ACCEPTED,
         ];
     }
 
