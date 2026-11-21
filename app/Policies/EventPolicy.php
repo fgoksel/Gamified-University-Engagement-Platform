@@ -21,6 +21,16 @@ class EventPolicy
     public function __construct(private TopicAccess $access) {}
 
     /**
+     * A removed event (Task #58) is gone for everybody: its own staff and a system admin lose every
+     * ability on it too. The admin works on it from the moderation page, which does not ask this policy.
+     * Only an event is asked about; "may create events" (a class, not an event) is not affected.
+     */
+    public function before(User $user, string $ability, mixed $event = null): ?bool
+    {
+        return $event instanceof Event && $event->isRemoved() ? false : null;
+    }
+
+    /**
      * Start an event somewhere: the person may create events at one or more topics.
      * Where exactly is checked against the chosen topic (see EventPlacement).
      */
