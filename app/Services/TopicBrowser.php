@@ -525,7 +525,8 @@ class TopicBrowser
             return [];
         }
 
-        $query = User::query()->where('status', 'active')->whereKeyNot($actor->id);
+        // Invited accounts too: they may hold a role, which works once they activate (Task #104).
+        $query = User::query()->whereIn('status', ['active', 'invited'])->whereKeyNot($actor->id);
         Like::contains($query, ['name', 'email'], $term);
 
         return $query
@@ -571,6 +572,8 @@ class TopicBrowser
                 'name' => $assignment->user->name,
                 'email' => $assignment->user->email,
                 'active' => $assignment->user->status === 'active',
+                // Not signed in yet: the role works once they activate the account (Task #104).
+                'invited' => $assignment->user->status === 'invited',
             ],
             'role' => ['id' => $assignment->role->id, 'name' => $assignment->role->name, 'capabilities' => $assignment->role->capabilityList()],
             'granted_by' => $assignment->grantedBy?->name,

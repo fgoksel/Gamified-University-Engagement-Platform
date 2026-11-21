@@ -7,6 +7,7 @@ use App\Jobs\ImportStudentsJob;
 use App\Models\Faculty;
 use App\Models\User;
 use App\Notifications\StudentInvitationNotification;
+use App\Services\StudentAccounts;
 use App\Services\SystemAdminService;
 use App\Support\AdminUpload;
 use BackedEnum;
@@ -22,8 +23,6 @@ use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 /**
@@ -384,33 +383,20 @@ class StudentManagement extends Page implements HasTable
                         ->exists(table: Faculty::class, column: 'id'),
                 ])
                 ->action(function (array $data): void {
-                    DB::transaction(function () use ($data) {
-                        $token = Str::random(64);
+                    $user = app(StudentAccounts::class)->invite(
+                        $data['name'],
+                        $data['email'],
+                        $data['neptun_code'],
+                        $data['major'],
+                        $data['year_of_study'],
+                        isset($data['faculty_id']) ? (int) $data['faculty_id'] : null,
+                    );
 
-                        $user = User::create([
-                            'name' => $data['name'],
-                            'email' => $data['email'],
-                            'neptun_code' => strtoupper($data['neptun_code']),
-                            'major' => $data['major'],
-                            'year_of_study' => (int) $data['year_of_study'],
-                            'faculty_id' => $data['faculty_id'] ?? null,
-                            'password' => Hash::make(Str::random(32)),
-                            'status' => 'invited',
-                            'must_change_password' => true,
-                            'activation_token' => $token,
-                            'activation_token_expires_at' => now()->addHours(24),
-                        ]);
-
-                        $user->assignRole(UserRole::Student);
-
-                        $user->notify(new StudentInvitationNotification($token, 24));
-
-                        Notification::make()
-                            ->title(__('admin.students.invitation_sent'))
-                            ->success()
-                            ->body(__('admin.students.invitation_successfully_sent_to_email', ['email' => $user->email]))
-                            ->send();
-                    });
+                    Notification::make()
+                        ->title(__('admin.students.invitation_sent'))
+                        ->success()
+                        ->body(__('admin.students.invitation_successfully_sent_to_email', ['email' => $user->email]))
+                        ->send();
                 }),
 
             // UC-3.2.1: Bulk CSV import for students (Task #27)

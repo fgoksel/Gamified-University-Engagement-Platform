@@ -91,6 +91,7 @@ function submit() {
                             }}</strong>
                         </template>
                     </Trans>
+                    {{ $t("areas.import_students.new_accounts_hint") }}
                 </p>
                 <p
                     v-if="form.errors.file"

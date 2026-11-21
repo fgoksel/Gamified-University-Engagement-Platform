@@ -122,20 +122,25 @@ class TopicDelegationTest extends TopicTestCase
         $this->assertSame($child->id, $assignment->topic_id);
     }
 
-    public function test_only_active_accounts_can_receive_roles_and_duplicates_are_refused(): void
+    public function test_active_and_invited_accounts_can_receive_roles_deactivated_ones_and_duplicates_cannot(): void
     {
         $inactive = $this->makeUser(status: 'inactive');
         $invited = $this->makeUser(status: 'invited');
         $role = $this->viewer();
 
-        foreach ([$inactive, $invited] as $person) {
-            try {
-                $this->assignments()->grant($this->admin, $this->branch, $role, $person);
-                $this->fail('Should refuse a non-active account.');
-            } catch (ValidationException $exception) {
-                $this->assertArrayHasKey('user_id', $exception->errors());
-            }
+        try {
+            $this->assignments()->grant($this->admin, $this->branch, $role, $inactive);
+            $this->fail('Should refuse a deactivated account.');
+        } catch (ValidationException $exception) {
+            $this->assertSame(['A deactivated account cannot be given a role.'], $exception->errors()['user_id']);
         }
+
+        // Invited (Task #104): the role is held, and works once the account is activated.
+        $this->assignments()->grant($this->admin, $this->branch, $role, $invited);
+        $this->assertFalse(app(TopicAccess::class)->canView($invited, $this->branch));
+        $invited->forceFill(['status' => 'active'])->save();
+        app(TopicAccess::class)->flush();
+        $this->assertTrue(app(TopicAccess::class)->canView($invited->fresh(), $this->branch));
 
         $person = $this->makeUser();
         $this->assignments()->grant($this->admin, $this->branch, $role, $person);

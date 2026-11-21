@@ -7,6 +7,7 @@ use App\Filament\Pages\StudentManagement;
 use App\Models\Faculty;
 use App\Models\User;
 use App\Notifications\StudentInvitationNotification;
+use App\Services\StudentAccounts;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -150,6 +151,31 @@ class StudentManagementTest extends TestCase
                     && $notification->expiresInHours === 24;
             }
         );
+    }
+
+    public function test_the_invite_action_creates_the_account_through_the_shared_service(): void
+    {
+        // Task #104: one way to create a student account, for the admin panel and the areas alike.
+        Notification::fake();
+        $this->partialMock(StudentAccounts::class, fn ($mock) => $mock->shouldReceive('invite')
+            ->once()
+            ->with('Kovács János', 'kovacs.janos@student.pte.hu', 'kov123', 'Computer Science BSc', 2, null)
+            ->passthru());
+
+        Livewire::actingAs($this->makeAdmin())
+            ->test(StudentManagement::class)
+            ->callAction('invite', [
+                'name' => 'Kovács János',
+                'email' => 'kovacs.janos@student.pte.hu',
+                'neptun_code' => 'kov123',
+                'major' => 'Computer Science BSc',
+                'year_of_study' => 2,
+            ])
+            ->assertHasNoActionErrors();
+
+        $user = User::where('neptun_code', 'KOV123')->firstOrFail();
+        $this->assertSame('invited', $user->status);
+        Notification::assertSentTo($user, StudentInvitationNotification::class);
     }
 
     public function test_student_invitation_requires_mandatory_fields(): void

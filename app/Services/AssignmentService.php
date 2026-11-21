@@ -256,10 +256,15 @@ class AssignmentService
         ]);
     }
 
+    /**
+     * Active and invited accounts may hold a role (Task #104): an invited person cannot sign in
+     * before activating, so the role only takes effect then (TopicAccess counts active accounts
+     * only). A deactivated account is refused.
+     */
     private function assertEligibleRecipient(User $user, string $field = 'user_id'): void
     {
-        if ($user->status !== 'active') {
-            throw ValidationException::withMessages([$field => __('areas.assignment.only_active_accounts_can')]);
+        if (! in_array($user->status, ['active', 'invited'], true)) {
+            throw ValidationException::withMessages([$field => __('areas.assignment.a_deactivated_account_cannot')]);
         }
     }
 

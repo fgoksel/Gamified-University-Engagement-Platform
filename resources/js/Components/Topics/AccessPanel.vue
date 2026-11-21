@@ -1,11 +1,12 @@
 <script setup>
 import { ref } from "vue";
 import { Link } from "@inertiajs/vue3";
-import { FileUp, History, UserPlus } from "@lucide/vue";
+import { FileUp, History, Mail, UserPlus } from "@lucide/vue";
 import Btn from "./Btn.vue";
 import AssignDialog from "./AssignDialog.vue";
 import ChangeRoleDialog from "./ChangeRoleDialog.vue";
 import ImportStudentsDialog from "./ImportStudentsDialog.vue";
+import InvitePersonDialog from "./InvitePersonDialog.vue";
 import CapabilityList from "./CapabilityList.vue";
 import Trans from "../Trans.vue";
 import { formatDate } from "../../topicsLabels.js";
@@ -22,6 +23,7 @@ const props = defineProps({
 
 const assigning = ref(false);
 const importing = ref(false);
+const inviting = ref(false);
 const changing = ref(null); // { mode, assignment }
 
 // Inherited roles grouped by the ancestor they come from
@@ -90,6 +92,18 @@ function inheritedGroups() {
                     />
                     {{ $t("areas.access.import_students") }}
                 </Btn>
+                <!-- Task #104: one student or organiser without an account yet. -->
+                <Btn
+                    v-if="can.import && access.import"
+                    @click="inviting = true"
+                >
+                    <Mail
+                        class="size-4"
+                        :stroke-width="1.75"
+                        aria-hidden="true"
+                    />
+                    {{ $t("areas.access.invite_a_person") }}
+                </Btn>
                 <Btn
                     v-if="can.assign"
                     variant="primary"
@@ -127,7 +141,13 @@ function inheritedGroups() {
                                 >{{ $t("areas.access.you") }}</span
                             >
                             <span
-                                v-if="!row.user.active"
+                                v-if="row.user.invited"
+                                class="ml-1 rounded-full bg-surface-muted px-2 py-0.5 text-xs text-fg-muted"
+                                :title="$t('areas.access.invited_hint')"
+                                >{{ $t("areas.access.invited") }}</span
+                            >
+                            <span
+                                v-else-if="!row.user.active"
                                 class="ml-1 rounded-full bg-warning-soft px-2 py-0.5 text-xs text-warning-fg"
                                 >{{ $t("areas.access.inactive_account") }}</span
                             >
@@ -211,7 +231,13 @@ function inheritedGroups() {
                             >{{ $t("areas.access.you") }}</span
                         >
                         <span
-                            v-if="!row.user.active"
+                            v-if="row.user.invited"
+                            class="ml-1 rounded-full bg-surface-muted px-2 py-0.5 text-xs text-fg-muted"
+                            :title="$t('areas.access.invited_hint')"
+                            >{{ $t("areas.access.invited") }}</span
+                        >
+                        <span
+                            v-else-if="!row.user.active"
                             class="ml-1 rounded-full bg-warning-soft px-2 py-0.5 text-xs text-warning-fg"
                             >{{ $t("areas.access.inactive_account") }}</span
                         >
@@ -297,6 +323,12 @@ function inheritedGroups() {
             :topic="topic"
             :options="access.import"
             @close="importing = false"
+        />
+        <InvitePersonDialog
+            v-if="inviting"
+            :topic="topic"
+            :options="access.import"
+            @close="inviting = false"
         />
         <ChangeRoleDialog
             v-if="changing"

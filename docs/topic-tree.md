@@ -72,6 +72,29 @@ supervisor approval.
 - **No title is power.** A topic role called "Admin" is an ordinary topic role; the System Admin check
   is the account role only, and the admin panel/`SystemAdminService` never read topic roles.
 
+### Area admin and system admin (N1, N5, Task #104)
+
+An **area admin** is someone whose role on an area lets them manage it: give roles and import
+people there (*Give a role* / *Import students*), create events and leaderboards. They manage that
+area and everything below it, nothing above or beside it (N1, N5). In the demo data this is the
+Branch lead role. A ready-made Area admin role comes with the accounts and roles refactor.
+
+The **system admin** (the global `admin` account role) is for maintenance. An area admin does all
+of their area's work in the main app, never in the admin panel: the structure, roles, leaderboards,
+events, and the people. To add people they use the area's Access tab:
+
+- **Import students**: a CSV file with a Neptun Code column. With the columns Full Name and Email
+  too, a code that has no account gets a new, invited student account first (`ImportTopicStudentsJob`).
+- **Invite a person**: one student or organiser (`POST /topics/{topic}/invitations`,
+  `TopicInvitationController`). Someone who already has an account with that email or Neptun code
+  gets the role instead of a second account; a deactivated account is refused.
+
+Both need *Import students* (`access.import`) on the area and pass the same `importRole` check.
+New accounts are made in one place for the whole app: `App\Services\StudentAccounts` and
+`App\Services\OrganizerAccounts`, also used by the admin panel's invite actions and CSV imports.
+An invited account may hold a role; it takes effect when the person activates the account, because
+`TopicAccess` counts active accounts only. A deactivated account cannot be given a role.
+
 ### Ending and replacing (two confirmations, enforced)
 
 `AssignmentService::prepare()` runs every check and returns the summary plus a signed, encrypted,
