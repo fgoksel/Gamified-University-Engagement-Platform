@@ -158,6 +158,6 @@ Phones only give the camera to https pages, so a phone on the laptop's plain htt
 
 - **Page shows a Vite manifest error:** the `vite` container isn't running. Check it with `docker compose logs vite`.
 - **Migrations fail with "connection refused":** MySQL is still starting. Wait a few seconds and try again.
-- **Changed the Dockerfile:** rebuild with `docker compose up -d --build`.
+- **Changed the Dockerfile:** rebuild with `docker compose up -d --build`, then recreate the web server with `docker compose up -d --force-recreate --no-deps webserver`. nginx keeps the address of the old `app` container and answers `502 Bad Gateway` until it is recreated.
 - **Emails don't arrive in Mailpit:** check the worker with `docker compose logs queue`. After pulling new PHP code, restart it with `docker compose restart queue`, because the worker keeps the old code in memory.
 - **Emails end up in `storage/logs/laravel.log` instead of Mailpit:** if `.env` has `MAIL_MAILER=log` or `MAIL_PORT=2525`, copy the `MAIL_` block from `.env.example` and run `docker compose restart  queue`.

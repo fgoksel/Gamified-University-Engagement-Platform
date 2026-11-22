@@ -1,4 +1,15 @@
-FROM php:8.3-fpm
+# The PHP release is an exact one, so that everyone builds the same PHP. A tag such as
+# php:8.3-fpm is not pulled again when an older image of that name is already on the machine,
+# so a machine that built before a security release keeps the old PHP. A new tag is a new name,
+# so Docker pulls it.
+#
+# 8.3.36 (21 Oct 2026) fixed CVE-2026-109618 and CVE-2026-109619, the critical remote code
+# execution flaws. 8.3.37 (19 Nov 2026) fixed 13 more, three of them in PHP-FPM. The list is
+# the NEWS file of php-src.
+#
+# To move to a newer release: change the tag, set OLDEST_RELEASE in tests/Feature/PhpImageTest.php
+# to the same number, and run `docker compose up -d --build`.
+FROM php:8.3.37-fpm
 
 # System packages Laravel/Composer/Node need
 RUN apt-get update && apt-get install -y \
