@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch } from "vue";
+import { onBeforeUnmount, ref, watch } from "vue";
 import { router } from "@inertiajs/vue3";
 import { Search } from "@lucide/vue";
 
@@ -48,6 +48,9 @@ watch(
     },
     { flush: "sync" },
 );
+
+// A search still waiting when the page is left must not bring the person back here.
+onBeforeUnmount(() => clearTimeout(timer));
 
 // Enter asks at once.
 function submit() {
