@@ -28,12 +28,18 @@ return [
     | An example configuration is provided for each database system which
     | is supported by Laravel. You're free to add / remove connections.
     |
+    | Every connection has mask_bindings_in_exception_messages on (Task #62, GDPR). Without it,
+    | the message of a failed query holds the whole SQL with the values that were saved, so a
+    | name, an address or a Neptun code would end up in the log, in the failed jobs table and
+    | on an error page. With it the message keeps the "?" where the value was.
+    |
     */
 
     'connections' => [
 
         'sqlite' => [
             'driver' => 'sqlite',
+            'mask_bindings_in_exception_messages' => true,
             'url' => env('DB_URL'),
             'database' => env('DB_DATABASE', database_path('database.sqlite')),
             'prefix' => '',
@@ -46,6 +52,7 @@ return [
 
         'mysql' => [
             'driver' => 'mysql',
+            'mask_bindings_in_exception_messages' => true,
             'url' => env('DB_URL'),
             'host' => env('DB_HOST', '127.0.0.1'),
             'port' => env('DB_PORT', '3306'),
@@ -66,6 +73,7 @@ return [
 
         'mariadb' => [
             'driver' => 'mariadb',
+            'mask_bindings_in_exception_messages' => true,
             'url' => env('DB_URL'),
             'host' => env('DB_HOST', '127.0.0.1'),
             'port' => env('DB_PORT', '3306'),
@@ -86,6 +94,7 @@ return [
 
         'pgsql' => [
             'driver' => 'pgsql',
+            'mask_bindings_in_exception_messages' => true,
             'url' => env('DB_URL'),
             'host' => env('DB_HOST', '127.0.0.1'),
             'port' => env('DB_PORT', '5432'),
@@ -101,6 +110,7 @@ return [
 
         'sqlsrv' => [
             'driver' => 'sqlsrv',
+            'mask_bindings_in_exception_messages' => true,
             'url' => env('DB_URL'),
             'host' => env('DB_HOST', 'localhost'),
             'port' => env('DB_PORT', '1433'),

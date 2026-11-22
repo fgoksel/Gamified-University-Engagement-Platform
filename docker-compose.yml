@@ -5,6 +5,7 @@ services:
     container_name: gup-app
     volumes:
       - ./:/var/www/html
+      - ./docker/php/data-protection.ini:/usr/local/etc/php/conf.d/zz-data-protection.ini:ro
     depends_on:
       db:
         condition: service_healthy
@@ -25,6 +26,7 @@ services:
     restart: unless-stopped
     volumes:
       - ./:/var/www/html
+      - ./docker/php/data-protection.ini:/usr/local/etc/php/conf.d/zz-data-protection.ini:ro
     depends_on:
       db:
         condition: service_healthy
@@ -46,6 +48,7 @@ services:
     restart: unless-stopped
     volumes:
       - ./:/var/www/html
+      - ./docker/php/data-protection.ini:/usr/local/etc/php/conf.d/zz-data-protection.ini:ro
     depends_on:
       db:
         condition: service_healthy

@@ -1,5 +1,6 @@
 <?php
 
+use App\Logging\RedactPersonalData;
 use Monolog\Handler\NullHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Handler\SyslogUdpHandler;
@@ -48,6 +49,12 @@ return [
     | Available drivers: "single", "daily", "monthly", "slack", "syslog",
     |                    "errorlog", "monolog", "custom", "stack"
     |
+    | Every channel that writes lines of text has the RedactPersonalData tap (Task #62, GDPR):
+    | an e-mail address or the value of a duplicate entry is replaced before it is written,
+    | whoever wrote the line. Slack is not used here; its handler builds its own message, so
+    | it has no tap (docs/data-protection.md). A new channel needs the tap, and
+    | NoPersonalDataInLogsTest says so.
+    |
     */
 
     'channels' => [
@@ -63,6 +70,7 @@ return [
             'path' => storage_path('logs/laravel.log'),
             'level' => env('LOG_LEVEL', 'debug'),
             'replace_placeholders' => true,
+            'tap' => [RedactPersonalData::class],
         ],
 
         'daily' => [
@@ -71,6 +79,7 @@ return [
             'level' => env('LOG_LEVEL', 'debug'),
             'max_files' => env('LOG_DAILY_DAYS', 14),
             'replace_placeholders' => true,
+            'tap' => [RedactPersonalData::class],
         ],
 
         'monthly' => [
@@ -79,6 +88,7 @@ return [
             'level' => env('LOG_LEVEL', 'debug'),
             'max_files' => 3,
             'replace_placeholders' => true,
+            'tap' => [RedactPersonalData::class],
         ],
 
         'slack' => [
@@ -100,6 +110,7 @@ return [
                 'connectionString' => 'tls://'.env('PAPERTRAIL_URL').':'.env('PAPERTRAIL_PORT'),
             ],
             'processors' => [PsrLogMessageProcessor::class],
+            'tap' => [RedactPersonalData::class],
         ],
 
         'stderr' => [
@@ -111,6 +122,7 @@ return [
             ],
             'formatter' => env('LOG_STDERR_FORMATTER'),
             'processors' => [PsrLogMessageProcessor::class],
+            'tap' => [RedactPersonalData::class],
         ],
 
         'syslog' => [
@@ -118,12 +130,14 @@ return [
             'level' => env('LOG_LEVEL', 'debug'),
             'facility' => env('LOG_SYSLOG_FACILITY', LOG_USER),
             'replace_placeholders' => true,
+            'tap' => [RedactPersonalData::class],
         ],
 
         'errorlog' => [
             'driver' => 'errorlog',
             'level' => env('LOG_LEVEL', 'debug'),
             'replace_placeholders' => true,
+            'tap' => [RedactPersonalData::class],
         ],
 
         'null' => [

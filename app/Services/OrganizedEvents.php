@@ -7,6 +7,7 @@ use App\Models\Event;
 use App\Models\EventApplication;
 use App\Models\Topic;
 use App\Models\User;
+use App\Support\Like;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Gate;
 
@@ -74,24 +75,66 @@ class OrganizedEvents
     }
 
     /**
-     * Number of events behind each tab.
+     * Only the events whose title contains the search (Task #121). No search leaves them all.
+     *
+     * @param  Builder<Event>  $query
+     */
+    private function applySearch(Builder $query, string $search): void
+    {
+        if ($search !== '') {
+            Like::contains($query, ['events.title'], $search);
+        }
+    }
+
+    /**
+     * The order a tab has until the person picks another one (Task #121): soonest first while the
+     * events are still ahead, most recent first afterwards.
+     */
+    public static function defaultSort(string $filter): string
+    {
+        return in_array($filter, ['past', 'cancelled'], true) ? 'date_desc' : 'date_asc';
+    }
+
+    /**
+     * @param  Builder<Event>  $query
+     */
+    private function applySort(Builder $query, string $sort): void
+    {
+        // Titles are compared in lower case, so "apple" does not come after "Zebra" on any database.
+        // Events that tie keep a steady order.
+        match ($sort) {
+            'date_desc' => $query->orderByDesc('events.event_starts_at')->orderByRaw('lower(title)'),
+            'title_asc' => $query->orderByRaw('lower(title)')->orderBy('events.event_starts_at'),
+            'title_desc' => $query->orderByRaw('lower(title) desc')->orderBy('events.event_starts_at'),
+            default => $query->orderBy('events.event_starts_at')->orderByRaw('lower(title)'),
+        };
+
+        $query->orderBy('events.id');
+    }
+
+    /**
+     * Number of events behind each tab. With a search, the events of each tab whose title matches it
+     * (Task #121), so the tabs show where the matches are.
      *
      * @return array<string, int>
      */
-    public function counts(User $user): array
+    public function counts(User $user, string $search = ''): array
     {
-        return collect(self::FILTERS)->mapWithKeys(function (string $filter) use ($user) {
+        return collect(self::FILTERS)->mapWithKeys(function (string $filter) use ($user, $search) {
             $query = $this->query($user);
             $this->applyFilter($query, $filter);
+            $this->applySearch($query, $search);
 
             return [$filter => $query->count()];
         })->all();
     }
 
     /**
+     * The events of one tab, matching the search if there is one, in the order asked for (Task #121).
+     *
      * @return list<array<string, mixed>>
      */
-    public function list(User $user, string $filter): array
+    public function list(User $user, string $filter, string $search = '', ?string $sort = null): array
     {
         $query = $this->query($user)
             ->with(['owningTopic:id,title', 'audienceTopic:id,title', 'tag:id,name'])
@@ -102,11 +145,8 @@ class OrganizedEvents
             ]);
 
         $this->applyFilter($query, $filter);
-
-        // Soonest first while it is still ahead, most recent first afterwards.
-        in_array($filter, ['past', 'cancelled'], true)
-            ? $query->orderByDesc('event_starts_at')
-            : $query->orderBy('event_starts_at');
+        $this->applySearch($query, $search);
+        $this->applySort($query, $sort ?? self::defaultSort($filter));
 
         $gate = Gate::forUser($user);
 
