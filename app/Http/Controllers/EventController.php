@@ -12,6 +12,9 @@ use App\Services\EventAccessPanel;
 use App\Services\EventCatalog;
 use App\Services\EventPlacement;
 use App\Services\OrganizedEvents;
+use App\Support\EventListView;
+use App\Support\Like;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -68,25 +71,44 @@ class EventController extends Controller
                 ? $request->query('filter')
                 : 'upcoming';
 
+            // Search by title and sort (Task #121): both stay in the address, and the tabs keep them.
+            $search = EventListView::search($request->query('q'));
+            $chosen = EventListView::sort($request->query('sort'), EventListView::SORTS);
+            $counts = $organized->counts($request->user(), $search);
+
             return Inertia::render('Events/Organized', [
                 'filter' => $filter,
-                'counts' => $organized->counts($request->user()),
-                'events' => $organized->list($request->user(), $filter),
+                'q' => $search,
+                'sort' => $chosen ?? OrganizedEvents::defaultSort($filter),
+                'sortChosen' => $chosen !== null,
+                // The tabs count what matches the search, so a search with no match must not look like "no events".
+                'hasEvents' => array_sum($search === '' ? $counts : $organized->counts($request->user())) > 0,
+                'counts' => $counts,
+                'events' => $organized->list($request->user(), $filter, $search, $chosen),
             ]);
         }
 
         $now = now();
-        $applications = EventApplication::query()
+        $search = EventListView::search($request->query('q'));
+        $sort = EventListView::sort($request->query('sort'), ['applied', ...EventListView::SORTS]) ?? 'applied';
+
+        $mine = EventApplication::query()
             ->where('student_id', $request->user()->id)
             // Undone straight after applying (Task #94): not part of the history.
             ->whereNull('undone_at')
             // An event a system admin removed is gone for the student too (Task #58).
-            ->whereHas('event', fn ($query) => $query->where('status', '!=', Event::STATUS_REMOVED))
+            ->whereHas('event', fn ($query) => $query->where('status', '!=', Event::STATUS_REMOVED));
+
+        // Asked before the search, so a search with no match does not look like "you have not applied".
+        $hasApplications = $mine->clone()->exists();
+
+        $applications = $mine
+            ->when($search !== '', fn (Builder $query) => $query->whereHas('event', fn ($event) => Like::contains($event, ['events.title'], $search)))
             ->with([
                 'event.owningTopic:id,title,code',
                 'event.topicTag:id,name,category',
             ])
-            ->orderByDesc('applied_at')
+            ->tap(fn (Builder $query) => $this->orderApplications($query, $sort))
             ->get()
             ->map(function (EventApplication $app) use ($now) {
                 $event = $app->event;
@@ -143,7 +165,33 @@ class EventController extends Controller
 
         return Inertia::render('Events/Applied', [
             'applications' => $applications,
+            'q' => $search,
+            'sort' => $sort,
+            'hasApplications' => $hasApplications,
         ]);
+    }
+
+    /**
+     * The order of the student's list (Task #121): the latest application first until they pick another.
+     * An application has no title or date of its own, so those come from its event.
+     *
+     * @param  Builder<EventApplication>  $query
+     */
+    private function orderApplications(Builder $query, string $sort): void
+    {
+        $event = fn (string $expression) => Event::query()
+            ->selectRaw($expression)
+            ->whereColumn('events.id', 'event_applications.event_id');
+
+        match ($sort) {
+            'date_asc' => $query->orderBy($event('events.event_starts_at')),
+            'date_desc' => $query->orderByDesc($event('events.event_starts_at')),
+            'title_asc' => $query->orderBy($event('lower(title)')),
+            'title_desc' => $query->orderByDesc($event('lower(title)')),
+            default => null,
+        };
+
+        $query->orderByDesc('event_applications.applied_at')->orderByDesc('event_applications.id');
     }
 
     /**

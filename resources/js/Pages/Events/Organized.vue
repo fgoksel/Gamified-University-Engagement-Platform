@@ -4,6 +4,7 @@ import { Link, useForm } from "@inertiajs/vue3";
 import { CalendarCog, Plus, Tag } from "@lucide/vue";
 import EmptyState from "../../Components/EmptyState.vue";
 import TopicTagRequestModal from "../../Components/TopicTagRequestModal.vue";
+import ListControls from "../../Components/Events/ListControls.vue";
 import OrganizedEventCard from "../../Components/Events/OrganizedEventCard.vue";
 import Modal from "../../Components/Topics/Modal.vue";
 import Btn from "../../Components/Topics/Btn.vue";
@@ -15,9 +16,31 @@ defineOptions({ layout: { title: t("events.organized.organized_by_me") } });
 
 const props = defineProps({
     filter: { type: String, default: "upcoming" },
+    // Search by title and sort (Task #121): the address holds both.
+    q: { type: String, default: "" },
+    sort: { type: String, default: "date_asc" },
+    sortChosen: { type: Boolean, default: false },
+    // Whether the person has any event at all: the tabs count only what matches the search.
+    hasEvents: { type: Boolean, default: false },
     counts: { type: Object, default: () => ({}) },
     events: { type: Array, default: () => [] },
 });
+
+const sorts = [
+    { value: "date_asc", label: t("events.list_controls.sort_date_asc") },
+    { value: "date_desc", label: t("events.list_controls.sort_date_desc") },
+    { value: "title_asc", label: t("events.list_controls.sort_title_asc") },
+    { value: "title_desc", label: t("events.list_controls.sort_title_desc") },
+];
+
+// The address of a tab: it keeps the search, and an order that was chosen. The order a tab has
+// by itself is not carried over, so the past tab still starts from the latest.
+function address(tab, search = props.q) {
+    const query = { filter: tab };
+    if (search) query.q = search;
+    if (props.sortChosen) query.sort = props.sort;
+    return `/my-events?${new URLSearchParams(query)}`;
+}
 
 const tabs = [
     { key: "upcoming", label: t("events.organized.upcoming") },
@@ -34,10 +57,6 @@ const emptyText = {
     on_hold: t("events.organized.events_you_put_on_hold"),
     cancelled: t("events.organized.cancelled_events_appear_here"),
 };
-
-const hasAnyEvent = computed(() =>
-    Object.values(props.counts).some((n) => n > 0),
-);
 
 const showTagModal = ref(false);
 
@@ -118,7 +137,7 @@ function confirmDelete() {
         </div>
 
         <EmptyState
-            v-if="!hasAnyEvent"
+            v-if="!hasEvents"
             :icon="CalendarCog"
             :title="$t('events.organized.you_have_no_events_yet')"
         >
@@ -126,6 +145,15 @@ function confirmDelete() {
         </EmptyState>
 
         <template v-else>
+            <ListControls
+                path="/my-events"
+                :query="{ filter }"
+                :search="q"
+                :sort="sort"
+                :sort-chosen="sortChosen"
+                :sorts="sorts"
+            />
+
             <!-- Tabs -->
             <nav
                 class="flex gap-1 overflow-x-auto border-b border-line"
@@ -134,7 +162,7 @@ function confirmDelete() {
                 <Link
                     v-for="tab in tabs"
                     :key="tab.key"
-                    :href="`/my-events?filter=${tab.key}`"
+                    :href="address(tab.key)"
                     preserve-scroll
                     class="-mb-px inline-flex shrink-0 items-center gap-2 border-b-2 px-3 py-2 text-sm font-medium"
                     :class="
@@ -163,6 +191,19 @@ function confirmDelete() {
                     @restore="openRestore"
                 />
             </div>
+            <p
+                v-else-if="q"
+                class="rounded-card border border-dashed border-line px-6 py-10 text-center text-sm text-fg-muted"
+            >
+                {{ $t("events.list_controls.no_match") }}
+                <Link
+                    :href="address(filter, '')"
+                    preserve-scroll
+                    class="text-link underline-offset-2 hover:underline"
+                >
+                    {{ $t("events.list_controls.clear_search") }}
+                </Link>
+            </p>
             <p
                 v-else
                 class="rounded-card border border-dashed border-line px-6 py-10 text-center text-sm text-fg-muted"
