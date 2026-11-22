@@ -85,7 +85,8 @@ Open `/hall` in a private window, signed out. The three Sprint 2 boards take tur
 
 ### Step 2: the system admin maintains, the root area admin runs the university
 
-1. Sign in as the **system admin**: the admin panel opens, for maintenance only.
+1. Sign in as the **system admin**: the admin panel opens, for maintenance only. The dashboard's
+   *Active events* says "4 running now · 5 upcoming".
 2. *Areas → Demo University → Access*: Olga holds *Area admin* here, given by the system admin (N3).
    From here on the system admin only maintains; Olga runs the tree.
 

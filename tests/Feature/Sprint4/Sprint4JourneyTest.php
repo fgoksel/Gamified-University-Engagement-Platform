@@ -4,6 +4,7 @@ namespace Tests\Feature\Sprint4;
 
 use App\Enums\UserRole;
 use App\Filament\Pages\HallScreen;
+use App\Filament\Widgets\SystemOverview;
 use App\Models\Event;
 use App\Models\EventApplication;
 use App\Models\Leaderboard;
@@ -102,6 +103,11 @@ class Sprint4JourneyTest extends TestCase
         // System admin: maintenance happens in the admin panel.
         $this->actingAs($this->admin())->get('/')->assertRedirect('/admin');
         $this->actingAs($this->admin())->get('/admin')->assertOk();
+        // The dashboard counts the events still open (Task #123): the lab, the run and both booths are
+        // running; the Joins workshop, the hackathon, the surprise quiz, the Vue.js workshop and the
+        // championship are ahead. Drafts, events on hold, cancelled and completed ones do not count.
+        Livewire::actingAs($this->admin())->test(SystemOverview::class)
+            ->assertSee('4 running now · 5 upcoming');
 
         // Organiser and area admins: the leaderboards of their areas.
         foreach (['ivan', 'olga', 'rita', 'tamas'] as $key) {
