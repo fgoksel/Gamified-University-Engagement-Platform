@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\UserRole;
 use App\Http\Requests\ChangePasswordRequest;
+use App\Services\BadgeAwards;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -11,7 +13,8 @@ use Inertia\Response;
 
 /**
  * Profile Settings page of teachers and students, with three sections:
- * Profile Data, Change Password and Appearance.
+ * Profile Data, Change Password and Appearance. A student also sees the badges they hold
+ * (Task #103).
  *
  * Name, email, Neptun code, faculty, major and year come from the Neptun
  * import and are managed by the administrator (UC-3.1, UC-3.2), so they are
@@ -19,7 +22,7 @@ use Inertia\Response;
  */
 class ProfileController extends Controller
 {
-    public function edit(Request $request): Response
+    public function edit(Request $request, BadgeAwards $badges): Response
     {
         $user = $request->user()->load('faculty:id,name');
 
@@ -33,6 +36,8 @@ class ProfileController extends Controller
                 'major' => $user->major,
                 'yearOfStudy' => $user->year_of_study,
             ],
+            // Only students earn badges (Task #103): everyone else gets no section at all.
+            'badges' => $user->hasRole(UserRole::Student) ? $badges->heldBy($user) : null,
         ]);
     }
 

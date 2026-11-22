@@ -9,6 +9,7 @@ This page says what personal data the platform holds, where it can leave the ser
 | Name, e-mail address, Neptun code, major, faculty, avatar and a password hash (never the password) | `users` | Until the account is removed. Nobody is removed automatically (D5). |
 | An invited person: the same row with the status `invited` and an activation token | `users` | The token expires. |
 | Applications, check-ins and points | `event_applications`, `point_transactions` | Kept. A correction adds a reversal row: a ledger row is never changed or deleted. |
+| The badges a student holds (Task #103) | `badge_awards` (`student_id`, `badge_id`, `awarded_at`) | Until the badge is removed, or the credit it came from is taken back. A points reset does not touch them (`docs/badges.md`). |
 | What happened to an account, a role, an area, a leaderboard or an event | `topic_audit_events` | Kept: it is the accountability record. It stores ids, titles and reasons. When a system admin is appointed, removed or replaced, and when an account is deactivated, it also stores the person's name. |
 | The report of an import | `notifications` | It goes only to the admin who started the import. It names the Neptun codes of the rows that need attention. |
 | The address and the browser of a signed-in session | `sessions` (`ip_address`, `user_agent`) | Until the session expires (`SESSION_LIFETIME`, 120 minutes). |

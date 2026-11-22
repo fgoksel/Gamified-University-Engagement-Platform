@@ -1,6 +1,7 @@
 <script setup>
 import { Link } from "@inertiajs/vue3";
 import { ArrowLeft } from "@lucide/vue";
+import EventBadgeCard from "../../Components/Events/EventBadgeCard.vue";
 import EventForm from "../../Components/Events/EventForm.vue";
 import StatusChip from "../../Components/StatusChip.vue";
 import { eventStatusTone } from "../../eventStatus.js";
@@ -22,6 +23,8 @@ defineProps({
     // Which of the other tabs this person may open
     tabs: { type: Object, default: () => ({}) },
     applications: { type: Number, default: 0 },
+    // The badge of the event, { name, description, holders }, or null (Task #103)
+    badge: { type: Object, default: null },
     // Who changed what and when, newest first (Task #76)
     history: { type: Array, default: () => [] },
     historyTotal: { type: Number, default: 0 },
@@ -141,6 +144,15 @@ const tabClass = (active) => [
             :locks="locks"
             :readonly="!editable"
             :minimum-capacity="minimumCapacity"
+        />
+
+        <!-- The badge the students get who are credited for this event (Task #103, N10).
+             Remounted when the badge appears or goes, so the fields start from what is saved. -->
+        <EventBadgeCard
+            :key="badge ? 'has-badge' : 'no-badge'"
+            :event-id="event.id"
+            :badge="badge"
+            :editable="editable"
         />
 
         <!-- Every saved change (Task #76) -->

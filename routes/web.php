@@ -11,6 +11,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\SetPasswordController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\EventApplicationController;
+use App\Http\Controllers\EventBadgeController;
 use App\Http\Controllers\EventCheckinController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\EventCreditController;
@@ -183,6 +184,13 @@ Route::middleware('auth')->group(function () {
                 ->whereNumber('event')->name('events.edit');
             Route::put('/events/{event}', [EventEditController::class, 'update'])
                 ->whereNumber('event')->name('events.update');
+
+            // The badge of an event (Task #103, N10), made, changed and removed by whoever may edit the
+            // event. EventPolicy::update is checked in the form request and the controller.
+            Route::put('/events/{event}/badge', [EventBadgeController::class, 'update'])
+                ->whereNumber('event')->name('events.badge.update');
+            Route::delete('/events/{event}/badge', [EventBadgeController::class, 'destroy'])
+                ->whereNumber('event')->name('events.badge.destroy');
 
             // Lifecycle actions on "Organized by me" (Task #37, UC-1.3). EventPolicy::manage
             // checks the events.manage capability at the owning topic (Task #65).
