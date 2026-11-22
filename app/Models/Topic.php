@@ -142,12 +142,6 @@ class Topic extends Model
     }
 
     /**
-     * Topics that are shown in normal browsing: neither archived themselves
-     * nor below an archived topic.
-     *
-     * @param  Builder<Topic>  $query
-     */
-    /**
      * The general areas (Task #133): those with a general role, and not archived themselves or
      * inside an archived branch. Every student whose account becomes active joins each of them.
      */
@@ -166,6 +160,12 @@ class Topic extends Model
         return $this->belongsTo(User::class, 'general_set_by_id');
     }
 
+    /**
+     * Topics that are shown in normal browsing: neither archived themselves
+     * nor below an archived topic.
+     *
+     * @param  Builder<Topic>  $query
+     */
     public function scopeNotArchived(Builder $query): void
     {
         $query->whereNotIn('topics.id', DB::table('topic_closure as hidden_closure')

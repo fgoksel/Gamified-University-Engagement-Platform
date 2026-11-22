@@ -255,4 +255,54 @@ class GeneralAreaTest extends TopicTestCase
         $this->assertSame([], $this->areasOf($invited));
         $this->assertSame([], $this->areasOf($teacher));
     }
+
+    // ─── Only plain student roles (review of #133) ───────────────────────────
+
+    public function test_only_a_plain_student_role_can_be_the_general_role(): void
+    {
+        // Roles the area admin may hand out, but with more than a student's powers.
+        $areaAdminRole = $this->role('Area admin', [Capability::View, Capability::AccessView, Capability::AccessAssign, Capability::AccessImport, Capability::EventsView, Capability::EventsApply]);
+        $organiser = $this->role('Event organiser', [Capability::View, Capability::EventsView, Capability::EventsCreate]);
+        $student = $this->role('Event student', [Capability::View, Capability::EventsView, Capability::EventsApply]);
+
+        foreach ([$areaAdminRole, $organiser] as $role) {
+            $this->actingAs($this->areaAdmin)
+                ->putJson("/topics/{$this->faculty->id}/general", ['role_definition_id' => $role->id])
+                ->assertStatus(422)
+                ->assertJsonValidationErrors(['role_definition_id' => 'A general area can only give a student role: one that can see the area and its events and apply to events, nothing more.']);
+
+            $this->assertNull($this->faculty->fresh()->general_role_id);
+        }
+
+        $this->save($this->faculty, $student)->assertSessionHasNoErrors();
+        $this->assertSame($student->id, $this->faculty->fresh()->general_role_id);
+    }
+
+    public function test_the_dialog_offers_only_plain_student_roles(): void
+    {
+        $this->role('Area admin', [Capability::View, Capability::AccessView, Capability::AccessAssign, Capability::AccessImport, Capability::EventsView, Capability::EventsApply]);
+        $this->role('Viewer only', [Capability::View]);
+        $this->role('Nothing', []);
+
+        $this->actingAs($this->areaAdmin)->get("/topics/{$this->faculty->id}?tab=access")
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('selected.access.general.roles', fn ($roles) => collect($roles)->pluck('name')->sort()->values()->all() === ['Member', 'Viewer only'])
+                // The import dialog keeps its full list.
+                ->where('selected.access.import.roles', fn ($roles) => collect($roles)->pluck('name')->contains('Area admin')));
+
+        $this->assertFalse(RoleDefinition::where('name', 'Nothing')->sole()->isPlainStudentRole());
+    }
+
+    public function test_a_role_that_later_gains_powers_is_no_longer_given(): void
+    {
+        $this->makeGeneral($this->faculty);
+
+        // Someone edits the role afterwards and adds a power.
+        $this->member->forceFill(['capabilities' => [...$this->member->capabilities, Capability::EventsCreate->value]])->save();
+
+        $student = $this->invitedStudent();
+        $this->activateByLink();
+
+        $this->assertSame([], $this->areasOf($student));
+    }
 }

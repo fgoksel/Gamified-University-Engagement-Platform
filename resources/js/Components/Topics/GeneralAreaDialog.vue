@@ -11,9 +11,9 @@ import Trans from "../Trans.vue";
 // using the import. The server checks the role again, like for an import.
 const props = defineProps({
     topic: { type: Object, required: true },
-    // { role: { id, name } | null, set_by, set_at, missing: { roleId: count } }
+    // { role: { id, name } | null, set_by, set_at, roles, missing: { roleId: count } }
     general: { type: Object, required: true },
-    // The roles an import may give here: [{ id, name, description, capabilities }]
+    // The plain student roles this person may give here: [{ id, name, description, capabilities }]
     roles: { type: Array, required: true },
 });
 

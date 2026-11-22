@@ -371,7 +371,7 @@ class TopicBrowser
      * joins this area, as what, and since when. For those who may switch it, also how many active
      * students do not hold each offered role here yet ("Also add the N active students").
      *
-     * @return array{role: array{id: int, name: string}|null, set_by: ?string, set_at: ?string, missing: array<int, int>}|null
+     * @return array{role: array{id: int, name: string}|null, set_by: ?string, set_at: ?string, roles: list<array<string, mixed>>, missing: array<int, int>}|null
      */
     private function general(User $user, Topic $topic): ?array
     {
@@ -383,9 +383,17 @@ class TopicBrowser
         }
 
         $missing = [];
+        $roles = [];
 
         if ($canSet) {
-            $roleIds = array_column($this->importOptions($user, $topic)['roles'], 'id');
+            // Only plain student roles (Task #133 review): a general area gives its role to every
+            // student. The import dialog keeps its own full list.
+            $plain = RoleDefinition::query()->plainStudent()->pluck('id')->all();
+            $roles = array_values(array_filter(
+                $this->importOptions($user, $topic)['roles'],
+                fn (array $role) => in_array($role['id'], $plain, true),
+            ));
+            $roleIds = array_column($roles, 'id');
             $active = User::role(UserRole::Student)->where('status', 'active')->count();
             $holders = RoleAssignment::query()->active()
                 ->where('topic_id', $topic->id)
@@ -404,6 +412,8 @@ class TopicBrowser
             'role' => $topic->generalRole ? ['id' => $topic->generalRole->id, 'name' => $topic->generalRole->name] : null,
             'set_by' => $topic->generalSetBy?->name,
             'set_at' => $topic->general_set_at?->toIso8601String(),
+            // The roles the dialog offers: those this person may give here that are plain student roles
+            'roles' => $roles,
             'missing' => $missing,
         ];
     }

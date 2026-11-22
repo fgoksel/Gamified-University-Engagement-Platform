@@ -400,7 +400,7 @@ function inheritedGroups() {
             v-if="settingGeneral"
             :topic="topic"
             :general="access.general"
-            :roles="access.import?.roles ?? []"
+            :roles="access.general.roles"
             @close="settingGeneral = false"
         />
         <ImportStudentsDialog

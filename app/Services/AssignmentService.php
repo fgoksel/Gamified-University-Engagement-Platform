@@ -15,6 +15,7 @@ use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -68,6 +69,18 @@ class AssignmentService
         $role = $topic?->general_role_id === null ? null : RoleDefinition::query()->usable()->find($topic->general_role_id);
 
         if ($topic === null || $role === null || $student->status !== 'active' || ! $student->hasRole(UserRole::Student)) {
+            return null;
+        }
+
+        // The role may have gained powers since the area was switched on (someone edited it): then
+        // it is no longer given automatically. The area admin sees why in the log.
+        if (! $role->isPlainStudentRole()) {
+            Log::warning('General area skipped: its role is no longer a plain student role.', [
+                'topic_id' => $topic->id,
+                'role_definition_id' => $role->id,
+                'student_id' => $student->id,
+            ]);
+
             return null;
         }
 

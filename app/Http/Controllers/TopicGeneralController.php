@@ -42,6 +42,11 @@ class TopicGeneralController extends Controller
             $role = RoleDefinition::query()->usable()->find($data['role_definition_id']);
             abort_if($role === null, 404);
 
+            // A general area is for every student: only a plain student role (Task #133 review).
+            if (! $role->isPlainStudentRole()) {
+                throw ValidationException::withMessages(['role_definition_id' => __('areas.general_flash.only_a_student_role')]);
+            }
+
             // The dialog only offers allowed roles, so this is about a change in the meantime.
             $allowed = Gate::forUser($user)->inspect('importRole', [RoleAssignment::class, $topic, $role]);
 
