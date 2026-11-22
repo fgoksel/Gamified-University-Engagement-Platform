@@ -85,6 +85,15 @@ class HardCodedTextTest extends TestCase
         ],
         // The name of a page component, not a text.
         'app/Http/Controllers/LeaderboardController.php' => ['Home'],
+        // What the log redaction looks for in an error message of MySQL or PostgreSQL, and writes in
+        // its place: for developers, never shown to a person (Task #62).
+        'app/Logging/PersonalDataRedactor.php' => [
+            "/Duplicate entry '.*?' for key/s",
+            '/Key \(([^)]*)\)=\(.*?\) already exists/s',
+            "Duplicate entry '",
+            "' for key",
+            ') already exists',
+        ],
     ];
 
     /**
