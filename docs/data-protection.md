@@ -45,6 +45,8 @@ A leaderboard is anonymous until its creator says otherwise (D2).
 | The guest hall screen | Always a Neptun code. A name only when the creator ticked it **and** the system admin switched names on for that leaderboard (Hall screen page). The switch starts off. |
 | "Where am I?" | A student's own numbers only, never another student's name, Neptun code or row. |
 
+The leaderboards and the hall screen also show which badges a student holds from that board's events (Task #125): the badge's name and icon beside the row, never a badge from elsewhere.
+
 An e-mail address and a student's account number never leave the server on any leaderboard screen.
 
 ## What the tests prove

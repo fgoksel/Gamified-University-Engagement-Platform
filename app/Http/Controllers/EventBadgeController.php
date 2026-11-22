@@ -17,7 +17,7 @@ class EventBadgeController extends Controller
 {
     public function update(UpdateEventBadgeRequest $request, Event $event, EventBadges $badges): RedirectResponse
     {
-        $result = $badges->save($request->user(), $event, $request->validated('name'), $request->validated('description'));
+        $result = $badges->save($request->user(), $event, $request->validated('name'), $request->validated('description'), $request->validated('icon'));
 
         return back()->with('success', $result['awarded'] > 0
             ? trans_choice('events.badge.saved_and_given', $result['awarded'], ['count' => $result['awarded']])

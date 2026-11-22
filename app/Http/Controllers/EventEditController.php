@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\UpdateEventRequest;
+use App\Models\Badge;
 use App\Models\Event;
 use App\Models\EventApplication;
 use App\Models\EventEdit;
@@ -82,6 +83,8 @@ class EventEditController extends Controller
             'applications' => $event->applications()->where('status', '!=', EventApplication::WITHDRAWN)->count(),
             // The badge the students get who are credited for this event (Task #103), and how many hold it.
             'badge' => $this->badge($event),
+            // The icons the badge card offers (Task #125), the same list the request accepts.
+            'badgeIcons' => Badge::ICONS,
             // Over (completed, or published and ended): only the points end date can change (Task #76).
             'over' => $editable && $editor->isOver($event),
             // Who changed what and when (Task #76), newest first, with each value as the page shows it.
@@ -104,7 +107,7 @@ class EventEditController extends Controller
     /**
      * The event's badge for the badge card, or null when it has none.
      *
-     * @return array{name: string, description: ?string, holders: int}|null
+     * @return array{name: string, description: ?string, icon: string, holders: int}|null
      */
     private function badge(Event $event): ?array
     {
@@ -113,6 +116,7 @@ class EventEditController extends Controller
         return $badge === null ? null : [
             'name' => $badge->name,
             'description' => $badge->description,
+            'icon' => Badge::iconOf($badge->icon),
             'holders' => (int) $badge->holders,
         ];
     }

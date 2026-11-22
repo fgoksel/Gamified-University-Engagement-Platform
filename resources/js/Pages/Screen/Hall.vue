@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { Pause, Play } from "@lucide/vue";
 import Btn from "../../Components/Topics/Btn.vue";
+import BadgeIcons from "../../Components/Badges/BadgeIcons.vue";
 import { hallWords } from "../../leaderboardWords.js";
 import { leaderboardColumnLabels } from "../../topicsLabels.js";
 
@@ -196,11 +197,18 @@ onBeforeUnmount(() => {
                                 {{ row.rank }}
                             </td>
                             <td
-                                v-for="column in board.columns"
+                                v-for="(column, index) in board.columns"
                                 :key="column"
                                 class="truncate pr-[1vw]"
                             >
                                 {{ row[column] }}
+                                <!-- Badges from this board's events (Task #125), also with names off -->
+                                <BadgeIcons
+                                    v-if="index === board.columns.length - 1"
+                                    :badges="row.badges"
+                                    size="hall"
+                                    class="ml-[0.4em]"
+                                />
                             </td>
                             <td class="text-right font-semibold tabular-nums">
                                 {{ row.points }}

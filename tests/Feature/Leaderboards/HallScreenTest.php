@@ -228,7 +228,7 @@ class HallScreenTest extends EventTestCase
 
         $response = $this->getJson('/hall/leaderboards')->assertOk()
             ->assertJsonPath('leaderboards.0.columns', ['neptun_code'])
-            ->assertJsonPath('leaderboards.0.rows.0', ['position' => 1, 'rank' => 1, 'points' => 20, 'neptun_code' => 'ANNA01']);
+            ->assertJsonPath('leaderboards.0.rows.0', ['position' => 1, 'rank' => 1, 'points' => 20, 'neptun_code' => 'ANNA01', 'badges' => []]);
 
         $this->assertStringNotContainsString('Anna', $response->getContent());
         $this->assertStringNotContainsString('Nagy', $response->getContent());

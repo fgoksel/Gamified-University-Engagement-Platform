@@ -25,6 +25,8 @@ defineProps({
     applications: { type: Number, default: 0 },
     // The badge of the event, { name, description, holders }, or null (Task #103)
     badge: { type: Object, default: null },
+    // The icon keys a badge may have (Task #125), from Badge::ICONS
+    badgeIcons: { type: Array, default: () => [] },
     // Who changed what and when, newest first (Task #76)
     history: { type: Array, default: () => [] },
     historyTotal: { type: Number, default: 0 },
@@ -152,6 +154,7 @@ const tabClass = (active) => [
             :key="badge ? 'has-badge' : 'no-badge'"
             :event-id="event.id"
             :badge="badge"
+            :icons="badgeIcons"
             :editable="editable"
         />
 

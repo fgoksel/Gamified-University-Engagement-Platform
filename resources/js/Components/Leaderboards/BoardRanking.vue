@@ -4,6 +4,7 @@ import { Globe, Medal } from "@lucide/vue";
 import AlertMessage from "../AlertMessage.vue";
 import StatusChip from "../StatusChip.vue";
 import HighlightButton from "./HighlightButton.vue";
+import BadgeIcons from "../Badges/BadgeIcons.vue";
 import { studentLabel } from "../../leaderboardQuery.js";
 import { leaderboardColumnLabels } from "../../topicsLabels.js";
 import { medal } from "../../medals.js";
@@ -197,6 +198,8 @@ const name = (row) => studentLabel(row, props.board.columns);
                             class="max-w-full truncate text-sm font-medium text-fg"
                             >{{ name(step.row) }}</span
                         >
+                        <!-- Badges from this board's events (Task #125) -->
+                        <BadgeIcons :badges="step.row.badges" />
                         <span
                             class="flex w-full flex-col items-center justify-center rounded-t-control border-t-4 text-sm font-semibold tabular-nums"
                             :class="[
@@ -301,6 +304,11 @@ const name = (row) => studentLabel(row, props.board.columns);
                                     class="px-3 py-2"
                                 >
                                     {{ row[column.key] }}
+                                    <BadgeIcons
+                                        v-if="index === columns.length - 1"
+                                        :badges="row.badges"
+                                        class="ml-1.5"
+                                    />
                                     <span
                                         v-if="row.is_you && index === 0"
                                         class="ml-1.5 rounded-full bg-primary px-2 py-0.5 text-xs font-semibold text-on-primary"

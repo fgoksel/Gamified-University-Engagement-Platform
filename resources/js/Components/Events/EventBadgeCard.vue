@@ -2,6 +2,11 @@
 import { computed } from "vue";
 import { router, useForm } from "@inertiajs/vue3";
 import TextField from "../TextField.vue";
+import {
+    DEFAULT_BADGE_ICON,
+    badgeIcon,
+    badgeIconName,
+} from "../../badgeIcons.js";
 import { t } from "../../i18n.js";
 
 // The badge of an event (Task #103, N10): everyone who gets the event's points gets it, once. It is
@@ -9,8 +14,10 @@ import { t } from "../../i18n.js";
 // is already over: the students who got the points before receive it at once.
 const props = defineProps({
     eventId: { type: Number, required: true },
-    // { name, description, holders }, or null when the event has no badge
+    // { name, description, icon, holders }, or null when the event has no badge
     badge: { type: Object, default: null },
+    // The icon keys to offer (Task #125), from the server's list
+    icons: { type: Array, default: () => [] },
     // False for an event that can no longer be changed
     editable: { type: Boolean, default: true },
 });
@@ -18,6 +25,7 @@ const props = defineProps({
 const form = useForm({
     name: props.badge?.name ?? "",
     description: props.badge?.description ?? "",
+    icon: props.badge?.icon ?? DEFAULT_BADGE_ICON,
 });
 
 const url = computed(() => `/events/${props.eventId}/badge`);
@@ -69,6 +77,48 @@ function remove() {
                 :hint="$t('events.badge.description_hint')"
                 :error="form.errors.description"
             />
+
+            <!-- The icon beside the student's name on leaderboards and the hall screen (Task #125).
+                 Native radios: arrow keys move between them, the name is read with each. -->
+            <fieldset v-if="icons.length" aria-describedby="badge-icon-hint">
+                <legend class="text-sm font-medium text-fg">
+                    {{ $t("events.badge.icon") }}
+                </legend>
+                <p id="badge-icon-hint" class="mt-1 text-sm text-fg-muted">
+                    {{ $t("events.badge.icon_hint") }}
+                </p>
+                <div
+                    class="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5"
+                >
+                    <label
+                        v-for="key in icons"
+                        :key="key"
+                        class="flex min-h-11 cursor-pointer items-center gap-2 rounded-control border border-line bg-surface px-3 text-sm text-fg has-[:checked]:border-primary has-[:checked]:bg-info-soft has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-ring"
+                        :data-test="`badge-icon-${key}`"
+                    >
+                        <input
+                            v-model="form.icon"
+                            type="radio"
+                            name="badge-icon"
+                            :value="key"
+                            class="sr-only"
+                        />
+                        <component
+                            :is="badgeIcon(key)"
+                            class="size-5 shrink-0 text-medal-gold-fg"
+                            aria-hidden="true"
+                        />
+                        {{ badgeIconName(key) }}
+                    </label>
+                </div>
+                <p
+                    v-if="form.errors.icon"
+                    class="mt-1.5 text-sm text-danger-fg"
+                    role="alert"
+                >
+                    {{ form.errors.icon }}
+                </p>
+            </fieldset>
 
             <p
                 v-if="form.errors.badge"
