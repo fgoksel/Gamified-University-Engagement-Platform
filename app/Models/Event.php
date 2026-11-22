@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * An event managed from one owning topic and announced to one audience topic.
@@ -133,6 +134,12 @@ class Event extends Model
     public function qrTokens(): HasMany
     {
         return $this->hasMany(QrToken::class);
+    }
+
+    /** The badge the students get who are credited for this event (Task #103), if it has one. */
+    public function badge(): HasOne
+    {
+        return $this->hasOne(Badge::class);
     }
 
     /** Who changed the event, when and what (Task #76), newest first. */

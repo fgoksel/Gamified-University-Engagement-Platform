@@ -11,6 +11,7 @@ import {
     Users,
 } from "@lucide/vue";
 import AlertMessage from "../Components/AlertMessage.vue";
+import BadgeList from "../Components/Badges/BadgeList.vue";
 import BoardBoxes from "../Components/Leaderboards/BoardBoxes.vue";
 import YourPoints from "../Components/Leaderboards/YourPoints.vue";
 import EmptyState from "../Components/EmptyState.vue";
@@ -37,6 +38,8 @@ const props = defineProps({
     next: { type: Object, default: null },
     open: { type: Array, default: () => [] },
     recent: { type: Array, default: () => [] },
+    // The badges the student holds (Task #103, N10): how many, and the latest few
+    badges: { type: Object, default: () => ({ total: 0, latest: [] }) },
 });
 
 const page = usePage();
@@ -318,6 +321,27 @@ const linkClass =
                 </Link>
             </section>
         </div>
+
+        <!-- The badges the student earned (Task #103, N10): a mark only, no points and no rank -->
+        <section
+            v-if="badges.total > 0"
+            aria-labelledby="home-badges"
+            class="rounded-card border border-line bg-surface p-5 shadow-card sm:p-6"
+            data-test="badges"
+        >
+            <h3 id="home-badges" class="text-base font-semibold text-fg">
+                {{ $t("badges.your_badges") }}
+            </h3>
+            <BadgeList :badges="badges.latest" class="mt-3" />
+            <Link
+                v-if="badges.total > badges.latest.length"
+                href="/profile#badges"
+                :class="[linkClass, 'mt-2']"
+            >
+                {{ $t("badges.see_all", { count: badges.total }) }}
+                <ArrowRight class="size-4" aria-hidden="true" />
+            </Link>
+        </section>
 
         <!-- Events open for applications -->
         <section aria-labelledby="home-open" data-test="open">

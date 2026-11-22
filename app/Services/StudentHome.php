@@ -30,6 +30,7 @@ class StudentHome
         private CategoryList $categories,
         private EventCatalog $catalog,
         private EventApplicationService $applications,
+        private BadgeAwards $badges,
     ) {}
 
     /**
@@ -42,6 +43,21 @@ class StudentHome
             'next' => $this->next($student),
             'open' => $this->open($student),
             'recent' => $this->recent($student),
+            'badges' => $this->badges($student),
+        ];
+    }
+
+    /**
+     * The badges the student holds (Task #103, N10): the latest few and how many there are in all.
+     * A badge is only a mark. It adds nothing to the points above and changes no leaderboard.
+     *
+     * @return array{total: int, latest: list<array<string, mixed>>}
+     */
+    private function badges(User $student): array
+    {
+        return [
+            'total' => $this->badges->countHeldBy($student),
+            'latest' => $this->badges->heldBy($student, BadgeAwards::HOME_LIMIT),
         ];
     }
 

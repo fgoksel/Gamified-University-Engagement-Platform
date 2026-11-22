@@ -238,6 +238,10 @@ class PointLedger
                     $application->forceFill(['completed_at' => now(), 'scored_at' => now()])->save();
                 }
 
+                // The credit is the condition of the event's badge (Task #103). It adds no ledger row:
+                // a badge never changes points or rank.
+                app(BadgeAwards::class)->awardForCredit($event, $student);
+
                 return $row;
             });
         } catch (UniqueConstraintViolationException) {
@@ -276,7 +280,7 @@ class PointLedger
                     throw new EventActionRefused('semester_closed', __('ledger.points_from_a_closed_semester'), 409);
                 }
 
-                return PointTransaction::create([
+                $reversal = PointTransaction::create([
                     'student_id' => $original->student_id,
                     'event_id' => $original->event_id,
                     'semester_id' => $original->semester_id,
@@ -288,6 +292,11 @@ class PointLedger
                     'reversal_of_id' => $original->id,
                     'reversal_reason' => $reason,
                 ]);
+
+                // The student no longer met the condition of the event's badge (Task #103).
+                app(BadgeAwards::class)->revokeForReversedCredit($original);
+
+                return $reversal;
             });
         } catch (UniqueConstraintViolationException) {
             throw new EventActionRefused('already_reversed', __('ledger.this_credit_has_already_been'), 409);
