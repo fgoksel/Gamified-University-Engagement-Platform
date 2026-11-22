@@ -8,6 +8,7 @@ use App\Models\RoleAssignment;
 use App\Models\RoleDefinition;
 use App\Models\Topic;
 use App\Models\User;
+use App\Observers\UserObserver;
 use App\Policies\AdminPolicy;
 use App\Policies\CategoryPolicy;
 use App\Policies\EventPolicy;
@@ -56,6 +57,9 @@ class AppServiceProvider extends ServiceProvider
         // Every new password must be at least 8 characters (Technical Specification 8.2).
         // Use it in validation as: 'password' => ['required', Password::defaults()]
         Password::defaults(fn () => Password::min(8));
+
+        // General areas (Task #133): a student whose account becomes active joins them.
+        User::observe(UserObserver::class);
 
         // Admin self-lock prevention policy (Technical Specification Table 25, Task #32).
         Gate::policy(User::class, AdminPolicy::class);

@@ -98,6 +98,48 @@ class TopicService
     }
 
     /**
+     * Make an area general, change its role, or switch it off with null (Task #133). Every student
+     * whose account becomes active then joins it with that role; students already active do not,
+     * unless the caller adds them (JoinGeneralAreaJob). Switching off removes nobody. Who switched
+     * it on and when is kept on the area, and every change is in the audit trail.
+     *
+     * @throws AuthorizationException
+     */
+    public function setGeneral(User $actor, Topic $topic, ?RoleDefinition $role): Topic
+    {
+        Gate::forUser($actor)->authorize('setGeneral', $topic);
+
+        if ($role !== null) {
+            // Only a role this person may hand out here, the same check as an import.
+            Gate::forUser($actor)->authorize('importRole', [RoleAssignment::class, $topic, $role]);
+        }
+
+        return DB::transaction(function () use ($actor, $topic, $role) {
+            $topic = Topic::query()->whereKey($topic->id)->lockForUpdate()->firstOrFail();
+            $before = $topic->general_role_id;
+
+            if ($before === $role?->id) {
+                return $topic;
+            }
+
+            $topic->forceFill([
+                'general_role_id' => $role?->id,
+                'general_set_by_id' => $role === null ? null : $actor->id,
+                'general_set_at' => $role === null ? null : now(),
+            ])->save();
+
+            $action = match (true) {
+                $role === null => 'topic.general_off',
+                $before === null => 'topic.general_on',
+                default => 'topic.general_changed',
+            };
+            TopicAudit::record($actor, $action, $topic->id, 'topic', $topic->id, ['general_role_id' => $before], ['general_role_id' => $role?->id]);
+
+            return $topic;
+        });
+    }
+
+    /**
      * Whether the students of this topic see their own place in "Where am I?" while it has no
      * leaderboard (Task #132). The organiser of the area decides (7 November, D1); for this topic
      * only, so the topics below keep their own setting. Setting it to what it is changes nothing.

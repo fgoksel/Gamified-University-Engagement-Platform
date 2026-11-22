@@ -124,6 +124,31 @@ Staying in the admin panel, for the system admin:
 | Event moderation | Oversight of every event, above any single area. The page is still a placeholder. |
 | System admins | Who maintains the system. Area roles never grant it. |
 
+### General areas (#133)
+
+The import stays the way students join their areas, late students too. A **general area** is
+meant for every active student, such as the University root (#128 Q3, 10 November): when a
+student's account becomes active, they join each general area with its role.
+
+- **The rule.** An area is general when it has a general role (`topics.general_role_id`). When a
+  student account turns active (the activation link, or "Activate" in the admin panel), the
+  student gets that role in every general area that is not archived, unless they hold it there
+  already. Course areas and every other area are not touched; nothing is ever removed; organiser
+  and admin accounts join nothing. `App\Observers\UserObserver` does it after the commit, through
+  `AssignmentService::joinGeneralArea()`.
+- **Who may switch it.** An area admin with *Give a role* and *Import students* on the area, or a
+  system admin, on the area's Access tab ("General area"). The role must pass the same
+  `importRole` check as an import: only a role they may hand out there. Who switched it on and
+  when is kept on the area, and every change is in the audit trail (`topic.general_on`,
+  `topic.general_changed`, `topic.general_off`).
+- **Students who are already active** do not join when an area is switched on, unless the area
+  admin ticks "Also add the N active students who are not in this area yet"; a queued job
+  (`JoinGeneralAreaJob`) then adds them in chunks. Turning an area off stops new joins and
+  removes nobody.
+- **How it shows.** An assignment made this way says "joined automatically (general area)" on the
+  Access tab. Its grantor is whoever switched the area on, and its `authority_snapshot` says
+  `via: general_area`.
+
 ### Ending and replacing (two confirmations, enforced)
 
 `AssignmentService::prepare()` runs every check and returns the summary plus a signed, encrypted,

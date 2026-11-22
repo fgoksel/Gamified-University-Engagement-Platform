@@ -70,6 +70,44 @@ class RoleDefinition extends Model
         $query->whereNull('archived_at');
     }
 
+    /**
+     * The powers a plain student role may have (Task #133): see the area and its events, and apply
+     * to events. What "Event student" has; a general area may give nothing more.
+     *
+     * @return list<Capability>
+     */
+    public static function plainStudentCapabilities(): array
+    {
+        return [Capability::View, Capability::EventsView, Capability::EventsApply];
+    }
+
+    /**
+     * A plain student role: it has at least one capability, and every one of them is a plain student
+     * power. The only kind of role a general area gives (Task #133).
+     */
+    public function isPlainStudentRole(): bool
+    {
+        $allowed = array_map(fn (Capability $capability) => $capability->value, self::plainStudentCapabilities());
+        $has = $this->capabilityList();
+
+        return $has !== [] && array_diff($has, $allowed) === [];
+    }
+
+    /**
+     * The plain student roles (isPlainStudentRole()). Capabilities are stored as a list, so the
+     * check runs on the (short) list of roles, not in SQL.
+     *
+     * @param  Builder<RoleDefinition>  $query
+     */
+    public function scopePlainStudent(Builder $query): void
+    {
+        $query->whereKey(
+            static::query()->get(['id', 'capabilities'])
+                ->filter(fn (RoleDefinition $role) => $role->isPlainStudentRole())
+                ->modelKeys()
+        );
+    }
+
     public function isGlobal(): bool
     {
         return $this->topic_id === null;

@@ -4,7 +4,7 @@ import { useForm } from "@inertiajs/vue3";
 import Modal from "./Modal.vue";
 import Btn from "./Btn.vue";
 import Trans from "../Trans.vue";
-import CapabilityList from "./CapabilityList.vue";
+import RolePicker from "./RolePicker.vue";
 
 // Import students (Task #72): give a role to every student in a file of Neptun
 // codes, here and, if ticked, at topics above. Only the roles and topics the
@@ -101,52 +101,14 @@ function submit() {
                 </p>
             </div>
 
-            <fieldset>
-                <legend class="block text-sm font-medium text-fg">
-                    {{ $t("areas.import_students.role") }}
-                </legend>
-                <p
-                    v-if="options.roles.length === 0"
-                    class="mt-1.5 text-sm text-fg-muted"
-                >
-                    {{ $t("areas.import_students.there_is_no_role") }}
-                </p>
-                <div v-else class="mt-1.5 space-y-2">
-                    <label
-                        v-for="option in options.roles"
-                        :key="option.id"
-                        class="flex cursor-pointer gap-3 rounded-control border border-line p-3 text-sm has-[:checked]:border-primary has-[:checked]:bg-info-soft"
-                    >
-                        <input
-                            v-model="form.role_definition_id"
-                            type="radio"
-                            name="import-role"
-                            :value="option.id"
-                            class="mt-1 shrink-0"
-                        />
-                        <span class="min-w-0">
-                            <span class="block font-medium text-fg">{{
-                                option.name
-                            }}</span>
-                            <span
-                                v-if="option.description"
-                                class="block text-fg-muted"
-                                >{{ option.description }}</span
-                            >
-                            <CapabilityList
-                                :values="option.capabilities"
-                                class="mt-2"
-                            />
-                        </span>
-                    </label>
-                </div>
-                <p
-                    v-if="form.errors.role_definition_id"
-                    class="mt-1.5 text-sm text-danger-fg"
-                >
-                    {{ form.errors.role_definition_id }}
-                </p>
-            </fieldset>
+            <RolePicker
+                v-model="form.role_definition_id"
+                :roles="options.roles"
+                name="import-role"
+                :legend="$t('areas.import_students.role')"
+                :empty="$t('areas.import_students.there_is_no_role')"
+                :error="form.errors.role_definition_id"
+            />
 
             <fieldset v-if="options.parents.length">
                 <legend class="block text-sm font-medium text-fg">

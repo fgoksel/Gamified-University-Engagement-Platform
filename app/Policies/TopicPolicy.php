@@ -120,6 +120,20 @@ class TopicPolicy
     }
 
     /**
+     * Switching an area to general and back (Task #133): an area admin, who may give roles and
+     * import students here (N1), or a system admin, who holds every capability. Not in an archived
+     * area. Which role is allowed is the 'importRole' check, as for an import.
+     */
+    public function setGeneral(User $user, Topic $topic): Response
+    {
+        return $this->access->can($user, Capability::AccessAssign, $topic)
+            && $this->access->can($user, Capability::AccessImport, $topic)
+            && ! $this->access->isHidden($topic)
+            ? Response::allow()
+            : Response::deny(__('policies.area.you_cannot_make_it_general'));
+    }
+
+    /**
      * Permanent deletion is for System Admins only, and the service further
      * refuses anything that has ever been used.
      */

@@ -7,6 +7,7 @@ import AssignDialog from "./AssignDialog.vue";
 import ChangeRoleDialog from "./ChangeRoleDialog.vue";
 import ImportStudentsDialog from "./ImportStudentsDialog.vue";
 import InvitePersonDialog from "./InvitePersonDialog.vue";
+import GeneralAreaDialog from "./GeneralAreaDialog.vue";
 import CapabilityList from "./CapabilityList.vue";
 import Trans from "../Trans.vue";
 import { formatDate } from "../../topicsLabels.js";
@@ -24,6 +25,8 @@ const props = defineProps({
 const assigning = ref(false);
 const importing = ref(false);
 const inviting = ref(false);
+// Task #133: the "General area" dialog
+const settingGeneral = ref(false);
 // The person whose new invitation is being sent
 const resending = ref(null);
 
@@ -134,6 +137,51 @@ function inheritedGroups() {
             </div>
         </div>
 
+        <!-- Task #133: every student who becomes active joins this area -->
+        <section
+            v-if="access.general"
+            aria-labelledby="general-area"
+            class="flex flex-wrap items-start justify-between gap-3 rounded-card border border-line bg-surface p-4"
+            data-test="general-area"
+        >
+            <div class="min-w-0">
+                <h3 id="general-area" class="text-sm font-semibold text-fg">
+                    {{ $t("areas.general.title") }}
+                </h3>
+                <p class="mt-1 text-sm text-fg">
+                    {{
+                        access.general.role
+                            ? $t("areas.general.on", {
+                                  role: access.general.role.name,
+                              })
+                            : $t("areas.general.off")
+                    }}
+                </p>
+                <p
+                    v-if="access.general.role && access.general.set_by"
+                    class="mt-1 text-xs text-fg-muted"
+                >
+                    {{
+                        $t("areas.general.switched_on_by", {
+                            name: access.general.set_by,
+                            date: formatDate(access.general.set_at),
+                        })
+                    }}
+                </p>
+            </div>
+            <Btn
+                v-if="can.set_general && access.import"
+                small
+                data-test="general-open"
+                @click="settingGeneral = true"
+                >{{
+                    access.general.role
+                        ? $t("areas.general.change")
+                        : $t("areas.general.set_up")
+                }}</Btn
+            >
+        </section>
+
         <section aria-labelledby="assigned-here">
             <h3 id="assigned-here" class="text-sm font-semibold text-fg">
                 {{ $t("areas.access.assigned_here") }}
@@ -177,14 +225,21 @@ function inheritedGroups() {
                         />
                         <p class="mt-1.5 text-xs text-fg-muted">
                             {{
-                                row.granted_by
-                                    ? $t("areas.access.since_given_by", {
-                                          date: formatDate(row.started_at),
-                                          name: row.granted_by,
-                                      })
-                                    : $t("areas.access.since", {
-                                          date: formatDate(row.started_at),
-                                      })
+                                row.automatic
+                                    ? $t(
+                                          "areas.access.since_joined_automatically",
+                                          {
+                                              date: formatDate(row.started_at),
+                                          },
+                                      )
+                                    : row.granted_by
+                                      ? $t("areas.access.since_given_by", {
+                                            date: formatDate(row.started_at),
+                                            name: row.granted_by,
+                                        })
+                                      : $t("areas.access.since", {
+                                            date: formatDate(row.started_at),
+                                        })
                             }}
                         </p>
                     </div>
@@ -340,6 +395,13 @@ function inheritedGroups() {
             :topic="topic"
             :roles="access.roles"
             @close="assigning = false"
+        />
+        <GeneralAreaDialog
+            v-if="settingGeneral"
+            :topic="topic"
+            :general="access.general"
+            :roles="access.general.roles"
+            @close="settingGeneral = false"
         />
         <ImportStudentsDialog
             v-if="importing"
