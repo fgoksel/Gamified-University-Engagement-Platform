@@ -57,13 +57,19 @@ const progress = computed(() =>
                 {{ passport.neptun_code }}
             </p>
 
-            <!-- Always black on white, also in dark mode, so cameras read it. -->
-            <div class="mx-auto mt-5 w-full max-w-xs rounded-xl bg-white p-3">
-                <img
-                    :src="passport.image"
-                    :alt="$t('passport.your_qr_passport')"
-                    class="block h-auto w-full"
-                />
+            <!-- A brand frame (N11) around the code. Inside it, always black on white, also in
+                 dark mode, so cameras read it. -->
+            <div
+                class="mx-auto mt-5 w-full max-w-xs rounded-2xl bg-linear-to-br from-primary to-primary-hover p-1.5 shadow-card"
+                data-test="passport-frame"
+            >
+                <div class="rounded-xl bg-white p-3">
+                    <img
+                        :src="passport.image"
+                        :alt="$t('passport.your_qr_passport')"
+                        class="block h-auto w-full"
+                    />
+                </div>
             </div>
 
             <!-- Not a live region: a countdown read out every second would drown the screen
@@ -72,7 +78,7 @@ const progress = computed(() =>
                 class="mt-4 flex items-center justify-center gap-2 text-sm text-fg-muted"
             >
                 <svg
-                    class="size-4 -rotate-90"
+                    class="size-5 -rotate-90 text-link"
                     viewBox="0 0 20 20"
                     aria-hidden="true"
                 >

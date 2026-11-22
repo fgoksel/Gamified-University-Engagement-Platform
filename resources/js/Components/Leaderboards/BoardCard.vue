@@ -1,10 +1,11 @@
 <script setup>
 import { computed } from "vue";
 import { Link } from "@inertiajs/vue3";
-import { Globe } from "@lucide/vue";
+import { Globe, Medal } from "@lucide/vue";
 import StatusChip from "../StatusChip.vue";
 import HighlightButton from "./HighlightButton.vue";
 import { studentLabel } from "../../leaderboardQuery.js";
+import { medal } from "../../medals.js";
 import { t, tc } from "../../i18n.js";
 
 // One leaderboard as a box (leaderboards redesign, 9 November). A student's own place is the
@@ -37,22 +38,13 @@ const leader = computed(() =>
         : null,
 );
 
-// What a screen reader says for the whole box, e.g. "Databases ranking, place 2 of 4"
-const label = computed(() => {
-    if (!props.isStudent) {
-        return tc("leaderboards.board.aria_staff", props.board.students, {
-            name: props.board.name,
-        });
-    }
+// The box has no aria-label: its name is its visible text (board, area, place, points), so
+// voice control and screen readers use the same words people see (WCAG 2.5.3, Task #126).
 
-    return you.value
-        ? t("leaderboards.board.aria_place", {
-              name: props.board.name,
-              rank: you.value.rank,
-              total: props.board.students,
-          })
-        : t("leaderboards.board.aria_not_listed", { name: props.board.name });
-});
+// A student on places 1-3 gets their medal's colour along the top edge; otherwise brand (N11).
+const youMedal = computed(() =>
+    props.isStudent && you.value ? medal(you.value.rank) : null,
+);
 
 const boxClass = computed(() => [
     "flex h-full w-full flex-col gap-1 rounded-card border bg-surface p-4 pr-14 text-left hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
@@ -64,6 +56,11 @@ const boxClass = computed(() => [
 
 <template>
     <li class="relative" :data-test="`board-${board.id}`">
+        <span
+            class="pointer-events-none absolute inset-x-0 top-0 z-10 h-1 rounded-t-card"
+            :class="youMedal ? youMedal.stripe : 'bg-primary'"
+            aria-hidden="true"
+        />
         <component
             :is="mode === 'link' ? Link : 'button'"
             v-bind="
@@ -72,7 +69,6 @@ const boxClass = computed(() => [
                     : { type: 'button', 'aria-pressed': selected }
             "
             :class="boxClass"
-            :aria-label="label"
             @click="mode === 'link' ? null : $emit('select', board.id)"
         >
             <span class="block text-base font-medium text-fg">{{
@@ -96,8 +92,15 @@ const boxClass = computed(() => [
                     class="mt-2 flex items-baseline gap-2"
                     data-test="you"
                 >
+                    <Medal
+                        v-if="youMedal"
+                        class="size-6 self-center"
+                        :class="youMedal.color"
+                        aria-hidden="true"
+                    />
                     <span
-                        class="text-[28px] leading-none font-semibold text-fg tabular-nums"
+                        class="text-[28px] leading-none font-semibold tabular-nums"
+                        :class="youMedal ? youMedal.color : 'text-fg'"
                         >{{
                             $t("leaderboards.board.place", { rank: you.rank })
                         }}</span

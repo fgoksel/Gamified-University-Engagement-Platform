@@ -91,7 +91,9 @@ onBeforeUnmount(() => {
                 class="relative flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-card bg-surface shadow-popover sm:rounded-card"
                 :class="wide ? 'sm:max-w-2xl' : 'sm:max-w-lg'"
             >
-                <header
+                <!-- Plain divs, not header/footer: the dialog is teleported to <body>, where those
+                     would be a second page banner and footer landmark (axe, Task #131). -->
+                <div
                     class="flex items-start justify-between gap-4 border-b border-line px-5 py-4"
                     :class="danger ? 'bg-red-50 dark:bg-red-950' : ''"
                 >
@@ -114,18 +116,18 @@ onBeforeUnmount(() => {
                     >
                         <X class="size-5" :stroke-width="1.75" />
                     </button>
-                </header>
+                </div>
 
                 <div class="overflow-y-auto px-5 py-4">
                     <slot />
                 </div>
 
-                <footer
+                <div
                     v-if="$slots.footer"
                     class="flex flex-wrap justify-end gap-2 border-t border-line bg-surface-muted px-5 py-3"
                 >
                     <slot name="footer" />
-                </footer>
+                </div>
             </div>
         </div>
     </Teleport>

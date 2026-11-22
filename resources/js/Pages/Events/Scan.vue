@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, onUnmounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { Link } from "@inertiajs/vue3";
 import {
     AlertCircle,
@@ -30,6 +30,11 @@ const cameraError = ref(null);
 const processing = ref(false);
 
 const feedback = ref(null); // { type: 'success'|'warning'|'error', title: '', message: '' }
+// Bumped on every new result, so the banner is drawn again and its animation replays
+const feedbackKey = ref(0);
+watch(feedback, (value) => {
+    if (value) feedbackKey.value++;
+});
 const creditedCount = ref(props.stats.credited_count || 0);
 
 let codeReader = null;
@@ -350,15 +355,18 @@ onUnmounted(() => {
         </div>
 
         <!-- Live Scan Feedback Banner -->
+        <!-- Status tokens, AA in both themes (N11). A new scan gets a new key, so a "credited"
+             result pops in again (none with reduced motion). -->
         <div
             v-if="feedback"
-            class="rounded-card border p-4 transition duration-200"
+            :key="feedbackKey"
+            class="rounded-card border p-4"
             :class="{
-                'bg-emerald-50 border-emerald-200 text-emerald-900 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-100':
+                'pop-in border-success-fg bg-success-soft text-success-fg':
                     feedback.type === 'success',
-                'bg-amber-50 border-amber-200 text-amber-900 dark:bg-amber-950/40 dark:border-amber-800 dark:text-amber-100':
+                'border-warning-fg bg-warning-soft text-warning-fg':
                     feedback.type === 'warning',
-                'bg-rose-50 border-rose-200 text-rose-900 dark:bg-rose-950/40 dark:border-rose-800 dark:text-rose-100':
+                'border-danger-fg bg-danger-soft text-danger-fg':
                     feedback.type === 'error',
             }"
             data-test="feedback-banner"
@@ -366,20 +374,17 @@ onUnmounted(() => {
             <div class="flex items-start gap-3">
                 <CheckCircle2
                     v-if="feedback.type === 'success'"
-                    class="size-5 shrink-0 text-emerald-600 dark:text-emerald-400 mt-0.5"
+                    class="mt-0.5 size-6 shrink-0"
                 />
                 <AlertTriangle
                     v-else-if="feedback.type === 'warning'"
-                    class="size-5 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5"
+                    class="mt-0.5 size-5 shrink-0"
                 />
-                <AlertCircle
-                    v-else
-                    class="size-5 shrink-0 text-rose-600 dark:text-rose-400 mt-0.5"
-                />
+                <AlertCircle v-else class="mt-0.5 size-5 shrink-0" />
 
                 <div class="flex-1">
                     <h3 class="font-semibold text-sm">{{ feedback.title }}</h3>
-                    <p class="text-xs sm:text-sm mt-0.5 opacity-90">
+                    <p class="mt-0.5 text-xs sm:text-sm">
                         {{ feedback.message }}
                     </p>
 

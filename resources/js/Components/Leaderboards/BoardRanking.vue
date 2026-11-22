@@ -1,11 +1,12 @@
 <script setup>
 import { computed, onMounted, ref } from "vue";
-import { Globe } from "@lucide/vue";
+import { Globe, Medal } from "@lucide/vue";
 import AlertMessage from "../AlertMessage.vue";
 import StatusChip from "../StatusChip.vue";
 import HighlightButton from "./HighlightButton.vue";
 import { studentLabel } from "../../leaderboardQuery.js";
 import { leaderboardColumnLabels } from "../../topicsLabels.js";
+import { medal } from "../../medals.js";
 import { t, tc } from "../../i18n.js";
 
 // The ranking of the selected leaderboard, right below the boxes (leaderboards redesign,
@@ -184,17 +185,28 @@ const name = (row) => studentLabel(row, props.board.columns);
                         class="flex w-28 flex-col items-center gap-1 text-center"
                         :class="step.order"
                     >
+                        <!-- Gold, silver, bronze (N11): by the place, so equal points share it -->
+                        <Medal
+                            v-if="medal(step.row.rank)"
+                            class="size-5"
+                            :class="medal(step.row.rank).color"
+                            :stroke-width="2"
+                            aria-hidden="true"
+                        />
                         <span
                             class="max-w-full truncate text-sm font-medium text-fg"
                             >{{ name(step.row) }}</span
                         >
                         <span
-                            class="flex w-full flex-col items-center justify-center rounded-t-control text-sm font-semibold tabular-nums"
+                            class="flex w-full flex-col items-center justify-center rounded-t-control border-t-4 text-sm font-semibold tabular-nums"
                             :class="[
                                 step.height,
-                                step.place === 1
-                                    ? 'bg-info-soft text-info-fg'
-                                    : 'bg-surface-muted text-fg',
+                                medal(step.row.rank)
+                                    ? [
+                                          medal(step.row.rank).soft,
+                                          medal(step.row.rank).border,
+                                      ]
+                                    : 'border-line bg-surface-muted text-fg',
                             ]"
                         >
                             <span class="sr-only">{{
@@ -267,7 +279,7 @@ const name = (row) => studentLabel(row, props.board.columns);
                                 :key="row.position"
                                 :class="
                                     row.is_you
-                                        ? 'bg-info-soft font-semibold text-fg'
+                                        ? 'bg-info-soft font-semibold text-fg shadow-[inset_4px_0_0_var(--primary)]'
                                         : 'text-fg'
                                 "
                                 :data-test="row.is_you ? 'own-row' : null"
@@ -275,7 +287,13 @@ const name = (row) => studentLabel(row, props.board.columns);
                                 <td
                                     class="px-3 py-2 whitespace-nowrap tabular-nums"
                                 >
-                                    {{ row.rank }}
+                                    <span
+                                        v-if="medal(row.rank)"
+                                        class="inline-flex min-w-7 items-center justify-center rounded-full px-1.5 font-semibold"
+                                        :class="medal(row.rank).soft"
+                                        >{{ row.rank }}</span
+                                    >
+                                    <template v-else>{{ row.rank }}</template>
                                 </td>
                                 <td
                                     v-for="(column, index) in columns"
@@ -285,7 +303,7 @@ const name = (row) => studentLabel(row, props.board.columns);
                                     {{ row[column.key] }}
                                     <span
                                         v-if="row.is_you && index === 0"
-                                        class="ml-1 font-semibold text-info-fg"
+                                        class="ml-1.5 rounded-full bg-primary px-2 py-0.5 text-xs font-semibold text-on-primary"
                                         >{{
                                             $t("leaderboards.ranking.you")
                                         }}</span

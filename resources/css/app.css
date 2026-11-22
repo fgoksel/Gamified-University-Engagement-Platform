@@ -89,6 +89,20 @@
     --cat-slate: #7a8496;
     --cat-slate-fg: #4f596b;
     --cat-slate-soft: #eef0f4;
+    /* Colour on student pages (N11, Task #126). The welcome band: brand-50 to brand-100. */
+    --band-from: #f0f7ff;
+    --band-to: #e0efff;
+    /* Medals for places 1-3: the base colour is a stripe or icon (3:1 on the page and on -soft),
+       -fg is text (4.5:1 on -soft and on the page). */
+    --medal-gold: #b08307;
+    --medal-gold-fg: #7a5a00;
+    --medal-gold-soft: #fbf1d4;
+    --medal-silver: #76829a;
+    --medal-silver-fg: #4a5568;
+    --medal-silver-soft: #eef1f5;
+    --medal-bronze: #b46b3c;
+    --medal-bronze-fg: #8a4a22;
+    --medal-bronze-soft: #f9ebe0;
 }
 
 /* ── Page colours: dark theme ──────────────────────── */
@@ -143,6 +157,18 @@
     --cat-slate: #9aa3b3;
     --cat-slate-fg: #c9cfd9;
     --cat-slate-soft: #222833;
+    /* Colour on student pages (N11): a dark brand tone */
+    --band-from: #12284a;
+    --band-to: #162f57;
+    --medal-gold: #e0b13e;
+    --medal-gold-fg: #f3d27a;
+    --medal-gold-soft: #30260c;
+    --medal-silver: #aab5c7;
+    --medal-silver-fg: #d3dae5;
+    --medal-silver-soft: #222936;
+    --medal-bronze: #d69563;
+    --medal-bronze-fg: #efbf9c;
+    --medal-bronze-soft: #35231a;
 }
 
 /* ── Turn them into Tailwind classes ───────────────── */
@@ -193,6 +219,18 @@
     --color-cat-slate: var(--cat-slate);
     --color-cat-slate-fg: var(--cat-slate-fg);
     --color-cat-slate-soft: var(--cat-slate-soft);
+
+    --color-band-from: var(--band-from);
+    --color-band-to: var(--band-to);
+    --color-medal-gold: var(--medal-gold);
+    --color-medal-gold-fg: var(--medal-gold-fg);
+    --color-medal-gold-soft: var(--medal-gold-soft);
+    --color-medal-silver: var(--medal-silver);
+    --color-medal-silver-fg: var(--medal-silver-fg);
+    --color-medal-silver-soft: var(--medal-silver-soft);
+    --color-medal-bronze: var(--medal-bronze);
+    --color-medal-bronze-fg: var(--medal-bronze-fg);
+    --color-medal-bronze-soft: var(--medal-bronze-soft);
 }
 
 /* ── Default page colours ──────────────────────────── */
@@ -219,5 +257,28 @@
 @media (prefers-reduced-motion: no-preference) {
     .confirm-in {
         animation: confirm-in 0.25s ease-out both;
+    }
+}
+
+/* A short pop for a success (N11, Task #126): the scanner's "credited" result and the
+   check-in confirmation. Like confirm-in, nothing at all with reduced motion. */
+@keyframes pop-in {
+    0% {
+        opacity: 0;
+        transform: scale(0.92);
+    }
+    60% {
+        opacity: 1;
+        transform: scale(1.04);
+    }
+    100% {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .pop-in {
+        animation: pop-in 0.35s ease-out both;
     }
 }
