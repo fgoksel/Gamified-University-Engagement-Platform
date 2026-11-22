@@ -38,3 +38,7 @@ Artisan::command('mail:test {email}', function (string $email) {
 // Task #101: an event becomes Completed when it ends. Run by the scheduler container
 // (docker-compose.yml) or, on a server, by cron calling `php artisan schedule:run` every minute.
 Schedule::command('events:complete')->everyMinute()->withoutOverlapping();
+
+// Task #62 (GDPR): a failed job keeps the text of its error, and a mail error can name the person
+// the mail was for. A record is deleted three days after it failed; until then it can be retried.
+Schedule::command('queue:prune-failed --hours=72')->daily();

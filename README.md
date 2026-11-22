@@ -140,6 +140,11 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d webserver
 Phones only give the camera to https pages, so a phone on the laptop's plain http address cannot scan.
 `docs/demo-over-https.md` shows how to get a free https address for any demo in three commands.
 
+## Data protection
+
+`docs/data-protection.md` says what personal data the platform holds, what keeps it out of the logs
+(Task #62, Technical Specification 8.6) and what to set on a server (`APP_DEBUG=false`, a log that rotates).
+
 ## Troubleshooting
 
 - **Page shows a Vite manifest error:** the `vite` container isn't running. Check it with `docker compose logs vite`.
