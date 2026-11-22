@@ -2,9 +2,11 @@
 
 namespace App\Services;
 
+use App\Models\Badge;
 use App\Models\Leaderboard;
 use App\Models\User;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /**
@@ -14,6 +16,9 @@ use Illuminate\Support\Str;
  * (L1, 27 October), with no periods or semesters (L3). Only students appear, equal points
  * share a rank (1, 2, 2, 4) and reversed points drop out, because a reversal is a negative
  * ledger row. The sums, and their cache, are in PointCalculationService (#55).
+ *
+ * The rows of view() and top() also carry the students' badges from this board's events (Task #125,
+ * N10). Badges never touch ranked(): they change no point, place or order.
  */
 class LeaderboardStandings
 {
@@ -48,10 +53,13 @@ class LeaderboardStandings
     {
         $ranked = $this->ranked($board);
         $columns = $board->hallColumns();
+        $shown = $ranked->take(self::TOP);
+        // Whatever the name columns: with names off (N13), the badges still show (Task #125).
+        $badges = $this->badgesFor($board, $shown);
 
         return [
             'total' => $ranked->count(),
-            'rows' => $ranked->take(self::TOP)->map(fn (object $row) => $this->row($board, $row, null, $columns))->values()->all(),
+            'rows' => $shown->map(fn (object $row) => $this->row($board, $row, null, $columns, $badges))->values()->all(),
         ];
     }
 
@@ -75,11 +83,14 @@ class LeaderboardStandings
             $around = $ranked->slice($from, max(0, $position + self::AROUND + 1 - $from));
         }
 
-        $present = fn (Collection $rows) => $rows->map(fn (object $row) => $this->row($board, $row, $viewer))->values()->all();
+        $top = $everyone ? $ranked : $ranked->take(self::TOP);
+        // One query for the badges of every row that leaves, not one per row (Task #125).
+        $badges = $this->badgesFor($board, $top->concat($around));
+        $present = fn (Collection $rows) => $rows->map(fn (object $row) => $this->row($board, $row, $viewer, null, $badges))->values()->all();
 
         return [
             'total' => $ranked->count(),
-            'top' => $present($everyone ? $ranked : $ranked->take(self::TOP)),
+            'top' => $present($top),
             'around' => $present($around),
             'places_skipped' => $around->isNotEmpty() && $from > self::TOP,
             'everyone' => $everyone || $ranked->count() <= self::TOP,
@@ -134,9 +145,10 @@ class LeaderboardStandings
      * account id never leaves.
      *
      * @param  list<string>|null  $columns  null: the columns the creator chose
+     * @param  array<int, list<array{name: string, icon: string}>>|null  $badges  by student id, from badgesFor(); null: no badges
      * @return array<string, mixed>
      */
-    private function row(Leaderboard $board, object $row, ?User $viewer = null, ?array $columns = null): array
+    private function row(Leaderboard $board, object $row, ?User $viewer = null, ?array $columns = null, ?array $badges = null): array
     {
         $columns ??= $board->columns();
         [$first, $last] = $this->nameParts($row->name);
@@ -155,8 +167,45 @@ class LeaderboardStandings
         if ($viewer !== null) {
             $shown['is_you'] = $row->student_id === $viewer->id;
         }
+        if ($badges !== null) {
+            $shown['badges'] = $badges[$row->student_id] ?? [];
+        }
 
         return $shown;
+    }
+
+    /**
+     * The badges of these students that come from this board's events, newest first, in one query
+     * (Task #125). "This board's events" is the board's own scope: events owned in its area or
+     * below, as PointCalculationService::areaStandings counts their points. A badge from an event
+     * elsewhere is not shown here.
+     *
+     * @param  Collection<int, object>  $rows  rows of ranked()
+     * @return array<int, list<array{name: string, icon: string}>> by student id
+     */
+    private function badgesFor(Leaderboard $board, Collection $rows): array
+    {
+        $students = $rows->pluck('student_id')->unique()->values()->all();
+
+        if ($students === []) {
+            return [];
+        }
+
+        return DB::table('badge_awards')
+            ->join('badges', 'badges.id', '=', 'badge_awards.badge_id')
+            ->join('events', 'events.id', '=', 'badges.event_id')
+            ->join('topic_closure', 'topic_closure.descendant_id', '=', 'events.owning_topic_id')
+            ->where('topic_closure.ancestor_id', $board->topic_id)
+            ->whereIn('badge_awards.student_id', $students)
+            ->orderByDesc('badge_awards.awarded_at')
+            ->orderByDesc('badge_awards.id')
+            ->get(['badge_awards.student_id', 'badges.name', 'badges.icon'])
+            ->groupBy('student_id')
+            ->map(fn (Collection $held) => $held
+                ->map(fn (object $badge) => ['name' => $badge->name, 'icon' => Badge::iconOf($badge->icon)])
+                ->values()
+                ->all())
+            ->all();
     }
 
     /**

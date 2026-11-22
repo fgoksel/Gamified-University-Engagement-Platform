@@ -261,7 +261,7 @@ class AreaLeaderboardTest extends EventTestCase
             'seconds' => Leaderboard::HALL_SECONDS,
             'total' => 1,
             // The Neptun code alone: no name, no email, no account id (L6).
-            'rows' => [['position' => 1, 'rank' => 1, 'points' => 20, 'neptun_code' => 'ANNA01']],
+            'rows' => [['position' => 1, 'rank' => 1, 'points' => 20, 'neptun_code' => 'ANNA01', 'badges' => []]],
         ]]]);
 
         app(AreaLeaderboards::class)->setPublished($this->admin, $board, false);
@@ -279,18 +279,18 @@ class AreaLeaderboardTest extends EventTestCase
         $board = $this->board($this->faculty, ['visibility' => Leaderboard::PUBLIC, 'show_neptun_code' => false, 'show_last_name' => true]);
         $this->get('/hall/leaderboards')->assertOk()
             ->assertJsonPath('leaderboards.0.columns', ['neptun_code'])
-            ->assertJsonPath('leaderboards.0.rows.0', ['position' => 1, 'rank' => 1, 'points' => 20, 'neptun_code' => 'ANNA01']);
+            ->assertJsonPath('leaderboards.0.rows.0', ['position' => 1, 'rank' => 1, 'points' => 20, 'neptun_code' => 'ANNA01', 'badges' => []]);
 
         // Switched on, the board's own name columns reach the hall screen, and only those.
         app(AreaLeaderboards::class)->setHallNames($this->admin, $board, true);
         $this->get('/hall/leaderboards')->assertOk()
             ->assertJsonPath('leaderboards.0.columns', ['neptun_code', 'last_name'])
-            ->assertJsonPath('leaderboards.0.rows.0', ['position' => 1, 'rank' => 1, 'points' => 20, 'neptun_code' => 'ANNA01', 'last_name' => 'Nagy']);
+            ->assertJsonPath('leaderboards.0.rows.0', ['position' => 1, 'rank' => 1, 'points' => 20, 'neptun_code' => 'ANNA01', 'last_name' => 'Nagy', 'badges' => []]);
 
         $board->update(['show_first_name' => true]);
         $this->get('/hall/leaderboards')->assertOk()
             ->assertJsonPath('leaderboards.0.columns', ['neptun_code', 'first_name', 'last_name'])
-            ->assertJsonPath('leaderboards.0.rows.0', ['position' => 1, 'rank' => 1, 'points' => 20, 'neptun_code' => 'ANNA01', 'first_name' => 'Anna Maria', 'last_name' => 'Nagy']);
+            ->assertJsonPath('leaderboards.0.rows.0', ['position' => 1, 'rank' => 1, 'points' => 20, 'neptun_code' => 'ANNA01', 'first_name' => 'Anna Maria', 'last_name' => 'Nagy', 'badges' => []]);
     }
 
     public function test_the_hall_screen_gets_the_top_ten_and_the_total(): void

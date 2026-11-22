@@ -35,9 +35,9 @@ class EventBadges
      *
      * @throws ValidationException when the event can no longer be changed
      */
-    public function save(User $actor, Event $event, string $name, ?string $description): array
+    public function save(User $actor, Event $event, string $name, ?string $description, ?string $icon = null): array
     {
-        return DB::transaction(function () use ($actor, $event, $name, $description) {
+        return DB::transaction(function () use ($actor, $event, $name, $description, $icon) {
             $locked = Event::query()->whereKey($event->id)->lockForUpdate()->firstOrFail();
 
             if (! $this->editor->isEditable($locked)) {
@@ -51,10 +51,15 @@ class EventBadges
                 'description' => filled($description) ? trim($description) : null,
             ];
 
+            // Task #125: the chosen icon. None sent keeps the badge's icon, or "award" for a new one.
+            if ($icon !== null) {
+                $attributes['icon'] = Badge::iconOf($icon);
+            }
+
             $badge = Badge::query()->where('event_id', $locked->id)->first();
 
             if ($badge === null) {
-                $badge = Badge::create([...$attributes, 'event_id' => $locked->id, 'created_by_id' => $actor->id]);
+                $badge = Badge::create(['icon' => Badge::DEFAULT_ICON, ...$attributes, 'event_id' => $locked->id, 'created_by_id' => $actor->id]);
 
                 return ['badge' => $badge, 'created' => true, 'awarded' => $this->awards->awardToCredited($badge)];
             }

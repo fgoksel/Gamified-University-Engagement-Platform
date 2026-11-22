@@ -95,7 +95,7 @@ class BadgeAwards
     /**
      * The badges a student holds, newest first, for Home and the profile.
      *
-     * @return list<array{id: int, name: string, description: ?string, icon: ?string, event: ?string, at: string}>
+     * @return list<array{id: int, name: string, description: ?string, icon: string, event: ?string, at: string}>
      */
     public function heldBy(User $student, ?int $limit = null): array
     {
@@ -110,7 +110,7 @@ class BadgeAwards
                 'id' => $award->badge_id,
                 'name' => $award->badge->name,
                 'description' => $award->badge->description,
-                'icon' => $award->badge->icon,
+                'icon' => Badge::iconOf($award->badge->icon),
                 'event' => $award->badge->event?->title,
                 'at' => $award->awarded_at->translatedFormat('D j M Y'),
             ])
