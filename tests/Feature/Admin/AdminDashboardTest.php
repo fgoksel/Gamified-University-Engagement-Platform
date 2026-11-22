@@ -5,14 +5,18 @@ namespace Tests\Feature\Admin;
 use App\Enums\UserRole;
 use App\Filament\Pages\Auth\EditProfile;
 use App\Filament\Widgets\SystemOverview;
+use App\Models\Event;
 use App\Models\Semester;
 use App\Models\User;
+use App\Services\TopicService;
 use Database\Seeders\AdminUserSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Filament\Auth\Pages\Login;
+use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Livewire\Livewire;
+use ReflectionMethod;
 use Tests\TestCase;
 
 /**
@@ -87,6 +91,63 @@ class AdminDashboardTest extends TestCase
         $this->actingAs($this->admin);
 
         Livewire::test(SystemOverview::class)->assertSee('No active semester');
+    }
+
+    /** The "Active events" card of the overview, as the widget builds it. */
+    private function eventsStat(): Stat
+    {
+        $stats = (new ReflectionMethod(SystemOverview::class, 'getStats'))->invoke(app(SystemOverview::class));
+
+        return collect($stats)->sole(fn (Stat $stat) => (string) $stat->getLabel() === 'Active events');
+    }
+
+    public function test_overview_counts_the_active_events(): void
+    {
+        $topics = app(TopicService::class);
+        $university = $topics->create($this->admin, null, ['title' => 'University']);
+        $frozen = $topics->create($this->admin, $university, ['title' => 'Old faculty']);
+
+        $make = fn (array $attributes = [], ?string $state = null) => ($state ? Event::factory()->{$state}() : Event::factory())
+            ->create(['owning_topic_id' => $university->id, 'audience_topic_id' => $university->id, ...$attributes]);
+
+        // Active: published and not over. One is running now, two are still to start.
+        $make(['event_starts_at' => now()->subHour(), 'event_ends_at' => now()->addHour()]);
+        $make(['event_starts_at' => now()->addDays(3), 'event_ends_at' => now()->addDays(3)->addHours(2)]);
+        $make(['event_starts_at' => now()->addDay(), 'event_ends_at' => now()->addDay()->addHour()]);
+
+        // Not active: every other status, an event that is over but not yet marked completed, and one
+        // in an area that was archived.
+        $make(state: 'draft');
+        $make(state: 'onHold');
+        $make(state: 'cancelled');
+        $make(['status' => Event::STATUS_COMPLETED]);
+        $make(['status' => Event::STATUS_REMOVED]);
+        $make(['event_starts_at' => now()->subHours(3), 'event_ends_at' => now()->subMinute()]);
+        $make(['owning_topic_id' => $frozen->id, 'event_starts_at' => now()->addDays(2), 'event_ends_at' => now()->addDays(2)->addHour()]);
+        $topics->archive($this->admin, $frozen);
+
+        $stat = $this->eventsStat();
+
+        $this->assertSame('3', (string) $stat->getValue());
+        $this->assertSame('1 running now · 2 upcoming', (string) $stat->getDescription());
+
+        $this->actingAs($this->admin);
+
+        Livewire::test(SystemOverview::class)->assertSee('Active events')->assertSee('1 running now · 2 upcoming');
+    }
+
+    public function test_overview_counts_no_active_events_as_zero_and_has_no_placeholder(): void
+    {
+        $this->actingAs($this->admin);
+
+        $stat = $this->eventsStat();
+        $this->assertSame('0', (string) $stat->getValue());
+        $this->assertSame('0 running now · 0 upcoming', (string) $stat->getDescription());
+
+        // The dash and the line that promised the number are gone.
+        Livewire::test(SystemOverview::class)
+            ->assertDontSee('Available once events are added')
+            ->assertDontSee('–');
     }
 
     public function test_admin_can_open_the_profile_page(): void

@@ -612,8 +612,9 @@ class EventModerationTest extends EventTestCase
             ->assertOk()
             ->assertSee(__('admin.event_moderation.title'))
             ->assertSee(__('admin.event_moderation.subheading'))
-            ->assertDontSee(__('admin.coming_soon.heading'))
-            ->assertDontSee(__('admin.coming_soon.this_page_will_let'));
+            // The texts of the old placeholder view, written out: their keys are gone from the dictionary (Task #123).
+            ->assertDontSee('Coming soon')
+            ->assertDontSee('This page will let administrators');
     }
 
     public function test_the_page_lists_every_event_and_finds_one_by_title_area_or_organizer(): void

@@ -276,7 +276,7 @@ class HardCodedTextTest extends TestCase
 
         $fine = [
             "<p>{{ __('welcome.back') }}</p>",
-            "<x-slot name=\"heading\">{{ __('admin.coming_soon.heading') }}</x-slot>",
+            "<x-slot name=\"heading\">{{ __('admin.hall_screen.title') }}</x-slot>",
             "<button title=\"{{ __('close') }}\">x</button>",
             '<meta name="viewport" content="width=device-width, initial-scale=1">',
             '<div class="flex items-center gap-2 text-sm"></div>',
