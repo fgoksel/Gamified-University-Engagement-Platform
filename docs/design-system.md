@@ -61,6 +61,54 @@ with `-fg` and `-soft`. Screens get the classes for a category from `resources/j
 "Dot on the page" is the lowest of `surface`, `canvas` and `surface-muted`; `-fg` also keeps at least
 5.4:1 on each of them in the light theme and 8.9:1 in the dark one.
 
+## Colour on student pages (N11)
+
+Decision N11 (9 November) lets the student pages use more colour and badge icons than the calm
+look of 26 October, because the app is there to motivate. WCAG 2.2 AA still applies in both
+themes, and the rules below stay: tokens only, no emojis, icons from `@lucide/vue`, and every
+animation off with `prefers-reduced-motion` (Task #126).
+
+| Token | Light | Dark | Where |
+|---|---|---|---|
+| `band-from` / `band-to` | brand-50 to brand-100 | `#12284a` to `#162f57` | Home's welcome band (gradient). |
+| `medal-gold`, `-fg`, `-soft` | `#b08307`, `#7a5a00`, `#fbf1d4` | `#e0b13e`, `#f3d27a`, `#30260c` | Place 1: podium step, place badge in the list, board box stripe and medal icon. |
+| `medal-silver`, `-fg`, `-soft` | `#76829a`, `#4a5568`, `#eef1f5` | `#aab5c7`, `#d3dae5`, `#222936` | Place 2, the same places. |
+| `medal-bronze`, `-fg`, `-soft` | `#b46b3c`, `#8a4a22`, `#f9ebe0` | `#d69563`, `#efbf9c`, `#35231a` | Place 3, the same places. |
+
+Places come from the rank, so equal points share a medal (1, 2, 2 are gold, silver, silver).
+Screens get the classes from `resources/js/medals.js` (`medal(rank)`), never by naming a colour.
+
+Measured contrast:
+
+| Pair | Light | Dark |
+|---|---|---|
+| `medal-gold-fg` on `medal-gold-soft` | 5.66 | 10.16 |
+| `medal-silver-fg` on `medal-silver-soft` | 6.64 | 10.38 |
+| `medal-bronze-fg` on `medal-bronze-soft` | 5.83 | 8.96 |
+| `medal-*-fg` on `surface` (lowest) | 6.38 | 10.45 |
+| `medal-*` (stripe, icon) on `surface` (lowest) | 3.45 | 6.91 |
+| `medal-*` on its own `-soft` (lowest) | 3.06 | 5.93 |
+| `fg` on `band-to` | 14.78 | 11.29 |
+| `fg-muted` on `band-to` | 5.36 | 5.53 |
+| `link` (the total) on `band-to` | 4.93 | 5.98 |
+
+Where the existing tokens add colour:
+
+- **Your points** (Home): each tile in its category's `-soft` tone, a dot in the category colour and a
+  bar with its share of the total ("40% of your total" beside it, so the bar is never the only
+  carrier). The "no category" tile stays `surface-muted`.
+- **Event cards** (All events, Home): a 4px top edge in the category colour (`line` without one), the
+  category chip in its `-soft` tone, and "places left" in `warning-fg` when 3 or fewer are left.
+- **Leaderboards**: the student's own row in `info-soft` (brand-100) with a `primary` edge and a
+  "You" pill (`on-primary` on `primary`, 4.65). Board boxes have a top edge: the medal colour on
+  places 1-3, `primary` otherwise.
+- **Success moments**: the check-in confirmation and the scanner's "credited" result use
+  `success-fg` on `success-soft` and the `pop-in` animation (a 0.35 s scale and fade, defined in
+  `app.css` inside `prefers-reduced-motion: no-preference`, like `confirm-in`). The scanner's
+  banner uses the status tokens instead of raw palette colours.
+- **QR passport**: a `primary` frame (4.65 light, 3.75 dark against `surface`) around a white box,
+  so cameras still read the code in dark mode, and the countdown ring in `link`.
+
 ## Components
 
 | Component | When to use it |

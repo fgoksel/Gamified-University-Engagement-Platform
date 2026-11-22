@@ -44,6 +44,15 @@ export function places(event) {
     return t("event_words.places.full");
 }
 
+// First come, first served with 3 places or fewer left: shown in the warning colour (N11, Task #126)
+export function fewPlacesLeft(event) {
+    return (
+        event.application_type !== "teacher_select" &&
+        typeof event.places_left === "number" &&
+        event.places_left <= 3
+    );
+}
+
 export const applyLabels = {
     apply: t("event_words.apply.apply"),
     waitlist: t("event_words.apply.waitlist"),

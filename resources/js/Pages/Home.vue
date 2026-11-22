@@ -15,8 +15,8 @@ import BoardBoxes from "../Components/Leaderboards/BoardBoxes.vue";
 import YourPoints from "../Components/Leaderboards/YourPoints.vue";
 import EmptyState from "../Components/EmptyState.vue";
 import StatusChip from "../Components/StatusChip.vue";
-import { categoryDot, categoryLabel } from "../categoryColors.js";
-import { places } from "../eventWords.js";
+import { categoryDot, categoryLabel, categorySoft } from "../categoryColors.js";
+import { fewPlacesLeft, places } from "../eventWords.js";
 import { t, tc } from "../i18n.js";
 
 // The student's home page (Task #92, 26 Oct, section 4): their points in total and per category
@@ -129,7 +129,16 @@ const linkClass =
             {{ page.props.flash.error }}
         </AlertMessage>
 
-        <header>
+        <!-- Welcome band in brand colours (N11, Task #126): the name and the total, big -->
+        <header
+            class="relative overflow-hidden rounded-card border border-line bg-linear-to-br from-band-from to-band-to p-5 shadow-card sm:p-6"
+            data-test="welcome"
+        >
+            <Sparkles
+                class="pointer-events-none absolute -top-2 -right-2 size-28 text-link opacity-15"
+                :stroke-width="1.25"
+                aria-hidden="true"
+            />
             <h2 class="text-xl font-semibold text-fg sm:text-2xl">
                 {{
                     firstName
@@ -137,10 +146,24 @@ const linkClass =
                         : $t("home.hello")
                 }}
             </h2>
+            <p class="mt-3 flex items-baseline gap-2">
+                <span
+                    class="text-5xl leading-none font-bold text-link tabular-nums"
+                    data-test="total"
+                >
+                    {{ points.total }}
+                </span>
+                <span class="font-medium text-fg">{{
+                    $t("home.points_in_total")
+                }}</span>
+            </p>
+            <p class="mt-2 text-sm text-fg-muted">
+                {{ $t("home.everything_you_have_earned_by") }}
+            </p>
         </header>
 
-        <!-- Points in total and per category, so a student sees where they are lacking (N7) -->
-        <YourPoints :points="points" />
+        <!-- Points per category, so a student sees where they are lacking (N7) -->
+        <YourPoints :points="points" :show-total="false" />
 
         <!-- The student's leaderboards, starred first (leaderboards redesign, 9 November) -->
         <section
@@ -315,11 +338,21 @@ const linkClass =
                 <li
                     v-for="event in open"
                     :key="event.id"
-                    class="relative flex flex-col rounded-card border border-line bg-surface p-5 shadow-card focus-within:outline-2 focus-within:outline-ring"
+                    class="relative flex flex-col rounded-card border border-line bg-surface p-5 pt-6 shadow-card focus-within:outline-2 focus-within:outline-ring"
                 >
+                    <!-- The category's colour along the top edge (N11) -->
+                    <span
+                        class="absolute inset-x-0 top-0 h-1 rounded-t-card"
+                        :class="categoryDot[event.category] ?? 'bg-line'"
+                        aria-hidden="true"
+                    />
                     <span
                         v-if="event.tag || event.category"
-                        class="inline-flex items-center gap-1.5 self-start rounded-full bg-surface-muted px-2.5 py-0.5 text-xs font-medium text-fg-muted"
+                        class="inline-flex items-center gap-1.5 self-start rounded-full px-2.5 py-0.5 text-xs font-medium"
+                        :class="
+                            categorySoft[event.category] ??
+                            'bg-surface-muted text-fg-muted'
+                        "
                     >
                         <span
                             v-if="event.category"
@@ -360,10 +393,23 @@ const linkClass =
                         <div class="flex items-start gap-2">
                             <dt class="sr-only">{{ $t("home.places") }}</dt>
                             <Users
-                                class="mt-0.5 size-4 shrink-0 text-fg-muted"
+                                class="mt-0.5 size-4 shrink-0"
+                                :class="
+                                    fewPlacesLeft(event)
+                                        ? 'text-warning-fg'
+                                        : 'text-fg-muted'
+                                "
                                 aria-hidden="true"
                             />
-                            <dd>{{ places(event) }}</dd>
+                            <dd
+                                :class="
+                                    fewPlacesLeft(event)
+                                        ? 'font-semibold text-warning-fg'
+                                        : ''
+                                "
+                            >
+                                {{ places(event) }}
+                            </dd>
                         </div>
                         <div class="flex items-start gap-2">
                             <dt class="sr-only">{{ $t("home.points_3") }}</dt>
