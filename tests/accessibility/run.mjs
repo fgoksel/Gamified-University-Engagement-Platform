@@ -6,8 +6,11 @@
 //
 //   node run.mjs <output folder>
 //
-// A11Y_BASE_URL is the app's address (default http://127.0.0.1:8099) and
-// A11Y_LABEL says what was measured, for example "dev 9a2e918, before".
+// A11Y_BASE_URL is the app's address (default http://127.0.0.1:8099),
+// A11Y_LABEL says what was measured, for example "dev 9a2e918, before", and
+// A11Y_THEME=dark measures the dark theme (Task #131): each demo user's appearance is set
+// to dark through the app's own setting (PUT /appearance, what the Profile page writes),
+// and guests get the theme the app remembers in the browser. Default: light.
 // Chrome must be installed; Playwright uses it instead of downloading one.
 
 import fs from "node:fs/promises";
@@ -22,6 +25,7 @@ const BASE = (process.env.A11Y_BASE_URL ?? "http://127.0.0.1:8099").replace(
     "",
 );
 const LABEL = process.env.A11Y_LABEL ?? "";
+const THEME = process.env.A11Y_THEME === "dark" ? "dark" : "light";
 const OUT = path.resolve(
     process.argv[2] ?? `results-${new Date().toISOString().slice(0, 10)}`,
 );
@@ -56,6 +60,8 @@ const RUNS = [
         pages: [
             ["Log in", "/login"],
             ["Forgot password", "/forgot-password"],
+            // Added in Task #131: pages since 8 November.
+            ["Hall screen", "/hall"],
         ],
     },
     {
@@ -78,6 +84,12 @@ const RUNS = [
             ["Notifications", "/notifications"],
             ["Profile", "/profile"],
             ["Change password", "/password/change"],
+            // Added in Task #131
+            ["Leaderboards", "/leaderboards"],
+            [
+                "Leaderboard, one board selected",
+                "/leaderboards?board={board:Databases total}",
+            ],
         ],
     },
     {
@@ -94,6 +106,30 @@ const RUNS = [
             // Opens the first topic the organiser may see. The Roles page is for system
             // admins only, so it is not measured here.
             ["Topics", "/topics"],
+            // Added in Task #131. {topic:first} is where /topics opens for Ivan.
+            ["Areas, Access tab", "/topics/{topic:first}?tab=access"],
+            ["Area leaderboards tab", "/topics/{topic:first}?tab=leaderboards"],
+            // Dialogs: opened by a click before axe runs. Lighthouse only loads a URL, so it
+            // does not measure these.
+            [
+                "Organized by me, Restore (dialog open)",
+                // The on-hold events have their own filter tab.
+                "/my-events?filter=on_hold",
+                {
+                    open: (page) =>
+                        page.locator('[data-test="restore"]').first().click(),
+                },
+            ],
+            [
+                "Areas, Invite a person (dialog open)",
+                "/topics/{topic:first}?tab=access",
+                {
+                    open: (page) =>
+                        page
+                            .getByRole("button", { name: "Invite a person" })
+                            .click(),
+                },
+            ],
         ],
     },
 ];
@@ -117,6 +153,16 @@ async function main() {
     });
     await context.grantPermissions(["camera"], { origin: BASE });
 
+    // Guests: the theme the app remembers in this browser (stores/theme.js reads it on load).
+    // Signed-in users get theirs from the account, set in logIn().
+    await context.addInitScript((theme) => {
+        try {
+            localStorage.setItem("theme", theme);
+        } catch {
+            // Storage blocked: the page stays light, and the summary says which theme it was.
+        }
+    }, THEME);
+
     const page = context.pages()[0] ?? (await context.newPage());
     const results = [];
     let chrome = "";
@@ -130,30 +176,26 @@ async function main() {
             }
 
             const events = run.email ? await eventIds(page) : {};
+            const lookups = { event: events };
 
-            for (const [name, pattern] of run.pages) {
-                const route = pattern.replace(
-                    /\{event:([^}]+)\}/g,
-                    (_, title) => {
-                        if (!(title in events)) {
-                            throw new Error(
-                                `${run.who} cannot find the demo event "${title}". Found: ${Object.keys(events).join(", ")}`,
-                            );
-                        }
-
-                        return events[title];
-                    },
-                );
+            for (const [name, pattern, options = {}] of run.pages) {
+                const route = await resolve(page, run.who, pattern, lookups);
 
                 process.stdout.write(`${run.who}: ${name} (${route}) ... `);
-                const result = await checkPage(page, run.who, name, route);
+                const result = await checkPage(
+                    page,
+                    run.who,
+                    name,
+                    route,
+                    options,
+                );
                 chrome ||= result.chrome ?? "";
                 delete result.chrome;
                 results.push(result);
                 console.log(
                     result.error
                         ? `ERROR ${result.error}`
-                        : `Lighthouse ${result.lighthouse.score}, axe ${countLine(result)}`,
+                        : `Lighthouse ${result.lighthouse?.score ?? "-"}, axe ${countLine(result)}`,
                 );
             }
         }
@@ -164,6 +206,7 @@ async function main() {
 
     const meta = {
         label: LABEL,
+        theme: THEME,
         date: new Date().toISOString(),
         baseUrl: BASE,
         tools: {
@@ -193,6 +236,94 @@ async function logIn(page, email) {
         page.waitForURL((url) => !url.pathname.startsWith("/login")),
         page.getByRole("button", { name: "Log in" }).click(),
     ]);
+    await setAppearance(page);
+}
+
+/**
+ * The signed-in user's theme, saved to the account the way the Profile page does it
+ * (PUT /appearance), so every page of the run, and Lighthouse, opens in it (Task #131).
+ */
+async function setAppearance(page) {
+    const status = await page.evaluate(async (theme) => {
+        const token = document.cookie
+            .split("; ")
+            .find((cookie) => cookie.startsWith("XSRF-TOKEN="))
+            ?.slice("XSRF-TOKEN=".length);
+        const response = await fetch("/appearance", {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+                "X-XSRF-TOKEN": decodeURIComponent(token ?? ""),
+            },
+            body: JSON.stringify({ appearance: theme }),
+            // The app answers with a redirect back; following it would repeat the PUT.
+            redirect: "manual",
+        });
+
+        return response.type === "opaqueredirect" ? 302 : response.status;
+    }, THEME);
+
+    if (status >= 400) {
+        throw new Error(`Could not set the ${THEME} theme (HTTP ${status}).`);
+    }
+}
+
+/**
+ * Fills in {event:Title}, {board:Name} and {topic:first} from the demo data the signed-in
+ * person sees, so a reseeded database with other ids still measures the same pages.
+ */
+async function resolve(page, who, pattern, lookups) {
+    let route = pattern;
+
+    for (const [, kind, key] of pattern.matchAll(
+        /\{(event|board|topic):([^}]+)\}/g,
+    )) {
+        lookups[kind] ??=
+            kind === "board" ? await boardIds(page) : await firstTopic(page);
+        const found = lookups[kind];
+
+        if (!(key in found)) {
+            throw new Error(
+                `${who} cannot find the demo ${kind} "${key}". Found: ${Object.keys(found).join(", ")}`,
+            );
+        }
+
+        route = route.replace(`{${kind}:${key}}`, found[key]);
+    }
+
+    return route;
+}
+
+/** Leaderboard name => id, from the full list on the Leaderboards page. */
+async function boardIds(page) {
+    await page.goto(`${BASE}/leaderboards?show=all`);
+    const data = await pageData(page);
+
+    return Object.fromEntries(
+        (data?.props?.leaderboards ?? []).map((board) => [
+            board.name,
+            board.id,
+        ]),
+    );
+}
+
+/** "first": the area /topics opens for this person. */
+async function firstTopic(page) {
+    await page.goto(`${BASE}/topics`, { waitUntil: "networkidle" });
+    const id = new URL(page.url()).pathname.match(/^\/topics\/(\d+)/)?.[1];
+
+    return id ? { first: id } : {};
+}
+
+async function pageData(page) {
+    return page.evaluate(() => {
+        const script = document.querySelector('script[data-page="app"]');
+
+        return script
+            ? JSON.parse(script.textContent)
+            : (window.history.state?.page ?? null);
+    });
 }
 
 /**
@@ -237,7 +368,7 @@ function collect(value, found) {
     }
 }
 
-async function checkPage(page, who, name, route) {
+async function checkPage(page, who, name, route, options = {}) {
     const url = `${BASE}${route}`;
     const result = { who, name, route };
 
@@ -249,6 +380,13 @@ async function checkPage(page, who, name, route) {
             const response = await page.goto(url, { waitUntil: "networkidle" });
             // Let transitions and late renders finish before axe reads the page.
             await page.waitForTimeout(750);
+
+            // A dialog: open it, and check that it really is open before measuring.
+            if (options.open) {
+                await options.open(page);
+                await page.getByRole("dialog").waitFor({ timeout: 5000 });
+                await page.waitForTimeout(500);
+            }
 
             result.status = response?.status();
             result.finalUrl = page.url().replace(BASE, "");
@@ -270,6 +408,12 @@ async function checkPage(page, who, name, route) {
                 count: violation.nodes.length,
                 elements: violation.nodes.slice(0, 8).map(describe),
             }));
+        }
+
+        // Lighthouse loads the URL fresh, so it cannot see an opened dialog.
+        if (options.open) {
+            result.lighthouse = null;
+            return result;
         }
 
         const { lhr } = await lighthouse(url, {
@@ -445,7 +589,9 @@ function countLine(result) {
 function summary(meta, results) {
     const lines = [];
     const measured = results.filter((result) => !result.error);
-    const scores = measured.map((result) => result.lighthouse.score);
+    const scores = measured
+        .filter((result) => result.lighthouse)
+        .map((result) => result.lighthouse.score);
     const average = scores.length
         ? Math.round(
               scores.reduce((sum, score) => sum + score, 0) / scores.length,
@@ -465,7 +611,7 @@ function summary(meta, results) {
         "",
     );
     lines.push(
-        `Pages: ${results.length}. Average Lighthouse accessibility score: ${average}. Lowest: ${scores.length ? Math.min(...scores) : "-"}.`,
+        `Theme: ${meta.theme ?? "light"}. Pages: ${results.length}. Average Lighthouse accessibility score: ${average} (over ${scores.length} pages; dialogs are axe only). Lowest: ${scores.length ? Math.min(...scores) : "-"}.`,
         "",
     );
 
@@ -488,7 +634,7 @@ function summary(meta, results) {
                 ? ` (ended at ${result.finalUrl})`
                 : "";
         lines.push(
-            `| ${result.who} | ${result.name}${moved} | ${result.lighthouse.score} | ${IMPACTS.map((impact) => byImpact[impact]).join(" | ")} | ${result.smallTargets?.count ?? ""} |`,
+            `| ${result.who} | ${result.name}${moved} | ${result.lighthouse?.score ?? "-"} | ${IMPACTS.map((impact) => byImpact[impact]).join(" | ")} | ${result.smallTargets?.count ?? ""} |`,
         );
     }
 
@@ -541,7 +687,7 @@ function summary(meta, results) {
     const failing = new Map();
 
     for (const result of measured) {
-        for (const audit of result.lighthouse.failing) {
+        for (const audit of result.lighthouse?.failing ?? []) {
             const entry = failing.get(audit.id) ?? { ...audit, pages: 0 };
             entry.pages += 1;
             failing.set(audit.id, entry);
