@@ -15,6 +15,7 @@ import {
     XCircle,
 } from "@lucide/vue";
 import EmptyState from "../../Components/EmptyState.vue";
+import ListControls from "../../Components/Events/ListControls.vue";
 import StatusChip from "../../Components/StatusChip.vue";
 import Modal from "../../Components/Topics/Modal.vue";
 import Btn from "../../Components/Topics/Btn.vue";
@@ -39,7 +40,20 @@ const props = defineProps({
         type: Array,
         default: () => [],
     },
+    // Search by title and sort (Task #121): the address holds both.
+    q: { type: String, default: "" },
+    sort: { type: String, default: "applied" },
+    // Whether the student has applied to anything: a search can match nothing.
+    hasApplications: { type: Boolean, default: false },
 });
+
+const sorts = [
+    { value: "applied", label: t("events.list_controls.sort_applied") },
+    { value: "date_asc", label: t("events.list_controls.sort_date_asc") },
+    { value: "date_desc", label: t("events.list_controls.sort_date_desc") },
+    { value: "title_asc", label: t("events.list_controls.sort_title_asc") },
+    { value: "title_desc", label: t("events.list_controls.sort_title_desc") },
+];
 
 const currentTab = ref("all"); // 'all' | 'active' | 'history'
 const withdrawingApp = ref(null);
@@ -189,9 +203,18 @@ function reapply(app) {
             </div>
         </div>
 
+        <ListControls
+            v-if="hasApplications"
+            path="/my-events"
+            :search="q"
+            :sort="sort"
+            :sort-chosen="sort !== 'applied'"
+            :sorts="sorts"
+        />
+
         <!-- Filter tabs -->
         <div
-            v-if="applications.length > 0"
+            v-if="hasApplications"
             class="flex border-b border-line gap-4 text-sm font-medium"
         >
             <button
@@ -235,7 +258,7 @@ function reapply(app) {
         </div>
 
         <!-- Empty state: No applications at all -->
-        <div v-if="applications.length === 0" class="space-y-4">
+        <div v-if="!hasApplications" class="space-y-4">
             <EmptyState
                 :icon="CalendarCheck"
                 :title="$t('events.applied.you_have_not_applied')"
@@ -258,7 +281,20 @@ function reapply(app) {
             v-else-if="filteredApplications.length === 0"
             class="rounded-card border border-line bg-surface p-8 text-center text-sm text-fg-muted"
         >
-            {{ $t("events.applied.no_events_found") }}
+            <template v-if="q">
+                {{ $t("events.list_controls.no_match") }}
+                <Link
+                    href="/my-events"
+                    :data="sort !== 'applied' ? { sort } : {}"
+                    preserve-scroll
+                    class="text-link underline-offset-2 hover:underline"
+                >
+                    {{ $t("events.list_controls.clear_search") }}
+                </Link>
+            </template>
+            <template v-else>
+                {{ $t("events.applied.no_events_found") }}
+            </template>
         </div>
 
         <!-- Application Cards -->
