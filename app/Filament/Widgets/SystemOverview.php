@@ -3,7 +3,9 @@
 namespace App\Filament\Widgets;
 
 use App\Enums\UserRole;
+use App\Models\Event;
 use App\Models\Semester;
+use App\Models\Topic;
 use App\Models\User;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget;
@@ -11,7 +13,7 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
 
 /**
  * Read-only statistics on the admin Dashboard (Task #17, UC-3.0):
- * organizers, students and the days left in the current semester.
+ * organizers, students, the days left in the current semester and the active events (Task #123).
  */
 class SystemOverview extends StatsOverviewWidget
 {
@@ -34,11 +36,35 @@ class SystemOverview extends StatsOverviewWidget
             $this->accountsStat(__('admin.overview.organizers'), UserRole::Teacher, Heroicon::OutlinedUserGroup),
             $this->accountsStat(__('admin.overview.students'), UserRole::Student, Heroicon::OutlinedAcademicCap),
             $this->semesterStat(),
-            // No events table yet: shown so the layout matches UC-3.0.
-            Stat::make(__('admin.overview.active_events'), '–')
-                ->description(__('admin.overview.available_once_events_are_added'))
-                ->icon(Heroicon::OutlinedCalendar),
+            $this->eventsStat(),
         ];
+    }
+
+    /**
+     * Events people can still take part in: published and not over yet, running now or still to
+     * start. A draft, an event on hold, a cancelled or removed one and a completed one are not
+     * active. Neither is one whose end has passed but that is still waiting to be marked completed
+     * (events:complete), or one in an archived area, which is frozen and which students do not
+     * see (Task #66).
+     */
+    private function eventsStat(): Stat
+    {
+        $now = now();
+
+        $counts = Event::query()
+            ->where('status', Event::STATUS_PUBLISHED)
+            ->where('event_ends_at', '>=', $now)
+            ->whereIn('owning_topic_id', Topic::query()->notArchived()->select('topics.id'))
+            ->toBase()
+            ->selectRaw('count(*) as total, sum(case when event_starts_at <= ? then 1 else 0 end) as running', [$now])
+            ->first();
+
+        $total = (int) $counts->total;
+        $running = (int) $counts->running;
+
+        return Stat::make(__('admin.overview.active_events'), (string) $total)
+            ->description(__('admin.overview.running_and_upcoming', ['running' => $running, 'upcoming' => $total - $running]))
+            ->icon(Heroicon::OutlinedCalendar);
     }
 
     /**

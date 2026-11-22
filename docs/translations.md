@@ -13,7 +13,7 @@ Keep the file sorted: `php artisan lang:sort` does it.
 | Where | How |
 |---|---|
 | Laravel | `__('auth.login.failed')`, `__('mail.greeting', ['name' => $user->name])`, `trans_choice('notifications.feed.points.title', $points)` |
-| Blade | `{{ __('admin.coming_soon.heading') }}` |
+| Blade | `{{ __('admin.hall_screen.title') }}` |
 | Admin panel (Filament) | `->label(__('admin.faculties.name'))`, `->title(__('admin.faculties.saved'))`. A property such as `$navigationLabel` is a method instead: `public static function getNavigationLabel(): string { return __('...'); }` |
 | Vue template | `{{ $t('common.save') }}`, `:label="$t('auth.email_address')"`, `$tc('qr_print.count.slips', n)` |
 | Vue script | `import { t, tc } from "../i18n.js"`, then `t('common.save')` (also for `defineOptions({ layout: { title: t('leaderboard.title') } })`) |
