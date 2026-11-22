@@ -27,6 +27,8 @@ measured by axe only, because Lighthouse loads a URL and cannot open a dialog fi
 **Acceptance (#131): met.** axe reports no critical or serious issue on any measured page, in
 either theme.
 
+The scan pages without a camera were checked by hand (the run grants a fake camera): the headings were h3 after h1 (axe heading-order, moderate) and are now h2.
+
 ## What changed since 8 November
 
 New pages in the check (the 20 pages of 8 November keep their names, so the tables line up):

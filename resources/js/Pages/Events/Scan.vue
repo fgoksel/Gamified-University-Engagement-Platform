@@ -383,7 +383,7 @@ onUnmounted(() => {
                 <AlertCircle v-else class="mt-0.5 size-5 shrink-0" />
 
                 <div class="flex-1">
-                    <h3 class="font-semibold text-sm">{{ feedback.title }}</h3>
+                    <h2 class="font-semibold text-sm">{{ feedback.title }}</h2>
                     <p class="mt-0.5 text-xs sm:text-sm">
                         {{ feedback.message }}
                     </p>
@@ -500,9 +500,9 @@ onUnmounted(() => {
                     >
                         <Camera class="size-6" />
                     </div>
-                    <h3 class="font-semibold text-fg">
+                    <h2 class="font-semibold text-fg">
                         {{ $t("events.scan.camera_unavailable") }}
-                    </h3>
+                    </h2>
                     <p class="text-xs sm:text-sm text-fg-muted max-w-md">
                         {{ cameraError }}
                     </p>

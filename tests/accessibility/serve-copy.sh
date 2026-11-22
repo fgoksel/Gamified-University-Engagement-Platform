@@ -42,7 +42,8 @@ if [ "${1:-}" = "--worktree" ]; then
     COMMIT="$(git -C "$ROOT" rev-parse --short HEAD)+worktree"
     echo "Building a copy of the working folder ($COMMIT) ..."
     # Tracked and new files, as on disk; ignored ones (vendor, node_modules, .env) are left out.
-    (cd "$ROOT" && git ls-files -z --cached --others --exclude-standard | xargs -0 ls -d 2>/dev/null | tar -cf - -T -) |
+    # A tracked file deleted in the working folder is skipped (ls fails on it); `|| true` keeps set -e from stopping the script.
+    (cd "$ROOT" && git ls-files -z --cached --others --exclude-standard | { xargs -0 ls -d 2>/dev/null || true; } | tar -cf - -T -) |
         docker run --rm -i -v "$VOLUME":/app project-app tar -x -C /app
 else
     COMMIT="$(git -C "$ROOT" rev-parse --short "${1:-HEAD}")"
