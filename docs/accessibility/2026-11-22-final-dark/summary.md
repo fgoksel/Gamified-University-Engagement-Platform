@@ -1,6 +1,6 @@
-# Accessibility check: dev 6c35da9 with #126 and #131 (not yet committed), final (dark)
+# Accessibility check: dev c9444be, final (dark)
 
-Measured 2026-11-22 18:07 UTC at http://127.0.0.1:8099 with Lighthouse 13.6.0 (accessibility only, phone emulation), axe-core 4.14.0 (WCAG 2.2 A/AA and best practices, at desktop 1280x800 and phone 390x844) and Chrome/157.0.0.0.
+Measured 2026-11-22 18:23 UTC at http://127.0.0.1:8099 with Lighthouse 13.6.0 (accessibility only, phone emulation), axe-core 4.14.0 (WCAG 2.2 A/AA and best practices, at desktop 1280x800 and phone 390x844) and Chrome/157.0.0.0.
 
 Theme: dark. Pages: 27. Average Lighthouse accessibility score: 100 (over 25 pages; dialogs are axe only). Lowest: 100.
 

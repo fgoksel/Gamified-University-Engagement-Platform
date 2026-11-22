@@ -1,8 +1,8 @@
 {
   "meta": {
-    "label": "dev 6c35da9 with #126 and #131 (not yet committed), final (light)",
+    "label": "dev c9444be, final (light)",
     "theme": "light",
-    "date": "2026-11-22T18:04:08.661Z",
+    "date": "2026-11-22T18:20:02.989Z",
     "baseUrl": "http://127.0.0.1:8099",
     "tools": {
       "lighthouse": "13.6.0",
