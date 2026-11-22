@@ -6,12 +6,15 @@ use App\Enums\Capability;
 use App\Enums\UserRole;
 use App\Filament\Pages\OrganizerManagement;
 use App\Filament\Pages\StudentManagement;
+use App\Jobs\JoinGeneralAreaJob;
 use App\Models\RoleAssignment;
 use App\Models\RoleDefinition;
 use App\Models\Topic;
 use App\Models\TopicAuditEvent;
 use App\Models\User;
+use App\Services\AssignmentService;
 use App\Services\TopicService;
+use Illuminate\Support\Facades\Log;
 use Inertia\Testing\AssertableInertia as Assert;
 use Livewire\Livewire;
 
@@ -304,5 +307,25 @@ class GeneralAreaTest extends TopicTestCase
         $this->activateByLink();
 
         $this->assertSame([], $this->areasOf($student));
+    }
+
+    public function test_a_skipped_general_area_writes_one_log_line_with_no_person_in_it(): void
+    {
+        $this->makeGeneral($this->faculty);
+        $students = collect(range(1, 4))->map(fn (int $i) => $this->makeUser(UserRole::Student, "Active {$i}"));
+
+        // The role gains a power after the area was switched on.
+        $this->member->forceFill(['capabilities' => [...$this->member->capabilities, Capability::EventsCreate->value]])->save();
+
+        Log::spy();
+        (new JoinGeneralAreaJob($this->faculty->id))->handle(app(AssignmentService::class));
+
+        Log::shouldHaveReceived('warning')->once()->withArgs(fn (string $message, array $context) => $context === [
+            'topic_id' => $this->faculty->id,
+            'role_definition_id' => $this->member->id,
+        ]);
+        foreach ($students as $student) {
+            $this->assertSame([], $this->areasOf($student));
+        }
     }
 }

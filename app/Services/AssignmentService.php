@@ -30,6 +30,14 @@ use Illuminate\Validation\ValidationException;
  */
 class AssignmentService
 {
+    /**
+     * "topic_id:role_id" of the general areas already logged as skipped in this run, so one bad
+     * role writes one log line, not one per student (Task #133).
+     *
+     * @var array<string, true>
+     */
+    private array $generalAreaWarned = [];
+
     public function __construct(private TopicAccess $access) {}
 
     /**
@@ -73,13 +81,18 @@ class AssignmentService
         }
 
         // The role may have gained powers since the area was switched on (someone edited it): then
-        // it is no longer given automatically. The area admin sees why in the log.
+        // it is no longer given automatically. The log says so once per area and role in this run
+        // (one activation, or one run of JoinGeneralAreaJob), with no person in it (Task #62).
         if (! $role->isPlainStudentRole()) {
-            Log::warning('General area skipped: its role is no longer a plain student role.', [
-                'topic_id' => $topic->id,
-                'role_definition_id' => $role->id,
-                'student_id' => $student->id,
-            ]);
+            $key = "{$topic->id}:{$role->id}";
+
+            if (! isset($this->generalAreaWarned[$key])) {
+                $this->generalAreaWarned[$key] = true;
+                Log::warning('General area skipped: its role is no longer a plain student role.', [
+                    'topic_id' => $topic->id,
+                    'role_definition_id' => $role->id,
+                ]);
+            }
 
             return null;
         }

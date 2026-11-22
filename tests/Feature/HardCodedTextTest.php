@@ -83,6 +83,10 @@ class HardCodedTextTest extends TestCase
         'app/Services/PointCalculationService.php' => [
             'The leaderboard cache is not available, so the totals are worked out on each request.',
         ],
+        // A line for the log when a general area's role gained powers (Task #133): for developers.
+        'app/Services/AssignmentService.php' => [
+            'General area skipped: its role is no longer a plain student role.',
+        ],
         // The name of a page component, not a text.
         'app/Http/Controllers/LeaderboardController.php' => ['Home'],
         // What the log redaction looks for in an error message of MySQL or PostgreSQL, and writes in
