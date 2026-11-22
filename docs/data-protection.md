@@ -69,7 +69,7 @@ An e-mail address and a student's account number never leave the server on any l
 - Set `APP_DEBUG=false`. The debug error page shows the request and its data.
 - Set `LOG_STACK=daily` to keep the application log for 14 days (`LOG_DAILY_DAYS`). The default `single` file grows without end.
 - Docker keeps the output of a container without a limit. For the `webserver` service add `logging: { driver: json-file, options: { max-size: "10m", max-file: "5" } }`.
-- After pulling this change: `docker compose up -d` (new mount for the PHP containers) and `docker compose restart webserver` (new log format).
+- After pulling this change: `docker compose up -d` (new mount for the PHP containers) and `docker compose up -d --force-recreate --no-deps webserver` (new log format; a plain restart can keep the old file, because `git pull` replaces it and the bind mount still points at the old one).
 
 ## Where it is
 
