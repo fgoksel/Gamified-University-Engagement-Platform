@@ -152,4 +152,4 @@ The phone over https (step 6.2) is not automated: a test cannot hold a camera. R
 
 | Date | Commit | Phone and browser | https address from | Result |
 |---|---|---|---|---|
-| | | | | |
+| 22 Nov 2026 | `544c8b4` | Samsung Galaxy A56, Chrome (Android) | Cloudflare quick tunnel (`trycloudflare.com`), `docs/demo-over-https.md` | Passed: Anna scanned Rita's Indexing Lab code, got 20 points and was #1 on *Databases course* on her Home |
