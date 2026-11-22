@@ -76,8 +76,9 @@ supervisor approval.
 
 An **area admin** is someone whose role on an area lets them manage it: give roles and import
 people there (*Give a role* / *Import students*), create events and leaderboards. They manage that
-area and everything below it, nothing above or beside it (N1, N5). In the demo data this is the
-Branch lead role. A ready-made Area admin role comes with the accounts and roles refactor.
+area and everything below it, nothing above or beside it (N1, N5). In the topic demo data this is the
+Branch lead role; the presentation data (`Sprint4DemoSeeder`, `docs/sprint4-demo.md`) has an *Area admin*
+role on the University root and on each course (N2, N3).
 
 The **system admin** (the global `admin` account role) is for maintenance. An area admin does all
 of their area's work in the main app, never in the admin panel: the structure, roles, leaderboards,

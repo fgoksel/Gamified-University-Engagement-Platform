@@ -93,6 +93,15 @@ is deferred are in [docs/topic-tree.md](docs/topic-tree.md).
   The accounts are `sprint2.<name>@example.test` with password `password`; the script for the demo is in
   [`docs/sprint2-demo.md`](docs/sprint2-demo.md). Event times are relative to when it runs, so seed shortly before the
   demo. Like the topic demo, running it again changes nothing and it refuses to run when `APP_ENV=production`.
+- **Presentation data (optional, never part of the normal seeders):** the Sprint 2 and Sprint 3 demo data plus a University
+  root with its own area admin, an area admin on each course, a leaderboard for every demo student and a handover to show
+
+  ```bash
+  docker compose exec app php artisan db:seed --class=Sprint4DemoSeeder
+  ```
+
+  The new accounts are `sprint4.<name>@example.test` with password `password`; the script for the final presentation is in
+  [`docs/sprint4-demo.md`](docs/sprint4-demo.md). Seed shortly before the presentation: two events run from that moment.
 - Upgrading an existing database: `php artisan migrate` copies the old faculty tree into topics (ids are kept, the old
   tables stay untouched). See "Migration and compatibility" in the document above before upgrading a database that matters,
   and take a backup first.
