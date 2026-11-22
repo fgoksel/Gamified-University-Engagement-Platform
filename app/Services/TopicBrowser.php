@@ -120,6 +120,8 @@ class TopicBrowser
             'import' => $has(Capability::AccessImport),
             // "Invite a person" offers organisers too (Task #104).
             'invite_organisers' => $this->invitations->mayInviteOrganisers($user, $topic),
+            // "General area" on the Access tab (Task #133): Give a role and Import students here.
+            'set_general' => Gate::forUser($user)->allows('setGeneral', $topic),
             'define_roles' => $has(Capability::DefineRoles),
             'manage_leaderboards' => $has(Capability::LeaderboardsManage),
             'create_event' => $this->opensEventPages($user) && $this->placement->mayOwn($user, $topic),
@@ -359,6 +361,50 @@ class TopicBrowser
             'history' => $history,
             'roles' => $this->access->can($user, Capability::AccessAssign, $topic) ? $this->assignableRoles($user, $topic) : [],
             'import' => $this->access->can($user, Capability::AccessImport, $topic) ? $this->importOptions($user, $topic) : null,
+            // General area (Task #133): its state, and for those who may switch it, the counts.
+            'general' => $this->general($user, $topic),
+        ];
+    }
+
+    /**
+     * The general area of the Access tab (Task #133): whether every student who becomes active
+     * joins this area, as what, and since when. For those who may switch it, also how many active
+     * students do not hold each offered role here yet ("Also add the N active students").
+     *
+     * @return array{role: array{id: int, name: string}|null, set_by: ?string, set_at: ?string, missing: array<int, int>}|null
+     */
+    private function general(User $user, Topic $topic): ?array
+    {
+        $topic->loadMissing(['generalRole:id,name', 'generalSetBy:id,name']);
+        $canSet = Gate::forUser($user)->allows('setGeneral', $topic);
+
+        if ($topic->general_role_id === null && ! $canSet) {
+            return null;
+        }
+
+        $missing = [];
+
+        if ($canSet) {
+            $roleIds = array_column($this->importOptions($user, $topic)['roles'], 'id');
+            $active = User::role(UserRole::Student)->where('status', 'active')->count();
+            $holders = RoleAssignment::query()->active()
+                ->where('topic_id', $topic->id)
+                ->whereIn('role_definition_id', $roleIds)
+                ->whereIn('user_id', User::role(UserRole::Student)->where('status', 'active')->select('users.id'))
+                ->groupBy('role_definition_id')
+                ->selectRaw('role_definition_id, count(distinct user_id) as holders')
+                ->pluck('holders', 'role_definition_id');
+
+            foreach ($roleIds as $roleId) {
+                $missing[$roleId] = $active - (int) ($holders[$roleId] ?? 0);
+            }
+        }
+
+        return [
+            'role' => $topic->generalRole ? ['id' => $topic->generalRole->id, 'name' => $topic->generalRole->name] : null,
+            'set_by' => $topic->generalSetBy?->name,
+            'set_at' => $topic->general_set_at?->toIso8601String(),
+            'missing' => $missing,
         ];
     }
 
@@ -584,6 +630,8 @@ class TopicBrowser
             ],
             'role' => ['id' => $assignment->role->id, 'name' => $assignment->role->name, 'capabilities' => $assignment->role->capabilityList()],
             'granted_by' => $assignment->grantedBy?->name,
+            // Joined by becoming active, not given by hand (Task #133).
+            'automatic' => ($assignment->authority_snapshot['via'] ?? null) === 'general_area',
             'started_at' => $assignment->started_at?->toIso8601String(),
             'is_you' => $assignment->user_id === $viewer->id,
             'can_end' => $canEnd,

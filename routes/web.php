@@ -28,6 +28,7 @@ use App\Http\Controllers\RoleAssignmentController;
 use App\Http\Controllers\RoleDefinitionController;
 use App\Http\Controllers\ScanController;
 use App\Http\Controllers\TopicController;
+use App\Http\Controllers\TopicGeneralController;
 use App\Http\Controllers\TopicImportController;
 use App\Http\Controllers\TopicInvitationController;
 use App\Http\Controllers\TopicTagRequestController;
@@ -272,6 +273,8 @@ Route::middleware('auth')->group(function () {
             Route::post('/{topic}/assignments', [RoleAssignmentController::class, 'store'])->whereNumber('topic')->name('assignments.store');
             // Task #72: give a role to a list of students from a file of Neptun codes.
             Route::post('/{topic}/imports', [TopicImportController::class, 'store'])->whereNumber('topic')->name('imports.store');
+            // Task #133: every student who becomes active joins this area with a role.
+            Route::put('/{topic}/general', [TopicGeneralController::class, 'update'])->whereNumber('topic')->name('general.update');
             // Task #104: invite one student or organiser without an account, with a role here.
             Route::post('/{topic}/invitations', [TopicInvitationController::class, 'store'])->whereNumber('topic')->name('invitations.store');
             Route::post('/{topic}/invitations/{person}/resend', [TopicInvitationController::class, 'resend'])->whereNumber(['topic', 'person'])->name('invitations.resend');

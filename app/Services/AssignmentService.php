@@ -3,8 +3,10 @@
 namespace App\Services;
 
 use App\Enums\Capability;
+use App\Enums\UserRole;
 use App\Models\RoleAssignment;
 use App\Models\RoleDefinition;
+use App\Models\Semester;
 use App\Models\Topic;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -46,6 +48,58 @@ class AssignmentService
     public function import(User $actor, Topic $topic, RoleDefinition $role, User $recipient, ?int $semesterId = null): RoleAssignment
     {
         return $this->give('import', Capability::AccessImport, $actor, $topic, $role, $recipient, $semesterId);
+    }
+
+    /**
+     * A student joins a general area (Task #133) when their account becomes active: its general
+     * role, written like an import (the active semester), but with no acting user's rights check:
+     * the area admin passed that check when they switched the area on. The assignment says where it
+     * came from (authority_snapshot "via" general_area), and its grantor is whoever switched the
+     * area on, so the Access tab and the history can say "joined automatically".
+     *
+     * Only for an active student and a general area that is not archived; a role already held there
+     * is not given twice. Never touches another area, never ends anything.
+     *
+     * @return RoleAssignment|null null when nothing was added
+     */
+    public function joinGeneralArea(Topic $topic, User $student): ?RoleAssignment
+    {
+        $topic = Topic::query()->general()->whereKey($topic->id)->first();
+        $role = $topic?->general_role_id === null ? null : RoleDefinition::query()->usable()->find($topic->general_role_id);
+
+        if ($topic === null || $role === null || $student->status !== 'active' || ! $student->hasRole(UserRole::Student)) {
+            return null;
+        }
+
+        try {
+            return DB::transaction(function () use ($topic, $role, $student) {
+                $held = RoleAssignment::query()->active()
+                    ->where(['user_id' => $student->id, 'role_definition_id' => $role->id, 'topic_id' => $topic->id])
+                    ->lockForUpdate()
+                    ->exists();
+
+                if ($held) {
+                    return null;
+                }
+
+                $assignment = RoleAssignment::create([
+                    'topic_id' => $topic->id,
+                    'user_id' => $student->id,
+                    'role_definition_id' => $role->id,
+                    'granted_by_id' => $topic->general_set_by_id,
+                    'authority_snapshot' => ['via' => 'general_area', 'topic_id' => $topic->id, 'set_by_id' => $topic->general_set_by_id],
+                    'semester_id' => Semester::where('status', 'active')->orderByDesc('starts_at')->value('id'),
+                    'started_at' => now(),
+                ]);
+
+                TopicAudit::record(null, 'assignment.joined_general_area', $topic->id, 'role_assignment', $assignment->id, null, $this->snapshot($assignment));
+
+                return $assignment;
+            });
+        } catch (UniqueConstraintViolationException) {
+            // Added at the same moment by another path: they hold it, which is all this wanted.
+            return null;
+        }
     }
 
     /**

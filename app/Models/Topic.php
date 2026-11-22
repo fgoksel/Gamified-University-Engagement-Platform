@@ -29,6 +29,10 @@ class Topic extends Model
         'subject_area_id',
         'archived_at',
         'archived_by_id',
+        // General area (Task #133): the role every student who becomes active gets here.
+        'general_role_id',
+        'general_set_by_id',
+        'general_set_at',
     ];
 
     /**
@@ -44,7 +48,7 @@ class Topic extends Model
      */
     protected function casts(): array
     {
-        return ['archived_at' => 'datetime', 'show_own_place' => 'boolean'];
+        return ['archived_at' => 'datetime', 'show_own_place' => 'boolean', 'general_set_at' => 'datetime'];
     }
 
     protected static function booted(): void
@@ -143,6 +147,25 @@ class Topic extends Model
      *
      * @param  Builder<Topic>  $query
      */
+    /**
+     * The general areas (Task #133): those with a general role, and not archived themselves or
+     * inside an archived branch. Every student whose account becomes active joins each of them.
+     */
+    public function scopeGeneral(Builder $query): void
+    {
+        $query->whereNotNull('topics.general_role_id')->notArchived();
+    }
+
+    public function generalRole(): BelongsTo
+    {
+        return $this->belongsTo(RoleDefinition::class, 'general_role_id');
+    }
+
+    public function generalSetBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'general_set_by_id');
+    }
+
     public function scopeNotArchived(Builder $query): void
     {
         $query->whereNotIn('topics.id', DB::table('topic_closure as hidden_closure')
